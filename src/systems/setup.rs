@@ -1,5 +1,5 @@
 use crate::bundles::spawn_create_button;
-use crate::components::{CreateButton, CreateButtonType, System, SystemElement};
+use crate::components::{CreateButton, CreateButtonType, ScaleWithZoom, System, SystemElement};
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
@@ -25,6 +25,7 @@ pub fn setup(
             },
             PickableBundle::default(),
             SystemElement::System,
+            ScaleWithZoom,
         ))
         .id();
 

@@ -3,7 +3,7 @@ use crate::bundles::{
     spawn_external_entity, spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
 use crate::components::*;
-use crate::resources::FocusedSystem;
+use crate::resources::{FocusedSystem, Zoom};
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
@@ -561,4 +561,27 @@ pub fn on_create_button_click(
     }
 
     despawn_create_button(&mut commands, event.target, &only_button_query);
+}
+
+pub fn apply_zoom(
+    mut query: Query<(&mut Transform, Option<&ScaleWithZoom>), Without<Camera>>,
+    zoom: Res<Zoom>,
+    mut previous_zoom: Local<Zoom>,
+) {
+    if !zoom.is_changed() {
+        return;
+    }
+
+    let fac = **zoom / **previous_zoom;
+
+    **previous_zoom = **zoom;
+
+    for (mut transform, scale_with_zoom) in &mut query {
+        transform.translation =
+            (transform.translation.truncate() * fac).extend(transform.translation.z);
+
+        if scale_with_zoom.is_some() {
+            transform.scale = (transform.scale.truncate() * fac).extend(transform.scale.z);
+        }
+    }
 }

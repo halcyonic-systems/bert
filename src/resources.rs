@@ -8,3 +8,12 @@ impl FocusedSystem {
         Self(entity)
     }
 }
+
+#[derive(Debug, Resource, Deref, DerefMut)]
+pub struct Zoom(f32);
+
+impl Default for Zoom {
+    fn default() -> Self {
+        Self(1.0)
+    }
+}

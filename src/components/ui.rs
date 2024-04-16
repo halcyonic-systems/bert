@@ -32,3 +32,7 @@ pub struct FlowOtherEndButton;
 pub struct InterfaceSubsystemButton {
     pub button_entity: Entity,
 }
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct ScaleWithZoom;

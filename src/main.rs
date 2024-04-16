@@ -3,6 +3,7 @@ mod components;
 mod resources;
 mod systems;
 
+use crate::resources::Zoom;
 use crate::systems::*;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
@@ -29,7 +30,9 @@ fn main() {
                 zoom_control_system,
                 change_focused_system,
                 remove_unfocused_system_buttons,
+                apply_zoom,
             ),
         )
+        .init_resource::<Zoom>()
         .run();
 }
