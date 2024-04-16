@@ -7,8 +7,8 @@ use crate::resources::FocusedSystem;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
-use bevy_mod_picking::events::{Click, Pointer};
-use bevy_mod_picking::prelude::Listener;
+use bevy_mod_picking::prelude::*;
+use num_traits::float::FloatConst;
 
 macro_rules! interface_create_button {
     ($fn_name:ident, $flow:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr) => {
@@ -40,6 +40,7 @@ macro_rules! interface_create_button {
                         system: **focused_system,
                     },
                     transform.translation.truncate() - direction * 64.0,
+                    direction.to_angle(),
                     &asset_server,
                 );
             }
@@ -92,6 +93,7 @@ macro_rules! external_entity_create_button {
                         system: **focused_system,
                     },
                     transform.translation.truncate() + direction * 64.0,
+                    direction.to_angle(),
                     &asset_server,
                 );
             }
@@ -114,67 +116,87 @@ external_entity_create_button!(
     CreateButtonType::Sink
 );
 
-// pub fn add_first_outflow_create_button(
-//     mut commands: Commands,
-//     focused_system: Res<FocusedSystem>,
-//     button_query: Query<&CreateButton>,
-//     flow_system_query: Query<
-//         &FlowSystemConnection,
-//         (Without<InflowSourceConnection>, With<Outflow>),
-//     >,
-//     flow_interface_query: Query<
-//         (&FlowSystemConnection, &FlowInterfaceConnection),
-//         (With<InflowSourceConnection>, With<Outflow>),
-//     >,
-//     transform_query: Query<&GlobalTransform>,
-//     asset_server: Res<AssetServer>,
-// ) {
-//     if !focused_system.is_changed() {
-//         return;
-//     }
-//
-//     let focused_system = **focused_system;
-//
-//     for button in &button_query {
-//         if button.system == focused_system && matches!(button.ty, CreateButtonType::Outflow) {
-//             return;
-//         }
-//     }
-//
-//     for flow_system_connection in &flow_system_query {
-//         if flow_system_connection.target == focused_system {
-//             return;
-//         }
-//     }
-//
-//     // find button angle
-//
-//     let system_center = transform_query
-//         .get(focused_system)
-//         .expect("System should have a Transform")
-//         .translation();
-//
-//     let mut existing_interfaces = HashSet::new();
-//
-//     for (flow_system_connection, flow_interface_connection) in &flow_interface_query {
-//         if flow_system_connection.target == focused_system {
-//             existing_interfaces.insert(flow_interface_connection.target);
-//         }
-//     }
-//
-//     let mut min_angle = f32::PI();
-//
-//     for interface in existing_interfaces {
-//         let interface_pos = transform_query
-//             .get(interface)
-//             .expect("Interface should have a Transform")
-//             .translation();
-//
-//         let angle = (interface_pos - system_center).truncate().to_angle();
-//
-//         min_angle = min_angle.min(angle);
-//     }
-// }
+pub fn add_first_outflow_create_button(
+    mut commands: Commands,
+    focused_system: Res<FocusedSystem>,
+    button_query: Query<&CreateButton>,
+    flow_system_query: Query<
+        &Outflow,
+        Or<(
+            Without<OutflowSinkConnection>,
+            Without<OutflowInterfaceConnection>,
+        )>,
+    >,
+    flow_interface_query: Query<
+        (&Outflow, &OutflowInterfaceConnection),
+        With<InflowSourceConnection>,
+    >,
+    transform_query: Query<&GlobalTransform>,
+    asset_server: Res<AssetServer>,
+) {
+    if !focused_system.is_changed() {
+        return;
+    }
+
+    let focused_system = **focused_system;
+
+    for button in &button_query {
+        if button.system == focused_system && matches!(button.ty, CreateButtonType::Outflow) {
+            return;
+        }
+    }
+
+    for outflow in &flow_system_query {
+        if outflow.system == focused_system {
+            return;
+        }
+    }
+
+    // find button angle
+
+    let system_center = transform_query
+        .get(focused_system)
+        .expect("System should have a Transform")
+        .translation();
+
+    let mut existing_interfaces = HashSet::new();
+
+    for (outflow, flow_interface_connection) in &flow_interface_query {
+        if outflow.system == focused_system {
+            existing_interfaces.insert(flow_interface_connection.target);
+        }
+    }
+
+    let mut min_angle = f32::PI();
+
+    for interface in existing_interfaces {
+        let interface_pos = transform_query
+            .get(interface)
+            .expect("Interface should have a Transform")
+            .translation();
+
+        let angle = (interface_pos - system_center).truncate().to_angle();
+
+        min_angle = min_angle.min(angle);
+    }
+
+    info!("System center: {}", system_center);
+    info!("Min angle: {}", min_angle);
+
+    min_angle -= f32::FRAC_PI_8();
+
+    spawn_create_button(
+        &mut commands,
+        CreateButton {
+            ty: CreateButtonType::Outflow,
+            connection_source: focused_system,
+            system: focused_system,
+        },
+        vec2(system_center.x + 32.0, system_center.y),
+        min_angle,
+        &asset_server,
+    );
+}
 
 pub fn add_consecutive_outflow_create_button(
     mut commands: Commands,
@@ -193,6 +215,7 @@ pub fn add_consecutive_outflow_create_button(
                 system: **focused_system,
             },
             vec2(128.0, transform.translation.y - 70.0),
+            0.0,
             &asset_server,
         );
     }
@@ -246,6 +269,7 @@ pub fn add_first_inflow_create_button(
                     system: **focused_system,
                 },
                 vec2(-128.0, 100.0),
+                0.0,
                 &asset_server,
             );
         } else {
@@ -277,6 +301,7 @@ pub fn add_consecutive_inflow_create_button(
                 system: **focused_system,
             },
             vec2(-128.0, transform.translation.y - 70.0),
+            0.0,
             &asset_server,
         );
     }
@@ -402,6 +427,7 @@ pub fn add_interface_subsystem_create_buttons(
                         system: **focused_system,
                     },
                     transform.translation.truncate(),
+                    0.0,
                     &asset_server,
                 );
             }
@@ -409,6 +435,32 @@ pub fn add_interface_subsystem_create_buttons(
             if let Ok(interface_button) = interface_button_query.get(interface_entity) {
                 despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
             }
+        }
+    }
+}
+
+pub fn change_focused_system(
+    selected_query: Query<
+        (Entity, &PickSelection),
+        (
+            Changed<PickSelection>,
+            Or<(With<crate::components::System>, With<Subsystem>)>,
+        ),
+    >,
+    button_query: Query<&CreateButton>,
+    mut focused_system: ResMut<FocusedSystem>,
+) {
+    for (entity, selection) in &selected_query {
+        if selection.is_selected {
+            for button in &button_query {
+                if button.system == **focused_system
+                    && matches!(button.ty, CreateButtonType::InterfaceSubsystem)
+                {
+                    return;
+                }
+            }
+
+            **focused_system = entity;
         }
     }
 }

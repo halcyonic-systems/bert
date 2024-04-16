@@ -9,6 +9,7 @@ edition = "2021"
 bevy = { version = "0.13", features = ["dynamic_linking"] }
 bevy_egui = "=0.25.0"
 bevy_mod_picking = { version = "0.18", features = ["backend_egui", "backend_sprite"] }
+num-traits = "0.2.18"
 
 [profile.dev]
 opt-level = 1

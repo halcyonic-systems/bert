@@ -8,6 +8,7 @@ pub fn spawn_create_button(
     commands: &mut Commands,
     create_button: CreateButton,
     position: Vec2,
+    angle: f32,
     asset_server: &Res<AssetServer>,
 ) {
     let path = match create_button.ty {
@@ -26,7 +27,8 @@ pub fn spawn_create_button(
             create_button,
             SpriteBundle {
                 texture: asset_server.load(path),
-                transform: Transform::from_translation(Vec3::new(position.x, position.y, 10.)),
+                transform: Transform::from_translation(Vec3::new(position.x, position.y, 10.))
+                    .with_rotation(Quat::from_rotation_z(angle)),
                 sprite: Sprite {
                     custom_size: Some(Vec2::new(32., 32.)),
                     ..default()

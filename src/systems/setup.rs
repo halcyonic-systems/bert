@@ -38,6 +38,7 @@ pub fn setup(
             system: system_entity,
         },
         vec2(128.0, 100.0),
+        0.0,
         &asset_server,
     );
 }

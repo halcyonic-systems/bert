@@ -1,7 +1,7 @@
 mod bundles;
 mod components;
-mod systems;
 mod resources;
+mod systems;
 
 use crate::systems::*;
 use bevy::prelude::*;
@@ -25,7 +25,10 @@ fn main() {
                 add_first_inflow_create_button,
                 add_consecutive_inflow_create_button,
                 add_interface_subsystem_create_buttons,
+                add_first_outflow_create_button,
                 zoom_control_system,
+                change_focused_system,
+                remove_unfocused_system_buttons,
             ),
         )
         .run();
