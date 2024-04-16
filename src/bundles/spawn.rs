@@ -1,10 +1,5 @@
-use crate::components::{
-    CreateButton, CreateButtonType, ExternalEntity, FlowInterfaceButton, FlowInterfaceConnection,
-    FlowOtherEndButton, FlowOtherEndConnection, FlowSystemConnection, Inflow, Interface,
-    InterfaceSubsystem, InterfaceSubsystemButton, Outflow, SystemElement,
-};
+use crate::components::*;
 use crate::systems::on_create_button_click;
-use bevy::math::vec3;
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::prelude::*;
@@ -70,7 +65,11 @@ pub fn despawn_create_button(
     despawn_create_button_with_component(commands, entity, create_button);
 }
 
-pub fn despawn_create_button_with_component(commands: &mut Commands, entity: Entity, create_button: &CreateButton) {
+pub fn despawn_create_button_with_component(
+    commands: &mut Commands,
+    entity: Entity,
+    create_button: &CreateButton,
+) {
     let mut entity_commands = commands.entity(create_button.connection_source);
 
     match create_button.ty {
@@ -189,7 +188,7 @@ pub fn spawn_external_entity(
             ExternalEntity::default(),
             MaterialMesh2dBundle {
                 mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
-                transform: Transform::from_translation(Vec3::new(position.x, position.y, 0.)),
+                transform: Transform::from_translation(Vec3::new(position.x, position.y, 1.0)),
                 material: materials.add(ColorMaterial::from(Color::CYAN)),
                 ..default()
             },
@@ -213,19 +212,30 @@ pub fn spawn_interface_subsystem(
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.entity(interface_entity).with_children(|parent| {
-        parent.spawn((
-            InterfaceSubsystem::default(),
-            MaterialMesh2dBundle {
-                mesh: meshes.add(Circle { radius: 16. }).into(), // TODO : compute radius from parent system
-                transform: Transform::from_translation(Vec3::new(0.0, 10.0, 1.0)), // TODO : compute z from parent system
-                material: materials.add(ColorMaterial::from(Color::CYAN)),
-                ..default()
-            },
-            PickableBundle {
-                selection: PickSelection { is_selected: true },
-                ..default()
-            },
-        ));
-    });
+    let mut subsystem_entity = None::<Entity>;
+
+    commands
+        .entity(interface_entity)
+        .with_children(|parent| {
+            subsystem_entity = Some(
+                parent
+                    .spawn((
+                        InterfaceSubsystem::default(),
+                        MaterialMesh2dBundle {
+                            mesh: meshes.add(Circle { radius: 32. }).into(), // TODO : compute radius from parent system
+                            transform: Transform::from_translation(Vec3::new(-32.0, 0.0, 1.0)), // TODO : compute z from parent system
+                            material: materials.add(ColorMaterial::from(Color::CYAN)),
+                            ..default()
+                        },
+                        PickableBundle {
+                            selection: PickSelection { is_selected: true },
+                            ..default()
+                        },
+                    ))
+                    .id(),
+            );
+        })
+        .insert(InterfaceSubsystemConnection {
+            target: subsystem_entity.expect("Just initialized above"),
+        });
 }

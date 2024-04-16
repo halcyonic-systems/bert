@@ -2,11 +2,7 @@ use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_create_button,
     spawn_external_entity, spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
-use crate::components::{
-    CreateButton, CreateButtonType, FlowInterfaceButton, FlowInterfaceConnection,
-    FlowOtherEndButton, FlowOtherEndConnection, FlowSystemConnection, GeneralUsability, Inflow,
-    InterfaceSubsystemButton, Outflow,
-};
+use crate::components::*;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
@@ -193,7 +189,13 @@ pub fn add_interface_subsystem_create_buttons(
         (&FlowSystemConnection, &FlowInterfaceConnection),
         With<FlowOtherEndConnection>,
     >,
-    interface_query: Query<&Transform, Without<InterfaceSubsystemButton>>,
+    interface_query: Query<
+        &Transform,
+        (
+            Without<InterfaceSubsystemButton>,
+            Without<InterfaceSubsystemConnection>,
+        ),
+    >,
     interface_button_query: Query<&InterfaceSubsystemButton>,
     button_query: Query<&CreateButton>,
     asset_server: Res<AssetServer>,

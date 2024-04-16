@@ -2,24 +2,6 @@ use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct FlowInterfaceConnection {
-    pub target: Entity,
-}
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
-pub struct FlowOtherEndConnection {
-    pub target: Entity,
-}
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
-pub struct FlowSystemConnection {
-    pub target: Entity,
-}
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
 pub enum SystemElement {
     System,
     Interface,
@@ -44,7 +26,7 @@ impl std::fmt::Display for SystemElement {
 #[reflect(Component)]
 pub struct System;
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct Interface;
 
@@ -55,14 +37,14 @@ pub struct Interface;
 //     Hybrid,
 // }
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct Inflow {
     pub usability: InflowUsability,
     pub substance_type: SubstanceType,
 }
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct Outflow {
     pub usability: OutflowUsability,
