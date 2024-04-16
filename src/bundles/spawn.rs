@@ -11,10 +11,13 @@ pub fn spawn_create_button(
     asset_server: &Res<AssetServer>,
 ) {
     let path = match create_button.ty {
-        CreateButtonType::Interface => "create-button/interface.png",
+        CreateButtonType::ImportInterface | CreateButtonType::ExportInterface => {
+            "create-button/interface.png"
+        }
         CreateButtonType::Inflow => "create-button/inflow.png",
         CreateButtonType::Outflow => "create-button/outflow.png",
-        CreateButtonType::ExternalEntity => "create-button/sink.png",
+        CreateButtonType::Source => "create-button/source.png",
+        CreateButtonType::Sink => "create-button/sink.png",
         CreateButtonType::InterfaceSubsystem => "create-button/interface-subsystem.png",
     };
 
@@ -38,10 +41,10 @@ pub fn spawn_create_button(
     let mut commands = commands.entity(create_button.connection_source);
 
     match create_button.ty {
-        CreateButtonType::Interface => {
+        CreateButtonType::ImportInterface | CreateButtonType::ExportInterface => {
             commands.insert(FlowInterfaceButton);
         }
-        CreateButtonType::ExternalEntity => {
+        CreateButtonType::Source | CreateButtonType::Sink => {
             commands.insert(FlowOtherEndButton);
         }
         CreateButtonType::InterfaceSubsystem => {
@@ -73,10 +76,10 @@ pub fn despawn_create_button_with_component(
     let mut entity_commands = commands.entity(create_button.connection_source);
 
     match create_button.ty {
-        CreateButtonType::Interface => {
+        CreateButtonType::ImportInterface | CreateButtonType::ExportInterface => {
             entity_commands.remove::<FlowInterfaceButton>();
         }
-        CreateButtonType::ExternalEntity => {
+        CreateButtonType::Source | CreateButtonType::Sink => {
             entity_commands.remove::<FlowOtherEndButton>();
         }
         CreateButtonType::InterfaceSubsystem => {
@@ -92,6 +95,7 @@ pub fn despawn_create_button_with_component(
 
 pub fn spawn_interface(
     commands: &mut Commands,
+    interface_type: InterfaceType,
     flow_entity: Entity,
     position: Vec2,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -115,11 +119,20 @@ pub fn spawn_interface(
         ))
         .id();
 
-    commands
-        .entity(flow_entity)
-        .insert(FlowInterfaceConnection {
-            target: interface_entity,
-        });
+    let mut entity_commands = commands.entity(flow_entity);
+
+    match interface_type {
+        InterfaceType::Import => {
+            entity_commands.insert(InflowInterfaceConnection {
+                target: interface_entity,
+            });
+        }
+        InterfaceType::Export => {
+            entity_commands.insert(OutflowInterfaceConnection {
+                target: interface_entity,
+            });
+        }
+    }
 }
 
 pub fn spawn_outflow(
@@ -130,7 +143,11 @@ pub fn spawn_outflow(
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn((
-        Outflow::default(),
+        Outflow {
+            system: system_entity,
+            substance_type: Default::default(),
+            usability: Default::default(),
+        },
         MaterialMesh2dBundle {
             mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
             transform: Transform::from_translation(Vec3::new(position.x + 64.0, position.y, 5.)),
@@ -142,9 +159,6 @@ pub fn spawn_outflow(
             ..default()
         },
         SystemElement::Outflow,
-        FlowSystemConnection {
-            target: system_entity,
-        },
         Name::new("Outflow"),
     ));
 }
@@ -157,7 +171,11 @@ pub fn spawn_inflow(
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn((
-        Inflow::default(),
+        Inflow {
+            system: system_entity,
+            substance_type: Default::default(),
+            usability: Default::default(),
+        },
         MaterialMesh2dBundle {
             mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
             transform: Transform::from_translation(Vec3::new(position.x - 64.0, position.y, 5.)),
@@ -169,15 +187,13 @@ pub fn spawn_inflow(
             ..default()
         },
         SystemElement::Inflow,
-        FlowSystemConnection {
-            target: system_entity,
-        },
         Name::new("Inflow"),
     ));
 }
 
 pub fn spawn_external_entity(
     commands: &mut Commands,
+    interface_type: InterfaceType,
     flow_entity: Entity,
     position: Vec2,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -201,41 +217,78 @@ pub fn spawn_external_entity(
         ))
         .id();
 
-    commands.entity(flow_entity).insert(FlowOtherEndConnection {
-        target: external_entity,
-    });
+    let mut entity_commands = commands.entity(flow_entity);
+
+    match interface_type {
+        InterfaceType::Import => {
+            entity_commands.insert(InflowSourceConnection {
+                target: external_entity,
+            });
+        }
+        InterfaceType::Export => {
+            entity_commands.insert(OutflowSinkConnection {
+                target: external_entity,
+            });
+        }
+    }
 }
 
 pub fn spawn_interface_subsystem(
     commands: &mut Commands,
     interface_entity: Entity,
+    flow_interface_query: &Query<
+        (
+            Entity,
+            Option<&InflowInterfaceConnection>,
+            Option<&OutflowInterfaceConnection>,
+        ),
+        Or<(With<Inflow>, With<Outflow>)>,
+    >,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
-    let mut subsystem_entity = None::<Entity>;
+    let mut interface_flow_entity = Entity::PLACEHOLDER;
+
+    for (entity, inflow_connection, outflow_connection) in flow_interface_query {
+        if let Some(connection) = inflow_connection {
+            if connection.target == interface_entity {
+                interface_flow_entity = entity;
+                break;
+            }
+        }
+        if let Some(connection) = outflow_connection {
+            if connection.target == interface_entity {
+                interface_flow_entity = entity;
+                break;
+            }
+        }
+    }
+
+    let mut subsystem_entity = Entity::PLACEHOLDER;
 
     commands
         .entity(interface_entity)
         .with_children(|parent| {
-            subsystem_entity = Some(
-                parent
-                    .spawn((
-                        InterfaceSubsystem::default(),
-                        MaterialMesh2dBundle {
-                            mesh: meshes.add(Circle { radius: 32. }).into(), // TODO : compute radius from parent system
-                            transform: Transform::from_translation(Vec3::new(-32.0, 0.0, 1.0)), // TODO : compute z from parent system
-                            material: materials.add(ColorMaterial::from(Color::CYAN)),
-                            ..default()
-                        },
-                        PickableBundle {
-                            selection: PickSelection { is_selected: true },
-                            ..default()
-                        },
-                    ))
-                    .id(),
-            );
+            subsystem_entity = parent
+                .spawn((
+                    SubsystemParentFlowConnection {
+                        target: interface_flow_entity,
+                    },
+                    Subsystem::default(),
+                    MaterialMesh2dBundle {
+                        mesh: meshes.add(Circle { radius: 32. }).into(), // TODO : compute radius from parent system
+                        transform: Transform::from_translation(Vec3::new(-32.0, 0.0, 1.0)), // TODO : compute z from parent system
+                        material: materials.add(ColorMaterial::from(Color::CYAN)),
+                        ..default()
+                    },
+                    PickableBundle {
+                        selection: PickSelection { is_selected: true },
+                        ..default()
+                    },
+                ))
+                .id();
         })
         .insert(InterfaceSubsystemConnection {
-            target: subsystem_entity.expect("Just initialized above"),
+            target: subsystem_entity,
         });
 }

@@ -2,19 +2,25 @@ use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct FlowInterfaceConnection {
+pub struct OutflowInterfaceConnection {
     pub target: Entity,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct FlowOtherEndConnection {
+pub struct InflowInterfaceConnection {
     pub target: Entity,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct FlowSystemConnection {
+pub struct InflowSourceConnection {
+    pub target: Entity,
+}
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct OutflowSinkConnection {
     pub target: Entity,
 }
 
@@ -23,3 +29,10 @@ pub struct FlowSystemConnection {
 pub struct InterfaceSubsystemConnection {
     pub target: Entity,
 }
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct SubsystemParentFlowConnection {
+    pub target: Entity
+}
+

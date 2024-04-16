@@ -3,84 +3,194 @@ use crate::bundles::{
     spawn_external_entity, spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
 use crate::components::*;
+use crate::resources::FocusedSystem;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 use bevy_mod_picking::events::{Click, Pointer};
 use bevy_mod_picking::prelude::Listener;
 
-pub fn add_interface_create_button(
-    mut commands: Commands,
-    query: Query<
-        (Entity, &Transform),
-        (
-            Or<(With<Outflow>, With<Inflow>)>,
-            Without<FlowInterfaceConnection>,
-            Without<FlowOtherEndConnection>,
-            Without<FlowInterfaceButton>,
-        ),
-    >,
-    asset_server: Res<AssetServer>,
-) {
-    for (entity, transform) in &query {
-        let direction = transform.right().truncate();
+macro_rules! interface_create_button {
+    ($fn_name:ident, $flow:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr) => {
+        pub fn $fn_name(
+            mut commands: Commands,
+            query: Query<
+                (Entity, &Transform, &$flow),
+                (
+                    Without<$interface_connection>,
+                    Without<$terminal_connection>,
+                    Without<FlowInterfaceButton>,
+                ),
+            >,
+            focused_system: Res<FocusedSystem>,
+            asset_server: Res<AssetServer>,
+        ) {
+            for (entity, transform, flow) in &query {
+                if flow.system != **focused_system {
+                    continue;
+                }
 
-        spawn_create_button(
-            &mut commands,
-            CreateButton {
-                ty: CreateButtonType::Interface,
-                connection_source: entity,
-            },
-            transform.translation.truncate() - direction * 64.0,
-            &asset_server,
-        );
-    }
+                let direction = transform.right().truncate();
+
+                spawn_create_button(
+                    &mut commands,
+                    CreateButton {
+                        ty: $button_type,
+                        connection_source: entity,
+                        system: **focused_system,
+                    },
+                    transform.translation.truncate() - direction * 64.0,
+                    &asset_server,
+                );
+            }
+        }
+    };
 }
 
-pub fn add_external_entity_create_button(
-    mut commands: Commands,
-    query: Query<
-        (Entity, &Transform),
-        (
-            // Or<(With<Outflow>, With<Inflow>)>,
-            With<FlowInterfaceConnection>,
-            Without<FlowOtherEndConnection>,
-            Without<FlowOtherEndButton>,
-        ),
-    >,
-    asset_server: Res<AssetServer>,
-) {
-    for (entity, transform) in &query {
-        let direction = transform.right().truncate();
+interface_create_button!(
+    add_outflow_interface_create_button,
+    Outflow,
+    OutflowInterfaceConnection,
+    OutflowSinkConnection,
+    CreateButtonType::ExportInterface
+);
+interface_create_button!(
+    add_inflow_interface_create_button,
+    Inflow,
+    InflowInterfaceConnection,
+    InflowSourceConnection,
+    CreateButtonType::ImportInterface
+);
 
-        spawn_create_button(
-            &mut commands,
-            CreateButton {
-                ty: CreateButtonType::ExternalEntity,
-                connection_source: entity,
-            },
-            transform.translation.truncate() + direction * 64.0,
-            &asset_server,
-        );
-    }
+macro_rules! external_entity_create_button {
+    ($fn_name:ident, $flow:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr) => {
+        pub fn $fn_name(
+            mut commands: Commands,
+            query: Query<
+                (Entity, &Transform, &$flow),
+                (
+                    With<$interface_connection>,
+                    Without<$terminal_connection>,
+                    Without<FlowOtherEndButton>,
+                ),
+            >,
+            focused_system: Res<FocusedSystem>,
+            asset_server: Res<AssetServer>,
+        ) {
+            for (entity, transform, flow) in &query {
+                if flow.system != **focused_system {
+                    continue;
+                }
+
+                let direction = transform.right().truncate();
+
+                spawn_create_button(
+                    &mut commands,
+                    CreateButton {
+                        ty: $button_type,
+                        connection_source: entity,
+                        system: **focused_system,
+                    },
+                    transform.translation.truncate() + direction * 64.0,
+                    &asset_server,
+                );
+            }
+        }
+    };
 }
 
-pub fn add_outflow_create_button(
+external_entity_create_button!(
+    add_source_create_button,
+    Inflow,
+    InflowInterfaceConnection,
+    InflowSourceConnection,
+    CreateButtonType::Source
+);
+external_entity_create_button!(
+    add_sink_create_button,
+    Outflow,
+    OutflowInterfaceConnection,
+    OutflowSinkConnection,
+    CreateButtonType::Sink
+);
+
+// pub fn add_first_outflow_create_button(
+//     mut commands: Commands,
+//     focused_system: Res<FocusedSystem>,
+//     button_query: Query<&CreateButton>,
+//     flow_system_query: Query<
+//         &FlowSystemConnection,
+//         (Without<InflowSourceConnection>, With<Outflow>),
+//     >,
+//     flow_interface_query: Query<
+//         (&FlowSystemConnection, &FlowInterfaceConnection),
+//         (With<InflowSourceConnection>, With<Outflow>),
+//     >,
+//     transform_query: Query<&GlobalTransform>,
+//     asset_server: Res<AssetServer>,
+// ) {
+//     if !focused_system.is_changed() {
+//         return;
+//     }
+//
+//     let focused_system = **focused_system;
+//
+//     for button in &button_query {
+//         if button.system == focused_system && matches!(button.ty, CreateButtonType::Outflow) {
+//             return;
+//         }
+//     }
+//
+//     for flow_system_connection in &flow_system_query {
+//         if flow_system_connection.target == focused_system {
+//             return;
+//         }
+//     }
+//
+//     // find button angle
+//
+//     let system_center = transform_query
+//         .get(focused_system)
+//         .expect("System should have a Transform")
+//         .translation();
+//
+//     let mut existing_interfaces = HashSet::new();
+//
+//     for (flow_system_connection, flow_interface_connection) in &flow_interface_query {
+//         if flow_system_connection.target == focused_system {
+//             existing_interfaces.insert(flow_interface_connection.target);
+//         }
+//     }
+//
+//     let mut min_angle = f32::PI();
+//
+//     for interface in existing_interfaces {
+//         let interface_pos = transform_query
+//             .get(interface)
+//             .expect("Interface should have a Transform")
+//             .translation();
+//
+//         let angle = (interface_pos - system_center).truncate().to_angle();
+//
+//         min_angle = min_angle.min(angle);
+//     }
+// }
+
+pub fn add_consecutive_outflow_create_button(
     mut commands: Commands,
-    query: Query<
-        (&Transform, &FlowSystemConnection),
-        (Added<FlowOtherEndConnection>, With<Outflow>),
-    >,
+    query: Query<(&Transform, &Outflow), Added<OutflowSinkConnection>>,
+    focused_system: Res<FocusedSystem>,
     asset_server: Res<AssetServer>,
 ) {
-    if let Ok((transform, system_connection)) = query.get_single() {
-        let system_entity = system_connection.target;
+    if let Ok((transform, outflow)) = query.get_single() {
+        let system_entity = outflow.system;
 
         spawn_create_button(
             &mut commands,
             CreateButton {
                 ty: CreateButtonType::Outflow,
                 connection_source: system_entity,
+                system: **focused_system,
             },
             vec2(128.0, transform.translation.y - 70.0),
             &asset_server,
@@ -90,10 +200,11 @@ pub fn add_outflow_create_button(
 
 pub fn add_first_inflow_create_button(
     mut commands: Commands,
-    changed_query: Query<Entity, Or<(Added<FlowOtherEndConnection>, Changed<Outflow>)>>,
-    query: Query<(&FlowSystemConnection, &Outflow), With<FlowOtherEndConnection>>,
-    inflow_query: Query<&FlowSystemConnection, With<Inflow>>,
+    changed_query: Query<Entity, Or<(Added<OutflowSinkConnection>, Changed<Outflow>)>>,
+    query: Query<&Outflow, With<OutflowSinkConnection>>,
+    inflow_query: Query<&Inflow>,
     button_query: Query<(Entity, &CreateButton)>,
+    focused_system: Res<FocusedSystem>,
     asset_server: Res<AssetServer>,
 ) {
     // TODO : also detect removal
@@ -104,17 +215,17 @@ pub fn add_first_inflow_create_button(
 
     let mut system_to_outflow_usabilities = HashMap::new();
 
-    for (system_connection, outflow) in &query {
+    for outflow in &query {
         system_to_outflow_usabilities
-            .entry(system_connection.target)
+            .entry(outflow.system)
             .or_insert_with(HashSet::new)
             .insert(outflow.usability);
     }
 
     'outer: for (system_entity, outflow_usabilities) in system_to_outflow_usabilities {
         if outflow_usabilities.len() > 1 {
-            for inflow_connection in inflow_query.iter() {
-                if inflow_connection.target == system_entity {
+            for inflow in inflow_query.iter() {
+                if inflow.system == system_entity {
                     continue 'outer;
                 }
             }
@@ -132,6 +243,7 @@ pub fn add_first_inflow_create_button(
                 CreateButton {
                     ty: CreateButtonType::Inflow,
                     connection_source: system_entity,
+                    system: **focused_system,
                 },
                 vec2(-128.0, 100.0),
                 &asset_server,
@@ -150,20 +262,19 @@ pub fn add_first_inflow_create_button(
 
 pub fn add_consecutive_inflow_create_button(
     mut commands: Commands,
-    query: Query<
-        (&Transform, &FlowSystemConnection),
-        (Added<FlowOtherEndConnection>, With<Inflow>),
-    >,
+    query: Query<(&Transform, &Inflow), Added<InflowSourceConnection>>,
+    focused_system: Res<FocusedSystem>,
     asset_server: Res<AssetServer>,
 ) {
-    if let Ok((transform, system_connection)) = query.get_single() {
-        let system_entity = system_connection.target;
+    if let Ok((transform, inflow)) = query.get_single() {
+        let system_entity = inflow.system;
 
         spawn_create_button(
             &mut commands,
             CreateButton {
                 ty: CreateButtonType::Inflow,
                 connection_source: system_entity,
+                system: **focused_system,
             },
             vec2(-128.0, transform.translation.y - 70.0),
             &asset_server,
@@ -176,18 +287,27 @@ pub fn add_interface_subsystem_create_buttons(
     changed_query: Query<
         Entity,
         Or<(
-            Added<FlowOtherEndConnection>,
-            Changed<Outflow>,
+            Added<InflowSourceConnection>,
+            Added<OutflowSinkConnection>,
             Changed<Inflow>,
+            Changed<Outflow>,
         )>,
     >,
     flow_query: Query<
-        (&FlowSystemConnection, Option<&Outflow>, Option<&Inflow>),
-        With<FlowOtherEndConnection>,
+        (Option<&Outflow>, Option<&Inflow>),
+        (
+            Or<(With<InflowSourceConnection>, With<OutflowSinkConnection>)>,
+            Or<(With<Inflow>, With<Outflow>)>,
+        ),
     >,
     flow_interface_query: Query<
-        (&FlowSystemConnection, &FlowInterfaceConnection),
-        With<FlowOtherEndConnection>,
+        (
+            Option<&Inflow>,
+            Option<&Outflow>,
+            Option<&InflowInterfaceConnection>,
+            Option<&OutflowInterfaceConnection>,
+        ),
+        Or<(With<InflowSourceConnection>, With<OutflowSinkConnection>)>,
     >,
     interface_query: Query<
         &Transform,
@@ -198,6 +318,7 @@ pub fn add_interface_subsystem_create_buttons(
     >,
     interface_button_query: Query<&InterfaceSubsystemButton>,
     button_query: Query<&CreateButton>,
+    focused_system: Res<FocusedSystem>,
     asset_server: Res<AssetServer>,
 ) {
     // TODO : also detect removal
@@ -206,57 +327,107 @@ pub fn add_interface_subsystem_create_buttons(
         return;
     }
 
-    let mut system_to_flow_usabilities = HashMap::new();
+    let mut flow_usabilities = HashSet::new();
 
-    for (system_connection, outflow, inflow) in &flow_query {
-        let system_entity = system_connection.target;
-
+    for (outflow, inflow) in &flow_query {
         match (inflow, outflow) {
             (Some(inflow), None) => {
-                system_to_flow_usabilities
-                    .entry(system_entity)
-                    .or_insert_with(HashSet::new)
-                    .insert(GeneralUsability::Inflow(inflow.usability));
+                if inflow.system != **focused_system {
+                    continue;
+                }
+                flow_usabilities.insert(GeneralUsability::Inflow(inflow.usability));
             }
             (None, Some(outflow)) => {
-                system_to_flow_usabilities
-                    .entry(system_entity)
-                    .or_insert_with(HashSet::new)
-                    .insert(GeneralUsability::Outflow(outflow.usability));
+                if outflow.system != **focused_system {
+                    continue;
+                }
+                flow_usabilities.insert(GeneralUsability::Outflow(outflow.usability));
+            }
+            (Some(inflow), Some(outflow)) => {
+                if inflow.system == **focused_system {
+                    flow_usabilities.insert(GeneralUsability::Inflow(inflow.usability));
+                } else if outflow.system == **focused_system {
+                    flow_usabilities.insert(GeneralUsability::Outflow(outflow.usability));
+                }
             }
             _ => unreachable!("Outflow and inflow can't both be None"),
         }
     }
 
-    for (system_connection, interface_connection) in &flow_interface_query {
-        let flow_usabilities = system_to_flow_usabilities
-            .get(&system_connection.target)
-            .expect("We just added this above");
-        {
-            if flow_usabilities.len() > 3 {
-                let interface_entity = interface_connection.target;
-                if let Ok(transform) = interface_query.get(interface_entity) {
-                    spawn_create_button(
-                        &mut commands,
-                        CreateButton {
-                            ty: CreateButtonType::InterfaceSubsystem,
-                            connection_source: interface_entity,
-                        },
-                        transform.translation.truncate(),
-                        &asset_server,
-                    );
+    for (inflow, outflow, inflow_interface_connection, outflow_interface_connection) in
+        &flow_interface_query
+    {
+        let interface_entity = match (inflow, outflow) {
+            (Some(inflow), None) => {
+                if inflow.system != **focused_system {
+                    continue;
                 }
-            } else {
-                if let Ok(interface_button) =
-                    interface_button_query.get(interface_connection.target)
-                {
-                    despawn_create_button(
-                        &mut commands,
-                        interface_button.button_entity,
-                        &button_query,
-                    );
+
+                inflow_interface_connection
+                    .expect("Should be there because we have an Inflow")
+                    .target
+            }
+            (None, Some(outflow)) => {
+                if outflow.system != **focused_system {
+                    continue;
+                }
+
+                outflow_interface_connection
+                    .expect("Should be there because we have an Outflow")
+                    .target
+            }
+            (Some(inflow), Some(outflow)) => {
+                if inflow.system == **focused_system {
+                    inflow_interface_connection
+                        .expect("Should be there because we have an Inflow")
+                        .target
+                } else if outflow.system == **focused_system {
+                    outflow_interface_connection
+                        .expect("Should be there because we have an Outflow")
+                        .target
+                } else {
+                    continue;
                 }
             }
+            _ => unreachable!("Outflow and inflow can't both be None"),
+        };
+
+        if flow_usabilities.len() > 3 {
+            if let Ok(transform) = interface_query.get(interface_entity) {
+                spawn_create_button(
+                    &mut commands,
+                    CreateButton {
+                        ty: CreateButtonType::InterfaceSubsystem,
+                        connection_source: interface_entity,
+                        system: **focused_system,
+                    },
+                    transform.translation.truncate(),
+                    &asset_server,
+                );
+            }
+        } else {
+            if let Ok(interface_button) = interface_button_query.get(interface_entity) {
+                despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
+            }
+        }
+    }
+}
+
+pub fn remove_unfocused_system_buttons(
+    mut commands: Commands,
+    focused_system: Res<FocusedSystem>,
+    previous_focused_system: Local<Option<Entity>>,
+    button_query: Query<(Entity, &CreateButton)>,
+) {
+    if !focused_system.is_changed() || Some(**focused_system) == *previous_focused_system {
+        return;
+    }
+
+    let focused_system = **focused_system;
+
+    for (entity, button) in &button_query {
+        if button.system != focused_system {
+            despawn_create_button_with_component(&mut commands, entity, button);
         }
     }
 }
@@ -266,6 +437,14 @@ pub fn on_create_button_click(
     event: Listener<Pointer<Click>>,
     button_query: Query<(&CreateButton, &GlobalTransform)>,
     only_button_query: Query<&CreateButton>,
+    flow_interface_query: Query<
+        (
+            Entity,
+            Option<&InflowInterfaceConnection>,
+            Option<&OutflowInterfaceConnection>,
+        ),
+        Or<(With<Inflow>, With<Outflow>)>,
+    >,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -274,8 +453,17 @@ pub fn on_create_button_click(
         .expect("After on click this has to exist");
 
     match button.ty {
-        CreateButtonType::Interface => spawn_interface(
+        CreateButtonType::ImportInterface => spawn_interface(
             &mut commands,
+            InterfaceType::Import,
+            button.connection_source,
+            transform.translation().truncate(),
+            &mut meshes,
+            &mut materials,
+        ),
+        CreateButtonType::ExportInterface => spawn_interface(
+            &mut commands,
+            InterfaceType::Export,
             button.connection_source,
             transform.translation().truncate(),
             &mut meshes,
@@ -295,8 +483,17 @@ pub fn on_create_button_click(
             &mut meshes,
             &mut materials,
         ),
-        CreateButtonType::ExternalEntity => spawn_external_entity(
+        CreateButtonType::Source => spawn_external_entity(
             &mut commands,
+            InterfaceType::Import,
+            button.connection_source,
+            transform.translation().truncate(),
+            &mut meshes,
+            &mut materials,
+        ),
+        CreateButtonType::Sink => spawn_external_entity(
+            &mut commands,
+            InterfaceType::Export,
             button.connection_source,
             transform.translation().truncate(),
             &mut meshes,
@@ -305,6 +502,7 @@ pub fn on_create_button_click(
         CreateButtonType::InterfaceSubsystem => spawn_interface_subsystem(
             &mut commands,
             button.connection_source,
+            &flow_interface_query,
             &mut meshes,
             &mut materials,
         ),

@@ -4,6 +4,7 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::prelude::*;
+use crate::resources::FocusedSystem;
 
 pub fn setup(
     mut commands: Commands,
@@ -27,11 +28,14 @@ pub fn setup(
         ))
         .id();
 
+    commands.insert_resource(FocusedSystem::new(system_entity));
+
     spawn_create_button(
         &mut commands,
         CreateButton {
             ty: CreateButtonType::Outflow,
             connection_source: system_entity,
+            system: system_entity,
         },
         vec2(128.0, 100.0),
         &asset_server,

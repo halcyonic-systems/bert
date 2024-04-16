@@ -1,6 +1,7 @@
 mod bundles;
 mod components;
 mod systems;
+mod resources;
 
 use crate::systems::*;
 use bevy::prelude::*;
@@ -16,9 +17,11 @@ fn main() {
             Update,
             (
                 egui_selected_context,
-                add_interface_create_button,
-                add_external_entity_create_button,
-                add_outflow_create_button,
+                add_outflow_interface_create_button,
+                add_inflow_interface_create_button,
+                add_source_create_button,
+                add_sink_create_button,
+                add_consecutive_outflow_create_button,
                 add_first_inflow_create_button,
                 add_consecutive_inflow_create_button,
                 add_interface_subsystem_create_buttons,

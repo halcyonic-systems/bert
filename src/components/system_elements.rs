@@ -30,25 +30,26 @@ pub struct System;
 #[reflect(Component)]
 pub struct Interface;
 
-// #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
-// pub enum InterfaceType {
-//     Import,
-//     Export,
-//     Hybrid,
-// }
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
+pub enum InterfaceType {
+    Import,
+    Export,
+}
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct Inflow {
     pub usability: InflowUsability,
     pub substance_type: SubstanceType,
+    pub system: Entity,
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct Outflow {
     pub usability: OutflowUsability,
     pub substance_type: SubstanceType,
+    pub system: Entity,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
@@ -57,7 +58,7 @@ pub struct ExternalEntity;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
-pub struct InterfaceSubsystem;
+pub struct Subsystem;
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]
 pub enum InflowUsability {

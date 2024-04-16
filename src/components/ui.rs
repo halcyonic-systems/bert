@@ -5,14 +5,17 @@ use bevy::prelude::*;
 pub struct CreateButton {
     pub ty: CreateButtonType,
     pub connection_source: Entity,
+    pub system: Entity,
 }
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
 pub enum CreateButtonType {
-    Interface,
+    ImportInterface,
+    ExportInterface,
     Inflow,
     Outflow,
-    ExternalEntity,
+    Source,
+    Sink,
     InterfaceSubsystem,
 }
 
