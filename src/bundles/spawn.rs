@@ -1,7 +1,7 @@
 use crate::components::{
     CreateButton, CreateButtonType, ExternalEntity, FlowInterfaceButton, FlowInterfaceConnection,
     FlowOtherEndButton, FlowOtherEndConnection, FlowSystemConnection, Inflow, Interface,
-    InterfaceSubsystemButton, Outflow, SystemElement,
+    InterfaceSubsystem, InterfaceSubsystemButton, Outflow, SystemElement,
 };
 use crate::systems::on_create_button_click;
 use bevy::math::vec3;
@@ -58,21 +58,52 @@ pub fn spawn_create_button(
     }
 }
 
+pub fn despawn_create_button(
+    commands: &mut Commands,
+    entity: Entity,
+    query: &Query<&CreateButton>,
+) {
+    let create_button = query
+        .get(entity)
+        .expect("Button doesn't have CreateButton component");
+
+    despawn_create_button_with_component(commands, entity, create_button);
+}
+
+pub fn despawn_create_button_with_component(commands: &mut Commands, entity: Entity, create_button: &CreateButton) {
+    let mut entity_commands = commands.entity(create_button.connection_source);
+
+    match create_button.ty {
+        CreateButtonType::Interface => {
+            entity_commands.remove::<FlowInterfaceButton>();
+        }
+        CreateButtonType::ExternalEntity => {
+            entity_commands.remove::<FlowOtherEndButton>();
+        }
+        CreateButtonType::InterfaceSubsystem => {
+            entity_commands.remove::<InterfaceSubsystemButton>();
+        }
+        CreateButtonType::Inflow | CreateButtonType::Outflow => {
+            // do nothing
+        }
+    }
+
+    commands.entity(entity).despawn();
+}
+
 pub fn spawn_interface(
     commands: &mut Commands,
     flow_entity: Entity,
-    interface: Interface,
     position: Vec2,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     let interface_entity = commands
         .spawn((
-            interface,
+            Interface::default(),
             MaterialMesh2dBundle {
-                mesh: meshes.add(Rectangle::default()).into(),
-                transform: Transform::from_translation(Vec3::new(position.x, position.y, 5.))
-                    .with_scale(vec3(32., 64., 1.)),
+                mesh: meshes.add(Rectangle::new(32.0, 64.0)).into(),
+                transform: Transform::from_translation(Vec3::new(position.x, position.y, 5.)),
                 material: materials.add(ColorMaterial::from(Color::GREEN)),
                 ..default()
             },
@@ -81,6 +112,7 @@ pub fn spawn_interface(
                 ..default()
             },
             SystemElement::Interface,
+            Name::new("Interface"),
         ))
         .id();
 
@@ -94,17 +126,15 @@ pub fn spawn_interface(
 pub fn spawn_outflow(
     commands: &mut Commands,
     system_entity: Entity,
-    outflow: Outflow,
     position: Vec2,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn((
-        outflow,
+        Outflow::default(),
         MaterialMesh2dBundle {
-            mesh: meshes.add(Rectangle::default()).into(),
-            transform: Transform::from_translation(Vec3::new(position.x + 64.0, position.y, 5.))
-                .with_scale(vec3(32., 32., 1.)),
+            mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
+            transform: Transform::from_translation(Vec3::new(position.x + 64.0, position.y, 5.)),
             material: materials.add(ColorMaterial::from(Color::RED)),
             ..default()
         },
@@ -116,23 +146,22 @@ pub fn spawn_outflow(
         FlowSystemConnection {
             target: system_entity,
         },
+        Name::new("Outflow"),
     ));
 }
 
 pub fn spawn_inflow(
     commands: &mut Commands,
     system_entity: Entity,
-    inflow: Inflow,
     position: Vec2,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn((
-        inflow,
+        Inflow::default(),
         MaterialMesh2dBundle {
-            mesh: meshes.add(Rectangle::default()).into(),
-            transform: Transform::from_translation(Vec3::new(position.x - 64.0, position.y, 5.))
-                .with_scale(vec3(32., 32., 1.)),
+            mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
+            transform: Transform::from_translation(Vec3::new(position.x - 64.0, position.y, 5.)),
             material: materials.add(ColorMaterial::from(Color::RED)),
             ..default()
         },
@@ -144,24 +173,23 @@ pub fn spawn_inflow(
         FlowSystemConnection {
             target: system_entity,
         },
+        Name::new("Inflow"),
     ));
 }
 
 pub fn spawn_external_entity(
     commands: &mut Commands,
     flow_entity: Entity,
-    external_entity: ExternalEntity,
     position: Vec2,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     let external_entity = commands
         .spawn((
-            external_entity,
+            ExternalEntity::default(),
             MaterialMesh2dBundle {
-                mesh: meshes.add(Rectangle::default()).into(),
-                transform: Transform::from_translation(Vec3::new(position.x, position.y, 0.))
-                    .with_scale(vec3(32., 32., 1.)),
+                mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
+                transform: Transform::from_translation(Vec3::new(position.x, position.y, 0.)),
                 material: materials.add(ColorMaterial::from(Color::CYAN)),
                 ..default()
             },
@@ -170,10 +198,34 @@ pub fn spawn_external_entity(
                 ..default()
             },
             SystemElement::ExternalEntity,
+            Name::new("External Entity"),
         ))
         .id();
 
     commands.entity(flow_entity).insert(FlowOtherEndConnection {
         target: external_entity,
+    });
+}
+
+pub fn spawn_interface_subsystem(
+    commands: &mut Commands,
+    interface_entity: Entity,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
+) {
+    commands.entity(interface_entity).with_children(|parent| {
+        parent.spawn((
+            InterfaceSubsystem::default(),
+            MaterialMesh2dBundle {
+                mesh: meshes.add(Circle { radius: 16. }).into(), // TODO : compute radius from parent system
+                transform: Transform::from_translation(Vec3::new(0.0, 10.0, 1.0)), // TODO : compute z from parent system
+                material: materials.add(ColorMaterial::from(Color::CYAN)),
+                ..default()
+            },
+            PickableBundle {
+                selection: PickSelection { is_selected: true },
+                ..default()
+            },
+        ));
     });
 }

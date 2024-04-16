@@ -20,20 +20,6 @@ pub struct FlowSystemConnection {
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct FlowInterfaceButton;
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
-pub struct FlowOtherEndButton;
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
-pub struct InterfaceSubsystemButton {
-    pub button_entity: Entity,
-}
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
 pub enum SystemElement {
     System,
     Interface,
@@ -54,52 +40,53 @@ impl std::fmt::Display for SystemElement {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct System;
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
-pub struct Interface {
-    pub name: String,
-    pub ty: InterfaceType,
-}
+pub struct Interface;
 
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
-pub enum InterfaceType {
-    Import,
-    Export,
-    // TODO : Hybrid,
-}
+// #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
+// pub enum InterfaceType {
+//     Import,
+//     Export,
+//     Hybrid,
+// }
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct Inflow {
-    pub name: String,
     pub usability: InflowUsability,
     pub substance_type: SubstanceType,
 }
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct Outflow {
-    pub name: String,
     pub usability: OutflowUsability,
     pub substance_type: SubstanceType,
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct ExternalEntity;
 
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[reflect(Component)]
+pub struct InterfaceSubsystem;
+
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]
 pub enum InflowUsability {
+    #[default]
     Resource,
     Disruption,
 }
 
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]
 pub enum OutflowUsability {
+    #[default]
     Product,
     Waste,
 }
@@ -110,9 +97,10 @@ pub enum GeneralUsability {
     Outflow(OutflowUsability),
 }
 
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default)]
 pub enum SubstanceType {
-    Material,
+    #[default]
     Energy,
+    Material,
     Message,
 }

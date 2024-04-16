@@ -1,11 +1,11 @@
 use crate::bundles::{
-    spawn_create_button, spawn_external_entity, spawn_inflow, spawn_interface, spawn_outflow,
+    despawn_create_button, despawn_create_button_with_component, spawn_create_button,
+    spawn_external_entity, spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
 use crate::components::{
-    CreateButton, CreateButtonType, ExternalEntity, FlowInterfaceButton, FlowInterfaceConnection,
+    CreateButton, CreateButtonType, FlowInterfaceButton, FlowInterfaceConnection,
     FlowOtherEndButton, FlowOtherEndConnection, FlowSystemConnection, GeneralUsability, Inflow,
-    InflowUsability, Interface, InterfaceSubsystemButton, InterfaceType, Outflow, OutflowUsability,
-    SubstanceType,
+    InterfaceSubsystemButton, Outflow,
 };
 use bevy::math::vec2;
 use bevy::prelude::*;
@@ -97,12 +97,10 @@ pub fn add_first_inflow_create_button(
     changed_query: Query<Entity, Or<(Added<FlowOtherEndConnection>, Changed<Outflow>)>>,
     query: Query<(&FlowSystemConnection, &Outflow), With<FlowOtherEndConnection>>,
     inflow_query: Query<&FlowSystemConnection, With<Inflow>>,
-    inflow_button_query: Query<&CreateButton>,
+    button_query: Query<(Entity, &CreateButton)>,
     asset_server: Res<AssetServer>,
 ) {
     // TODO : also detect removal
-
-    // TODO : remove if condition isn't satisfied anymore
 
     if changed_query.is_empty() {
         return;
@@ -110,29 +108,29 @@ pub fn add_first_inflow_create_button(
 
     let mut system_to_outflow_usabilities = HashMap::new();
 
-    'outer: for (system_connection, outflow) in &query {
-        let system_entity = system_connection.target;
-
-        for inflow_connection in inflow_query.iter() {
-            if inflow_connection.target == system_entity {
-                continue 'outer;
-            }
-        }
-
-        for button in inflow_button_query.iter() {
-            if button.connection_source == system_entity {
-                continue 'outer;
-            }
-        }
-
+    for (system_connection, outflow) in &query {
         system_to_outflow_usabilities
-            .entry(system_entity)
+            .entry(system_connection.target)
             .or_insert_with(HashSet::new)
             .insert(outflow.usability);
     }
 
-    for (system_entity, outflow_usabilities) in system_to_outflow_usabilities {
+    'outer: for (system_entity, outflow_usabilities) in system_to_outflow_usabilities {
         if outflow_usabilities.len() > 1 {
+            for inflow_connection in inflow_query.iter() {
+                if inflow_connection.target == system_entity {
+                    continue 'outer;
+                }
+            }
+
+            for (_, button) in button_query.iter() {
+                if matches!(button.ty, CreateButtonType::Inflow)
+                    && button.connection_source == system_entity
+                {
+                    continue 'outer;
+                }
+            }
+
             spawn_create_button(
                 &mut commands,
                 CreateButton {
@@ -142,6 +140,14 @@ pub fn add_first_inflow_create_button(
                 vec2(-128.0, 100.0),
                 &asset_server,
             );
+        } else {
+            for (entity, button) in &button_query {
+                if matches!(button.ty, CreateButtonType::Inflow)
+                    && button.connection_source == system_entity
+                {
+                    despawn_create_button_with_component(&mut commands, entity, button)
+                }
+            }
         }
     }
 }
@@ -189,6 +195,7 @@ pub fn add_interface_subsystem_create_buttons(
     >,
     interface_query: Query<&Transform, Without<InterfaceSubsystemButton>>,
     interface_button_query: Query<&InterfaceSubsystemButton>,
+    button_query: Query<&CreateButton>,
     asset_server: Res<AssetServer>,
 ) {
     // TODO : also detect removal
@@ -241,10 +248,11 @@ pub fn add_interface_subsystem_create_buttons(
                 if let Ok(interface_button) =
                     interface_button_query.get(interface_connection.target)
                 {
-                    commands
-                        .entity(interface_connection.target)
-                        .remove::<InterfaceSubsystemButton>();
-                    commands.entity(interface_button.button_entity).despawn();
+                    despawn_create_button(
+                        &mut commands,
+                        interface_button.button_entity,
+                        &button_query,
+                    );
                 }
             }
         }
@@ -255,6 +263,7 @@ pub fn on_create_button_click(
     mut commands: Commands,
     event: Listener<Pointer<Click>>,
     button_query: Query<(&CreateButton, &GlobalTransform)>,
+    only_button_query: Query<&CreateButton>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -266,10 +275,6 @@ pub fn on_create_button_click(
         CreateButtonType::Interface => spawn_interface(
             &mut commands,
             button.connection_source,
-            Interface {
-                name: "Interface".to_string(),
-                ty: InterfaceType::Import,
-            },
             transform.translation().truncate(),
             &mut meshes,
             &mut materials,
@@ -277,11 +282,6 @@ pub fn on_create_button_click(
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
             button.connection_source,
-            Inflow {
-                name: "Outflow".to_string(),
-                usability: InflowUsability::Resource,
-                substance_type: SubstanceType::Energy,
-            },
             transform.translation().truncate(),
             &mut meshes,
             &mut materials,
@@ -289,11 +289,6 @@ pub fn on_create_button_click(
         CreateButtonType::Outflow => spawn_outflow(
             &mut commands,
             button.connection_source,
-            Outflow {
-                name: "Outflow".to_string(),
-                usability: OutflowUsability::Product,
-                substance_type: SubstanceType::Energy,
-            },
             transform.translation().truncate(),
             &mut meshes,
             &mut materials,
@@ -301,15 +296,17 @@ pub fn on_create_button_click(
         CreateButtonType::ExternalEntity => spawn_external_entity(
             &mut commands,
             button.connection_source,
-            ExternalEntity,
             transform.translation().truncate(),
             &mut meshes,
             &mut materials,
         ),
-        CreateButtonType::InterfaceSubsystem => {
-            // TODO : Spawn interface subsystem
-        }
+        CreateButtonType::InterfaceSubsystem => spawn_interface_subsystem(
+            &mut commands,
+            button.connection_source,
+            &mut meshes,
+            &mut materials,
+        ),
     }
 
-    commands.entity(event.target).despawn();
+    despawn_create_button(&mut commands, event.target, &only_button_query);
 }

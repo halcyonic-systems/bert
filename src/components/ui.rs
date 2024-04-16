@@ -15,3 +15,17 @@ pub enum CreateButtonType {
     ExternalEntity,
     InterfaceSubsystem,
 }
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct FlowInterfaceButton;
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct FlowOtherEndButton;
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct InterfaceSubsystemButton {
+    pub button_entity: Entity,
+}
