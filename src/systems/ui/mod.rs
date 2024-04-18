@@ -71,6 +71,8 @@ pub fn on_create_button_click(
         ),
         Or<(With<Inflow>, With<Outflow>)>,
     >,
+    system_query: Query<&crate::components::System>,
+    focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     zoom: Res<Zoom>,
@@ -138,8 +140,8 @@ pub fn on_create_button_click(
             &mut commands,
             button.connection_source,
             &flow_interface_query,
-            &mut meshes,
-            &mut materials,
+            &system_query,
+            &focused_system,
         ),
     }
 

@@ -1,10 +1,15 @@
+use crate::bundles::SystemBundle;
 use crate::components::*;
+use crate::resources::FocusedSystem;
 use crate::systems::on_create_button_click;
 use crate::utils::ui_transform_from_button;
+use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+
+const SUBSYSTEM_RADIUS_FRACTION: f32 = 0.2;
 
 pub fn spawn_create_button(
     commands: &mut Commands,
@@ -289,8 +294,8 @@ pub fn spawn_interface_subsystem(
         ),
         Or<(With<Inflow>, With<Outflow>)>,
     >,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    system_query: &Query<&crate::components::System>,
+    focused_system: &Res<FocusedSystem>,
 ) {
     let mut interface_flow_entity = Entity::PLACEHOLDER;
 
@@ -309,6 +314,12 @@ pub fn spawn_interface_subsystem(
         }
     }
 
+    let radius = system_query
+        .get(***focused_system)
+        .expect("focused system not found")
+        .radius
+        * SUBSYSTEM_RADIUS_FRACTION;
+
     let mut subsystem_entity = Entity::PLACEHOLDER;
 
     commands
@@ -320,16 +331,7 @@ pub fn spawn_interface_subsystem(
                         target: interface_flow_entity,
                     },
                     Subsystem::default(),
-                    MaterialMesh2dBundle {
-                        mesh: meshes.add(Circle { radius: 32. }).into(), // TODO : compute radius from parent system
-                        transform: Transform::from_translation(Vec3::new(-32.0, 0.0, 1.0)), // TODO : compute z from parent system
-                        material: materials.add(ColorMaterial::from(Color::CYAN)),
-                        ..default()
-                    },
-                    PickableBundle {
-                        selection: PickSelection { is_selected: true },
-                        ..default()
-                    },
+                    SystemBundle::new(vec2(-radius, 0.0), 1.0, radius),
                 ))
                 .id();
         })

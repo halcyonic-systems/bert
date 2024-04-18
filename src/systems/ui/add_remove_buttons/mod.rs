@@ -16,10 +16,11 @@ use crate::components::{
 };
 use bevy::prelude::*;
 use bevy::utils::HashSet;
-use num_traits::FloatConst;
+
+const INTERFACE_ANGLE_INCREMENT: f32 = std::f32::consts::PI * 0.16;
 
 macro_rules! button_transform {
-    ($fn_name:ident, $flow:ty, $interface_connection:ty, $min_max:ident, $op:tt, $start_value:expr) => {
+    ($fn_name:ident, $flow:ty, $interface_connection:ty, $sign:literal) => {
         pub fn $fn_name(
             flow_interface_query: &Query<(&$flow, &$interface_connection)>,
             transform_query: &Query<&GlobalTransform>,
@@ -39,20 +40,43 @@ macro_rules! button_transform {
                 }
             }
 
-            let mut angle = $start_value;
+            let angle = if existing_interfaces.is_empty() {
+                0.0
+            } else {
+                let mut min_angle = f32::MAX;
+                let mut max_angle = -f32::MAX;
 
-            for interface in existing_interfaces {
-                let interface_pos = transform_query
-                    .get(interface)
-                    .expect("Interface should have a Transform")
-                    .translation();
+                for interface in existing_interfaces {
+                    let interface_pos = transform_query
+                        .get(interface)
+                        .expect("Interface should have a Transform")
+                        .translation();
 
-                let a = (interface_pos - system_center).truncate().to_angle();
+                    let mut diff = (interface_pos - system_center).truncate();
+                    diff.x *= $sign;
 
-                angle = angle.$min_max(a);
-            }
+                    let angle = diff.to_angle();
 
-            angle $op f32::FRAC_PI_8();
+                    min_angle = min_angle.min(angle);
+                    max_angle = max_angle.max(angle);
+                }
+
+                if -min_angle > max_angle {
+                    max_angle + INTERFACE_ANGLE_INCREMENT
+                } else {
+                    min_angle - INTERFACE_ANGLE_INCREMENT
+                }
+            };
+
+            let angle = if $sign < 0.0 {
+                if angle < 0.0 {
+                    -std::f32::consts::PI - angle
+                } else {
+                    std::f32::consts::PI - angle
+                }
+            } else {
+                angle
+            };
 
             let radius = system_query
                 .get(focused_system)
@@ -66,5 +90,5 @@ macro_rules! button_transform {
     }
 }
 
-button_transform!(next_outflow_button_transform, Outflow, OutflowInterfaceConnection, min, -=, f32::PI());
-button_transform!(next_inflow_button_transform, Inflow, InflowInterfaceConnection, max, +=, -f32::PI());
+button_transform!(next_outflow_button_transform, Outflow, OutflowInterfaceConnection, 1.0);
+button_transform!(next_inflow_button_transform, Inflow, InflowInterfaceConnection, -1.0);
