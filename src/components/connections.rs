@@ -33,6 +33,5 @@ pub struct InterfaceSubsystemConnection {
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct SubsystemParentFlowConnection {
-    pub target: Entity
+    pub target: Entity,
 }
-

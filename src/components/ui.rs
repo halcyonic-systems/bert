@@ -1,4 +1,3 @@
-use bevy::math::vec2;
 use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]

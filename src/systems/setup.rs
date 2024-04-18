@@ -1,5 +1,7 @@
 use crate::bundles::spawn_create_button;
-use crate::components::{CreateButton, CreateButtonType, ScaleWithZoom, System,  ZoomIndependentStrokeWidth};
+use crate::components::{
+    CreateButton, CreateButtonType, ScaleWithZoom, System, ZoomIndependentStrokeWidth,
+};
 use crate::resources::FocusedSystem;
 use bevy::math::vec2;
 use bevy::prelude::*;
@@ -11,10 +13,7 @@ const SOI_DEFAULT_FILL_COLOR: Color = Color::DARK_GRAY;
 const SOI_DEFAULT_STROKE_COLOR: Color = Color::BLACK;
 const SOI_DEFAULT_STROKE_SIZE: f32 = 5.0;
 
-pub fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
