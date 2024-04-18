@@ -1,17 +1,11 @@
-use crate::components::{InitialPosition, ScaleWithZoom, ZoomIndependentStrokeWidth};
+use crate::components::{FlowCurve, InitialPosition, ScaleWithZoom, ZoomIndependentStrokeWidth};
 use crate::resources::Zoom;
+use crate::systems::update_flow_curve;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn apply_zoom(
-    mut query: Query<
-        (
-            &mut Transform,
-            Option<&ScaleWithZoom>,
-            &InitialPosition,
-        ),
-        Without<Camera>,
-    >,
+    mut query: Query<(&mut Transform, Option<&ScaleWithZoom>, &InitialPosition), Without<Camera>>,
     zoom: Res<Zoom>,
 ) {
     if !zoom.is_changed() {
@@ -37,5 +31,19 @@ pub fn apply_zoom_to_stroke(
 
     for (mut stroke, width) in &mut query {
         stroke.options.line_width = **width / **zoom;
+    }
+}
+
+pub fn apply_zoom_to_flow_curve(
+    mut query: Query<(&FlowCurve, &mut Path, &Children)>,
+    mut path_query: Query<&mut Path, Without<FlowCurve>>,
+    zoom: Res<Zoom>,
+) {
+    if !zoom.is_changed() {
+        return;
+    }
+
+    for (flow_curve, path, children) in &mut query {
+        update_flow_curve(&mut path_query, flow_curve, path, children, **zoom);
     }
 }

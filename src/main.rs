@@ -1,5 +1,6 @@
 mod bundles;
 mod components;
+mod constants;
 mod resources;
 mod systems;
 mod utils;
@@ -10,13 +11,15 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
+            WorldInspectorPlugin::new(),
             DefaultPickingPlugins,
-            EguiPlugin,
+            // EguiPlugin,
             ShapePlugin,
         ))
         // .insert_resource(DebugPickingMode::Normal)
@@ -39,6 +42,8 @@ fn main() {
                 remove_unfocused_system_buttons,
                 apply_zoom,
                 apply_zoom_to_stroke,
+                draw_flow_curve,
+                apply_zoom_to_flow_curve,
             ),
         )
         .init_resource::<Zoom>()

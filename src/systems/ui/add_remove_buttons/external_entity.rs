@@ -2,13 +2,14 @@ use crate::bundles::spawn_create_button;
 use crate::components::*;
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
+use crate::constants::BUTTON_WIDTH_HALF;
 
 macro_rules! external_entity_create_button {
     ($fn_name:ident, $flow:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr) => {
         pub fn $fn_name(
             mut commands: Commands,
             query: Query<
-                (Entity, &Transform, &InitialPosition, &$flow),
+                (Entity, &FlowCurve, &$flow),
                 (
                     With<$interface_connection>,
                     Without<$terminal_connection>,
@@ -19,12 +20,12 @@ macro_rules! external_entity_create_button {
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            for (entity, transform, initial_position, flow) in &query {
+            for (entity, flow_curve, flow) in &query {
                 if flow.system != **focused_system {
                     continue;
                 }
 
-                let direction = transform.right().truncate();
+                let direction = -flow_curve.end_direction.normalize();
 
                 spawn_create_button(
                     &mut commands,
@@ -33,7 +34,7 @@ macro_rules! external_entity_create_button {
                         connection_source: entity,
                         system: **focused_system,
                     },
-                    **initial_position + direction * 64.0,
+                    flow_curve.end + direction * BUTTON_WIDTH_HALF,
                     direction.to_angle(),
                     **zoom,
                     &asset_server,

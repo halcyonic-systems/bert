@@ -8,7 +8,7 @@ macro_rules! interface_create_button {
         pub fn $fn_name(
             mut commands: Commands,
             query: Query<
-                (Entity, &Transform, &InitialPosition, &$flow),
+                (Entity, &FlowCurve, &$flow),
                 (
                     Without<$interface_connection>,
                     Without<$terminal_connection>,
@@ -19,12 +19,12 @@ macro_rules! interface_create_button {
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            for (entity, transform, initial_position, flow) in &query {
+            for (entity, flow_curve,  flow) in &query {
                 if flow.system != **focused_system {
                     continue;
                 }
 
-                let direction = transform.right().truncate();
+                let direction = flow_curve.start_direction;
 
                 spawn_create_button(
                     &mut commands,
@@ -33,7 +33,7 @@ macro_rules! interface_create_button {
                         connection_source: entity,
                         system: **focused_system,
                     },
-                    **initial_position - direction * 64.0,
+                    flow_curve.start,
                     direction.to_angle(),
                     **zoom,
                     &asset_server,

@@ -1,15 +1,17 @@
 use crate::bundles::SystemBundle;
 use crate::components::*;
+use crate::constants::{
+    BUTTON_WIDTH_HALF, FLOW_END_LENGTH, FLOW_LENGTH, INTERFACE_HEIGHT_HALF, INTERFACE_WIDTH_HALF,
+    SUBSYSTEM_RADIUS_FRACTION,
+};
 use crate::resources::FocusedSystem;
-use crate::systems::on_create_button_click;
+use crate::systems::{create_paths_from_flow_curve, on_create_button_click};
 use crate::utils::ui_transform_from_button;
-use bevy::math::vec2;
+use bevy::math::{vec2, Vec3A};
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-
-const SUBSYSTEM_RADIUS_FRACTION: f32 = 0.2;
 
 pub fn spawn_create_button(
     commands: &mut Commands,
@@ -30,6 +32,8 @@ pub fn spawn_create_button(
         CreateButtonType::InterfaceSubsystem => "create-button/interface-subsystem.png",
     };
 
+    let button_width = BUTTON_WIDTH_HALF * 2.0;
+
     let button_entity = commands
         .spawn((
             create_button,
@@ -38,7 +42,7 @@ pub fn spawn_create_button(
                 transform: Transform::from_translation((position * zoom).extend(10.))
                     .with_rotation(Quat::from_rotation_z(angle)),
                 sprite: Sprite {
-                    custom_size: Some(Vec2::new(32., 32.)),
+                    custom_size: Some(Vec2::new(button_width, button_width)),
                     ..default()
                 },
                 ..default()
@@ -113,10 +117,10 @@ pub fn spawn_interface(
     zoom: f32,
 ) {
     let points = [
-        Vec2::new(12.0, 30.0),   // top right
-        Vec2::new(-12.0, 30.0),  // top left
-        Vec2::new(-12.0, -30.0), // bottom left
-        Vec2::new(12.0, -30.0),  // bottom right
+        Vec2::new(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF), // top right
+        Vec2::new(-INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF), // top left
+        Vec2::new(-INTERFACE_WIDTH_HALF, -INTERFACE_HEIGHT_HALF), // bottom left
+        Vec2::new(INTERFACE_WIDTH_HALF, -INTERFACE_HEIGHT_HALF), // bottom right
     ];
 
     let shape = shapes::RoundedPolygon {
@@ -172,33 +176,52 @@ pub fn spawn_outflow(
     system_entity: Entity,
     transform: &GlobalTransform,
     initial_position: &InitialPosition,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
     zoom: f32,
 ) {
     let (transform, initial_position) =
-        ui_transform_from_button(transform, initial_position, 6.0, 64.0, zoom);
+        ui_transform_from_button(transform, initial_position, 6.0, 0.0, zoom);
 
-    commands.spawn((
-        Outflow {
-            system: system_entity,
-            substance_type: Default::default(),
-            usability: Default::default(),
-        },
-        MaterialMesh2dBundle {
-            mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
-            transform,
-            material: materials.add(ColorMaterial::from(Color::RED)),
-            ..default()
-        },
-        PickableBundle {
-            selection: PickSelection { is_selected: true },
-            ..default()
-        },
-        SystemElement::Outflow,
-        Name::new("Outflow"),
-        initial_position,
-    ));
+    let direction = transform.right().truncate();
+
+    let flow_curve = FlowCurve {
+        start: *initial_position,
+        start_direction: direction * FLOW_END_LENGTH,
+        end: *initial_position + direction * FLOW_LENGTH,
+        end_direction: direction * -FLOW_END_LENGTH,
+    };
+
+    let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve, zoom);
+
+    commands
+        .spawn((
+            Outflow {
+                system: system_entity,
+                substance_type: Default::default(),
+                usability: Default::default(),
+            },
+            flow_curve,
+            ShapeBundle {
+                path: curve_path,
+                ..default()
+            },
+            Stroke::new(Color::BLACK, 3.0),
+            Fill::color(Color::WHITE),
+            PickableBundle {
+                selection: PickSelection { is_selected: true },
+                ..default()
+            },
+            SystemElement::Outflow,
+            Name::new("Outflow"),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                ShapeBundle {
+                    path: head_path,
+                    ..default()
+                },
+                Fill::color(Color::BLACK),
+            ));
+        });
 }
 
 pub fn spawn_inflow(
