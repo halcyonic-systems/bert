@@ -4,7 +4,7 @@ use crate::components::{
     InflowSourceConnection, InterfaceSubsystemButton, InterfaceSubsystemConnection, Outflow,
     OutflowInterfaceConnection, OutflowSinkConnection,
 };
-use crate::resources::FocusedSystem;
+use crate::resources::{FocusedSystem, Zoom};
 use bevy::asset::AssetServer;
 use bevy::prelude::{Added, Changed, Commands, Entity, Or, Query, Res, Transform, With, Without};
 use bevy::utils::HashSet;
@@ -46,6 +46,7 @@ pub fn add_interface_subsystem_create_buttons(
     interface_button_query: Query<&InterfaceSubsystemButton>,
     button_query: Query<&CreateButton>,
     focused_system: Res<FocusedSystem>,
+    zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
     // TODO : also detect removal
@@ -130,6 +131,7 @@ pub fn add_interface_subsystem_create_buttons(
                     },
                     transform.translation.truncate(),
                     0.0,
+                    **zoom,
                     &asset_server,
                 );
             }

@@ -9,7 +9,7 @@ use crate::bundles::{
     spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
 use crate::components::*;
-use crate::resources::FocusedSystem;
+use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -63,7 +63,7 @@ pub fn remove_unfocused_system_buttons(
 pub fn on_create_button_click(
     mut commands: Commands,
     event: Listener<Pointer<Click>>,
-    button_query: Query<(&CreateButton, &GlobalTransform)>,
+    button_query: Query<(&CreateButton, &GlobalTransform, &InitialPosition)>,
     only_button_query: Query<&CreateButton>,
     flow_interface_query: Query<
         (
@@ -75,8 +75,9 @@ pub fn on_create_button_click(
     >,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    zoom: Res<Zoom>,
 ) {
-    let (button, transform) = button_query
+    let (button, transform, initial_position) = button_query
         .get(event.target)
         .expect("After on click this has to exist");
 
@@ -85,17 +86,17 @@ pub fn on_create_button_click(
             &mut commands,
             InterfaceType::Import,
             button.connection_source,
-            transform.translation().truncate(),
-            &mut meshes,
-            &mut materials,
+            transform,
+            initial_position,
+            **zoom,
         ),
         CreateButtonType::ExportInterface => spawn_interface(
             &mut commands,
             InterfaceType::Export,
             button.connection_source,
-            transform.translation().truncate(),
-            &mut meshes,
-            &mut materials,
+            transform,
+            initial_position,
+            **zoom,
         ),
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
@@ -107,25 +108,31 @@ pub fn on_create_button_click(
         CreateButtonType::Outflow => spawn_outflow(
             &mut commands,
             button.connection_source,
-            transform.translation().truncate(),
+            &transform,
+            initial_position,
             &mut meshes,
             &mut materials,
+            **zoom,
         ),
         CreateButtonType::Source => spawn_external_entity(
             &mut commands,
             InterfaceType::Import,
             button.connection_source,
-            transform.translation().truncate(),
+            &transform,
+            initial_position,
             &mut meshes,
             &mut materials,
+            **zoom,
         ),
         CreateButtonType::Sink => spawn_external_entity(
             &mut commands,
             InterfaceType::Export,
             button.connection_source,
-            transform.translation().truncate(),
+            &transform,
+            initial_position,
             &mut meshes,
             &mut materials,
+            **zoom,
         ),
         CreateButtonType::InterfaceSubsystem => spawn_interface_subsystem(
             &mut commands,

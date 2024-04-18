@@ -2,6 +2,7 @@ mod bundles;
 mod components;
 mod resources;
 mod systems;
+mod utils;
 
 use crate::resources::Zoom;
 use crate::systems::*;

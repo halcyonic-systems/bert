@@ -2,7 +2,7 @@ use crate::bundles::{despawn_create_button_with_component, spawn_create_button};
 use crate::components::{
     CreateButton, CreateButtonType, Inflow, InflowSourceConnection, Outflow, OutflowSinkConnection,
 };
-use crate::resources::FocusedSystem;
+use crate::resources::{FocusedSystem, Zoom};
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
@@ -14,6 +14,7 @@ pub fn add_first_inflow_create_button(
     inflow_query: Query<&Inflow>,
     button_query: Query<(Entity, &CreateButton)>,
     focused_system: Res<FocusedSystem>,
+    zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
     // TODO : also detect removal
@@ -56,6 +57,7 @@ pub fn add_first_inflow_create_button(
                 },
                 vec2(-128.0, 100.0),
                 0.0,
+                **zoom,
                 &asset_server,
             );
         } else {
@@ -74,6 +76,7 @@ pub fn add_consecutive_inflow_create_button(
     mut commands: Commands,
     query: Query<(&Transform, &Inflow), Added<InflowSourceConnection>>,
     focused_system: Res<FocusedSystem>,
+    zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
     if let Ok((transform, inflow)) = query.get_single() {
@@ -88,6 +91,7 @@ pub fn add_consecutive_inflow_create_button(
             },
             vec2(-128.0, transform.translation.y - 70.0),
             0.0,
+            **zoom,
             &asset_server,
         );
     }

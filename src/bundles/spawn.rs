@@ -1,14 +1,17 @@
 use crate::components::*;
 use crate::systems::on_create_button_click;
+use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_create_button(
     commands: &mut Commands,
     create_button: CreateButton,
     position: Vec2,
     angle: f32,
+    zoom: f32,
     asset_server: &Res<AssetServer>,
 ) {
     let path = match create_button.ty {
@@ -27,7 +30,7 @@ pub fn spawn_create_button(
             create_button,
             SpriteBundle {
                 texture: asset_server.load(path),
-                transform: Transform::from_translation(Vec3::new(position.x, position.y, 10.))
+                transform: Transform::from_translation((position * zoom).extend(10.))
                     .with_rotation(Quat::from_rotation_z(angle)),
                 sprite: Sprite {
                     custom_size: Some(Vec2::new(32., 32.)),
@@ -37,6 +40,7 @@ pub fn spawn_create_button(
             },
             PickableBundle::default(),
             On::<Pointer<Click>>::run(on_create_button_click),
+            InitialPosition::new(position),
         ))
         .id();
 
@@ -99,25 +103,46 @@ pub fn spawn_interface(
     commands: &mut Commands,
     interface_type: InterfaceType,
     flow_entity: Entity,
-    position: Vec2,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    transform: &GlobalTransform,
+    initial_position: &InitialPosition,
+    zoom: f32,
 ) {
+    let points = [
+        Vec2::new(12.0, 30.0),   // top right
+        Vec2::new(-12.0, 30.0),  // top left
+        Vec2::new(-12.0, -30.0), // bottom left
+        Vec2::new(12.0, -30.0),  // bottom right
+    ];
+
+    let shape = shapes::RoundedPolygon {
+        points: points.into_iter().collect(),
+        radius: 5.,
+        closed: false,
+    };
+
+    let (transform, initial_position) =
+        ui_transform_from_button(transform, initial_position, 5.0, 0.0, zoom);
+
     let interface_entity = commands
         .spawn((
             Interface::default(),
-            MaterialMesh2dBundle {
-                mesh: meshes.add(Rectangle::new(32.0, 64.0)).into(),
-                transform: Transform::from_translation(Vec3::new(position.x, position.y, 5.)),
-                material: materials.add(ColorMaterial::from(Color::GREEN)),
+            ShapeBundle {
+                path: GeometryBuilder::build_as(&shape),
+                spatial: SpatialBundle {
+                    transform,
+                    ..default()
+                },
                 ..default()
             },
+            Stroke::new(Color::BLACK, 3.0),
+            Fill::color(Color::WHITE),
             PickableBundle {
                 selection: PickSelection { is_selected: true },
                 ..default()
             },
             SystemElement::Interface,
             Name::new("Interface"),
+            initial_position,
         ))
         .id();
 
@@ -140,10 +165,15 @@ pub fn spawn_interface(
 pub fn spawn_outflow(
     commands: &mut Commands,
     system_entity: Entity,
-    position: Vec2,
+    transform: &GlobalTransform,
+    initial_position: &InitialPosition,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
+    zoom: f32,
 ) {
+    let (transform, initial_position) =
+        ui_transform_from_button(transform, initial_position, 6.0, 64.0, zoom);
+
     commands.spawn((
         Outflow {
             system: system_entity,
@@ -152,7 +182,7 @@ pub fn spawn_outflow(
         },
         MaterialMesh2dBundle {
             mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
-            transform: Transform::from_translation(Vec3::new(position.x + 64.0, position.y, 5.)),
+            transform,
             material: materials.add(ColorMaterial::from(Color::RED)),
             ..default()
         },
@@ -162,6 +192,7 @@ pub fn spawn_outflow(
         },
         SystemElement::Outflow,
         Name::new("Outflow"),
+        initial_position,
     ));
 }
 
@@ -197,16 +228,21 @@ pub fn spawn_external_entity(
     commands: &mut Commands,
     interface_type: InterfaceType,
     flow_entity: Entity,
-    position: Vec2,
+    transform: &GlobalTransform,
+    initial_position: &InitialPosition,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
+    zoom: f32,
 ) {
+    let (transform, initial_position) =
+        ui_transform_from_button(transform, initial_position, 1.0, 0.0, zoom);
+
     let external_entity = commands
         .spawn((
             ExternalEntity::default(),
             MaterialMesh2dBundle {
                 mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
-                transform: Transform::from_translation(Vec3::new(position.x, position.y, 1.0)),
+                transform,
                 material: materials.add(ColorMaterial::from(Color::CYAN)),
                 ..default()
             },
@@ -216,6 +252,7 @@ pub fn spawn_external_entity(
             },
             SystemElement::ExternalEntity,
             Name::new("External Entity"),
+            initial_position,
         ))
         .id();
 

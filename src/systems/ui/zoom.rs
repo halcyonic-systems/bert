@@ -10,7 +10,7 @@ pub fn apply_zoom(
             Entity,
             &mut Transform,
             Option<&ScaleWithZoom>,
-            Option<&InitialPosition>,
+            &InitialPosition,
         ),
         Without<Camera>,
     >,
@@ -21,15 +21,7 @@ pub fn apply_zoom(
     }
 
     for (entity, mut transform, scale_with_zoom, initial_position) in &mut query {
-        let initial_position = if let Some(initial_position) = initial_position {
-            **initial_position
-        } else {
-            let pos2d = transform.translation.truncate();
-            commands.entity(entity).insert(InitialPosition::new(pos2d));
-            pos2d
-        };
-
-        transform.translation = (initial_position * **zoom).extend(transform.translation.z);
+        transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
 
         if let Some(scale_with_zoom) = scale_with_zoom {
             transform.scale = (**scale_with_zoom * **zoom).extend(transform.scale.z);

@@ -1,8 +1,9 @@
 use crate::bundles::spawn_create_button;
 use crate::components::{
-    CreateButton, CreateButtonType, ScaleWithZoom, System, ZoomIndependentStrokeWidth,
+    CreateButton, CreateButtonType, InitialPosition, ScaleWithZoom, System,
+    ZoomIndependentStrokeWidth,
 };
-use crate::resources::FocusedSystem;
+use crate::resources::{FocusedSystem, Zoom};
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -13,13 +14,15 @@ const SOI_DEFAULT_FILL_COLOR: Color = Color::DARK_GRAY;
 const SOI_DEFAULT_STROKE_COLOR: Color = Color::BLACK;
 const SOI_DEFAULT_STROKE_SIZE: f32 = 5.0;
 
-pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup(mut commands: Commands, zoom: Res<Zoom>, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
     // DRAW SOI SYSTEM
+    let radius = 300.0;
+
     let system_shape = shapes::Circle {
-        radius: 300.0,
+        radius,
         center: vec2(0.0, 0.0),
     };
     let system_shape_bundle = ShapeBundle {
@@ -30,13 +33,14 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // SPAWN SOI SYSTEM
     let system_entity = commands
         .spawn((
-            System,
+            System { radius },
             PickableBundle::default(),
             ScaleWithZoom::default(),
             system_shape_bundle,
             Fill::color(SOI_DEFAULT_FILL_COLOR),
             Stroke::new(SOI_DEFAULT_STROKE_COLOR, SOI_DEFAULT_STROKE_SIZE),
             ZoomIndependentStrokeWidth::new(SOI_DEFAULT_STROKE_SIZE),
+            InitialPosition::new(Vec2::ZERO),
         ))
         .id();
 
@@ -57,6 +61,7 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         button_position,
         button_angle,
+        **zoom,
         &asset_server,
     );
 }

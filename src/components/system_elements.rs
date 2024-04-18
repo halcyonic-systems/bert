@@ -22,9 +22,11 @@ impl std::fmt::Display for SystemElement {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Default)]
 #[reflect(Component)]
-pub struct System;
+pub struct System {
+    pub radius: f32,
+}
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
