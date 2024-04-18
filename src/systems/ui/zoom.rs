@@ -4,10 +4,8 @@ use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn apply_zoom(
-    mut commands: Commands,
     mut query: Query<
         (
-            Entity,
             &mut Transform,
             Option<&ScaleWithZoom>,
             &InitialPosition,
@@ -20,7 +18,7 @@ pub fn apply_zoom(
         return;
     }
 
-    for (entity, mut transform, scale_with_zoom, initial_position) in &mut query {
+    for (mut transform, scale_with_zoom, initial_position) in &mut query {
         transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
 
         if let Some(scale_with_zoom) = scale_with_zoom {
