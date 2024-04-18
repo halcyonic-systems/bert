@@ -12,7 +12,12 @@ use bevy_prototype_lyon::plugin::ShapePlugin;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, DefaultPickingPlugins, EguiPlugin, ShapePlugin))
+        .add_plugins((
+            DefaultPlugins,
+            DefaultPickingPlugins,
+            EguiPlugin,
+            ShapePlugin,
+        ))
         // .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(
@@ -32,6 +37,7 @@ fn main() {
                 change_focused_system,
                 remove_unfocused_system_buttons,
                 apply_zoom,
+                apply_zoom_to_stroke,
             ),
         )
         .init_resource::<Zoom>()

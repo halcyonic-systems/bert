@@ -8,6 +8,7 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 use bevy_mod_picking::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 use num_traits::float::FloatConst;
 
 macro_rules! interface_create_button {
@@ -564,24 +565,48 @@ pub fn on_create_button_click(
 }
 
 pub fn apply_zoom(
-    mut query: Query<(&mut Transform, Option<&ScaleWithZoom>), Without<Camera>>,
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &mut Transform,
+            Option<&ScaleWithZoom>,
+            Option<&InitialPosition>,
+        ),
+        Without<Camera>,
+    >,
     zoom: Res<Zoom>,
-    mut previous_zoom: Local<Zoom>,
 ) {
     if !zoom.is_changed() {
         return;
     }
 
-    let fac = **zoom / **previous_zoom;
+    for (entity, mut transform, scale_with_zoom, initial_position) in &mut query {
+        let initial_position = if let Some(initial_position) = initial_position {
+            **initial_position
+        } else {
+            let pos2d = transform.translation.truncate();
+            commands.entity(entity).insert(InitialPosition::new(pos2d));
+            pos2d
+        };
 
-    **previous_zoom = **zoom;
+        transform.translation = (initial_position * **zoom).extend(transform.translation.z);
 
-    for (mut transform, scale_with_zoom) in &mut query {
-        transform.translation =
-            (transform.translation.truncate() * fac).extend(transform.translation.z);
-
-        if scale_with_zoom.is_some() {
-            transform.scale = (transform.scale.truncate() * fac).extend(transform.scale.z);
+        if let Some(scale_with_zoom) = scale_with_zoom {
+            transform.scale = (**scale_with_zoom * **zoom).extend(transform.scale.z);
         }
+    }
+}
+
+pub fn apply_zoom_to_stroke(
+    mut query: Query<(&mut Stroke, &ZoomIndependentStrokeWidth)>,
+    zoom: Res<Zoom>,
+) {
+    if !zoom.is_changed() {
+        return;
+    }
+
+    for (mut stroke, width) in &mut query {
+        stroke.options.line_width = **width / **zoom;
     }
 }
