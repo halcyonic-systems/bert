@@ -9,6 +9,7 @@ use crate::systems::{create_paths_from_flow_curve, on_create_button_click};
 use crate::utils::ui_transform_from_button;
 use bevy::math::{vec2, Vec3A};
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -163,6 +164,10 @@ pub fn spawn_interface(
                     ))
                     .into(),
             },
+            Aabb {
+                center: Vec3A::ZERO,
+                half_extents: Vec3A::new(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF, 0.0),
+            }
         ))
         .id();
 
