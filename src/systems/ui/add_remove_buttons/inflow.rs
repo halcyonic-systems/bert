@@ -1,9 +1,10 @@
 use crate::bundles::{despawn_create_button_with_component, spawn_create_button};
 use crate::components::{
-    CreateButton, CreateButtonType, Inflow, InflowSourceConnection, Outflow, OutflowSinkConnection,
+    CreateButton, CreateButtonType, Inflow, InflowInterfaceConnection, InflowSourceConnection,
+    Outflow, OutflowSinkConnection,
 };
 use crate::resources::{FocusedSystem, Zoom};
-use bevy::math::vec2;
+use crate::systems::next_inflow_button_transform;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 
@@ -13,6 +14,9 @@ pub fn add_first_inflow_create_button(
     query: Query<&Outflow, With<OutflowSinkConnection>>,
     inflow_query: Query<&Inflow>,
     button_query: Query<(Entity, &CreateButton)>,
+    flow_interface_query: Query<(&Inflow, &InflowInterfaceConnection)>,
+    transform_query: Query<&GlobalTransform>,
+    system_query: Query<&crate::components::System>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
@@ -48,6 +52,13 @@ pub fn add_first_inflow_create_button(
                 }
             }
 
+            let (position, angle) = next_inflow_button_transform(
+                &flow_interface_query,
+                &transform_query,
+                &system_query,
+                **focused_system,
+            );
+
             spawn_create_button(
                 &mut commands,
                 CreateButton {
@@ -55,8 +66,8 @@ pub fn add_first_inflow_create_button(
                     connection_source: system_entity,
                     system: **focused_system,
                 },
-                vec2(-128.0, 100.0),
-                0.0,
+                position,
+                angle,
                 **zoom,
                 &asset_server,
             );
@@ -74,13 +85,23 @@ pub fn add_first_inflow_create_button(
 
 pub fn add_consecutive_inflow_create_button(
     mut commands: Commands,
-    query: Query<(&Transform, &Inflow), Added<InflowSourceConnection>>,
+    query: Query<&Inflow, Added<InflowSourceConnection>>,
+    flow_interface_query: Query<(&Inflow, &InflowInterfaceConnection)>,
+    transform_query: Query<&GlobalTransform>,
+    system_query: Query<&crate::components::System>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    if let Ok((transform, inflow)) = query.get_single() {
+    if let Ok(inflow) = query.get_single() {
         let system_entity = inflow.system;
+
+        let (position, angle) = next_inflow_button_transform(
+            &flow_interface_query,
+            &transform_query,
+            &system_query,
+            **focused_system,
+        );
 
         spawn_create_button(
             &mut commands,
@@ -89,8 +110,8 @@ pub fn add_consecutive_inflow_create_button(
                 connection_source: system_entity,
                 system: **focused_system,
             },
-            vec2(-128.0, transform.translation.y - 70.0),
-            0.0,
+            position,
+            angle,
             **zoom,
             &asset_server,
         );

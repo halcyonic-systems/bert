@@ -12,8 +12,6 @@ use crate::components::*;
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use bevy_prototype_lyon::prelude::*;
-use num_traits::float::FloatConst;
 
 pub fn change_focused_system(
     selected_query: Query<
@@ -101,9 +99,11 @@ pub fn on_create_button_click(
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
             button.connection_source,
-            transform.translation().truncate(),
+            &transform,
+            initial_position,
             &mut meshes,
             &mut materials,
+            **zoom,
         ),
         CreateButtonType::Outflow => spawn_outflow(
             &mut commands,

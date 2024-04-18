@@ -199,10 +199,15 @@ pub fn spawn_outflow(
 pub fn spawn_inflow(
     commands: &mut Commands,
     system_entity: Entity,
-    position: Vec2,
+    transform: &GlobalTransform,
+    initial_position: &InitialPosition,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
+    zoom: f32,
 ) {
+    let (transform, initial_position) =
+        ui_transform_from_button(transform, initial_position, 6.0, 64.0, zoom);
+
     commands.spawn((
         Inflow {
             system: system_entity,
@@ -211,7 +216,7 @@ pub fn spawn_inflow(
         },
         MaterialMesh2dBundle {
             mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
-            transform: Transform::from_translation(Vec3::new(position.x - 64.0, position.y, 5.)),
+            transform,
             material: materials.add(ColorMaterial::from(Color::RED)),
             ..default()
         },
@@ -221,6 +226,7 @@ pub fn spawn_inflow(
         },
         SystemElement::Inflow,
         Name::new("Inflow"),
+        initial_position,
     ));
 }
 

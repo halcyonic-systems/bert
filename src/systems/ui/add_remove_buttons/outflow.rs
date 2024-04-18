@@ -1,10 +1,8 @@
 use crate::bundles::spawn_create_button;
 use crate::components::{System, *};
 use crate::resources::{FocusedSystem, Zoom};
-use bevy::math::vec2;
+use crate::systems::next_outflow_button_transform;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
-use num_traits::FloatConst;
 
 pub fn add_first_outflow_create_button(
     mut commands: Commands,
@@ -64,7 +62,7 @@ pub fn add_first_outflow_create_button(
 
 pub fn add_consecutive_outflow_create_button(
     mut commands: Commands,
-    query: Query<(&Transform, &Outflow), Added<OutflowSinkConnection>>,
+    query: Query<&Outflow, Added<OutflowSinkConnection>>,
     flow_interface_query: Query<(&Outflow, &OutflowInterfaceConnection)>,
     transform_query: Query<&GlobalTransform>,
     system_query: Query<&crate::components::System>,
@@ -72,7 +70,7 @@ pub fn add_consecutive_outflow_create_button(
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    if let Ok((transform, outflow)) = query.get_single() {
+    if let Ok(outflow) = query.get_single() {
         let system_entity = outflow.system;
 
         let (position, angle) = next_outflow_button_transform(
@@ -95,48 +93,4 @@ pub fn add_consecutive_outflow_create_button(
             &asset_server,
         );
     }
-}
-
-fn next_outflow_button_transform(
-    flow_interface_query: &Query<(&Outflow, &OutflowInterfaceConnection)>,
-    transform_query: &Query<&GlobalTransform>,
-    system_query: &Query<&System>,
-    focused_system: Entity,
-) -> (Vec2, f32) {
-    let system_center = transform_query
-        .get(focused_system)
-        .expect("System should have a Transform")
-        .translation();
-
-    let mut existing_interfaces = HashSet::new();
-
-    for (outflow, flow_interface_connection) in flow_interface_query {
-        if outflow.system == focused_system {
-            existing_interfaces.insert(flow_interface_connection.target);
-        }
-    }
-
-    let mut min_angle = f32::PI();
-
-    for interface in existing_interfaces {
-        let interface_pos = transform_query
-            .get(interface)
-            .expect("Interface should have a Transform")
-            .translation();
-
-        let angle = (interface_pos - system_center).truncate().to_angle();
-
-        min_angle = min_angle.min(angle);
-    }
-
-    min_angle -= f32::FRAC_PI_8();
-
-    let radius = system_query
-        .get(focused_system)
-        .expect("Focused system should have a System")
-        .radius;
-
-    let position = Mat2::from_angle(min_angle) * vec2(system_center.x + radius, system_center.y);
-
-    (position, min_angle)
 }
