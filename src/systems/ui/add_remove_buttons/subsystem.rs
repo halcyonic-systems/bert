@@ -1,8 +1,8 @@
 use crate::bundles::{despawn_create_button, spawn_create_button};
 use crate::components::{
     CreateButton, CreateButtonType, GeneralUsability, Inflow, InflowInterfaceConnection,
-    InflowSourceConnection, InterfaceSubsystemButton, InterfaceSubsystemConnection, Outflow,
-    OutflowInterfaceConnection, OutflowSinkConnection,
+    InflowSourceConnection, InitialPosition, InterfaceSubsystemButton,
+    InterfaceSubsystemConnection, Outflow, OutflowInterfaceConnection, OutflowSinkConnection,
 };
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::asset::AssetServer;
@@ -37,7 +37,7 @@ pub fn add_interface_subsystem_create_buttons(
         Or<(With<InflowSourceConnection>, With<OutflowSinkConnection>)>,
     >,
     interface_query: Query<
-        &Transform,
+        (&Transform, &InitialPosition),
         (
             Without<InterfaceSubsystemButton>,
             Without<InterfaceSubsystemConnection>,
@@ -121,7 +121,7 @@ pub fn add_interface_subsystem_create_buttons(
         };
 
         if flow_usabilities.len() > 3 {
-            if let Ok(transform) = interface_query.get(interface_entity) {
+            if let Ok((transform, initial_position)) = interface_query.get(interface_entity) {
                 spawn_create_button(
                     &mut commands,
                     CreateButton {
@@ -129,8 +129,8 @@ pub fn add_interface_subsystem_create_buttons(
                         connection_source: interface_entity,
                         system: **focused_system,
                     },
-                    transform.translation.truncate(),
-                    0.0,
+                    **initial_position,
+                    transform.right().truncate().to_angle(),
                     **zoom,
                     &asset_server,
                 );
