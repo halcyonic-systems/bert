@@ -8,10 +8,11 @@ use crate::systems::*;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::prelude::*;
+use bevy_prototype_lyon::plugin::ShapePlugin;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, DefaultPickingPlugins, EguiPlugin))
+        .add_plugins((DefaultPlugins, DefaultPickingPlugins, EguiPlugin, ShapePlugin))
         // .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(
