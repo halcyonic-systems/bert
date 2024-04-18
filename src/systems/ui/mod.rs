@@ -92,6 +92,7 @@ pub fn on_create_button_click(
             transform,
             initial_position,
             **zoom,
+            &mut meshes,
         ),
         CreateButtonType::ExportInterface => spawn_interface(
             &mut commands,
@@ -100,6 +101,7 @@ pub fn on_create_button_click(
             transform,
             initial_position,
             **zoom,
+            &mut meshes,
         ),
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,

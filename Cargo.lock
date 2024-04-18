@@ -825,11 +825,9 @@ dependencies = [
  "bevy_core",
  "bevy_core_pipeline",
  "bevy_ecs",
- "bevy_egui",
  "bevy_eventlistener",
  "bevy_math",
  "bevy_picking_core",
- "bevy_picking_egui",
  "bevy_picking_highlight",
  "bevy_picking_input",
  "bevy_picking_raycast",
@@ -906,21 +904,6 @@ dependencies = [
  "bevy_transform",
  "bevy_utils",
  "bevy_window",
-]
-
-[[package]]
-name = "bevy_picking_egui"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfc4196736e2a5d7ce709eab3e19ff4cf62e8f175f8a29d5e1a9ffe4ab6fe93b"
-dependencies = [
- "bevy_app",
- "bevy_ecs",
- "bevy_egui",
- "bevy_picking_core",
- "bevy_picking_selection",
- "bevy_reflect",
- "bevy_render",
 ]
 
 [[package]]

@@ -10,6 +10,7 @@ use crate::utils::ui_transform_from_button;
 use bevy::math::{vec2, Vec3A};
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
+use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -115,6 +116,7 @@ pub fn spawn_interface(
     transform: &GlobalTransform,
     initial_position: &InitialPosition,
     zoom: f32,
+    meshes: &mut ResMut<Assets<Mesh>>,
 ) {
     let points = [
         Vec2::new(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF), // top right
@@ -152,6 +154,15 @@ pub fn spawn_interface(
             SystemElement::Interface,
             Name::new("Interface"),
             initial_position,
+            // TODO : this is always going to be the same => make it a resource to re-use
+            SimplifiedMesh {
+                mesh: meshes
+                    .add(Rectangle::new(
+                        INTERFACE_WIDTH_HALF * 2.0,
+                        INTERFACE_HEIGHT_HALF * 2.0,
+                    ))
+                    .into(),
+            },
         ))
         .id();
 

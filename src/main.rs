@@ -22,7 +22,7 @@ fn main() {
             // EguiPlugin,
             ShapePlugin,
         ))
-        // .insert_resource(DebugPickingMode::Normal)
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(
             Update,
