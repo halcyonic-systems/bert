@@ -76,7 +76,6 @@ pub fn on_create_button_click(
     system_query: Query<&crate::components::System>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     fixed_system_element_geometries: Res<FixedSystemElementGeometries>,
     zoom: Res<Zoom>,
@@ -109,8 +108,8 @@ pub fn on_create_button_click(
             button.connection_source,
             &transform,
             initial_position,
+            &mut stroke_tess,
             &mut meshes,
-            &mut materials,
             **zoom,
         ),
         CreateButtonType::Outflow => spawn_outflow(

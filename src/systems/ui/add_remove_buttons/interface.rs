@@ -1,10 +1,11 @@
 use crate::bundles::spawn_create_button;
 use crate::components::*;
+use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 
 macro_rules! interface_create_button {
-    ($fn_name:ident, $flow:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr) => {
+    ($fn_name:ident, $flow:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr, $side:tt, $side_dir:tt) => {
         pub fn $fn_name(
             mut commands: Commands,
             query: Query<
@@ -19,7 +20,7 @@ macro_rules! interface_create_button {
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            for (entity, flow_curve,  flow) in &query {
+            for (entity, flow_curve, flow) in &query {
                 if flow.system != **focused_system {
                     continue;
                 }
@@ -33,7 +34,7 @@ macro_rules! interface_create_button {
                         connection_source: entity,
                         system: **focused_system,
                     },
-                    flow_curve.start,
+                    flow_curve.$side - flow_curve.$side_dir.normalize() * INTERFACE_WIDTH_HALF,
                     direction.to_angle(),
                     **zoom,
                     &asset_server,
@@ -48,12 +49,16 @@ interface_create_button!(
     Outflow,
     OutflowInterfaceConnection,
     OutflowSinkConnection,
-    CreateButtonType::ExportInterface
+    CreateButtonType::ExportInterface,
+    start,
+    start_direction
 );
 interface_create_button!(
     add_inflow_interface_create_button,
     Inflow,
     InflowInterfaceConnection,
     InflowSourceConnection,
-    CreateButtonType::ImportInterface
+    CreateButtonType::ImportInterface,
+    end,
+    end_direction
 );
