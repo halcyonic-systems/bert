@@ -7,6 +7,7 @@ use crate::components::{System, *};
 use bevy::prelude::*;
 use bevy::render::mesh::CircleMeshBuilder;
 use bevy::render::primitives::Aabb;
+use bevy::sprite::Mesh2dHandle;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -58,6 +59,29 @@ impl SystemBundle {
                 SYSTEM_DEFAULT_STROKE_SIZE,
             ),
             initial_position: InitialPosition::new(position),
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct FixedSystemElementGeometry {
+    pub simplified: SimplifiedMesh,
+    pub path: Path,
+    pub mesh: Mesh2dHandle,
+    pub material: Handle<ColorMaterial>,
+    pub aabb: Aabb,
+}
+
+impl Clone for FixedSystemElementGeometry {
+    fn clone(&self) -> Self {
+        Self {
+            simplified: SimplifiedMesh {
+                mesh: self.simplified.mesh.clone(),
+            },
+            path: Path(self.path.0.clone()),
+            mesh: self.mesh.clone(),
+            material: self.material.clone(),
+            aabb: self.aabb.clone(),
         }
     }
 }

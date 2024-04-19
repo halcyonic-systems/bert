@@ -11,7 +11,7 @@ use crate::bundles::{
     spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
 use crate::components::*;
-use crate::resources::{FocusedSystem, StrokeTessellator, Zoom};
+use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator, Zoom};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -78,6 +78,7 @@ pub fn on_create_button_click(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
+    fixed_system_element_geometries: Res<FixedSystemElementGeometries>,
     zoom: Res<Zoom>,
 ) {
     let (button, transform, initial_position) = button_query
@@ -91,8 +92,8 @@ pub fn on_create_button_click(
             button.connection_source,
             transform,
             initial_position,
+            &fixed_system_element_geometries,
             **zoom,
-            &mut meshes,
         ),
         CreateButtonType::ExportInterface => spawn_interface(
             &mut commands,
@@ -100,8 +101,8 @@ pub fn on_create_button_click(
             button.connection_source,
             transform,
             initial_position,
+            &fixed_system_element_geometries,
             **zoom,
-            &mut meshes,
         ),
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
@@ -127,8 +128,7 @@ pub fn on_create_button_click(
             button.connection_source,
             &transform,
             initial_position,
-            &mut meshes,
-            &mut materials,
+            &fixed_system_element_geometries,
             **zoom,
         ),
         CreateButtonType::Sink => spawn_external_entity(
@@ -137,8 +137,7 @@ pub fn on_create_button_click(
             button.connection_source,
             &transform,
             initial_position,
-            &mut meshes,
-            &mut materials,
+            &fixed_system_element_geometries,
             **zoom,
         ),
         CreateButtonType::InterfaceSubsystem => spawn_interface_subsystem(

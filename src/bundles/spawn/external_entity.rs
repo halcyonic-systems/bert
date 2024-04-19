@@ -1,8 +1,10 @@
 use crate::components::*;
+use crate::constants::{BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_WIDTH_HALF};
+use crate::resources::FixedSystemElementGeometries;
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
-use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_external_entity(
     commands: &mut Commands,
@@ -10,22 +12,25 @@ pub fn spawn_external_entity(
     flow_entity: Entity,
     transform: &GlobalTransform,
     initial_position: &InitialPosition,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,
 ) {
-    let (transform, initial_position) =
-        ui_transform_from_button(transform, initial_position, 1.0, 0.0, zoom);
+    let (transform, initial_position) = ui_transform_from_button(
+        transform,
+        initial_position,
+        1.0,
+        EXTERNAL_ENTITY_WIDTH_HALF - BUTTON_WIDTH_HALF,
+        zoom,
+    );
 
     let external_entity = commands
         .spawn((
             ExternalEntity::default(),
-            MaterialMesh2dBundle {
-                mesh: meshes.add(Rectangle::new(32.0, 32.0)).into(),
+            SpatialBundle {
                 transform,
-                material: materials.add(ColorMaterial::from(Color::CYAN)),
                 ..default()
             },
+            Stroke::new(Color::BLACK, EXTERNAL_ENTITY_LINE_WIDTH),
             PickableBundle {
                 selection: PickSelection { is_selected: true },
                 ..default()
@@ -33,6 +38,7 @@ pub fn spawn_external_entity(
             SystemElement::ExternalEntity,
             Name::new("External Entity"),
             initial_position,
+            fixed_system_element_geometries.external_entity.clone(),
         ))
         .id();
 

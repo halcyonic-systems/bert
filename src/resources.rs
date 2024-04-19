@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use crate::bundles::FixedSystemElementGeometry;
 
 #[derive(Debug, Resource, Deref, DerefMut)]
 pub struct FocusedSystem(Entity);
@@ -25,4 +26,10 @@ impl StrokeTessellator {
     pub fn new() -> Self {
         StrokeTessellator(bevy_prototype_lyon::prelude::tess::StrokeTessellator::new())
     }
+}
+
+#[derive(Resource)]
+pub struct FixedSystemElementGeometries {
+    pub interface: FixedSystemElementGeometry,
+    pub external_entity: FixedSystemElementGeometry,
 }
