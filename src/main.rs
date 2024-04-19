@@ -8,10 +8,9 @@ mod utils;
 use crate::resources::Zoom;
 use crate::systems::*;
 use bevy::prelude::*;
-use bevy_egui::EguiPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     App::new()
@@ -22,7 +21,7 @@ fn main() {
             // EguiPlugin,
             ShapePlugin,
         ))
-        .insert_resource(DebugPickingMode::Normal)
+        .insert_resource(DebugPickingMode::Disabled)
         .add_systems(Startup, setup)
         .add_systems(
             Update,

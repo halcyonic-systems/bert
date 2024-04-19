@@ -145,6 +145,7 @@ pub fn on_create_button_click(
             &flow_interface_query,
             &system_query,
             &focused_system,
+            &mut meshes,
         ),
     }
 

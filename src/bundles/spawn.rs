@@ -167,7 +167,7 @@ pub fn spawn_interface(
             Aabb {
                 center: Vec3A::ZERO,
                 half_extents: Vec3A::new(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF, 0.0),
-            }
+            },
         ))
         .id();
 
@@ -335,6 +335,7 @@ pub fn spawn_interface_subsystem(
     >,
     system_query: &Query<&crate::components::System>,
     focused_system: &Res<FocusedSystem>,
+    meshes: &mut ResMut<Assets<Mesh>>,
 ) {
     let mut interface_flow_entity = Entity::PLACEHOLDER;
 
@@ -370,7 +371,7 @@ pub fn spawn_interface_subsystem(
                         target: interface_flow_entity,
                     },
                     Subsystem::default(),
-                    SystemBundle::new(vec2(-radius, 0.0), 1.0, radius),
+                    SystemBundle::new(vec2(-radius, 0.0), 1.0, radius, meshes),
                 ))
                 .id();
         })

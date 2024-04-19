@@ -6,14 +6,19 @@ use bevy::prelude::*;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 
-pub fn setup(mut commands: Commands, zoom: Res<Zoom>, asset_server: Res<AssetServer>) {
+pub fn setup(
+    mut commands: Commands,
+    zoom: Res<Zoom>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
+) {
     commands.spawn(Camera2dBundle::default());
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
     let radius = 300.0;
 
     let system_entity = commands
-        .spawn(SystemBundle::new(Vec2::ZERO, 0.0, radius))
+        .spawn(SystemBundle::new(Vec2::ZERO, 0.0, radius, &mut meshes))
         .id();
 
     commands.insert_resource(FocusedSystem::new(system_entity));
