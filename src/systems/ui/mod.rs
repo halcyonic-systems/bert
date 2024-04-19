@@ -1,8 +1,9 @@
 mod add_remove_buttons;
+mod flow;
 mod zoom;
 
 pub use add_remove_buttons::*;
-use bevy::math::vec2;
+pub use flow::*;
 pub use zoom::*;
 
 use crate::bundles::{
@@ -10,11 +11,9 @@ use crate::bundles::{
     spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
 use crate::components::*;
-use crate::constants::{ARROW_HEAD_LENGTH, ARROW_HEAD_WIDTH_HALF};
-use crate::resources::{FocusedSystem, Zoom};
+use crate::resources::{FocusedSystem, StrokeTessellator, Zoom};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use bevy_prototype_lyon::prelude::*;
 
 pub fn change_focused_system(
     selected_query: Query<
@@ -78,6 +77,7 @@ pub fn on_create_button_click(
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut stroke_tess: ResMut<StrokeTessellator>,
     zoom: Res<Zoom>,
 ) {
     let (button, transform, initial_position) = button_query
@@ -117,6 +117,8 @@ pub fn on_create_button_click(
             button.connection_source,
             &transform,
             initial_position,
+            &mut stroke_tess,
+            &mut meshes,
             **zoom,
         ),
         CreateButtonType::Source => spawn_external_entity(
@@ -150,67 +152,4 @@ pub fn on_create_button_click(
     }
 
     despawn_create_button(&mut commands, event.target, &only_button_query);
-}
-
-pub fn draw_flow_curve(
-    mut query: Query<(&FlowCurve, &mut Path, &Children), Changed<FlowCurve>>,
-    mut path_query: Query<&mut Path, Without<FlowCurve>>,
-    zoom: Res<Zoom>,
-) {
-    for (flow_curve, path, children) in &mut query {
-        update_flow_curve(&mut path_query, flow_curve, path, children, **zoom);
-    }
-}
-
-pub fn update_flow_curve(
-    path_query: &mut Query<&mut Path, Without<FlowCurve>>,
-    flow_curve: &FlowCurve,
-    mut path: Mut<Path>,
-    children: &Children,
-    zoom: f32,
-) {
-    let (curve_path, head_path) = create_paths_from_flow_curve(flow_curve, zoom);
-    *path = curve_path;
-
-    if let Some(child) = children.iter().next() {
-        if let Ok(mut path) = path_query.get_mut(*child) {
-            *path = head_path;
-        }
-    }
-}
-
-pub fn create_paths_from_flow_curve(flow_curve: &FlowCurve, zoom: f32) -> (Path, Path) {
-    let mut curve_path_builder = PathBuilder::new();
-
-    let zoomed_start = flow_curve.start * zoom;
-    let zoomed_end = flow_curve.end * zoom;
-
-    curve_path_builder.move_to(zoomed_start);
-
-    let end_direction = flow_curve.end_direction.normalize();
-    let end = zoomed_end + end_direction * (ARROW_HEAD_LENGTH - 2.0);
-
-    curve_path_builder.cubic_bezier_to(
-        zoomed_start + flow_curve.start_direction,
-        end + flow_curve.end_direction,
-        end,
-    );
-
-    let mut head_path_builder = PathBuilder::new();
-
-    let head_width_direction = vec2(end_direction.y, -end_direction.x);
-
-    head_path_builder.move_to(zoomed_end);
-    head_path_builder.line_to(
-        zoomed_end
-            + end_direction * ARROW_HEAD_LENGTH
-            + head_width_direction * ARROW_HEAD_WIDTH_HALF,
-    );
-    head_path_builder.line_to(
-        zoomed_end + end_direction * ARROW_HEAD_LENGTH
-            - head_width_direction * ARROW_HEAD_WIDTH_HALF,
-    );
-    head_path_builder.close();
-
-    (curve_path_builder.build(), head_path_builder.build())
 }

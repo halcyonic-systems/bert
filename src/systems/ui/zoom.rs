@@ -1,7 +1,9 @@
 use crate::components::{FlowCurve, InitialPosition, ScaleWithZoom, ZoomIndependentStrokeWidth};
-use crate::resources::Zoom;
+use crate::resources::{StrokeTessellator, Zoom};
 use crate::systems::update_flow_curve;
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
+use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn apply_zoom(
@@ -35,15 +37,33 @@ pub fn apply_zoom_to_stroke(
 }
 
 pub fn apply_zoom_to_flow_curve(
-    mut query: Query<(&FlowCurve, &mut Path, &Children)>,
+    mut query: Query<(
+        &FlowCurve,
+        &mut Path,
+        &mut SimplifiedMesh,
+        &mut Aabb,
+        &Children,
+    )>,
     mut path_query: Query<&mut Path, Without<FlowCurve>>,
     zoom: Res<Zoom>,
+    mut stroke_tess: ResMut<StrokeTessellator>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     if !zoom.is_changed() {
         return;
     }
 
-    for (flow_curve, path, children) in &mut query {
-        update_flow_curve(&mut path_query, flow_curve, path, children, **zoom);
+    for (flow_curve, path, simplified_mesh, aabb, children) in &mut query {
+        update_flow_curve(
+            &mut path_query,
+            flow_curve,
+            path,
+            simplified_mesh,
+            aabb,
+            children,
+            **zoom,
+            &mut stroke_tess,
+            &mut meshes,
+        );
     }
 }

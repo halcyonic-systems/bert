@@ -1,11 +1,14 @@
 use crate::bundles::SystemBundle;
 use crate::components::*;
 use crate::constants::{
-    BUTTON_WIDTH_HALF, FLOW_END_LENGTH, FLOW_LENGTH, INTERFACE_HEIGHT_HALF, INTERFACE_WIDTH_HALF,
-    SUBSYSTEM_RADIUS_FRACTION,
+    BUTTON_WIDTH_HALF, FLOW_END_LENGTH, FLOW_LENGTH, FLOW_LINE_WIDTH, INTERFACE_HEIGHT_HALF,
+    INTERFACE_WIDTH_HALF, SUBSYSTEM_RADIUS_FRACTION,
 };
-use crate::resources::FocusedSystem;
-use crate::systems::{create_paths_from_flow_curve, on_create_button_click};
+use crate::resources::{FocusedSystem, StrokeTessellator};
+use crate::systems::{
+    create_aabb_from_flow_curve, create_paths_from_flow_curve, on_create_button_click,
+    tessellate_simplified_mesh,
+};
 use crate::utils::ui_transform_from_button;
 use bevy::math::{vec2, Vec3A};
 use bevy::prelude::*;
@@ -192,6 +195,8 @@ pub fn spawn_outflow(
     system_entity: Entity,
     transform: &GlobalTransform,
     initial_position: &InitialPosition,
+    stroke_tess: &mut ResMut<StrokeTessellator>,
+    meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
 ) {
     let (transform, initial_position) =
@@ -207,6 +212,7 @@ pub fn spawn_outflow(
     };
 
     let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve, zoom);
+    let aabb = create_aabb_from_flow_curve(&flow_curve, zoom);
 
     commands
         .spawn((
@@ -216,11 +222,15 @@ pub fn spawn_outflow(
                 usability: Default::default(),
             },
             flow_curve,
+            SimplifiedMesh {
+                mesh: tessellate_simplified_mesh(&curve_path, meshes, stroke_tess),
+            },
+            aabb,
             ShapeBundle {
                 path: curve_path,
                 ..default()
             },
-            Stroke::new(Color::BLACK, 3.0),
+            Stroke::new(Color::BLACK, FLOW_LINE_WIDTH),
             Fill::color(Color::WHITE),
             PickableBundle {
                 selection: PickSelection { is_selected: true },

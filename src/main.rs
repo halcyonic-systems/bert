@@ -5,7 +5,7 @@ mod resources;
 mod systems;
 mod utils;
 
-use crate::resources::Zoom;
+use crate::resources::*;
 use crate::systems::*;
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -22,6 +22,7 @@ fn main() {
             ShapePlugin,
         ))
         .insert_resource(DebugPickingMode::Disabled)
+        .insert_resource(StrokeTessellator::new())
         .add_systems(Startup, setup)
         .add_systems(
             Update,

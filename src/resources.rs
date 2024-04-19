@@ -17,3 +17,12 @@ impl Default for Zoom {
         Self(1.0)
     }
 }
+
+#[derive(Resource, Deref, DerefMut)]
+pub struct StrokeTessellator(bevy_prototype_lyon::prelude::tess::StrokeTessellator);
+
+impl StrokeTessellator {
+    pub fn new() -> Self {
+        StrokeTessellator(bevy_prototype_lyon::prelude::tess::StrokeTessellator::new())
+    }
+}
