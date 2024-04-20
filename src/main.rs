@@ -1,6 +1,7 @@
 mod bundles;
 mod components;
 mod constants;
+mod events;
 mod resources;
 mod systems;
 mod utils;
@@ -11,6 +12,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
+use crate::events::ExternalEntityDrag;
 
 fn main() {
     App::new()
@@ -44,8 +46,10 @@ fn main() {
                 apply_zoom_to_stroke,
                 draw_flow_curve,
                 apply_zoom_to_flow_curve,
+                drag_external_entity,
             ),
         )
         .init_resource::<Zoom>()
+        .add_event::<ExternalEntityDrag>()
         .run();
 }

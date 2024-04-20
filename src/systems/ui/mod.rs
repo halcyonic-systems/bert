@@ -1,10 +1,12 @@
 mod add_remove_buttons;
 mod flow;
 mod zoom;
+mod drag;
 
 pub use add_remove_buttons::*;
 pub use flow::*;
 pub use zoom::*;
+pub use drag::*;
 
 use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_external_entity,

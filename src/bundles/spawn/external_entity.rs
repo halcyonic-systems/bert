@@ -1,5 +1,6 @@
 use crate::components::*;
 use crate::constants::{BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_WIDTH_HALF};
+use crate::events::ExternalEntityDrag;
 use crate::resources::FixedSystemElementGeometries;
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
@@ -39,6 +40,7 @@ pub fn spawn_external_entity(
             Name::new("External Entity"),
             initial_position,
             fixed_system_element_geometries.external_entity.clone(),
+            On::<Pointer<Drag>>::send_event::<ExternalEntityDrag>(),
         ))
         .id();
 
