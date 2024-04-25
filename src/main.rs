@@ -52,6 +52,7 @@ fn main() {
             apply_zoom_to_flow_curve,
             drag_external_entity,
             drag_interface,
+            update_flow_from_connected_elements,
         ),
     )
     .init_resource::<Zoom>()
