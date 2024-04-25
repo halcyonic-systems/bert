@@ -37,6 +37,7 @@ macro_rules! interface_create_button {
                     flow_curve.$side - flow_curve.$side_dir.normalize() * INTERFACE_WIDTH_HALF,
                     direction.to_angle(),
                     **zoom,
+                    Some(**focused_system),
                     &asset_server,
                 );
             }

@@ -37,6 +37,7 @@ macro_rules! external_entity_create_button {
                     flow_curve.$side + direction * BUTTON_WIDTH_HALF,
                     direction.to_angle(),
                     **zoom,
+                    None,
                     &asset_server,
                 );
             }

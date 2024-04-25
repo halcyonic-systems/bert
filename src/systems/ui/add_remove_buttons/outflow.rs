@@ -56,6 +56,7 @@ pub fn add_first_outflow_create_button(
         position,
         angle,
         **zoom,
+        Some(focused_system),
         &asset_server,
     );
 }
@@ -90,6 +91,7 @@ pub fn add_consecutive_outflow_create_button(
             position,
             angle,
             **zoom,
+            Some(**focused_system),
             &asset_server,
         );
     }

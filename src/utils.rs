@@ -2,7 +2,7 @@ use crate::components::InitialPosition;
 use bevy::prelude::*;
 
 pub fn ui_transform_from_button(
-    button_transform: &GlobalTransform,
+    button_transform: &Transform,
     button_initial_position: &InitialPosition,
     z: f32,
     move_right: f32,

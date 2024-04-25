@@ -10,6 +10,7 @@ pub fn spawn_create_button(
     position: Vec2,
     angle: f32,
     zoom: f32,
+    parent: Option<Entity>,
     asset_server: &Res<AssetServer>,
 ) {
     let path = match create_button.ty {
@@ -43,6 +44,10 @@ pub fn spawn_create_button(
             InitialPosition::new(position),
         ))
         .id();
+
+    if let Some(parent) = parent {
+        commands.entity(parent).push_children(&[button_entity]);
+    }
 
     let mut commands = commands.entity(create_button.connection_source);
 

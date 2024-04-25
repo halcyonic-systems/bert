@@ -69,6 +69,7 @@ pub fn add_first_inflow_create_button(
                 position,
                 angle,
                 **zoom,
+                Some(**focused_system),
                 &asset_server,
             );
         } else {
@@ -113,6 +114,7 @@ pub fn add_consecutive_inflow_create_button(
             position,
             angle,
             **zoom,
+            Some(**focused_system),
             &asset_server,
         );
     }

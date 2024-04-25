@@ -65,7 +65,7 @@ pub fn remove_unfocused_system_buttons(
 pub fn on_create_button_click(
     mut commands: Commands,
     event: Listener<Pointer<Click>>,
-    button_query: Query<(&CreateButton, &GlobalTransform, &InitialPosition)>,
+    button_query: Query<(&CreateButton, &Transform, &InitialPosition)>,
     only_button_query: Query<&CreateButton>,
     flow_interface_query: Query<
         (
@@ -93,7 +93,6 @@ pub fn on_create_button_click(
             button.connection_source,
             transform,
             initial_position,
-            &system_query,
             &focused_system,
             &fixed_system_element_geometries,
             **zoom,
@@ -104,7 +103,6 @@ pub fn on_create_button_click(
             button.connection_source,
             transform,
             initial_position,
-            &system_query,
             &focused_system,
             &fixed_system_element_geometries,
             **zoom,

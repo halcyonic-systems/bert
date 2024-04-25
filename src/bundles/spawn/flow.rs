@@ -14,7 +14,7 @@ use bevy_prototype_lyon::prelude::*;
 pub fn spawn_outflow(
     commands: &mut Commands,
     system_entity: Entity,
-    transform: &GlobalTransform,
+    transform: &Transform,
     initial_position: &InitialPosition,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -80,7 +80,7 @@ fn spawn_selected_flow(
 pub fn spawn_inflow(
     commands: &mut Commands,
     system_entity: Entity,
-    transform: &GlobalTransform,
+    transform: &Transform,
     initial_position: &InitialPosition,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,

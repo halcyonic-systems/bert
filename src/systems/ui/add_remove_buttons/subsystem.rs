@@ -1,12 +1,11 @@
 use crate::bundles::{despawn_create_button, spawn_create_button};
 use crate::components::{
     CreateButton, CreateButtonType, GeneralUsability, Inflow, InflowInterfaceConnection,
-    InflowSourceConnection, InitialPosition, InterfaceSubsystemButton,
-    InterfaceSubsystemConnection, Outflow, OutflowInterfaceConnection, OutflowSinkConnection,
+    InflowSourceConnection, InterfaceSubsystemButton, Outflow, OutflowInterfaceConnection,
+    OutflowSinkConnection,
 };
 use crate::resources::{FocusedSystem, Zoom};
-use bevy::asset::AssetServer;
-use bevy::prelude::{Added, Changed, Commands, Entity, Or, Query, Res, Transform, With, Without};
+use bevy::prelude::*;
 use bevy::utils::HashSet;
 
 pub fn add_interface_subsystem_create_buttons(
@@ -35,13 +34,6 @@ pub fn add_interface_subsystem_create_buttons(
             Option<&OutflowInterfaceConnection>,
         ),
         Or<(With<InflowSourceConnection>, With<OutflowSinkConnection>)>,
-    >,
-    interface_query: Query<
-        (&Transform, &InitialPosition),
-        (
-            Without<InterfaceSubsystemButton>,
-            Without<InterfaceSubsystemConnection>,
-        ),
     >,
     interface_button_query: Query<&InterfaceSubsystemButton>,
     button_query: Query<&CreateButton>,
@@ -121,20 +113,19 @@ pub fn add_interface_subsystem_create_buttons(
         };
 
         if flow_usabilities.len() > 3 {
-            if let Ok((transform, initial_position)) = interface_query.get(interface_entity) {
-                spawn_create_button(
-                    &mut commands,
-                    CreateButton {
-                        ty: CreateButtonType::InterfaceSubsystem,
-                        connection_source: interface_entity,
-                        system: **focused_system,
-                    },
-                    **initial_position,
-                    transform.right().truncate().to_angle(),
-                    **zoom,
-                    &asset_server,
-                );
-            }
+            spawn_create_button(
+                &mut commands,
+                CreateButton {
+                    ty: CreateButtonType::InterfaceSubsystem,
+                    connection_source: interface_entity,
+                    system: **focused_system,
+                },
+                Vec2::ZERO,
+                0.0,
+                **zoom,
+                Some(interface_entity),
+                &asset_server,
+            );
         } else {
             if let Ok(interface_button) = interface_button_query.get(interface_entity) {
                 despawn_create_button(&mut commands, interface_button.button_entity, &button_query);

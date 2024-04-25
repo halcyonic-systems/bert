@@ -41,6 +41,7 @@ pub fn setup(
         vec2(radius, 0.0),
         0.0,
         **zoom,
+        Some(system_entity),
         &asset_server,
     );
 }

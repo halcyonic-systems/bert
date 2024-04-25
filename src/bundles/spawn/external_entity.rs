@@ -11,7 +11,7 @@ pub fn spawn_external_entity(
     commands: &mut Commands,
     interface_type: InterfaceType,
     flow_entity: Entity,
-    transform: &GlobalTransform,
+    transform: &Transform,
     initial_position: &InitialPosition,
     fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,

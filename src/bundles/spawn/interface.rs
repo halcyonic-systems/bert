@@ -14,9 +14,8 @@ pub fn spawn_interface(
     commands: &mut Commands,
     interface_type: InterfaceType,
     flow_entity: Entity,
-    transform: &GlobalTransform,
+    transform: &Transform,
     initial_position: &InitialPosition,
-    system_query: &Query<(&Transform, &crate::components::System)>,
     focused_system: &Res<FocusedSystem>,
     fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,
@@ -24,39 +23,37 @@ pub fn spawn_interface(
     let (mut transform, initial_position) =
         ui_transform_from_button(transform, initial_position, 5.0, 0.0, zoom);
 
-    let (system_transform, _) = system_query
-        .get(***focused_system)
-        .expect("focused system not found");
-
     // Normalize the rotation
-    transform.rotation = Quat::from_rotation_z(
-        (transform.translation.truncate() - system_transform.translation.truncate()).to_angle(),
-    );
+    transform.rotation = Quat::from_rotation_z(transform.translation.truncate().to_angle());
 
-    let interface_entity = commands
-        .spawn((
-            Interface::default(),
-            SpatialBundle {
-                transform,
-                ..default()
-            },
-            Fill::color(Color::WHITE),
-            PickableBundle {
-                selection: PickSelection { is_selected: true },
-                ..default()
-            },
-            HighlightBundles {
-                idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH),
-                selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
-            },
-            SpawnOnSelected::new(spawn_selected_interface),
-            SystemElement::Interface,
-            Name::new("Interface"),
-            initial_position,
-            fixed_system_element_geometries.interface.clone(),
-            On::<Pointer<Drag>>::send_event::<InterfaceDrag>(),
-        ))
-        .id();
+    let mut interface_entity = Entity::PLACEHOLDER;
+
+    commands.entity(***focused_system).with_children(|parent| {
+        interface_entity = parent
+            .spawn((
+                Interface::default(),
+                SpatialBundle {
+                    transform,
+                    ..default()
+                },
+                Fill::color(Color::WHITE),
+                PickableBundle {
+                    selection: PickSelection { is_selected: true },
+                    ..default()
+                },
+                HighlightBundles {
+                    idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH),
+                    selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
+                },
+                SpawnOnSelected::new(spawn_selected_interface),
+                SystemElement::Interface,
+                Name::new("Interface"),
+                initial_position,
+                fixed_system_element_geometries.interface.clone(),
+                On::<Pointer<Drag>>::send_event::<InterfaceDrag>(),
+            ))
+            .id();
+    });
 
     let mut entity_commands = commands.entity(flow_entity);
 
