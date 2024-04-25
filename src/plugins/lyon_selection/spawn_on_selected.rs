@@ -46,7 +46,9 @@ impl SpawnSystem {
     }
 }
 
-pub fn selection_changed(query: Query<&PickSelection, With<SpawnOnSelected>>) -> bool {
+pub fn selection_changed(
+    query: Query<&PickSelection, (With<SpawnOnSelected>, Changed<PickSelection>)>,
+) -> bool {
     !query.is_empty()
 }
 
