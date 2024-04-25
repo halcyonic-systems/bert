@@ -1,6 +1,7 @@
 use crate::components::*;
 use crate::constants::*;
-use crate::resources::StrokeTessellator;
+use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, SpawnOnSelected};
+use crate::resources::{StrokeTessellator, Zoom};
 use crate::systems::{
     create_aabb_from_flow_curve, create_paths_from_flow_curve, tessellate_simplified_mesh,
 };
@@ -44,6 +45,35 @@ pub fn spawn_outflow(
             substance_type: Default::default(),
             usability: Default::default(),
         },
+    );
+}
+
+fn spawn_selected_flow(
+    mut commands: Commands,
+    mut listener: SelectedSpawnListener,
+    curve_query: Query<(&FlowCurve, &Transform)>,
+    zoom: Res<Zoom>,
+) {
+    let (flow_curve, transform) = curve_query
+        .get(listener.selected())
+        .expect("Selected entity should have a FlowCurve");
+
+    let (curve_path, _) = create_paths_from_flow_curve(&flow_curve, **zoom);
+
+    listener.add_spawned(
+        commands
+            .spawn((
+                ShapeBundle {
+                    path: curve_path,
+                    spatial: SpatialBundle {
+                        transform: Transform::from_xyz(0.0, 0.0, transform.translation.z + 1.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Stroke::new(Color::WHITE, FLOW_SELECTED_INNER_LINE_WIDTH),
+            ))
+            .id(),
     );
 }
 
@@ -109,10 +139,14 @@ fn spawn_flow<F: Bundle>(
                 path: curve_path,
                 ..default()
             },
-            Stroke::new(Color::BLACK, FLOW_LINE_WIDTH),
             PickableBundle {
                 selection: PickSelection { is_selected: true },
                 ..default()
+            },
+            SpawnOnSelected::new(spawn_selected_flow),
+            HighlightBundles {
+                idle: Stroke::new(Color::BLACK, FLOW_LINE_WIDTH),
+                selected: Stroke::new(Color::BLACK, FLOW_SELECTED_LINE_WIDTH),
             },
             system_element,
             Name::new(name),
@@ -121,6 +155,10 @@ fn spawn_flow<F: Bundle>(
             parent.spawn((
                 ShapeBundle {
                     path: head_path,
+                    spatial: SpatialBundle {
+                        transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                        ..default()
+                    },
                     ..default()
                 },
                 Fill::color(Color::BLACK),

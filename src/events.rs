@@ -1,17 +1,24 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
-#[derive(Event)]
-pub struct ExternalEntityDrag {
-    pub target: Entity,
-    pub delta: Vec2,
+macro_rules! impl_drag_event {
+    ($name:ident) => {
+        #[derive(Event)]
+        pub struct $name {
+            pub target: Entity,
+            pub delta: Vec2,
+        }
+
+        impl From<ListenerInput<Pointer<Drag>>> for $name {
+            fn from(event: ListenerInput<Pointer<Drag>>) -> Self {
+                Self {
+                    target: event.target,
+                    delta: event.delta,
+                }
+            }
+        }
+    };
 }
 
-impl From<ListenerInput<Pointer<Drag>>> for ExternalEntityDrag {
-    fn from(event: ListenerInput<Pointer<Drag>>) -> Self {
-        Self {
-            target: event.target,
-            delta: event.delta,
-        }
-    }
-}
+impl_drag_event!(ExternalEntityDrag);
+impl_drag_event!(InterfaceDrag);

@@ -75,7 +75,7 @@ fn init_external_entity_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSyst
         },
         path: external_entity_path_builder.build(),
         mesh: Default::default(),
-        material: Default::default(),
+        material: WHITE_COLOR_MATERIAL_HANDLE,
         aabb: Aabb {
             center: Vec3A::ZERO,
             half_extents: Vec3A::new(EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_HEIGHT_HALF, 0.0),
@@ -106,7 +106,7 @@ fn init_interface_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSystemElem
             closed: false,
         }),
         mesh: Default::default(),
-        material: Default::default(),
+        material: WHITE_COLOR_MATERIAL_HANDLE,
         aabb: Aabb {
             center: Vec3A::ZERO,
             half_extents: Vec3A::new(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF, 0.0),

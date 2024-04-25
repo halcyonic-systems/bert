@@ -9,9 +9,13 @@ edition = "2021"
 bevy = { version = "0.13", features = ["dynamic_linking"] }
 bevy_egui = "<0.26"
 bevy-inspector-egui = "<0.24"
-bevy_mod_picking = { version = "0.18", features = ["backend_egui"] }
 bevy_prototype_lyon = "0.11.0"
 num-traits = "0.2.18"
+
+[dependencies.bevy_mod_picking]
+version = "0.18"
+default-features = false
+features = ["backend_egui", "backend_raycast", "backend_sprite", "selection", "debug"]
 
 [profile.dev]
 opt-level = 1
