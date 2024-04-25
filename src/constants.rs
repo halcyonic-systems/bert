@@ -3,7 +3,7 @@ use bevy::prelude::ColorMaterial;
 
 pub const DEFAULT_LINE_WIDTH: f32 = 3.0;
 
-pub const FLOW_END_LENGTH: f32 = 20.0;
+pub const FLOW_END_LENGTH: f32 = 40.0;
 pub const FLOW_LENGTH: f32 = 200.0;
 pub const FLOW_LINE_WIDTH: f32 = 3.0;
 pub const FLOW_SELECTED_LINE_WIDTH: f32 = 5.0;

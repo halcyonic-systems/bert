@@ -4,7 +4,7 @@ use crate::constants::{
 };
 use crate::events::InterfaceDrag;
 use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, SpawnOnSelected};
-use crate::resources::{FixedSystemElementGeometries};
+use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -16,11 +16,22 @@ pub fn spawn_interface(
     flow_entity: Entity,
     transform: &GlobalTransform,
     initial_position: &InitialPosition,
+    system_query: &Query<(&Transform, &crate::components::System)>,
+    focused_system: &Res<FocusedSystem>,
     fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,
 ) {
-    let (transform, initial_position) =
+    let (mut transform, initial_position) =
         ui_transform_from_button(transform, initial_position, 5.0, 0.0, zoom);
+
+    let (system_transform, _) = system_query
+        .get(***focused_system)
+        .expect("focused system not found");
+
+    // Normalize the rotation
+    transform.rotation = Quat::from_rotation_z(
+        (transform.translation.truncate() - system_transform.translation.truncate()).to_angle(),
+    );
 
     let interface_entity = commands
         .spawn((

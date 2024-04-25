@@ -52,8 +52,11 @@ fn main() {
             apply_zoom_to_flow_curve,
             drag_external_entity,
             drag_interface,
-            update_flow_from_connected_elements,
         ),
+    )
+    .add_systems(
+        PostUpdate,
+        (update_flow_from_interface, update_flow_from_external_entity),
     )
     .init_resource::<Zoom>()
     .add_event::<ExternalEntityDrag>()

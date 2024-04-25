@@ -16,7 +16,7 @@ pub fn spawn_interface_subsystem(
         ),
         Or<(With<Inflow>, With<Outflow>)>,
     >,
-    system_query: &Query<&crate::components::System>,
+    system_query: &Query<(&Transform, &crate::components::System)>,
     focused_system: &Res<FocusedSystem>,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) {
@@ -40,6 +40,7 @@ pub fn spawn_interface_subsystem(
     let radius = system_query
         .get(***focused_system)
         .expect("focused system not found")
+        .1
         .radius
         * SUBSYSTEM_RADIUS_FRACTION;
 
@@ -53,7 +54,9 @@ pub fn spawn_interface_subsystem(
                     SubsystemParentFlowConnection {
                         target: interface_flow_entity,
                     },
-                    Subsystem::default(),
+                    Subsystem {
+                        parent_system: ***focused_system,
+                    },
                     SystemBundle::new(vec2(-radius, 0.0), 1.0, radius, meshes),
                 ))
                 .id();

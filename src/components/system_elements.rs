@@ -58,9 +58,11 @@ pub struct Outflow {
 #[reflect(Component)]
 pub struct ExternalEntity;
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct Subsystem;
+pub struct Subsystem {
+    pub parent_system: Entity,
+}
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]
 pub enum InflowUsability {
