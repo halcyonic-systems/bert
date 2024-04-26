@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
@@ -90,4 +92,41 @@ pub enum SubstanceType {
     Energy,
     Material,
     Message,
+}
+
+#[derive(Clone, Debug, Component, Reflect, PartialEq)]
+#[reflect(Component)]
+pub struct ElementDescription {
+    pub text: String,
+}
+impl ElementDescription {
+    pub fn new(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+        }
+    }
+    pub fn mutate(&mut self, f: impl FnOnce(&mut String)) {
+        f(&mut self.text);
+    }
+}
+impl Default for ElementDescription {
+    fn default() -> Self {
+        Self {
+            text: "".to_string(),
+        }
+    }
+}
+impl From<&str> for ElementDescription {
+    fn from(text: &str) -> Self {
+        Self {
+            text: text.into(),
+        }
+    }
+}
+impl From<String> for ElementDescription {
+    fn from(text: String) -> Self {
+        Self {
+            text
+        }
+    }
 }

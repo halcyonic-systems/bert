@@ -63,5 +63,6 @@ pub fn spawn_interface_subsystem(
         })
         .insert(InterfaceSubsystemConnection {
             target: subsystem_entity,
-        });
+        })
+        .insert(ElementDescription::default());
 }

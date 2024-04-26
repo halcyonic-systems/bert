@@ -1,8 +1,8 @@
 use crate::components::{
-    Inflow, InflowUsability, Interface, Outflow, OutflowUsability, SystemElement,
+    Inflow, InflowUsability, Interface, Outflow, OutflowUsability, SystemElement, ElementDescription
 };
 use bevy::prelude::*;
-use bevy_egui::egui::{ComboBox, Ui};
+use bevy_egui::egui::{ComboBox, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
 use bevy_mod_picking::prelude::*;
 
@@ -12,7 +12,9 @@ fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
 }
 
 fn outflow_egui(ui: &mut Ui, outflow: &mut Outflow) {
-    ComboBox::from_label("Usability")
+    ui.horizontal(|ui| {
+        ui.label("Usability");
+        ComboBox::from_label("")
         .selected_text(format!("{:?}", outflow.usability))
         .show_ui(ui, |ui| {
             ui.style_mut().wrap = Some(false);
@@ -20,10 +22,13 @@ fn outflow_egui(ui: &mut Ui, outflow: &mut Outflow) {
             ui.selectable_value(&mut outflow.usability, OutflowUsability::Product, "Product");
             ui.selectable_value(&mut outflow.usability, OutflowUsability::Waste, "Waste");
         });
+    });
 }
 
 fn inflow_egui(ui: &mut Ui, inflow: &mut Inflow) {
-    ComboBox::from_label("Usability")
+    ui.horizontal(|ui| {
+        ui.label("Usability");
+        ComboBox::from_label("")
         .selected_text(format!("{:?}", inflow.usability))
         .show_ui(ui, |ui| {
             ui.style_mut().wrap = Some(false);
@@ -35,17 +40,19 @@ fn inflow_egui(ui: &mut Ui, inflow: &mut Inflow) {
                 "Disruption",
             );
         });
+    });
 }
 
 pub fn egui_selected_context(
     mut egui_contexts: EguiContexts,
-    mut selectables: Query<(Entity, &PickSelection, &SystemElement, &mut Name)>,
+    mut selectables: Query<(Entity, &PickSelection, &SystemElement, &mut Name, &mut ElementDescription)>,
     mut interfaces: Query<&mut Interface>,
     mut outflows: Query<&mut Outflow>,
     mut inflows: Query<&mut Inflow>,
 ) {
-    for (entity, selectable, system_element, mut name) in &mut selectables {
+    for (entity, selectable, system_element, mut name, mut description) in &mut selectables {
         if selectable.is_selected {
+            egui_contexts.ctx_mut().set_visuals(Visuals::light());
             egui::Window::new(&system_element.to_string()).show(egui_contexts.ctx_mut(), |ui| {
                 egui::ScrollArea::both()
                     .auto_shrink([false; 2])
@@ -55,6 +62,13 @@ pub fn egui_selected_context(
 
                             name.mutate(|name| {
                                 ui.text_edit_singleline(name);
+                            });
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Description: ");
+                            
+                            description.mutate(|description| {
+                                ui.text_edit_singleline(description);
                             });
                         });
 

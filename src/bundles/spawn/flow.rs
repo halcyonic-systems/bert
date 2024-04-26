@@ -150,6 +150,7 @@ fn spawn_flow<F: Bundle>(
             },
             system_element,
             Name::new(name),
+            ElementDescription::default(),
         ))
         .with_children(|parent| {
             parent.spawn((

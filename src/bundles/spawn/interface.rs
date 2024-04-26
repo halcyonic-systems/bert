@@ -7,6 +7,7 @@ use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, Sp
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
+use bevy::utils::petgraph::data::Element;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -48,6 +49,7 @@ pub fn spawn_interface(
                 SpawnOnSelected::new(spawn_selected_interface),
                 SystemElement::Interface,
                 Name::new("Interface"),
+                ElementDescription::default(),
                 initial_position,
                 fixed_system_element_geometries.interface.clone(),
                 On::<Pointer<Drag>>::send_event::<InterfaceDrag>(),

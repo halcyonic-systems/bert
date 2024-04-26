@@ -38,6 +38,7 @@ pub fn spawn_external_entity(
             },
             SystemElement::ExternalEntity,
             Name::new("External Entity"),
+            ElementDescription::default(),
             initial_position,
             fixed_system_element_geometries.external_entity.clone(),
             On::<Pointer<Drag>>::send_event::<ExternalEntityDrag>(),
