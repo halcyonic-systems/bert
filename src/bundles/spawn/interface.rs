@@ -7,7 +7,6 @@ use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, Sp
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
-use bevy::utils::petgraph::data::Element;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 

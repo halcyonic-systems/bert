@@ -2,7 +2,7 @@ use crate::components::{
     Inflow, InflowUsability, Interface, Outflow, OutflowUsability, SystemElement, ElementDescription
 };
 use bevy::prelude::*;
-use bevy_egui::egui::{ComboBox, Ui, Visuals};
+use bevy_egui::egui::{vec2, ComboBox, Margin, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
 use bevy_mod_picking::prelude::*;
 
@@ -40,6 +40,7 @@ fn inflow_egui(ui: &mut Ui, inflow: &mut Inflow) {
                 "Disruption",
             );
         });
+        
     });
 }
 
@@ -53,6 +54,15 @@ pub fn egui_selected_context(
     for (entity, selectable, system_element, mut name, mut description) in &mut selectables {
         if selectable.is_selected {
             egui_contexts.ctx_mut().set_visuals(Visuals::light());
+            egui_contexts.ctx_mut().style_mut(|style| {
+                style.spacing.window_margin = Margin {
+                        left: 10.0,
+                        right: 10.0,
+                        top: 10.0,
+                        bottom: 10.0,
+                    };
+                style.spacing.item_spacing = vec2(10.0, 10.0);
+            });
             egui::Window::new(&system_element.to_string()).show(egui_contexts.ctx_mut(), |ui| {
                 egui::ScrollArea::both()
                     .auto_shrink([false; 2])
@@ -68,7 +78,7 @@ pub fn egui_selected_context(
                             ui.label("Description: ");
                             
                             description.mutate(|description| {
-                                ui.text_edit_singleline(description);
+                                ui.text_edit_multiline(description);
                             });
                         });
 

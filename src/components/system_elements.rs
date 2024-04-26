@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
