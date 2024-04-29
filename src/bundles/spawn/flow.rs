@@ -43,6 +43,7 @@ pub fn spawn_outflow(
         zoom,
         flow_curve,
         SystemElement::Outflow,
+        system_entity,
         "Outflow",
         Outflow {
             system: system_entity,
@@ -113,6 +114,7 @@ pub fn spawn_inflow(
         zoom,
         flow_curve,
         SystemElement::Inflow,
+        system_entity,
         "Inflow",
         Inflow {
             system: system_entity,
@@ -130,6 +132,7 @@ fn spawn_flow<F: Bundle>(
     zoom: f32,
     flow_curve: FlowCurve,
     system_element: SystemElement,
+    system_entity: Entity,
     name: &'static str,
     flow: F,
     is_selected: bool,
@@ -137,7 +140,7 @@ fn spawn_flow<F: Bundle>(
     let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve, zoom);
     let aabb = create_aabb_from_flow_curve(&flow_curve, zoom);
 
-    commands
+    let flow_entity = commands
         .spawn((
             flow,
             flow_curve,
@@ -147,6 +150,10 @@ fn spawn_flow<F: Bundle>(
             aabb,
             ShapeBundle {
                 path: curve_path,
+                spatial: SpatialBundle {
+                    transform: Transform::from_xyz(0.0, 0.0, FLOW_Z),
+                    ..default()
+                },
                 ..default()
             },
             PickableBundle {
@@ -175,7 +182,11 @@ fn spawn_flow<F: Bundle>(
                 Fill::color(Color::BLACK),
             ));
         })
-        .id()
+        .id();
+
+    commands.entity(system_entity).add_child(flow_entity);
+
+    flow_entity
 }
 
 macro_rules! spawn_complete_flow {
@@ -183,6 +194,7 @@ macro_rules! spawn_complete_flow {
         pub fn $fn_name(
             mut commands: &mut Commands,
             focused_system: &Res<FocusedSystem>,
+            subsystem_query: &Query<&Subsystem>,
             mut meshes: &mut ResMut<Assets<Mesh>>,
             mut stroke_tess: &mut ResMut<StrokeTessellator>,
             fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
@@ -226,6 +238,8 @@ macro_rules! spawn_complete_flow {
 
             spawn_external_entity(
                 &mut commands,
+                subsystem_query,
+                focused_system,
                 $interface_ty,
                 product_flow,
                 &transform,

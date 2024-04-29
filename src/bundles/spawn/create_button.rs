@@ -21,7 +21,17 @@ pub fn spawn_create_button(
         CreateButtonType::Outflow => "create-button/outflow.png",
         CreateButtonType::Source => "create-button/source.png",
         CreateButtonType::Sink => "create-button/sink.png",
-        CreateButtonType::InterfaceSubsystem => "create-button/interface-subsystem.png",
+        CreateButtonType::InterfaceSubsystem { .. } => "create-button/interface-subsystem.png",
+    };
+
+    let name = match create_button.ty {
+        CreateButtonType::ImportInterface => "Import Interface Button",
+        CreateButtonType::ExportInterface => "Export Interface Button",
+        CreateButtonType::Inflow => "Inflow Button",
+        CreateButtonType::Outflow => "Outflow Button",
+        CreateButtonType::Source => "Source Button",
+        CreateButtonType::Sink => "Sink Button",
+        CreateButtonType::InterfaceSubsystem { .. } => "Interface Subsystem Button",
     };
 
     let button_width = BUTTON_WIDTH_HALF * 2.0;
@@ -42,6 +52,7 @@ pub fn spawn_create_button(
             PickableBundle::default(),
             On::<Pointer<Click>>::run(on_create_button_click),
             InitialPosition::new(position),
+            Name::new(name),
         ))
         .id();
 
@@ -58,7 +69,7 @@ pub fn spawn_create_button(
         CreateButtonType::Source | CreateButtonType::Sink => {
             commands.insert(FlowOtherEndButton);
         }
-        CreateButtonType::InterfaceSubsystem => {
+        CreateButtonType::InterfaceSubsystem { .. } => {
             commands.insert(InterfaceSubsystemButton { button_entity });
         }
         CreateButtonType::Inflow | CreateButtonType::Outflow => {
@@ -93,7 +104,7 @@ pub fn despawn_create_button_with_component(
         CreateButtonType::Source | CreateButtonType::Sink => {
             entity_commands.remove::<FlowOtherEndButton>();
         }
-        CreateButtonType::InterfaceSubsystem => {
+        CreateButtonType::InterfaceSubsystem { .. } => {
             entity_commands.remove::<InterfaceSubsystemButton>();
         }
         CreateButtonType::Inflow | CreateButtonType::Outflow => {

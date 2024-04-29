@@ -7,6 +7,7 @@ use bevy::prelude::*;
 
 pub fn spawn_interface_subsystem(
     commands: &mut Commands,
+    is_child_of_interface: bool,
     interface_entity: Entity,
     flow_interface_query: &Query<
         (
@@ -21,11 +22,13 @@ pub fn spawn_interface_subsystem(
     meshes: &mut ResMut<Assets<Mesh>>,
 ) -> Entity {
     let mut interface_flow_entity = Entity::PLACEHOLDER;
+    let mut angle = 0.0;
 
     for (entity, inflow_connection, outflow_connection) in flow_interface_query {
         if let Some(connection) = inflow_connection {
             if connection.target == interface_entity {
                 interface_flow_entity = entity;
+                angle = std::f32::consts::PI;
                 break;
             }
         }
@@ -37,34 +40,38 @@ pub fn spawn_interface_subsystem(
         }
     }
 
+    let parent_system = ***focused_system;
+
     let radius = system_query
-        .get(***focused_system)
+        .get(parent_system)
         .expect("focused system not found")
         .1
         .radius
         * SUBSYSTEM_RADIUS_FRACTION;
 
-    let mut subsystem_entity = Entity::PLACEHOLDER;
+    let z = if is_child_of_interface { -90.0 } else { 10.0 };
 
-    commands
-        .entity(interface_entity)
-        .with_children(|parent| {
-            subsystem_entity = parent
-                .spawn((
-                    SubsystemParentFlowConnection {
-                        target: interface_flow_entity,
-                    },
-                    Subsystem {
-                        parent_system: ***focused_system,
-                    },
-                    SystemBundle::new(vec2(-radius, 0.0), 1.0, radius, meshes),
-                ))
-                .id();
-        })
-        .insert(InterfaceSubsystemConnection {
-            target: subsystem_entity,
-        })
-        .insert(ElementDescription::default());
+    let subsystem_entity = commands
+        .spawn((
+            SubsystemParentFlowConnection {
+                target: interface_flow_entity,
+            },
+            Subsystem { parent_system },
+            SystemBundle::new(vec2(-radius, 0.0), z, radius, angle, meshes),
+            ElementDescription::default(),
+        ))
+        .id();
+
+    let mut interface_commands = commands.entity(interface_entity);
+    interface_commands.insert(InterfaceSubsystemConnection {
+        target: subsystem_entity,
+    });
+
+    if is_child_of_interface {
+        interface_commands.add_child(subsystem_entity);
+    } else {
+        commands.entity(parent_system).add_child(subsystem_entity);
+    }
 
     subsystem_entity
 }

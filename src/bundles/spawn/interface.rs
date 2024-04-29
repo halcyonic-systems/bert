@@ -1,6 +1,7 @@
 use crate::components::*;
 use crate::constants::{
     INTERFACE_LINE_WIDTH, INTERFACE_SELECTED_INNER_LINE_WIDTH, INTERFACE_SELECTED_LINE_WIDTH,
+    INTERFACE_Z,
 };
 use crate::events::InterfaceDrag;
 use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, SpawnOnSelected};
@@ -22,40 +23,40 @@ pub fn spawn_interface(
     is_selected: bool,
 ) -> Entity {
     let (mut transform, initial_position) =
-        ui_transform_from_button(transform, initial_position, 5.0, 0.0, zoom);
+        ui_transform_from_button(transform, initial_position, INTERFACE_Z, 0.0, zoom);
 
     // Normalize the rotation
     transform.rotation = Quat::from_rotation_z(transform.translation.truncate().to_angle());
 
-    let mut interface_entity = Entity::PLACEHOLDER;
+    let interface_entity = commands
+        .spawn((
+            Interface::default(),
+            SpatialBundle {
+                transform,
+                ..default()
+            },
+            Fill::color(Color::WHITE),
+            PickableBundle {
+                selection: PickSelection { is_selected },
+                ..default()
+            },
+            HighlightBundles {
+                idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH),
+                selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
+            },
+            SpawnOnSelected::new(spawn_selected_interface),
+            SystemElement::Interface,
+            Name::new("Interface"),
+            ElementDescription::default(),
+            initial_position,
+            fixed_system_element_geometries.interface.clone(),
+            On::<Pointer<Drag>>::send_event::<InterfaceDrag>(),
+        ))
+        .id();
 
-    commands.entity(***focused_system).with_children(|parent| {
-        interface_entity = parent
-            .spawn((
-                Interface::default(),
-                SpatialBundle {
-                    transform,
-                    ..default()
-                },
-                Fill::color(Color::WHITE),
-                PickableBundle {
-                    selection: PickSelection { is_selected },
-                    ..default()
-                },
-                HighlightBundles {
-                    idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH),
-                    selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
-                },
-                SpawnOnSelected::new(spawn_selected_interface),
-                SystemElement::Interface,
-                Name::new("Interface"),
-                ElementDescription::default(),
-                initial_position,
-                fixed_system_element_geometries.interface.clone(),
-                On::<Pointer<Drag>>::send_event::<InterfaceDrag>(),
-            ))
-            .id();
-    });
+    commands
+        .entity(***focused_system)
+        .add_child(interface_entity);
 
     let mut entity_commands = commands.entity(flow_entity);
 

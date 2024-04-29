@@ -1,7 +1,9 @@
 use crate::components::*;
-use crate::constants::{BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_WIDTH_HALF};
+use crate::constants::{
+    BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
+};
 use crate::events::ExternalEntityDrag;
-use crate::resources::FixedSystemElementGeometries;
+use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -9,6 +11,8 @@ use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_external_entity(
     commands: &mut Commands,
+    subsystem_query: &Query<&Subsystem>,
+    focused_system: &Res<FocusedSystem>,
     interface_type: InterfaceType,
     flow_entity: Entity,
     transform: &Transform,
@@ -20,7 +24,7 @@ pub fn spawn_external_entity(
     let (transform, initial_position) = ui_transform_from_button(
         transform,
         initial_position,
-        1.0,
+        EXTERNAL_ENTITY_Z,
         EXTERNAL_ENTITY_WIDTH_HALF - BUTTON_WIDTH_HALF,
         zoom,
     );
@@ -45,6 +49,12 @@ pub fn spawn_external_entity(
             On::<Pointer<Drag>>::send_event::<ExternalEntityDrag>(),
         ))
         .id();
+
+    if let Ok(subsystem) = subsystem_query.get(***focused_system) {
+        commands
+            .entity(subsystem.parent_system)
+            .add_child(external_entity);
+    }
 
     let mut entity_commands = commands.entity(flow_entity);
 

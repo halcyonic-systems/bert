@@ -31,7 +31,13 @@ pub struct SystemBundle {
 }
 
 impl SystemBundle {
-    pub fn new(position: Vec2, z: f32, radius: f32, meshes: &mut ResMut<Assets<Mesh>>) -> Self {
+    pub fn new(
+        position: Vec2,
+        z: f32,
+        radius: f32,
+        angle: f32,
+        meshes: &mut ResMut<Assets<Mesh>>,
+    ) -> Self {
         Self {
             system: System { radius },
             pickable_bundle: PickableBundle::default(),
@@ -48,7 +54,9 @@ impl SystemBundle {
                     ..default()
                 }),
                 spatial: SpatialBundle {
-                    transform: Transform::from_translation(position.extend(z)),
+                    transform: Transform::from_translation(position.extend(z))
+                        .with_rotation(Quat::from_rotation_z(angle))
+                        .with_scale(vec3(1.0, 1.0, 0.9)),
                     ..default()
                 },
                 ..default()

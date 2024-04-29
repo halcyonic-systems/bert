@@ -1,4 +1,5 @@
 use crate::bundles::{FixedSystemElementGeometry, SystemBundle};
+use crate::components::Subsystem;
 use crate::constants::*;
 use crate::resources::*;
 use bevy::math::{vec2, Vec3A};
@@ -24,6 +25,7 @@ pub fn setup(
             Vec2::ZERO,
             0.0,
             MAIN_SYSTEM_RADIUS,
+            0.0,
             &mut meshes,
         ))
         .id();
@@ -127,6 +129,7 @@ fn init_interface_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSystemElem
 #[cfg(feature = "init_complete_system")]
 pub fn init_complete_system(
     mut commands: Commands,
+    subsystem_query: Query<&Subsystem>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
@@ -139,6 +142,7 @@ pub fn init_complete_system(
     spawn_complete_outflow(
         &mut commands,
         &focused_system,
+        &subsystem_query,
         &mut meshes,
         &mut stroke_tess,
         &fixed_system_element_geometries,
@@ -151,6 +155,7 @@ pub fn init_complete_system(
     spawn_complete_outflow(
         &mut commands,
         &focused_system,
+        &subsystem_query,
         &mut meshes,
         &mut stroke_tess,
         &fixed_system_element_geometries,
@@ -163,6 +168,7 @@ pub fn init_complete_system(
     spawn_complete_inflow(
         &mut commands,
         &focused_system,
+        &subsystem_query,
         &mut meshes,
         &mut stroke_tess,
         &fixed_system_element_geometries,
@@ -175,6 +181,7 @@ pub fn init_complete_system(
     spawn_complete_inflow(
         &mut commands,
         &focused_system,
+        &subsystem_query,
         &mut meshes,
         &mut stroke_tess,
         &fixed_system_element_geometries,

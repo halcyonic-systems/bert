@@ -27,11 +27,6 @@ macro_rules! button_transform {
             system_query: &Query<&System>,
             focused_system: Entity,
         ) -> (Vec2, f32) {
-            let system_center = transform_query
-                .get(focused_system)
-                .expect("System should have a Transform")
-                .translation();
-
             let mut existing_interfaces = HashSet::new();
 
             for (outflow, flow_interface_connection) in flow_interface_query {
@@ -52,7 +47,7 @@ macro_rules! button_transform {
                         .expect("Interface should have a Transform")
                         .translation();
 
-                    let mut diff = (interface_pos - system_center).truncate();
+                    let mut diff = interface_pos.truncate();
                     diff.x *= $sign;
 
                     let angle = diff.to_angle();
@@ -83,7 +78,7 @@ macro_rules! button_transform {
                 .expect("Focused system should have a System")
                 .radius;
 
-            let position = Mat2::from_angle(angle) * vec2(system_center.x + radius, system_center.y);
+            let position = Mat2::from_angle(angle) * vec2(radius, 0.0);
 
             (position, angle)
         }

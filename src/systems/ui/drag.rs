@@ -58,6 +58,10 @@ pub fn drag_external_entity(
     system_query: Query<&crate::components::System>,
 ) {
     for event in events.read() {
+        if event.has_bubbled() {
+            continue;
+        }
+
         let mut transform = transform_query
             .get_mut(event.target)
             .expect("External entity should have a Transform");
@@ -102,7 +106,9 @@ pub fn update_flow_from_external_entity(
                         continue;
                     }
                 }
-                _ => unreachable!("Either Inflow or Outflow has to be there but not both"),
+                _ => {
+                    // do nothing
+                }
             }
         }
     }
@@ -141,7 +147,9 @@ pub fn update_flow_from_interface(
                         continue;
                     }
                 }
-                _ => unreachable!("Either Inflow or Outflow has to be there but not both"),
+                _ => {
+                    // do nothing
+                }
             }
         }
     }
@@ -162,6 +170,10 @@ pub fn drag_interface(
     system_query: Query<(&Transform, &crate::components::System)>,
 ) {
     for event in events.read() {
+        if event.has_bubbled() {
+            continue;
+        }
+
         let mut transform = transform_query
             .get_mut(event.target)
             .expect("External entity should have a Transform");

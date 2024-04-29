@@ -1,9 +1,5 @@
 use crate::bundles::{despawn_create_button, spawn_create_button};
-use crate::components::{
-    CreateButton, CreateButtonType, GeneralUsability, Inflow, InflowInterfaceConnection,
-    InflowSourceConnection, InterfaceSubsystemButton, Outflow, OutflowInterfaceConnection,
-    OutflowSinkConnection,
-};
+use crate::components::{CreateButton, CreateButtonType, GeneralUsability, Inflow, InflowInterfaceConnection, InflowSourceConnection, InterfaceSubsystemButton, InterfaceSubsystemConnection, Outflow, OutflowInterfaceConnection, OutflowSinkConnection};
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
@@ -18,6 +14,14 @@ pub fn add_interface_subsystem_create_buttons(
             Changed<Inflow>,
             Changed<Outflow>,
         )>,
+    >,
+    incomplete_flow_query: Query<
+        (),
+        (
+            Or<(With<Inflow>, With<Outflow>)>,
+            Without<InflowSourceConnection>,
+            Without<OutflowSinkConnection>,
+        ),
     >,
     flow_query: Query<
         (Option<&Outflow>, Option<&Inflow>),
@@ -36,6 +40,7 @@ pub fn add_interface_subsystem_create_buttons(
         Or<(With<InflowSourceConnection>, With<OutflowSinkConnection>)>,
     >,
     interface_button_query: Query<&InterfaceSubsystemButton>,
+    interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
     button_query: Query<&CreateButton>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
@@ -46,6 +51,8 @@ pub fn add_interface_subsystem_create_buttons(
     if changed_query.is_empty() {
         return;
     }
+
+    let incomplete_flows_exist = !incomplete_flow_query.is_empty();
 
     let mut flow_usabilities = HashSet::new();
 
@@ -112,22 +119,28 @@ pub fn add_interface_subsystem_create_buttons(
             _ => unreachable!("Outflow and inflow can't both be None"),
         };
 
-        if flow_usabilities.len() > 3 {
-            spawn_create_button(
-                &mut commands,
-                CreateButton {
-                    ty: CreateButtonType::InterfaceSubsystem,
-                    connection_source: interface_entity,
-                    system: **focused_system,
-                },
-                Vec2::ZERO,
-                0.0,
-                **zoom,
-                Some(interface_entity),
-                &asset_server,
-            );
+        let interface_button = interface_button_query.get(interface_entity);
+
+        if flow_usabilities.len() > 3 && !incomplete_flows_exist {
+            if interface_button.is_err() && interface_subsystem_query.get(interface_entity).is_err() {
+                spawn_create_button(
+                    &mut commands,
+                    CreateButton {
+                        ty: CreateButtonType::InterfaceSubsystem {
+                            is_child_of_interface: true, // TODO : compute this
+                        },
+                        connection_source: interface_entity,
+                        system: **focused_system,
+                    },
+                    Vec2::ZERO,
+                    0.0,
+                    **zoom,
+                    Some(interface_entity),
+                    &asset_server,
+                );
+            }
         } else {
-            if let Ok(interface_button) = interface_button_query.get(interface_entity) {
+            if let Ok(interface_button) = interface_button {
                 despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
             }
         }

@@ -32,7 +32,7 @@ pub fn change_focused_system(
         if selection.is_selected {
             for button in &button_query {
                 if button.system == **focused_system
-                    && matches!(button.ty, CreateButtonType::InterfaceSubsystem)
+                    && matches!(button.ty, CreateButtonType::InterfaceSubsystem { .. })
                 {
                     return;
                 }
@@ -76,6 +76,7 @@ pub fn on_create_button_click(
         Or<(With<Inflow>, With<Outflow>)>,
     >,
     system_query: Query<(&Transform, &crate::components::System)>,
+    subsystem_query: Query<&Subsystem>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
@@ -137,6 +138,8 @@ pub fn on_create_button_click(
         ),
         CreateButtonType::Source => spawn_external_entity(
             &mut commands,
+            &subsystem_query,
+            &focused_system,
             InterfaceType::Import,
             button.connection_source,
             &transform,
@@ -147,6 +150,8 @@ pub fn on_create_button_click(
         ),
         CreateButtonType::Sink => spawn_external_entity(
             &mut commands,
+            &subsystem_query,
+            &focused_system,
             InterfaceType::Export,
             button.connection_source,
             &transform,
@@ -155,8 +160,11 @@ pub fn on_create_button_click(
             **zoom,
             true,
         ),
-        CreateButtonType::InterfaceSubsystem => spawn_interface_subsystem(
+        CreateButtonType::InterfaceSubsystem {
+            is_child_of_interface,
+        } => spawn_interface_subsystem(
             &mut commands,
+            is_child_of_interface,
             button.connection_source,
             &flow_interface_query,
             &system_query,

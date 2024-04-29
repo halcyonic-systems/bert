@@ -16,7 +16,7 @@ pub enum CreateButtonType {
     Outflow,
     Source,
     Sink,
-    InterfaceSubsystem,
+    InterfaceSubsystem { is_child_of_interface: bool },
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
