@@ -115,34 +115,51 @@ pub fn update_flow_from_external_entity(
 }
 
 pub fn update_flow_from_interface(
-    interface_query: Query<(Entity, &Transform), (With<Interface>, Changed<Transform>)>,
+    interface_query: Query<(Entity, &Transform, &Parent), (With<Interface>, Changed<Transform>)>,
+    transform_query: Query<&Transform>,
+    parent_query: Query<&Parent>,
     mut flow_query: Query<(
         &mut FlowCurve,
+        &Parent,
         Option<&InflowInterfaceConnection>,
         Option<&OutflowInterfaceConnection>,
     )>,
 ) {
-    for (target, transform) in &interface_query {
-        for (mut flow_curve, inflow_interface_connection, outflow_interface_connection) in
-            &mut flow_query
+    for (target, transform, parent) in &interface_query {
+        for (
+            mut flow_curve,
+            flow_parent,
+            inflow_interface_connection,
+            outflow_interface_connection,
+        ) in &mut flow_query
         {
             match (inflow_interface_connection, outflow_interface_connection) {
                 (Some(inflow_interface_connection), None) => {
                     if inflow_interface_connection.target == target {
-                        let right = transform.right().truncate();
-                        flow_curve.end =
-                            transform.translation.truncate() + right * INTERFACE_WIDTH_HALF;
-                        flow_curve.end_direction = right * FLOW_END_LENGTH;
+                        let (end, dir) = compute_end_and_direction(
+                            parent,
+                            transform,
+                            &transform_query,
+                            &parent_query,
+                            flow_parent.get(),
+                        );
+                        flow_curve.end = end;
+                        flow_curve.end_direction = dir;
                     } else {
                         continue;
                     }
                 }
                 (None, Some(outflow_interface_connection)) => {
                     if outflow_interface_connection.target == target {
-                        let right = transform.right().truncate();
-                        flow_curve.start =
-                            transform.translation.truncate() + right * INTERFACE_WIDTH_HALF;
-                        flow_curve.start_direction = right * FLOW_END_LENGTH;
+                        let (start, dir) = compute_end_and_direction(
+                            parent,
+                            transform,
+                            &transform_query,
+                            &parent_query,
+                            flow_parent.get(),
+                        );
+                        flow_curve.start = start;
+                        flow_curve.start_direction = dir;
                     } else {
                         continue;
                     }
@@ -153,6 +170,41 @@ pub fn update_flow_from_interface(
             }
         }
     }
+}
+
+fn compute_end_and_direction(
+    parent: &Parent,
+    interface_transform: &Transform,
+    transform_query: &Query<&Transform>,
+    parent_query: &Query<&Parent>,
+    flow_parent: Entity,
+) -> (Vec2, Vec2) {
+    let mut combined_transform = *interface_transform;
+    let mut parent_entity = parent.get();
+
+    loop {
+        let parent_transform = transform_query
+            .get(parent_entity)
+            .expect("Parent should have a Transform");
+
+        combined_transform = parent_transform.mul_transform(combined_transform);
+
+        parent_entity = parent_query
+            .get(parent_entity)
+            .expect("There has to be a System some time")
+            .get();
+
+        if parent_entity == flow_parent {
+            break;
+        }
+    }
+
+    let right = combined_transform.right().truncate();
+
+    (
+        combined_transform.translation.truncate() + right * INTERFACE_WIDTH_HALF,
+        right * FLOW_END_LENGTH,
+    )
 }
 
 pub fn drag_interface(
@@ -167,7 +219,7 @@ pub fn drag_interface(
         ),
         With<FlowCurve>,
     >,
-    system_query: Query<(&Transform, &crate::components::System)>,
+    system_query: Query<&crate::components::System>,
 ) {
     for event in events.read() {
         if event.has_bubbled() {
@@ -182,19 +234,17 @@ pub fn drag_interface(
 
         let system = get_system_from_connected_flow(event.target, &flow_query);
 
-        let (system_transform, system) = system_query
+        let system = system_query
             .get(system)
             .expect("System should have a Transform");
 
-        let system_pos = system_transform.translation.truncate();
-
         let interface_pos = transform.translation.truncate();
 
-        let mut diff = interface_pos - system_pos;
-        diff *= system.radius / diff.length();
+        let mut pos = interface_pos;
+        pos *= system.radius / pos.length();
 
-        transform.rotation = Quat::from_rotation_z(diff.to_angle());
+        transform.rotation = Quat::from_rotation_z(pos.to_angle());
 
-        transform.translation = (system_pos + diff).extend(transform.translation.z);
+        transform.translation = pos.extend(transform.translation.z);
     }
 }

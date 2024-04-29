@@ -14,6 +14,7 @@ use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_outflow(
     commands: &mut Commands,
+    subsystem_query: &Query<&Subsystem>,
     system_entity: Entity,
     transform: &Transform,
     initial_position: &InitialPosition,
@@ -38,6 +39,7 @@ pub fn spawn_outflow(
 
     spawn_flow(
         commands,
+        subsystem_query,
         stroke_tess,
         meshes,
         zoom,
@@ -85,6 +87,7 @@ fn spawn_selected_flow(
 
 pub fn spawn_inflow(
     commands: &mut Commands,
+    subsystem_query: &Query<&Subsystem>,
     system_entity: Entity,
     transform: &Transform,
     initial_position: &InitialPosition,
@@ -109,6 +112,7 @@ pub fn spawn_inflow(
 
     spawn_flow(
         commands,
+        subsystem_query,
         stroke_tess,
         meshes,
         zoom,
@@ -127,6 +131,7 @@ pub fn spawn_inflow(
 
 fn spawn_flow<F: Bundle>(
     commands: &mut Commands,
+    subsystem_query: &Query<&Subsystem>,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
@@ -184,7 +189,11 @@ fn spawn_flow<F: Bundle>(
         })
         .id();
 
-    commands.entity(system_entity).add_child(flow_entity);
+    if let Ok(subsystem) = subsystem_query.get(system_entity) {
+        commands
+            .entity(subsystem.parent_system)
+            .add_child(flow_entity);
+    }
 
     flow_entity
 }
@@ -209,6 +218,7 @@ macro_rules! spawn_complete_flow {
 
             let product_flow = $spawn_name(
                 &mut commands,
+                subsystem_query,
                 ***focused_system,
                 &transform,
                 &initial_position,

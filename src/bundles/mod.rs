@@ -19,6 +19,7 @@ const SYSTEM_DEFAULT_STROKE_SIZE: f32 = 5.0;
 #[derive(Bundle)]
 pub struct SystemBundle {
     pub system: System,
+    pub name: Name,
     pub pickable_bundle: PickableBundle,
     pub simplified_mesh: SimplifiedMesh,
     pub aabb: Aabb,
@@ -40,6 +41,7 @@ impl SystemBundle {
     ) -> Self {
         Self {
             system: System { radius },
+            name: Name::new("System"),
             pickable_bundle: PickableBundle::default(),
             simplified_mesh: SimplifiedMesh {
                 mesh: meshes

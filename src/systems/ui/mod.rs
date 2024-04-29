@@ -114,6 +114,7 @@ pub fn on_create_button_click(
         ),
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
+            &subsystem_query,
             button.connection_source,
             &transform,
             initial_position,
@@ -126,6 +127,7 @@ pub fn on_create_button_click(
         ),
         CreateButtonType::Outflow => spawn_outflow(
             &mut commands,
+            &subsystem_query,
             button.connection_source,
             &transform,
             initial_position,
