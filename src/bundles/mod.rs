@@ -4,6 +4,7 @@ use bevy::math::vec3;
 pub use spawn::*;
 
 use crate::components::{System, *};
+use crate::constants::SYSTEM_LINE_WIDTH;
 use bevy::prelude::*;
 use bevy::render::mesh::CircleMeshBuilder;
 use bevy::render::primitives::Aabb;
@@ -11,10 +12,6 @@ use bevy::sprite::Mesh2dHandle;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-
-const SYSTEM_DEFAULT_FILL_COLOR: Color = Color::GRAY;
-const SYSTEM_DEFAULT_STROKE_COLOR: Color = Color::BLACK;
-const SYSTEM_DEFAULT_STROKE_SIZE: f32 = 5.0;
 
 pub fn get_system_geometry_from_radius(radius: f32) -> (Mesh, Path) {
     (
@@ -27,10 +24,7 @@ pub fn get_system_geometry_from_radius(radius: f32) -> (Mesh, Path) {
 }
 
 pub fn aabb_from_radius(radius: f32) -> Aabb {
-    Aabb::from_min_max(
-        vec3(-radius, -radius, 0.0),
-        vec3(radius, radius, 0.0),
-    )
+    Aabb::from_min_max(vec3(-radius, -radius, 0.0), vec3(radius, radius, 0.0))
 }
 
 #[derive(Bundle)]
@@ -77,8 +71,8 @@ impl SystemBundle {
                 },
                 ..default()
             },
-            fill: Fill::color(SYSTEM_DEFAULT_FILL_COLOR),
-            stroke: Stroke::new(SYSTEM_DEFAULT_STROKE_COLOR, SYSTEM_DEFAULT_STROKE_SIZE),
+            fill: Fill::color(Color::GRAY),
+            stroke: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH),
             initial_position: InitialPosition::new(position),
         }
     }

@@ -75,7 +75,12 @@ fn main() {
     )
     .add_systems(
         PostUpdate,
-        (update_flow_from_interface, update_flow_from_external_entity),
+        (
+            update_flow_from_interface,
+            update_flow_from_external_entity,
+            update_flow_from_system.before(update_flow_from_interface),
+            update_flow_from_interface_subsystem.before(update_flow_from_system),
+        ),
     )
     .register_type::<OutflowInterfaceConnection>()
     .register_type::<InflowInterfaceConnection>()

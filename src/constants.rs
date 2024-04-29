@@ -1,9 +1,11 @@
 use bevy::asset::Handle;
 use bevy::prelude::ColorMaterial;
 
+pub const DEFAULT_LINE_WIDTH: f32 = 3.0;
+
 pub const MAIN_SYSTEM_RADIUS: f32 = 300.0;
 
-pub const DEFAULT_LINE_WIDTH: f32 = 3.0;
+pub const SYSTEM_LINE_WIDTH: f32 = DEFAULT_LINE_WIDTH + 1.0;
 
 pub const FLOW_END_LENGTH: f32 = 40.0;
 pub const FLOW_LENGTH: f32 = 200.0;

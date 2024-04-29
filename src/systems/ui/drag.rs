@@ -3,6 +3,7 @@ use crate::constants::{EXTERNAL_ENTITY_WIDTH_HALF, FLOW_END_LENGTH, INTERFACE_WI
 use crate::events::*;
 use crate::resources::Zoom;
 use bevy::prelude::*;
+use std::ops::DerefMut;
 
 fn get_system_from_connected_flow<InConn, OutConn>(
     target: Entity,
@@ -260,5 +261,40 @@ pub fn update_initial_position_from_transform(
 ) {
     for (mut initial_position, transform) in &mut query {
         **initial_position = transform.translation.truncate() / **zoom;
+    }
+}
+
+pub fn update_flow_from_system(
+    system_query: Query<&Children, (With<crate::components::System>, Changed<Transform>)>,
+    mut interface_query: Query<
+        &mut Transform,
+        (With<Interface>, Without<crate::components::System>),
+    >,
+) {
+    for children in &system_query {
+        for child in children.iter() {
+            if let Ok(mut transform) = interface_query.get_mut(*child) {
+                // touch to trigger flow updates
+                let _ = transform.deref_mut();
+            }
+        }
+    }
+}
+
+pub fn update_flow_from_interface_subsystem(
+    interface_query: Query<&InterfaceSubsystemConnection, Changed<Transform>>,
+    mut system_query: Query<
+        &mut Transform,
+        (
+            With<crate::components::System>,
+            Without<InterfaceSubsystemConnection>,
+        ),
+    >,
+) {
+    for interface_subsystem_connection in &interface_query {
+        if let Ok(mut transform) = system_query.get_mut(interface_subsystem_connection.target) {
+            // touch to trigger flow updates
+            let _ = transform.deref_mut();
+        }
     }
 }
