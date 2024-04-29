@@ -20,25 +20,23 @@ where
     OutConn: Component + Connection,
 {
     for (inflow, inflow_connection, outflow, outflow_connection) in flow_query {
-        let system = match (inflow, inflow_connection, outflow, outflow_connection) {
+        match (inflow, inflow_connection, outflow, outflow_connection) {
             (Some(inflow), Some(inflow_connection), None, None) => {
                 if inflow_connection.target() == target {
-                    inflow.system
+                    return inflow.system;
                 } else {
                     continue;
                 }
             }
             (None, None, Some(outflow), Some(outflow_connection)) => {
                 if outflow_connection.target() == target {
-                    outflow.system
+                    return outflow.system;
                 } else {
                     continue;
                 }
             }
             _ => unreachable!("Either Inflow or Outflow has to be there but not both"),
         };
-
-        return system;
     }
 
     unreachable!("System should exist")

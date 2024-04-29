@@ -1,5 +1,6 @@
 use crate::components::{
-    Inflow, InflowUsability, Interface, Outflow, OutflowUsability, SystemElement, ElementDescription
+    ElementDescription, Inflow, InflowUsability, Interface, Outflow, OutflowUsability,
+    SystemElement,
 };
 use bevy::prelude::*;
 use bevy_egui::egui::{vec2, ComboBox, Margin, Ui, Visuals};
@@ -15,13 +16,13 @@ fn outflow_egui(ui: &mut Ui, outflow: &mut Outflow) {
     ui.horizontal(|ui| {
         ui.label("Usability");
         ComboBox::from_label("")
-        .selected_text(format!("{:?}", outflow.usability))
-        .show_ui(ui, |ui| {
-            ui.style_mut().wrap = Some(false);
-            ui.set_min_width(60.0);
-            ui.selectable_value(&mut outflow.usability, OutflowUsability::Product, "Product");
-            ui.selectable_value(&mut outflow.usability, OutflowUsability::Waste, "Waste");
-        });
+            .selected_text(format!("{:?}", outflow.usability))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                ui.selectable_value(&mut outflow.usability, OutflowUsability::Product, "Product");
+                ui.selectable_value(&mut outflow.usability, OutflowUsability::Waste, "Waste");
+            });
     });
 }
 
@@ -29,24 +30,29 @@ fn inflow_egui(ui: &mut Ui, inflow: &mut Inflow) {
     ui.horizontal(|ui| {
         ui.label("Usability");
         ComboBox::from_label("")
-        .selected_text(format!("{:?}", inflow.usability))
-        .show_ui(ui, |ui| {
-            ui.style_mut().wrap = Some(false);
-            ui.set_min_width(60.0);
-            ui.selectable_value(&mut inflow.usability, InflowUsability::Resource, "Resource");
-            ui.selectable_value(
-                &mut inflow.usability,
-                InflowUsability::Disruption,
-                "Disruption",
-            );
-        });
-        
+            .selected_text(format!("{:?}", inflow.usability))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                ui.selectable_value(&mut inflow.usability, InflowUsability::Resource, "Resource");
+                ui.selectable_value(
+                    &mut inflow.usability,
+                    InflowUsability::Disruption,
+                    "Disruption",
+                );
+            });
     });
 }
 
 pub fn egui_selected_context(
     mut egui_contexts: EguiContexts,
-    mut selectables: Query<(Entity, &PickSelection, &SystemElement, &mut Name, &mut ElementDescription)>,
+    mut selectables: Query<(
+        Entity,
+        &PickSelection,
+        &SystemElement,
+        &mut Name,
+        &mut ElementDescription,
+    )>,
     mut interfaces: Query<&mut Interface>,
     mut outflows: Query<&mut Outflow>,
     mut inflows: Query<&mut Inflow>,
@@ -56,11 +62,11 @@ pub fn egui_selected_context(
             egui_contexts.ctx_mut().set_visuals(Visuals::light());
             egui_contexts.ctx_mut().style_mut(|style| {
                 style.spacing.window_margin = Margin {
-                        left: 10.0,
-                        right: 10.0,
-                        top: 10.0,
-                        bottom: 10.0,
-                    };
+                    left: 10.0,
+                    right: 10.0,
+                    top: 10.0,
+                    bottom: 10.0,
+                };
                 style.spacing.item_spacing = vec2(10.0, 10.0);
             });
             egui::Window::new(&system_element.to_string()).show(egui_contexts.ctx_mut(), |ui| {
@@ -76,10 +82,8 @@ pub fn egui_selected_context(
                         });
                         ui.horizontal(|ui| {
                             ui.label("Description: ");
-                            
-                            description.mutate(|description| {
-                                ui.text_edit_multiline(description);
-                            });
+
+                            ui.text_edit_multiline(&mut description.text);
                         });
 
                         match system_element {

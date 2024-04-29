@@ -1,11 +1,11 @@
 use crate::components::*;
 use crate::constants::{BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_WIDTH_HALF};
+use crate::events::ExternalEntityDrag;
 use crate::resources::FixedSystemElementGeometries;
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-use crate::events::ExternalEntityDrag;
 
 pub fn spawn_external_entity(
     commands: &mut Commands,
@@ -15,7 +15,8 @@ pub fn spawn_external_entity(
     initial_position: &InitialPosition,
     fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,
-) {
+    is_selected: bool,
+) -> Entity {
     let (transform, initial_position) = ui_transform_from_button(
         transform,
         initial_position,
@@ -33,7 +34,7 @@ pub fn spawn_external_entity(
             },
             Stroke::new(Color::BLACK, EXTERNAL_ENTITY_LINE_WIDTH),
             PickableBundle {
-                selection: PickSelection { is_selected: true },
+                selection: PickSelection { is_selected },
                 ..default()
             },
             SystemElement::ExternalEntity,
@@ -59,4 +60,6 @@ pub fn spawn_external_entity(
             });
         }
     }
+
+    external_entity
 }

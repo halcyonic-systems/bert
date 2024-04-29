@@ -1,7 +1,6 @@
-use crate::bundles::{spawn_create_button, FixedSystemElementGeometry, SystemBundle};
-use crate::components::{CreateButton, CreateButtonType};
+use crate::bundles::{FixedSystemElementGeometry, SystemBundle};
 use crate::constants::*;
-use crate::resources::{FixedSystemElementGeometries, FocusedSystem, Zoom};
+use crate::resources::*;
 use bevy::math::{vec2, Vec3A};
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
@@ -10,6 +9,7 @@ use bevy_prototype_lyon::prelude::*;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 
+#[cfg_attr(feature = "init_complete_system", allow(unused_variables))]
 pub fn setup(
     mut commands: Commands,
     zoom: Res<Zoom>,
@@ -19,10 +19,13 @@ pub fn setup(
     commands.spawn(Camera2dBundle::default());
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
-    let radius = 300.0;
-
     let system_entity = commands
-        .spawn(SystemBundle::new(Vec2::ZERO, 0.0, radius, &mut meshes))
+        .spawn(SystemBundle::new(
+            Vec2::ZERO,
+            0.0,
+            MAIN_SYSTEM_RADIUS,
+            &mut meshes,
+        ))
         .id();
 
     commands.insert_resource(FocusedSystem::new(system_entity));
@@ -31,19 +34,25 @@ pub fn setup(
         external_entity: init_external_entity_geometry(&mut meshes),
     });
 
-    spawn_create_button(
-        &mut commands,
-        CreateButton {
-            ty: CreateButtonType::Outflow,
-            connection_source: system_entity,
-            system: system_entity,
-        },
-        vec2(radius, 0.0),
-        0.0,
-        **zoom,
-        Some(system_entity),
-        &asset_server,
-    );
+    #[cfg(not(feature = "init_complete_system"))]
+    {
+        use crate::bundles::spawn_create_button;
+        use crate::components::{CreateButton, CreateButtonType};
+
+        spawn_create_button(
+            &mut commands,
+            CreateButton {
+                ty: CreateButtonType::Outflow,
+                connection_source: system_entity,
+                system: system_entity,
+            },
+            vec2(MAIN_SYSTEM_RADIUS, 0.0),
+            0.0,
+            **zoom,
+            Some(system_entity),
+            &asset_server,
+        );
+    }
 }
 
 fn init_external_entity_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSystemElementGeometry {
@@ -113,4 +122,65 @@ fn init_interface_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSystemElem
             half_extents: Vec3A::new(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF, 0.0),
         },
     }
+}
+
+#[cfg(feature = "init_complete_system")]
+pub fn init_complete_system(
+    mut commands: Commands,
+    focused_system: Res<FocusedSystem>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut stroke_tess: ResMut<StrokeTessellator>,
+    fixed_system_element_geometries: Res<FixedSystemElementGeometries>,
+    zoom: Res<Zoom>,
+) {
+    use crate::bundles::*;
+    use crate::components::*;
+
+    spawn_complete_outflow(
+        &mut commands,
+        &focused_system,
+        &mut meshes,
+        &mut stroke_tess,
+        &fixed_system_element_geometries,
+        **zoom,
+        vec2(MAIN_SYSTEM_RADIUS, 0.0),
+        Default::default(),
+        OutflowUsability::Product,
+    );
+
+    spawn_complete_outflow(
+        &mut commands,
+        &focused_system,
+        &mut meshes,
+        &mut stroke_tess,
+        &fixed_system_element_geometries,
+        **zoom,
+        vec2(1.0, -1.0).normalize() * MAIN_SYSTEM_RADIUS,
+        Default::default(),
+        OutflowUsability::Waste,
+    );
+
+    spawn_complete_inflow(
+        &mut commands,
+        &focused_system,
+        &mut meshes,
+        &mut stroke_tess,
+        &fixed_system_element_geometries,
+        **zoom,
+        vec2(-MAIN_SYSTEM_RADIUS, 0.0),
+        Default::default(),
+        InflowUsability::Resource,
+    );
+
+    spawn_complete_inflow(
+        &mut commands,
+        &focused_system,
+        &mut meshes,
+        &mut stroke_tess,
+        &fixed_system_element_geometries,
+        **zoom,
+        vec2(-1.0, -1.0).normalize() * MAIN_SYSTEM_RADIUS,
+        Default::default(),
+        InflowUsability::Disruption,
+    );
 }

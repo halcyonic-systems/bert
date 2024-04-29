@@ -19,7 +19,7 @@ pub fn spawn_interface_subsystem(
     system_query: &Query<(&Transform, &crate::components::System)>,
     focused_system: &Res<FocusedSystem>,
     meshes: &mut ResMut<Assets<Mesh>>,
-) {
+) -> Entity {
     let mut interface_flow_entity = Entity::PLACEHOLDER;
 
     for (entity, inflow_connection, outflow_connection) in flow_interface_query {
@@ -65,4 +65,6 @@ pub fn spawn_interface_subsystem(
             target: subsystem_entity,
         })
         .insert(ElementDescription::default());
+
+    subsystem_entity
 }

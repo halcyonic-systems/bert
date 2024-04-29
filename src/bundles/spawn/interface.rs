@@ -19,7 +19,8 @@ pub fn spawn_interface(
     focused_system: &Res<FocusedSystem>,
     fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,
-) {
+    is_selected: bool,
+) -> Entity {
     let (mut transform, initial_position) =
         ui_transform_from_button(transform, initial_position, 5.0, 0.0, zoom);
 
@@ -38,7 +39,7 @@ pub fn spawn_interface(
                 },
                 Fill::color(Color::WHITE),
                 PickableBundle {
-                    selection: PickSelection { is_selected: true },
+                    selection: PickSelection { is_selected },
                     ..default()
                 },
                 HighlightBundles {
@@ -70,6 +71,8 @@ pub fn spawn_interface(
             });
         }
     }
+
+    interface_entity
 }
 
 fn spawn_selected_interface(

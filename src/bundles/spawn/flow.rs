@@ -1,7 +1,8 @@
+use crate::bundles::{spawn_external_entity, spawn_interface};
 use crate::components::*;
 use crate::constants::*;
 use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, SpawnOnSelected};
-use crate::resources::{StrokeTessellator, Zoom};
+use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator, Zoom};
 use crate::systems::{
     create_aabb_from_flow_curve, create_paths_from_flow_curve, tessellate_simplified_mesh,
 };
@@ -19,7 +20,10 @@ pub fn spawn_outflow(
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
-) {
+    is_selected: bool,
+    substance_type: SubstanceType,
+    usability: OutflowUsability,
+) -> Entity {
     let (transform, initial_position) =
         ui_transform_from_button(transform, initial_position, 6.0, 0.0, zoom);
 
@@ -42,10 +46,11 @@ pub fn spawn_outflow(
         "Outflow",
         Outflow {
             system: system_entity,
-            substance_type: Default::default(),
-            usability: Default::default(),
+            substance_type,
+            usability,
         },
-    );
+        is_selected,
+    )
 }
 
 fn spawn_selected_flow(
@@ -85,7 +90,10 @@ pub fn spawn_inflow(
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
-) {
+    is_selected: bool,
+    substance_type: SubstanceType,
+    usability: InflowUsability,
+) -> Entity {
     let (transform, initial_position) =
         ui_transform_from_button(transform, initial_position, 6.0, 0.0, zoom);
 
@@ -108,10 +116,11 @@ pub fn spawn_inflow(
         "Inflow",
         Inflow {
             system: system_entity,
-            substance_type: Default::default(),
-            usability: Default::default(),
+            substance_type,
+            usability,
         },
-    );
+        is_selected,
+    )
 }
 
 fn spawn_flow<F: Bundle>(
@@ -123,7 +132,8 @@ fn spawn_flow<F: Bundle>(
     system_element: SystemElement,
     name: &'static str,
     flow: F,
-) {
+    is_selected: bool,
+) -> Entity {
     let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve, zoom);
     let aabb = create_aabb_from_flow_curve(&flow_curve, zoom);
 
@@ -140,7 +150,7 @@ fn spawn_flow<F: Bundle>(
                 ..default()
             },
             PickableBundle {
-                selection: PickSelection { is_selected: true },
+                selection: PickSelection { is_selected },
                 ..default()
             },
             SpawnOnSelected::new(spawn_selected_flow),
@@ -164,5 +174,81 @@ fn spawn_flow<F: Bundle>(
                 },
                 Fill::color(Color::BLACK),
             ));
-        });
+        })
+        .id()
 }
+
+macro_rules! spawn_complete_flow {
+    ($fn_name:ident, $spawn_name:ident, $interface_ty:expr, $usability_ty:ty) => {
+        pub fn $fn_name(
+            mut commands: &mut Commands,
+            focused_system: &Res<FocusedSystem>,
+            mut meshes: &mut ResMut<Assets<Mesh>>,
+            mut stroke_tess: &mut ResMut<StrokeTessellator>,
+            fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
+            zoom: f32,
+            outflow_start_position: Vec2,
+            substance_type: SubstanceType,
+            usability: $usability_ty,
+        ) -> Entity {
+            let mut transform = Transform::from_translation(outflow_start_position.extend(0.0))
+                .with_rotation(Quat::from_rotation_z(outflow_start_position.to_angle()));
+            let mut initial_position = InitialPosition::new(outflow_start_position);
+
+            let product_flow = $spawn_name(
+                &mut commands,
+                ***focused_system,
+                &transform,
+                &initial_position,
+                &mut stroke_tess,
+                &mut meshes,
+                zoom,
+                false,
+                substance_type,
+                usability,
+            );
+
+            let product_flow_interface = spawn_interface(
+                &mut commands,
+                $interface_ty,
+                product_flow,
+                &transform,
+                &initial_position,
+                &focused_system,
+                &fixed_system_element_geometries,
+                zoom,
+                false,
+            );
+
+            let right = transform.right();
+            transform.translation += right * FLOW_LENGTH;
+            *initial_position += right.truncate() * FLOW_LENGTH;
+
+            spawn_external_entity(
+                &mut commands,
+                $interface_ty,
+                product_flow,
+                &transform,
+                &initial_position,
+                &fixed_system_element_geometries,
+                zoom,
+                false,
+            );
+
+            product_flow_interface
+        }
+    };
+}
+
+spawn_complete_flow!(
+    spawn_complete_outflow,
+    spawn_outflow,
+    InterfaceType::Export,
+    OutflowUsability
+);
+spawn_complete_flow!(
+    spawn_complete_inflow,
+    spawn_inflow,
+    InterfaceType::Import,
+    InflowUsability
+);

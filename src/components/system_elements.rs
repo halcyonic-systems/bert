@@ -92,28 +92,12 @@ pub enum SubstanceType {
     Message,
 }
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq)]
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Default)]
 #[reflect(Component)]
 pub struct ElementDescription {
     pub text: String,
 }
-impl ElementDescription {
-    pub fn new(text: impl Into<String>) -> Self {
-        Self {
-            text: text.into(),
-        }
-    }
-    pub fn mutate(&mut self, f: impl FnOnce(&mut String)) {
-        f(&mut self.text);
-    }
-}
-impl Default for ElementDescription {
-    fn default() -> Self {
-        Self {
-            text: "".to_string(),
-        }
-    }
-}
+
 impl From<&str> for ElementDescription {
     fn from(text: &str) -> Self {
         Self {
@@ -121,6 +105,7 @@ impl From<&str> for ElementDescription {
         }
     }
 }
+
 impl From<String> for ElementDescription {
     fn from(text: String) -> Self {
         Self {

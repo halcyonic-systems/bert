@@ -7,6 +7,7 @@ mod resources;
 mod systems;
 mod utils;
 
+use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
 use crate::events::*;
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
@@ -29,8 +30,15 @@ fn main() {
     ))
     .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
-    .add_systems(Startup, setup)
-    .add_systems(
+    .init_resource::<Zoom>()
+    .add_event::<ExternalEntityDrag>()
+    .add_event::<InterfaceDrag>()
+    .add_systems(Startup, setup);
+
+    #[cfg(feature = "init_complete_system")]
+    app.add_systems(Startup, init_complete_system.after(setup));
+
+    app.add_systems(
         Update,
         (
             egui_selected_context,
@@ -58,9 +66,28 @@ fn main() {
         PostUpdate,
         (update_flow_from_interface, update_flow_from_external_entity),
     )
-    .init_resource::<Zoom>()
-    .add_event::<ExternalEntityDrag>()
-    .add_event::<InterfaceDrag>();
+    .register_type::<OutflowInterfaceConnection>()
+    .register_type::<InflowInterfaceConnection>()
+    .register_type::<InflowSourceConnection>()
+    .register_type::<OutflowSinkConnection>()
+    .register_type::<InterfaceSubsystemConnection>()
+    .register_type::<SubsystemParentFlowConnection>()
+    .register_type::<SystemElement>()
+    .register_type::<crate::components::System>()
+    .register_type::<Interface>()
+    .register_type::<Inflow>()
+    .register_type::<Outflow>()
+    .register_type::<ExternalEntity>()
+    .register_type::<Subsystem>()
+    .register_type::<ElementDescription>()
+    .register_type::<CreateButton>()
+    .register_type::<FlowInterfaceButton>()
+    .register_type::<FlowOtherEndButton>()
+    .register_type::<InterfaceSubsystemButton>()
+    .register_type::<FlowCurve>()
+    .register_type::<InitialPosition>()
+    .register_type::<ScaleWithZoom>()
+    .register_type::<ZoomIndependentStrokeWidth>();
 
     app.world.resource_mut::<Assets<ColorMaterial>>().insert(
         WHITE_COLOR_MATERIAL_HANDLE,

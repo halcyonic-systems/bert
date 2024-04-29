@@ -64,7 +64,7 @@ pub fn remove_unfocused_system_buttons(
 
 pub fn on_create_button_click(
     mut commands: Commands,
-    event: Listener<Pointer<Click>>,
+    mut event: ListenerMut<Pointer<Click>>,
     button_query: Query<(&CreateButton, &Transform, &InitialPosition)>,
     only_button_query: Query<&CreateButton>,
     flow_interface_query: Query<
@@ -82,6 +82,8 @@ pub fn on_create_button_click(
     fixed_system_element_geometries: Res<FixedSystemElementGeometries>,
     zoom: Res<Zoom>,
 ) {
+    event.stop_propagation();
+
     let (button, transform, initial_position) = button_query
         .get(event.target)
         .expect("After on click this has to exist");
@@ -96,6 +98,7 @@ pub fn on_create_button_click(
             &focused_system,
             &fixed_system_element_geometries,
             **zoom,
+            true,
         ),
         CreateButtonType::ExportInterface => spawn_interface(
             &mut commands,
@@ -106,6 +109,7 @@ pub fn on_create_button_click(
             &focused_system,
             &fixed_system_element_geometries,
             **zoom,
+            true,
         ),
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
@@ -115,6 +119,9 @@ pub fn on_create_button_click(
             &mut stroke_tess,
             &mut meshes,
             **zoom,
+            true,
+            Default::default(),
+            Default::default(),
         ),
         CreateButtonType::Outflow => spawn_outflow(
             &mut commands,
@@ -124,6 +131,9 @@ pub fn on_create_button_click(
             &mut stroke_tess,
             &mut meshes,
             **zoom,
+            true,
+            Default::default(),
+            Default::default(),
         ),
         CreateButtonType::Source => spawn_external_entity(
             &mut commands,
@@ -133,6 +143,7 @@ pub fn on_create_button_click(
             initial_position,
             &fixed_system_element_geometries,
             **zoom,
+            true,
         ),
         CreateButtonType::Sink => spawn_external_entity(
             &mut commands,
@@ -142,6 +153,7 @@ pub fn on_create_button_click(
             initial_position,
             &fixed_system_element_geometries,
             **zoom,
+            true,
         ),
         CreateButtonType::InterfaceSubsystem => spawn_interface_subsystem(
             &mut commands,
@@ -151,7 +163,7 @@ pub fn on_create_button_click(
             &focused_system,
             &mut meshes,
         ),
-    }
+    };
 
     despawn_create_button(&mut commands, event.target, &only_button_query);
 }

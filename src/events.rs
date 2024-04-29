@@ -12,7 +12,7 @@ macro_rules! impl_drag_event {
         impl From<ListenerInput<Pointer<Drag>>> for $name {
             fn from(event: ListenerInput<Pointer<Drag>>) -> Self {
                 Self {
-                    target: event.target,
+                    target: event.listener(),
                     delta: event.delta,
                 }
             }
