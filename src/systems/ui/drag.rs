@@ -1,6 +1,7 @@
 use crate::components::*;
 use crate::constants::{EXTERNAL_ENTITY_WIDTH_HALF, FLOW_END_LENGTH, INTERFACE_WIDTH_HALF};
 use crate::events::*;
+use crate::resources::Zoom;
 use bevy::prelude::*;
 
 fn get_system_from_connected_flow<InConn, OutConn>(
@@ -120,7 +121,7 @@ pub fn update_flow_from_interface(
     parent_query: Query<&Parent>,
     mut flow_query: Query<(
         &mut FlowCurve,
-        &Parent,
+        Option<&Parent>,
         Option<&InflowInterfaceConnection>,
         Option<&OutflowInterfaceConnection>,
     )>,
@@ -133,6 +134,8 @@ pub fn update_flow_from_interface(
             outflow_interface_connection,
         ) in &mut flow_query
         {
+            let flow_parent = flow_parent.map(|p| p.get());
+
             match (inflow_interface_connection, outflow_interface_connection) {
                 (Some(inflow_interface_connection), None) => {
                     if inflow_interface_connection.target == target {
@@ -141,7 +144,7 @@ pub fn update_flow_from_interface(
                             transform,
                             &transform_query,
                             &parent_query,
-                            flow_parent.get(),
+                            flow_parent,
                         );
                         flow_curve.end = end;
                         flow_curve.end_direction = dir;
@@ -156,7 +159,7 @@ pub fn update_flow_from_interface(
                             transform,
                             &transform_query,
                             &parent_query,
-                            flow_parent.get(),
+                            flow_parent,
                         );
                         flow_curve.start = start;
                         flow_curve.start_direction = dir;
@@ -177,7 +180,7 @@ fn compute_end_and_direction(
     interface_transform: &Transform,
     transform_query: &Query<&Transform>,
     parent_query: &Query<&Parent>,
-    flow_parent: Entity,
+    flow_parent: Option<Entity>,
 ) -> (Vec2, Vec2) {
     let mut combined_transform = *interface_transform;
     let mut parent_entity = parent.get();
@@ -189,12 +192,13 @@ fn compute_end_and_direction(
 
         combined_transform = parent_transform.mul_transform(combined_transform);
 
-        parent_entity = parent_query
-            .get(parent_entity)
-            .expect("There has to be a System some time")
-            .get();
+        if let Ok(parent) = parent_query.get(parent_entity) {
+            parent_entity = parent.get();
+        } else {
+            break;
+        }
 
-        if parent_entity == flow_parent {
+        if Some(parent_entity) == flow_parent {
             break;
         }
     }
@@ -220,6 +224,7 @@ pub fn drag_interface(
         With<FlowCurve>,
     >,
     system_query: Query<&crate::components::System>,
+    zoom: Res<Zoom>,
 ) {
     for event in events.read() {
         if event.has_bubbled() {
@@ -241,10 +246,19 @@ pub fn drag_interface(
         let interface_pos = transform.translation.truncate();
 
         let mut pos = interface_pos;
-        pos *= system.radius / pos.length();
+        pos *= system.radius * **zoom / pos.length();
 
         transform.rotation = Quat::from_rotation_z(pos.to_angle());
 
         transform.translation = pos.extend(transform.translation.z);
+    }
+}
+
+pub fn update_initial_position_from_transform(
+    mut query: Query<(&mut InitialPosition, &Transform), Changed<Transform>>,
+    zoom: Res<Zoom>,
+) {
+    for (mut initial_position, transform) in &mut query {
+        **initial_position = transform.translation.truncate() / **zoom;
     }
 }

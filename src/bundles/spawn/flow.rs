@@ -2,7 +2,7 @@ use crate::bundles::{spawn_external_entity, spawn_interface};
 use crate::components::*;
 use crate::constants::*;
 use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, SpawnOnSelected};
-use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator, Zoom};
+use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator};
 use crate::systems::{
     create_aabb_from_flow_curve, create_paths_from_flow_curve, tessellate_simplified_mesh,
 };
@@ -42,7 +42,6 @@ pub fn spawn_outflow(
         subsystem_query,
         stroke_tess,
         meshes,
-        zoom,
         flow_curve,
         SystemElement::Outflow,
         system_entity,
@@ -60,13 +59,12 @@ fn spawn_selected_flow(
     mut commands: Commands,
     mut listener: SelectedSpawnListener,
     curve_query: Query<(&FlowCurve, &Transform)>,
-    zoom: Res<Zoom>,
 ) {
     let (flow_curve, transform) = curve_query
         .get(listener.selected())
         .expect("Selected entity should have a FlowCurve");
 
-    let (curve_path, _) = create_paths_from_flow_curve(&flow_curve, **zoom);
+    let (curve_path, _) = create_paths_from_flow_curve(&flow_curve);
 
     listener.add_spawned(
         commands
@@ -115,7 +113,6 @@ pub fn spawn_inflow(
         subsystem_query,
         stroke_tess,
         meshes,
-        zoom,
         flow_curve,
         SystemElement::Inflow,
         system_entity,
@@ -134,7 +131,6 @@ fn spawn_flow<F: Bundle>(
     subsystem_query: &Query<&Subsystem>,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
-    zoom: f32,
     flow_curve: FlowCurve,
     system_element: SystemElement,
     system_entity: Entity,
@@ -142,8 +138,8 @@ fn spawn_flow<F: Bundle>(
     flow: F,
     is_selected: bool,
 ) -> Entity {
-    let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve, zoom);
-    let aabb = create_aabb_from_flow_curve(&flow_curve, zoom);
+    let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve);
+    let aabb = create_aabb_from_flow_curve(&flow_curve);
 
     let flow_entity = commands
         .spawn((

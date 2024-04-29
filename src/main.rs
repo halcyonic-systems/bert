@@ -55,11 +55,11 @@ fn main() {
             change_focused_system,
             remove_unfocused_system_buttons,
             apply_zoom,
-            apply_zoom_to_stroke,
             draw_flow_curve,
-            apply_zoom_to_flow_curve,
             drag_external_entity,
             drag_interface,
+            update_initial_position_from_transform,
+            apply_zoom_to_system_radii,
         ),
     )
     .add_systems(
@@ -85,9 +85,7 @@ fn main() {
     .register_type::<FlowOtherEndButton>()
     .register_type::<InterfaceSubsystemButton>()
     .register_type::<FlowCurve>()
-    .register_type::<InitialPosition>()
-    .register_type::<ScaleWithZoom>()
-    .register_type::<ZoomIndependentStrokeWidth>();
+    .register_type::<InitialPosition>();
 
     app.world.resource_mut::<Assets<ColorMaterial>>().insert(
         WHITE_COLOR_MATERIAL_HANDLE,

@@ -2,7 +2,7 @@ use crate::components::FlowCurve;
 use crate::constants::{
     FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH,
 };
-use crate::resources::{StrokeTessellator, Zoom};
+use crate::resources::StrokeTessellator;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
@@ -26,7 +26,6 @@ pub fn draw_flow_curve(
         Changed<FlowCurve>,
     >,
     mut path_query: Query<&mut Path, Without<FlowCurve>>,
-    zoom: Res<Zoom>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
@@ -38,7 +37,6 @@ pub fn draw_flow_curve(
             simplified_mesh,
             aabb,
             children,
-            **zoom,
             &mut stroke_tess,
             &mut meshes,
         );
@@ -52,14 +50,13 @@ pub fn update_flow_curve(
     mut simplified_mesh: Mut<SimplifiedMesh>,
     mut aabb: Mut<Aabb>,
     children: &Children,
-    zoom: f32,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) {
-    let (curve_path, head_path) = create_paths_from_flow_curve(flow_curve, zoom);
+    let (curve_path, head_path) = create_paths_from_flow_curve(flow_curve);
 
     simplified_mesh.mesh = tessellate_simplified_mesh(&curve_path, meshes, stroke_tess);
-    *aabb = create_aabb_from_flow_curve(flow_curve, zoom);
+    *aabb = create_aabb_from_flow_curve(flow_curve);
 
     *path = curve_path;
 
@@ -119,11 +116,11 @@ pub fn tessellate_simplified_mesh(
     meshes.add(mesh)
 }
 
-pub fn create_paths_from_flow_curve(flow_curve: &FlowCurve, zoom: f32) -> (Path, Path) {
+pub fn create_paths_from_flow_curve(flow_curve: &FlowCurve) -> (Path, Path) {
     let mut curve_path_builder = PathBuilder::new();
 
-    let zoomed_start = flow_curve.start * zoom;
-    let zoomed_end = flow_curve.end * zoom;
+    let zoomed_start = flow_curve.start;
+    let zoomed_end = flow_curve.end;
 
     curve_path_builder.move_to(zoomed_start);
 
@@ -131,8 +128,8 @@ pub fn create_paths_from_flow_curve(flow_curve: &FlowCurve, zoom: f32) -> (Path,
     let end = zoomed_end + end_direction * (FLOW_ARROW_HEAD_LENGTH - 2.0);
 
     curve_path_builder.cubic_bezier_to(
-        zoomed_start + flow_curve.start_direction * zoom,
-        end + flow_curve.end_direction * zoom,
+        zoomed_start + flow_curve.start_direction,
+        end + flow_curve.end_direction,
         end,
     );
 
@@ -155,12 +152,12 @@ pub fn create_paths_from_flow_curve(flow_curve: &FlowCurve, zoom: f32) -> (Path,
     (curve_path_builder.build(), head_path_builder.build())
 }
 
-pub fn create_aabb_from_flow_curve(flow_curve: &FlowCurve, zoom: f32) -> Aabb {
+pub fn create_aabb_from_flow_curve(flow_curve: &FlowCurve) -> Aabb {
     let mut aabb = Aabb::enclosing(&[
-        (flow_curve.start * zoom).extend(0.0),
-        (flow_curve.start + flow_curve.start_direction * zoom).extend(0.0),
-        (flow_curve.end + flow_curve.end_direction * zoom).extend(0.0),
-        (flow_curve.end * zoom).extend(0.0),
+        (flow_curve.start).extend(0.0),
+        (flow_curve.start + flow_curve.start_direction).extend(0.0),
+        (flow_curve.end + flow_curve.end_direction).extend(0.0),
+        (flow_curve.end).extend(0.0),
     ])
     .expect("Iterator is not empty so there has to be an Aabb");
 
