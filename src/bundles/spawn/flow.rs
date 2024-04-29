@@ -1,7 +1,7 @@
 use crate::bundles::{spawn_external_entity, spawn_interface};
 use crate::components::*;
 use crate::constants::*;
-use crate::plugins::lyon_selection::{HighlightBundles, SelectedSpawnListener, SpawnOnSelected};
+use crate::plugins::lyon_selection::HighlightBundles;
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator};
 use crate::systems::{
     create_aabb_from_flow_curve, create_paths_from_flow_curve, tessellate_simplified_mesh,
@@ -53,34 +53,6 @@ pub fn spawn_outflow(
         },
         is_selected,
     )
-}
-
-fn spawn_selected_flow(
-    mut commands: Commands,
-    mut listener: SelectedSpawnListener,
-    curve_query: Query<(&FlowCurve, &Transform)>,
-) {
-    let (flow_curve, transform) = curve_query
-        .get(listener.selected())
-        .expect("Selected entity should have a FlowCurve");
-
-    let (curve_path, _) = create_paths_from_flow_curve(&flow_curve);
-
-    listener.add_spawned(
-        commands
-            .spawn((
-                ShapeBundle {
-                    path: curve_path,
-                    spatial: SpatialBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, transform.translation.z + 1.0),
-                        ..default()
-                    },
-                    ..default()
-                },
-                Stroke::new(Color::WHITE, FLOW_SELECTED_INNER_LINE_WIDTH),
-            ))
-            .id(),
-    );
 }
 
 pub fn spawn_inflow(
@@ -161,7 +133,6 @@ fn spawn_flow<F: Bundle>(
                 selection: PickSelection { is_selected },
                 ..default()
             },
-            SpawnOnSelected::new(spawn_selected_flow),
             HighlightBundles {
                 idle: Stroke::new(Color::BLACK, FLOW_LINE_WIDTH),
                 selected: Stroke::new(Color::BLACK, FLOW_SELECTED_LINE_WIDTH),

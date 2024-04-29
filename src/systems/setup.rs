@@ -2,6 +2,7 @@ use crate::bundles::{FixedSystemElementGeometry, SystemBundle};
 use crate::components::Subsystem;
 use crate::constants::*;
 use crate::resources::*;
+use crate::systems::tessellate_simplified_mesh;
 use bevy::math::{vec2, Vec3A};
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
@@ -15,6 +16,7 @@ pub fn setup(
     mut commands: Commands,
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut tess: ResMut<StrokeTessellator>,
     asset_server: Res<AssetServer>,
 ) {
     commands.spawn(Camera2dBundle::default());
@@ -27,13 +29,14 @@ pub fn setup(
             MAIN_SYSTEM_RADIUS,
             0.0,
             &mut meshes,
+            **zoom,
         ))
         .id();
 
     commands.insert_resource(FocusedSystem::new(system_entity));
     commands.insert_resource(FixedSystemElementGeometries {
         interface: init_interface_geometry(&mut meshes),
-        external_entity: init_external_entity_geometry(&mut meshes),
+        external_entity: init_external_entity_geometry(&mut meshes, &mut tess),
     });
 
     #[cfg(not(feature = "init_complete_system"))]
@@ -57,7 +60,10 @@ pub fn setup(
     }
 }
 
-fn init_external_entity_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSystemElementGeometry {
+fn init_external_entity_geometry(
+    meshes: &mut ResMut<Assets<Mesh>>,
+    tess: &mut ResMut<StrokeTessellator>,
+) -> FixedSystemElementGeometry {
     let mut external_entity_path_builder = PathBuilder::new();
     external_entity_path_builder.move_to(vec2(
         EXTERNAL_ENTITY_WIDTH_HALF,
@@ -76,21 +82,22 @@ fn init_external_entity_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSyst
         -EXTERNAL_ENTITY_HEIGHT_HALF,
     ));
 
+    let path = external_entity_path_builder.build();
+
     FixedSystemElementGeometry {
         simplified: SimplifiedMesh {
-            mesh: meshes
-                .add(Rectangle::new(
-                    EXTERNAL_ENTITY_WIDTH_HALF * 2.0,
-                    EXTERNAL_ENTITY_HEIGHT_HALF * 2.0,
-                ))
-                .into(),
+            mesh: tessellate_simplified_mesh(&path, meshes, tess),
         },
-        path: external_entity_path_builder.build(),
+        path,
         mesh: Default::default(),
         material: WHITE_COLOR_MATERIAL_HANDLE,
         aabb: Aabb {
             center: Vec3A::ZERO,
-            half_extents: Vec3A::new(EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_HEIGHT_HALF, 0.0),
+            half_extents: Vec3A::new(
+                EXTERNAL_ENTITY_WIDTH_HALF + FLOW_CLICK_WIDTH * 0.5,
+                EXTERNAL_ENTITY_HEIGHT_HALF + FLOW_CLICK_WIDTH * 0.5,
+                0.0,
+            ),
         },
     }
 }

@@ -1,8 +1,10 @@
 use crate::components::*;
 use crate::constants::{
-    BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
+    BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_SELECTED_LINE_WIDTH,
+    EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
 };
 use crate::events::ExternalEntityDrag;
+use crate::plugins::lyon_selection::HighlightBundles;
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
@@ -36,7 +38,15 @@ pub fn spawn_external_entity(
                 transform,
                 ..default()
             },
-            Stroke::new(Color::BLACK, EXTERNAL_ENTITY_LINE_WIDTH),
+            HighlightBundles {
+                idle: Stroke::new(Color::BLACK, EXTERNAL_ENTITY_LINE_WIDTH),
+                selected: Stroke {
+                    color: Color::BLACK,
+                    options: StrokeOptions::default()
+                        .with_line_width(EXTERNAL_ENTITY_SELECTED_LINE_WIDTH)
+                        .with_line_cap(LineCap::Round),
+                },
+            },
             PickableBundle {
                 selection: PickSelection { is_selected },
                 ..default()

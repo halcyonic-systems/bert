@@ -51,15 +51,26 @@ fn main() {
             add_consecutive_inflow_create_button,
             add_interface_subsystem_create_buttons,
             add_first_outflow_create_button,
-            zoom_control_system,
             change_focused_system,
             remove_unfocused_system_buttons,
-            apply_zoom,
             draw_flow_curve,
             drag_external_entity,
             drag_interface,
             update_initial_position_from_transform,
-            apply_zoom_to_system_radii,
+        ),
+    )
+    .add_systems(
+        Update,
+        (zoom_control_system, apply_zoom, apply_zoom_to_system_radii),
+    )
+    .add_systems(
+        Update,
+        (
+            spawn_selected_flow,
+            spawn_selected_interface,
+            spawn_selected_external_entity,
+            update_selected_flow_curve,
+            despawn_selected_helper,
         ),
     )
     .add_systems(
@@ -85,7 +96,8 @@ fn main() {
     .register_type::<FlowOtherEndButton>()
     .register_type::<InterfaceSubsystemButton>()
     .register_type::<FlowCurve>()
-    .register_type::<InitialPosition>();
+    .register_type::<InitialPosition>()
+    .register_type::<SelectedHighlightHelperAdded>();
 
     app.world.resource_mut::<Assets<ColorMaterial>>().insert(
         WHITE_COLOR_MATERIAL_HANDLE,

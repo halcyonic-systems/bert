@@ -2,11 +2,13 @@ mod add_remove_buttons;
 mod drag;
 mod flow;
 mod zoom;
+mod selected_helper;
 
 pub use add_remove_buttons::*;
 pub use drag::*;
 pub use flow::*;
 pub use zoom::*;
+pub use selected_helper::*;
 
 use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_external_entity,
@@ -172,6 +174,7 @@ pub fn on_create_button_click(
             &system_query,
             &focused_system,
             &mut meshes,
+            **zoom,
         ),
     };
 

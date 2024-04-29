@@ -20,6 +20,7 @@ pub fn spawn_interface_subsystem(
     system_query: &Query<(&Transform, &crate::components::System)>,
     focused_system: &Res<FocusedSystem>,
     meshes: &mut ResMut<Assets<Mesh>>,
+    zoom: f32,
 ) -> Entity {
     let mut interface_flow_entity = Entity::PLACEHOLDER;
     let mut angle = 0.0;
@@ -49,7 +50,11 @@ pub fn spawn_interface_subsystem(
         .radius
         * SUBSYSTEM_RADIUS_FRACTION;
 
-    let z = if is_child_of_interface { -90.0 } else { 10.0 };
+    let z = if is_child_of_interface {
+        SUBSYSTEM_Z - INTERFACE_Z
+    } else {
+        SUBSYSTEM_Z
+    };
 
     let subsystem_entity = commands
         .spawn((
@@ -57,7 +62,7 @@ pub fn spawn_interface_subsystem(
                 target: interface_flow_entity,
             },
             Subsystem { parent_system },
-            SystemBundle::new(vec2(-radius, 0.0), z, radius, angle, meshes),
+            SystemBundle::new(vec2(-radius * zoom, 0.0), z, radius, angle, meshes, zoom),
             ElementDescription::default(),
         ))
         .id();

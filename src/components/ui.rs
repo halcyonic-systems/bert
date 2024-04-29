@@ -41,3 +41,9 @@ pub struct FlowCurve {
     pub start_direction: Vec2,
     pub end_direction: Vec2,
 }
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct SelectedHighlightHelperAdded {
+    pub helper_entity: Entity,
+}

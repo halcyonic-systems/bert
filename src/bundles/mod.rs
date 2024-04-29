@@ -26,6 +26,13 @@ pub fn get_system_geometry_from_radius(radius: f32) -> (Mesh, Path) {
     )
 }
 
+pub fn aabb_from_radius(radius: f32) -> Aabb {
+    Aabb::from_min_max(
+        vec3(-radius, -radius, 0.0),
+        vec3(radius, radius, 0.0),
+    )
+}
+
 #[derive(Bundle)]
 pub struct SystemBundle {
     pub system: System,
@@ -46,8 +53,11 @@ impl SystemBundle {
         radius: f32,
         angle: f32,
         meshes: &mut ResMut<Assets<Mesh>>,
+        zoom: f32,
     ) -> Self {
-        let (simplified_mesh, path) = get_system_geometry_from_radius(radius);
+        let zoomed_radius = radius * zoom;
+
+        let (simplified_mesh, path) = get_system_geometry_from_radius(zoomed_radius);
 
         Self {
             system: System { radius },
@@ -56,7 +66,7 @@ impl SystemBundle {
             simplified_mesh: SimplifiedMesh {
                 mesh: meshes.add(simplified_mesh).into(),
             },
-            aabb: Aabb::from_min_max(vec3(-radius, -radius, 0.0), vec3(radius, radius, 0.0)),
+            aabb: aabb_from_radius(zoomed_radius),
             system_shape_bundle: ShapeBundle {
                 path,
                 spatial: SpatialBundle {
