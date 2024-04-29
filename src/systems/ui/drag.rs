@@ -58,6 +58,7 @@ pub fn drag_external_entity(
     >,
     subsystem_query: Query<&Subsystem>,
     system_query: Query<&crate::components::System>,
+    zoom: Res<Zoom>,
 ) {
     for event in events.read() {
         if event.has_bubbled() {
@@ -76,7 +77,9 @@ pub fn drag_external_entity(
             let parent_system = system_query
                 .get(subsystem.parent_system)
                 .expect("Parent system has to exist");
-            transform.translation = transform.translation.clamp_length_max(parent_system.radius);
+            transform.translation = transform
+                .translation
+                .clamp_length_max(parent_system.radius * **zoom);
         }
     }
 }
