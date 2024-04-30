@@ -11,6 +11,7 @@ use bevy_prototype_lyon::prelude::*;
 pub fn spawn_interface(
     commands: &mut Commands,
     interface_type: InterfaceType,
+    substance_type: SubstanceType,
     flow_entity: Entity,
     transform: &Transform,
     initial_position: &InitialPosition,
@@ -32,7 +33,7 @@ pub fn spawn_interface(
                 transform,
                 ..default()
             },
-            Fill::color(Color::WHITE),
+            Fill::color(substance_type.interface_color()),
             PickableBundle {
                 selection: PickSelection { is_selected },
                 ..default()

@@ -119,6 +119,13 @@ impl SubstanceType {
             SubstanceType::Message => Color::GRAY,
         }
     }
+    pub fn interface_color(&self) -> Color {
+        match self {
+            SubstanceType::Energy => Color::rgb_u8(233, 182, 178),
+            SubstanceType::Material => Color::DARK_GRAY,
+            SubstanceType::Message => Color::GRAY,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Default)]

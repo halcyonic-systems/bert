@@ -97,6 +97,9 @@ pub fn on_create_button_click(
         CreateButtonType::ImportInterface => spawn_interface(
             &mut commands,
             InterfaceType::Import,
+            button
+                .substance_type
+                .expect("Interface button must have a substance type"),
             button.connection_source,
             transform,
             initial_position,
@@ -108,6 +111,9 @@ pub fn on_create_button_click(
         CreateButtonType::ExportInterface => spawn_interface(
             &mut commands,
             InterfaceType::Export,
+            button
+                .substance_type
+                .expect("Interface button must have a substance type"),
             button.connection_source,
             transform,
             initial_position,

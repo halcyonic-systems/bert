@@ -1,5 +1,4 @@
 use crate::bundles::{FixedSystemElementGeometry, SystemBundle};
-use crate::components::Subsystem;
 use crate::constants::*;
 use crate::resources::*;
 use crate::systems::tessellate_simplified_mesh;
