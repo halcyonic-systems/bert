@@ -136,7 +136,7 @@ fn init_interface_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSystemElem
 #[cfg(feature = "init_complete_system")]
 pub fn init_complete_system(
     mut commands: Commands,
-    subsystem_query: Query<&Subsystem>,
+    subsystem_query: Query<&crate::components::Subsystem>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
