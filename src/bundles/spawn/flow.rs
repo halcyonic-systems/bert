@@ -200,6 +200,7 @@ macro_rules! spawn_complete_flow {
             let product_flow_interface = spawn_interface(
                 &mut commands,
                 $interface_ty,
+                substance_type,
                 product_flow,
                 &transform,
                 &focused_system,

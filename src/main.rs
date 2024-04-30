@@ -99,6 +99,8 @@ fn main() {
         (
             update_color_from_substance_type::<Inflow, InflowSourceConnection>,
             update_color_from_substance_type::<Outflow, OutflowSinkConnection>,
+            update_interface_color_from_flow::<Inflow, InflowInterfaceConnection>,
+            update_interface_color_from_flow::<Outflow, OutflowInterfaceConnection>,
         ),
     )
     .add_systems(

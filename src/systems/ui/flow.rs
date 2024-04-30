@@ -1,6 +1,6 @@
 use crate::components::FlowCurve;
 use crate::constants::{
-    FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH,
+    FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH
 };
 use crate::resources::StrokeTessellator;
 use bevy::math::vec2;

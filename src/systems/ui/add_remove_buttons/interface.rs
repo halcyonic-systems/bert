@@ -51,7 +51,7 @@ macro_rules! interface_create_button {
                         ty: $button_type,
                         connection_source: entity,
                         system: **focused_system,
-                        substance_type: None,
+                        substance_type: Some(flow.substance_type),
                     },
                     position,
                     direction.to_angle(),

@@ -1,5 +1,6 @@
 use crate::components::{Connection, HasSubstanceType};
 use crate::plugins::lyon_selection::HighlightBundles;
+use crate::Interface;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -32,4 +33,26 @@ pub fn update_color_from_substance_type<F, C>(
         external_entity_highlight.idle.color = color;
         external_entity_highlight.selected.color = color;
     }
+}
+
+pub fn update_interface_color_from_flow<F, C>(
+    mut query: Query<
+        (&F, &C),
+        Or<(Added<F>, Changed<F>)>,
+    >,
+    mut interface_query: Query<
+        &mut Fill,
+        (Without<F>, With<Interface>)
+    >,
+    ) where
+        F: HasSubstanceType + Component,
+        C: Connection + Component,
+    {
+        for (flow, interface_connection) in &mut query {
+            let color = flow.substance_type().interface_color();
+            let mut interface_fill = interface_query
+                .get_mut(interface_connection.target())
+                .expect("Interface should exist");
+            interface_fill.color = color;
+        }
 }
