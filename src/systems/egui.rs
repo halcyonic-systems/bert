@@ -2,6 +2,7 @@ use crate::components::{
     ElementDescription, Inflow, InflowUsability, Interface, Outflow, OutflowUsability,
     SystemElement,
 };
+use crate::SubstanceType;
 use bevy::prelude::*;
 use bevy_egui::egui::{vec2, ComboBox, Margin, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
@@ -24,6 +25,19 @@ fn outflow_egui(ui: &mut Ui, outflow: &mut Outflow) {
                 ui.selectable_value(&mut outflow.usability, OutflowUsability::Waste, "Waste");
             });
     });
+
+    ui.horizontal(|ui| {
+        ui.label("Substance Type");
+        ComboBox::from_label(" ")
+            .selected_text(format!("{:?}", outflow.substance_type))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                ui.selectable_value(&mut outflow.substance_type, SubstanceType::Energy, "Energy");
+                ui.selectable_value(&mut outflow.substance_type, SubstanceType::Material, "Material");
+                ui.selectable_value(&mut outflow.substance_type, SubstanceType::Message, "Message");
+            });
+    });
 }
 
 fn inflow_egui(ui: &mut Ui, inflow: &mut Inflow) {
@@ -35,11 +49,19 @@ fn inflow_egui(ui: &mut Ui, inflow: &mut Inflow) {
                 ui.style_mut().wrap = Some(false);
                 ui.set_min_width(60.0);
                 ui.selectable_value(&mut inflow.usability, InflowUsability::Resource, "Resource");
-                ui.selectable_value(
-                    &mut inflow.usability,
-                    InflowUsability::Disruption,
-                    "Disruption",
-                );
+                ui.selectable_value(&mut inflow.usability, InflowUsability::Disruption, "Disruption");
+            });
+    });
+    ui.horizontal(|ui| {
+        ui.label("Substance Type");
+        ComboBox::from_label(" ")
+            .selected_text(format!("{:?}", inflow.substance_type))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                ui.selectable_value(&mut inflow.substance_type, SubstanceType::Energy, "Energy");
+                ui.selectable_value(&mut inflow.substance_type, SubstanceType::Material, "Material");
+                ui.selectable_value(&mut inflow.substance_type, SubstanceType::Message, "Message");
             });
     });
 }
