@@ -1,14 +1,16 @@
 mod add_remove_buttons;
+mod color;
 mod drag;
 mod flow;
-mod zoom;
 mod selected_helper;
+mod zoom;
 
 pub use add_remove_buttons::*;
+pub use color::*;
 pub use drag::*;
 pub use flow::*;
-pub use zoom::*;
 pub use selected_helper::*;
+pub use zoom::*;
 
 use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_external_entity,
@@ -145,6 +147,9 @@ pub fn on_create_button_click(
             &subsystem_query,
             &focused_system,
             InterfaceType::Import,
+            button
+                .substance_type
+                .expect("Source button must have a substance type"),
             button.connection_source,
             &transform,
             initial_position,
@@ -157,6 +162,9 @@ pub fn on_create_button_click(
             &subsystem_query,
             &focused_system,
             InterfaceType::Export,
+            button
+                .substance_type
+                .expect("Sink button must have a substance type"),
             button.connection_source,
             &transform,
             initial_position,

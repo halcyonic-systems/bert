@@ -33,6 +33,7 @@ macro_rules! external_entity_create_button {
                         ty: $button_type,
                         connection_source: entity,
                         system: **focused_system,
+                        substance_type: Some(flow.substance_type),
                     },
                     flow_curve.$side + direction * BUTTON_WIDTH_HALF,
                     direction.to_angle(),

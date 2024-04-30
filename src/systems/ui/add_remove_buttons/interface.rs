@@ -33,6 +33,7 @@ macro_rules! interface_create_button {
                         ty: $button_type,
                         connection_source: entity,
                         system: **focused_system,
+                        substance_type: None,
                     },
                     flow_curve.$side - flow_curve.$side_dir.normalize() * INTERFACE_WIDTH_HALF,
                     direction.to_angle(),

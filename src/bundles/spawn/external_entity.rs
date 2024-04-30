@@ -16,6 +16,7 @@ pub fn spawn_external_entity(
     subsystem_query: &Query<&Subsystem>,
     focused_system: &Res<FocusedSystem>,
     interface_type: InterfaceType,
+    substance_type: SubstanceType,
     flow_entity: Entity,
     transform: &Transform,
     initial_position: &InitialPosition,
@@ -31,6 +32,8 @@ pub fn spawn_external_entity(
         zoom,
     );
 
+    let color = substance_type.flow_color();
+
     let external_entity = commands
         .spawn((
             ExternalEntity::default(),
@@ -39,9 +42,9 @@ pub fn spawn_external_entity(
                 ..default()
             },
             HighlightBundles {
-                idle: Stroke::new(Color::BLACK, EXTERNAL_ENTITY_LINE_WIDTH),
+                idle: Stroke::new(color, EXTERNAL_ENTITY_LINE_WIDTH),
                 selected: Stroke {
-                    color: Color::BLACK,
+                    color,
                     options: StrokeOptions::default()
                         .with_line_width(EXTERNAL_ENTITY_SELECTED_LINE_WIDTH)
                         .with_line_cap(LineCap::Round),

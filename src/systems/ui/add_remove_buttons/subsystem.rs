@@ -1,5 +1,9 @@
 use crate::bundles::{despawn_create_button, spawn_create_button};
-use crate::components::{CreateButton, CreateButtonType, GeneralUsability, Inflow, InflowInterfaceConnection, InflowSourceConnection, InterfaceSubsystemButton, InterfaceSubsystemConnection, Outflow, OutflowInterfaceConnection, OutflowSinkConnection};
+use crate::components::{
+    CreateButton, CreateButtonType, GeneralUsability, Inflow, InflowInterfaceConnection,
+    InflowSourceConnection, InterfaceSubsystemButton, InterfaceSubsystemConnection, Outflow,
+    OutflowInterfaceConnection, OutflowSinkConnection,
+};
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
@@ -122,7 +126,8 @@ pub fn add_interface_subsystem_create_buttons(
         let interface_button = interface_button_query.get(interface_entity);
 
         if flow_usabilities.len() > 3 && !incomplete_flows_exist {
-            if interface_button.is_err() && interface_subsystem_query.get(interface_entity).is_err() {
+            if interface_button.is_err() && interface_subsystem_query.get(interface_entity).is_err()
+            {
                 spawn_create_button(
                     &mut commands,
                     CreateButton {
@@ -131,6 +136,7 @@ pub fn add_interface_subsystem_create_buttons(
                         },
                         connection_source: interface_entity,
                         system: **focused_system,
+                        substance_type: None,
                     },
                     Vec2::ZERO,
                     0.0,

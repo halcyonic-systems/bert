@@ -80,6 +80,7 @@ fn main() {
             apply_zoom,
             apply_zoom_to_system_radii,
             apply_zoom_to_camera_position,
+            apply_zoom_to_incomplete_flows,
         )
             .run_if(resource_changed::<Zoom>),
     )
@@ -94,12 +95,19 @@ fn main() {
         ),
     )
     .add_systems(
+        Update,
+        (
+            update_color_from_substance_type::<Inflow, InflowSourceConnection>,
+            update_color_from_substance_type::<Outflow, OutflowSinkConnection>,
+        ),
+    )
+    .add_systems(
         PostUpdate,
         (
+            update_flow_from_interface_subsystem.before(update_flow_from_system),
+            update_flow_from_system.before(update_flow_from_interface),
             update_flow_from_interface,
             update_flow_from_external_entity,
-            update_flow_from_system.before(update_flow_from_interface),
-            update_flow_from_interface_subsystem.before(update_flow_from_system),
         ),
     )
     .register_type::<OutflowInterfaceConnection>()

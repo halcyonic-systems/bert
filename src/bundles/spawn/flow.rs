@@ -98,7 +98,7 @@ pub fn spawn_inflow(
     )
 }
 
-fn spawn_flow<F: Bundle>(
+fn spawn_flow<F: Bundle + HasSubstanceType>(
     commands: &mut Commands,
     subsystem_query: &Query<&Subsystem>,
     stroke_tess: &mut ResMut<StrokeTessellator>,
@@ -112,6 +112,8 @@ fn spawn_flow<F: Bundle>(
 ) -> Entity {
     let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve);
     let aabb = create_aabb_from_flow_curve(&flow_curve);
+
+    let color = flow.substance_type().flow_color();
 
     let flow_entity = commands
         .spawn((
@@ -134,8 +136,8 @@ fn spawn_flow<F: Bundle>(
                 ..default()
             },
             HighlightBundles {
-                idle: Stroke::new(Color::BLACK, FLOW_LINE_WIDTH),
-                selected: Stroke::new(Color::BLACK, FLOW_SELECTED_LINE_WIDTH),
+                idle: Stroke::new(color, FLOW_LINE_WIDTH),
+                selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH),
             },
             system_element,
             Name::new(name),
@@ -151,7 +153,7 @@ fn spawn_flow<F: Bundle>(
                     },
                     ..default()
                 },
-                Fill::color(Color::BLACK),
+                Fill::color(color),
             ));
         })
         .id();
@@ -218,6 +220,7 @@ macro_rules! spawn_complete_flow {
                 subsystem_query,
                 focused_system,
                 $interface_ty,
+                substance_type,
                 product_flow,
                 &transform,
                 &initial_position,

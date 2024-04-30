@@ -20,6 +20,7 @@ pub const FLOW_CLICK_TOLERANCE: f32 = 1.0;
 pub const FLOW_ARROW_HEAD_LENGTH: f32 = 20.0;
 pub const FLOW_ARROW_HEAD_WIDTH_HALF: f32 = 10.0;
 
+pub const SUBSYSTEM_SCALING_FACTOR: f32 = 0.3;
 pub const SUBSYSTEM_RADIUS_FRACTION: f32 = 0.2;
 pub const SUBSYSTEM_Z: f32 = 10.0;
 

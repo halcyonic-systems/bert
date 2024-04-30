@@ -50,6 +50,7 @@ pub fn setup(
                 ty: CreateButtonType::Outflow,
                 connection_source: system_entity,
                 system: system_entity,
+                substance_type: None,
             },
             vec2(MAIN_SYSTEM_RADIUS, 0.0),
             0.0,

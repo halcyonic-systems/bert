@@ -1,5 +1,5 @@
 use crate::bundles::{aabb_from_radius, get_system_geometry_from_radius};
-use crate::components::InitialPosition;
+use crate::components::*;
 use crate::resources::Zoom;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
@@ -44,6 +44,41 @@ pub fn apply_zoom_to_camera_position(
     mut prev_zoom: Local<Zoom>,
 ) {
     query.single_mut().translation *= **zoom / **prev_zoom;
+
+    **prev_zoom = **zoom;
+}
+
+pub fn apply_zoom_to_incomplete_flows(
+    mut inflow_query: Query<
+        (&mut FlowCurve, Option<&InflowInterfaceConnection>),
+        (With<Inflow>, Without<InflowSourceConnection>),
+    >,
+    mut outflow_query: Query<
+        (&mut FlowCurve, Option<&OutflowInterfaceConnection>),
+        (
+            With<Outflow>,
+            Without<OutflowSinkConnection>,
+            Without<Inflow>,
+        ),
+    >,
+    zoom: Res<Zoom>,
+    mut prev_zoom: Local<Zoom>,
+) {
+    for (mut flow_curve, inflow_interface_connection) in &mut inflow_query {
+        flow_curve.start *= **zoom / **prev_zoom;
+
+        if inflow_interface_connection.is_none() {
+            flow_curve.end *= **zoom / **prev_zoom;
+        }
+    }
+
+    for (mut flow_curve, outflow_interface_connection) in &mut outflow_query {
+        flow_curve.end *= **zoom / **prev_zoom;
+
+        if outflow_interface_connection.is_none() {
+            flow_curve.start *= **zoom / **prev_zoom;
+        }
+    }
 
     **prev_zoom = **zoom;
 }

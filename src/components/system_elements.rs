@@ -54,6 +54,22 @@ pub struct Outflow {
     pub system: Entity,
 }
 
+pub trait HasSubstanceType {
+    fn substance_type(&self) -> SubstanceType;
+}
+
+impl HasSubstanceType for Inflow {
+    fn substance_type(&self) -> SubstanceType {
+        self.substance_type
+    }
+}
+
+impl HasSubstanceType for Outflow {
+    fn substance_type(&self) -> SubstanceType {
+        self.substance_type
+    }
+}
+
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct ExternalEntity;
@@ -93,6 +109,16 @@ pub enum SubstanceType {
     Energy,
     Material,
     Message,
+}
+
+impl SubstanceType {
+    pub fn flow_color(&self) -> Color {
+        match self {
+            SubstanceType::Energy => Color::rgb_u8(181, 27, 27),
+            SubstanceType::Material => Color::BLACK,
+            SubstanceType::Message => Color::GRAY,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Default)]

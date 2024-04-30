@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use crate::components::SubstanceType;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]
@@ -6,6 +7,7 @@ pub struct CreateButton {
     pub ty: CreateButtonType,
     pub connection_source: Entity,
     pub system: Entity,
+    pub substance_type: Option<SubstanceType>,
 }
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
@@ -46,4 +48,16 @@ pub struct FlowCurve {
 #[reflect(Component)]
 pub struct SelectedHighlightHelperAdded {
     pub helper_entity: Entity,
+}
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
+#[reflect(Component)]
+pub struct ScaledDownElement {
+    pub factor: f32,
+}
+
+impl ScaledDownElement {
+    pub fn zoomed_factor(&self, zoom: f32) -> f32 {
+        (self.factor * zoom).min(1.0)
+    }
 }
