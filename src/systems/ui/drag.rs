@@ -1,7 +1,8 @@
 use crate::components::*;
-use crate::constants::{EXTERNAL_ENTITY_WIDTH_HALF, FLOW_END_LENGTH, INTERFACE_WIDTH_HALF};
+use crate::constants::EXTERNAL_ENTITY_WIDTH_HALF;
 use crate::events::*;
 use crate::resources::Zoom;
+use crate::utils::compute_end_and_direction_from_system_child;
 use bevy::prelude::*;
 use std::ops::DerefMut;
 
@@ -120,7 +121,7 @@ pub fn update_flow_from_external_entity(
 }
 
 pub fn update_flow_from_interface(
-    interface_query: Query<(Entity, &Transform, &Parent), (With<Interface>, Changed<Transform>)>,
+    interface_query: Query<Entity, (With<Interface>, Changed<Transform>)>,
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>,
     mut flow_query: Query<(
@@ -130,7 +131,7 @@ pub fn update_flow_from_interface(
         Option<&OutflowInterfaceConnection>,
     )>,
 ) {
-    for (target, transform, parent) in &interface_query {
+    for target in &interface_query {
         for (
             mut flow_curve,
             flow_parent,
@@ -143,9 +144,8 @@ pub fn update_flow_from_interface(
             match (inflow_interface_connection, outflow_interface_connection) {
                 (Some(inflow_interface_connection), None) => {
                     if inflow_interface_connection.target == target {
-                        let (end, dir) = compute_end_and_direction(
-                            parent,
-                            transform,
+                        let (end, dir) = compute_end_and_direction_from_system_child(
+                            target,
                             &transform_query,
                             &parent_query,
                             flow_parent,
@@ -158,9 +158,8 @@ pub fn update_flow_from_interface(
                 }
                 (None, Some(outflow_interface_connection)) => {
                     if outflow_interface_connection.target == target {
-                        let (start, dir) = compute_end_and_direction(
-                            parent,
-                            transform,
+                        let (start, dir) = compute_end_and_direction_from_system_child(
+                            target,
                             &transform_query,
                             &parent_query,
                             flow_parent,
@@ -177,42 +176,6 @@ pub fn update_flow_from_interface(
             }
         }
     }
-}
-
-fn compute_end_and_direction(
-    parent: &Parent,
-    interface_transform: &Transform,
-    transform_query: &Query<&Transform>,
-    parent_query: &Query<&Parent>,
-    flow_parent: Option<Entity>,
-) -> (Vec2, Vec2) {
-    let mut combined_transform = *interface_transform;
-    let mut parent_entity = parent.get();
-
-    loop {
-        let parent_transform = transform_query
-            .get(parent_entity)
-            .expect("Parent should have a Transform");
-
-        combined_transform = parent_transform.mul_transform(combined_transform);
-
-        if let Ok(parent) = parent_query.get(parent_entity) {
-            parent_entity = parent.get();
-        } else {
-            break;
-        }
-
-        if Some(parent_entity) == flow_parent {
-            break;
-        }
-    }
-
-    let right = combined_transform.right().truncate();
-
-    (
-        combined_transform.translation.truncate() + right * INTERFACE_WIDTH_HALF,
-        right * FLOW_END_LENGTH,
-    )
 }
 
 pub fn drag_interface(

@@ -4,7 +4,9 @@ use crate::components::{
     InflowSourceConnection, InterfaceSubsystemButton, InterfaceSubsystemConnection, Outflow,
     OutflowInterfaceConnection, OutflowSinkConnection,
 };
+use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::resources::{FocusedSystem, Zoom};
+use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 
@@ -138,7 +140,7 @@ pub fn add_interface_subsystem_create_buttons(
                         system: **focused_system,
                         substance_type: None,
                     },
-                    Vec2::ZERO,
+                    vec2(-INTERFACE_WIDTH_HALF, 0.0),
                     0.0,
                     **zoom,
                     Some(interface_entity),

@@ -19,14 +19,12 @@ pub fn spawn_external_entity(
     substance_type: SubstanceType,
     flow_entity: Entity,
     transform: &Transform,
-    initial_position: &InitialPosition,
     fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,
     is_selected: bool,
 ) -> Entity {
     let (transform, initial_position) = ui_transform_from_button(
         transform,
-        initial_position,
         EXTERNAL_ENTITY_Z,
         EXTERNAL_ENTITY_WIDTH_HALF - BUTTON_WIDTH_HALF,
         zoom,

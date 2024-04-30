@@ -18,6 +18,7 @@ use crate::bundles::{
 };
 use crate::components::*;
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator, Zoom};
+use crate::utils::combined_transform_of_entity_until_common_parent;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -69,7 +70,7 @@ pub fn remove_unfocused_system_buttons(
 pub fn on_create_button_click(
     mut commands: Commands,
     mut event: ListenerMut<Pointer<Click>>,
-    button_query: Query<(&CreateButton, &Transform, &InitialPosition)>,
+    button_query: Query<(&CreateButton, &Transform)>,
     only_button_query: Query<&CreateButton>,
     flow_interface_query: Query<
         (
@@ -80,6 +81,8 @@ pub fn on_create_button_click(
         Or<(With<Inflow>, With<Outflow>)>,
     >,
     system_query: Query<(&Transform, &crate::components::System)>,
+    transform_query: Query<&Transform>,
+    parent_query: Query<&Parent>,
     subsystem_query: Query<&Subsystem>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -89,7 +92,7 @@ pub fn on_create_button_click(
 ) {
     event.stop_propagation();
 
-    let (button, transform, initial_position) = button_query
+    let (button, transform) = button_query
         .get(event.target)
         .expect("After on click this has to exist");
 
@@ -99,7 +102,6 @@ pub fn on_create_button_click(
             InterfaceType::Import,
             button.connection_source,
             transform,
-            initial_position,
             &focused_system,
             &fixed_system_element_geometries,
             **zoom,
@@ -110,7 +112,6 @@ pub fn on_create_button_click(
             InterfaceType::Export,
             button.connection_source,
             transform,
-            initial_position,
             &focused_system,
             &fixed_system_element_geometries,
             **zoom,
@@ -120,8 +121,15 @@ pub fn on_create_button_click(
             &mut commands,
             &subsystem_query,
             button.connection_source,
-            &transform,
-            initial_position,
+            &combined_transform_of_entity_until_common_parent(
+                event.target,
+                subsystem_query
+                    .get(button.connection_source)
+                    .ok()
+                    .map(|s| s.parent_system),
+                &transform_query,
+                &parent_query,
+            ),
             &mut stroke_tess,
             &mut meshes,
             **zoom,
@@ -133,8 +141,15 @@ pub fn on_create_button_click(
             &mut commands,
             &subsystem_query,
             button.connection_source,
-            &transform,
-            initial_position,
+            &combined_transform_of_entity_until_common_parent(
+                event.target,
+                subsystem_query
+                    .get(button.connection_source)
+                    .ok()
+                    .map(|s| s.parent_system),
+                &transform_query,
+                &parent_query,
+            ),
             &mut stroke_tess,
             &mut meshes,
             **zoom,
@@ -152,7 +167,6 @@ pub fn on_create_button_click(
                 .expect("Source button must have a substance type"),
             button.connection_source,
             &transform,
-            initial_position,
             &fixed_system_element_geometries,
             **zoom,
             true,
@@ -167,7 +181,6 @@ pub fn on_create_button_click(
                 .expect("Sink button must have a substance type"),
             button.connection_source,
             &transform,
-            initial_position,
             &fixed_system_element_geometries,
             **zoom,
             true,

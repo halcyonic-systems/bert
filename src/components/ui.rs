@@ -56,8 +56,8 @@ pub struct ScaledDownElement {
     pub factor: f32,
 }
 
-impl ScaledDownElement {
-    pub fn zoomed_factor(&self, zoom: f32) -> f32 {
-        (self.factor * zoom).min(1.0)
-    }
-}
+// impl ScaledDownElement {
+//     pub fn zoomed_factor(&self, zoom: f32) -> f32 {
+//         (self.factor * zoom).min(1.0)
+//     }
+// }

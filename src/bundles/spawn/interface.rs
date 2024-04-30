@@ -13,14 +13,13 @@ pub fn spawn_interface(
     interface_type: InterfaceType,
     flow_entity: Entity,
     transform: &Transform,
-    initial_position: &InitialPosition,
     focused_system: &Res<FocusedSystem>,
     fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
     zoom: f32,
     is_selected: bool,
 ) -> Entity {
     let (mut transform, initial_position) =
-        ui_transform_from_button(transform, initial_position, INTERFACE_Z, 0.0, zoom);
+        ui_transform_from_button(transform, INTERFACE_Z, 0.0, zoom);
 
     // Normalize the rotation
     transform.rotation = Quat::from_rotation_z(transform.translation.truncate().to_angle());

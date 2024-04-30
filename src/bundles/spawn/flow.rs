@@ -17,7 +17,6 @@ pub fn spawn_outflow(
     subsystem_query: &Query<&Subsystem>,
     system_entity: Entity,
     transform: &Transform,
-    initial_position: &InitialPosition,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
@@ -25,15 +24,16 @@ pub fn spawn_outflow(
     substance_type: SubstanceType,
     usability: OutflowUsability,
 ) -> Entity {
-    let (transform, initial_position) =
-        ui_transform_from_button(transform, initial_position, 6.0, 0.0, zoom);
+    let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
 
     let direction = transform.right().truncate();
 
+    let scaling_factor = Subsystem::scaling_factor(system_entity, subsystem_query);
+
     let flow_curve = FlowCurve {
-        start: *initial_position + direction * INTERFACE_WIDTH_HALF,
+        start: *initial_position * zoom,
         start_direction: direction * FLOW_END_LENGTH,
-        end: *initial_position + direction * FLOW_LENGTH,
+        end: (*initial_position + direction * FLOW_LENGTH * scaling_factor) * zoom,
         end_direction: direction * -FLOW_END_LENGTH,
     };
 
@@ -60,7 +60,6 @@ pub fn spawn_inflow(
     subsystem_query: &Query<&Subsystem>,
     system_entity: Entity,
     transform: &Transform,
-    initial_position: &InitialPosition,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
@@ -68,15 +67,16 @@ pub fn spawn_inflow(
     substance_type: SubstanceType,
     usability: InflowUsability,
 ) -> Entity {
-    let (transform, initial_position) =
-        ui_transform_from_button(transform, initial_position, 6.0, 0.0, zoom);
+    let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
 
     let direction = transform.right().truncate();
 
+    let scaling_factor = Subsystem::scaling_factor(system_entity, subsystem_query);
+
     let flow_curve = FlowCurve {
-        start: *initial_position + direction * FLOW_LENGTH,
+        start: (*initial_position + direction * FLOW_LENGTH * scaling_factor) * zoom,
         start_direction: direction * -FLOW_END_LENGTH,
-        end: *initial_position + direction * INTERFACE_WIDTH_HALF,
+        end: *initial_position * zoom,
         end_direction: direction * FLOW_END_LENGTH,
     };
 
@@ -183,14 +183,12 @@ macro_rules! spawn_complete_flow {
         ) -> Entity {
             let mut transform = Transform::from_translation(outflow_start_position.extend(0.0))
                 .with_rotation(Quat::from_rotation_z(outflow_start_position.to_angle()));
-            let mut initial_position = InitialPosition::new(outflow_start_position);
 
             let product_flow = $spawn_name(
                 &mut commands,
                 subsystem_query,
                 ***focused_system,
                 &transform,
-                &initial_position,
                 &mut stroke_tess,
                 &mut meshes,
                 zoom,
@@ -204,7 +202,6 @@ macro_rules! spawn_complete_flow {
                 $interface_ty,
                 product_flow,
                 &transform,
-                &initial_position,
                 &focused_system,
                 &fixed_system_element_geometries,
                 zoom,
@@ -213,7 +210,6 @@ macro_rules! spawn_complete_flow {
 
             let right = transform.right();
             transform.translation += right * FLOW_LENGTH;
-            *initial_position += right.truncate() * FLOW_LENGTH;
 
             spawn_external_entity(
                 &mut commands,
@@ -223,7 +219,6 @@ macro_rules! spawn_complete_flow {
                 substance_type,
                 product_flow,
                 &transform,
-                &initial_position,
                 &fixed_system_element_geometries,
                 zoom,
                 false,
