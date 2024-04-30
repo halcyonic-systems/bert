@@ -18,6 +18,7 @@ pub fn spawn_interface_subsystem(
         Or<(With<Inflow>, With<Outflow>)>,
     >,
     system_query: &Query<(&Transform, &crate::components::System)>,
+    subsystem_query: &Query<&Subsystem>,
     focused_system: &Res<FocusedSystem>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
@@ -56,12 +57,21 @@ pub fn spawn_interface_subsystem(
         SUBSYSTEM_Z
     };
 
+    let nesting_level = if let Ok(subsystem) = subsystem_query.get(parent_system) {
+        subsystem.nesting_level + 1
+    } else {
+        1
+    };
+
     let subsystem_entity = commands
         .spawn((
             SubsystemParentFlowConnection {
                 target: interface_flow_entity,
             },
-            Subsystem { parent_system },
+            Subsystem {
+                parent_system,
+                nesting_level,
+            },
             SystemBundle::new(vec2(-radius * zoom, 0.0), z, radius, angle, meshes, zoom),
             ElementDescription::default(),
         ))

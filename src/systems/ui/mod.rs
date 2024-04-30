@@ -172,6 +172,7 @@ pub fn on_create_button_click(
             button.connection_source,
             &flow_interface_query,
             &system_query,
+            &subsystem_query,
             &focused_system,
             &mut meshes,
             **zoom,

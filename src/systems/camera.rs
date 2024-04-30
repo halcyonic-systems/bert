@@ -1,12 +1,26 @@
-use crate::resources::Zoom;
+use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
+use bevy::math::vec3;
 use bevy::prelude::*;
 
-pub fn zoom_control_system(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
-    if input.just_pressed(KeyCode::Minus) {
-        **zoom += 0.2;
+pub fn pan_camera_with_mouse(
+    mut motion_events: EventReader<MouseMotion>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) {
+    for event in motion_events.read() {
+        camera_query.single_mut().translation += Vec3::new(-event.delta.x, event.delta.y, 0.0);
     }
+}
 
-    if input.just_pressed(KeyCode::Equal) {
-        **zoom -= 0.2;
+pub fn pan_camera_with_mouse_wheel(
+    mut scroll_events: EventReader<MouseWheel>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) {
+    for event in scroll_events.read() {
+        let delta = vec3(-event.x, event.y, 0.0);
+
+        camera_query.single_mut().translation += match event.unit {
+            MouseScrollUnit::Line => delta * 10.0,
+            MouseScrollUnit::Pixel => delta,
+        };
     }
 }

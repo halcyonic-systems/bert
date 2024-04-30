@@ -62,6 +62,9 @@ pub struct ExternalEntity;
 #[reflect(Component)]
 pub struct Subsystem {
     pub parent_system: Entity,
+
+    // would be 0 for the root system (which doesn't have this component)
+    pub nesting_level: usize,
 }
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]
@@ -100,16 +103,12 @@ pub struct ElementDescription {
 
 impl From<&str> for ElementDescription {
     fn from(text: &str) -> Self {
-        Self {
-            text: text.into(),
-        }
+        Self { text: text.into() }
     }
 }
 
 impl From<String> for ElementDescription {
     fn from(text: String) -> Self {
-        Self {
-            text
-        }
+        Self { text }
     }
 }

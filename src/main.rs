@@ -13,6 +13,7 @@ use crate::events::*;
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
 use crate::resources::*;
 use crate::systems::*;
+use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
@@ -38,6 +39,11 @@ fn main() {
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
 
+    let wheel_zoom_condition = input_pressed(KeyCode::ControlLeft)
+        .or_else(input_pressed(KeyCode::ControlRight).or_else(
+            input_pressed(KeyCode::SuperLeft).or_else(input_pressed(KeyCode::SuperRight)),
+        ));
+
     app.add_systems(
         Update,
         (
@@ -61,7 +67,21 @@ fn main() {
     )
     .add_systems(
         Update,
-        (zoom_control_system, apply_zoom, apply_zoom_to_system_radii),
+        (
+            pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
+            pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition.clone())),
+            control_zoom_from_keyboard,
+            control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition),
+        ),
+    )
+    .add_systems(
+        Update,
+        (
+            apply_zoom,
+            apply_zoom_to_system_radii,
+            apply_zoom_to_camera_position,
+        )
+            .run_if(resource_changed::<Zoom>),
     )
     .add_systems(
         Update,

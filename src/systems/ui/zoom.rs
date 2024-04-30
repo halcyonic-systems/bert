@@ -1,6 +1,7 @@
 use crate::bundles::{aabb_from_radius, get_system_geometry_from_radius};
 use crate::components::InitialPosition;
 use crate::resources::Zoom;
+use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
@@ -10,10 +11,6 @@ pub fn apply_zoom(
     mut query: Query<(&mut Transform, &InitialPosition), Without<Camera>>,
     zoom: Res<Zoom>,
 ) {
-    if !zoom.is_changed() {
-        return;
-    }
-
     for (mut transform, initial_position) in &mut query {
         transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
     }
@@ -29,10 +26,6 @@ pub fn apply_zoom_to_system_radii(
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    if !zoom.is_changed() {
-        return;
-    }
-
     for (mut simplified_mesh, mut path, mut aabb, system) in &mut query {
         let zoomed_radius = system.radius * **zoom;
 
@@ -42,5 +35,41 @@ pub fn apply_zoom_to_system_radii(
         *path = p;
 
         *aabb = aabb_from_radius(zoomed_radius);
+    }
+}
+
+pub fn apply_zoom_to_camera_position(
+    mut query: Query<&mut Transform, With<Camera>>,
+    zoom: Res<Zoom>,
+    mut prev_zoom: Local<Zoom>,
+) {
+    query.single_mut().translation *= **zoom / **prev_zoom;
+
+    **prev_zoom = **zoom;
+}
+
+pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
+    if input.just_pressed(KeyCode::Minus) {
+        zoom.add(0.2);
+    }
+
+    if input.just_pressed(KeyCode::Equal) {
+        zoom.add(-0.2);
+    }
+}
+
+pub fn control_zoom_from_mouse_wheel(
+    mut scroll_events: EventReader<MouseWheel>,
+    mut zoom: ResMut<Zoom>,
+) {
+    for event in scroll_events.read() {
+        match event.unit {
+            MouseScrollUnit::Line => {
+                zoom.add(event.y * 0.01);
+            }
+            MouseScrollUnit::Pixel => {
+                zoom.add(event.y * 0.001);
+            }
+        }
     }
 }
