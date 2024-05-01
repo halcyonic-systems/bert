@@ -1,4 +1,6 @@
-use crate::components::{Connection, HasSubstanceType, InterfaceSubsystemConnection};
+use crate::components::{
+    Connection, CreateButton, FlowOtherEndButton, HasSubstanceType, InterfaceSubsystemConnection,
+};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::Interface;
 use bevy::prelude::*;
@@ -38,6 +40,21 @@ pub fn update_color_from_substance_type<F, C>(
 
             external_entity_highlight.idle.color = color;
             external_entity_highlight.selected.color = color;
+        }
+    }
+}
+
+pub fn update_button_substance_type_from_flow<F>(
+    flow_query: Query<(Entity, &F), (Changed<F>, With<FlowOtherEndButton>)>,
+    mut button_query: Query<&mut CreateButton>,
+) where
+    F: HasSubstanceType + Component,
+{
+    for (flow_entity, flow) in &flow_query {
+        for mut button in &mut button_query {
+            if button.connection_source == flow_entity {
+                button.substance_type = Some(flow.substance_type());
+            }
         }
     }
 }
