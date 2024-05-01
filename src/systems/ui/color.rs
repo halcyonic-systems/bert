@@ -1,4 +1,4 @@
-use crate::components::{Connection, HasSubstanceType};
+use crate::components::{Connection, HasSubstanceType, InterfaceSubsystemConnection};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::Interface;
 use bevy::prelude::*;
@@ -51,9 +51,25 @@ pub fn update_interface_color_from_flow<F, C>(
 {
     for (flow, interface_connection) in &mut query {
         let color = flow.substance_type().interface_color();
+
         let mut interface_fill = interface_query
             .get_mut(interface_connection.target())
             .expect("Interface should exist");
         interface_fill.color = color;
+    }
+}
+
+pub fn update_interface_subsystem_color_from_interface(
+    interface_query: Query<
+        (&Fill, &InterfaceSubsystemConnection),
+        Or<(Changed<Fill>, Added<InterfaceSubsystemConnection>)>,
+    >,
+    mut subsystem_query: Query<&mut Fill, Without<InterfaceSubsystemConnection>>,
+) {
+    for (interface_fill, subsystem_connection) in &interface_query {
+        let mut subsystem_fill = subsystem_query
+            .get_mut(subsystem_connection.target())
+            .expect("Subsystem should exist");
+        subsystem_fill.color = interface_fill.color;
     }
 }
