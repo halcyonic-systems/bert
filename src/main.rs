@@ -102,6 +102,7 @@ fn main() {
             update_interface_color_from_flow::<Inflow, InflowInterfaceConnection>,
             update_interface_color_from_flow::<Outflow, OutflowInterfaceConnection>,
             update_interface_subsystem_color_from_interface,
+            update_system_color_from_subsystem
         ),
     )
     .add_systems(

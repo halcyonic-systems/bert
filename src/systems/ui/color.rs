@@ -1,6 +1,6 @@
 use crate::components::{Connection, HasSubstanceType, InterfaceSubsystemConnection};
 use crate::plugins::lyon_selection::HighlightBundles;
-use crate::Interface;
+use crate::{Interface, Subsystem};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -71,5 +71,17 @@ pub fn update_interface_subsystem_color_from_interface(
             .get_mut(subsystem_connection.target())
             .expect("Subsystem should exist");
         subsystem_fill.color = interface_fill.color;
+    }
+}
+
+pub fn update_system_color_from_subsystem(
+    subsystem_query: Query<&Subsystem, Added<Subsystem>>,
+    mut system_query: Query<&mut Fill, Without<Subsystem>>,
+) {
+    for subsystem in &subsystem_query{
+        let mut system_fill = system_query
+            .get_mut(subsystem.parent_system)
+            .expect("System should exist");
+        system_fill.color = Color::rgb(235.0, 231.0, 231.0);
     }
 }
