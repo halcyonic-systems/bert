@@ -6,6 +6,7 @@ mod plugins;
 mod resources;
 mod systems;
 mod utils;
+mod data_model;
 
 use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
