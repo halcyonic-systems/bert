@@ -1,13 +1,14 @@
+use crate::plugins::mouse_interaction::DragPosition;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 macro_rules! impl_drag_event {
     ($name:ident) => {
-        #[derive(Event)]
+        #[derive(Event, Debug, Clone)]
         pub struct $name {
             pub target: Entity,
             orig_target: Entity,
-            pub delta: Vec2,
+            pub position: Vec2,
         }
 
         impl $name {
@@ -16,12 +17,12 @@ macro_rules! impl_drag_event {
             }
         }
 
-        impl From<ListenerInput<Pointer<Drag>>> for $name {
-            fn from(event: ListenerInput<Pointer<Drag>>) -> Self {
+        impl From<ListenerInput<DragPosition>> for $name {
+            fn from(event: ListenerInput<DragPosition>) -> Self {
                 Self {
                     target: event.listener(),
                     orig_target: event.target(),
-                    delta: event.delta,
+                    position: event.local_position,
                 }
             }
         }

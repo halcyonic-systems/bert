@@ -1,5 +1,5 @@
+use crate::plugins::mouse_interaction::PickSelection;
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
 
 #[derive(Component, Default)]
 pub struct HighlightBundles<IdleB = (), SelB = ()> {

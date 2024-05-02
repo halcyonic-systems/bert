@@ -1,9 +1,9 @@
 use crate::components::*;
 use crate::constants::*;
+use crate::plugins::mouse_interaction::{PickParent, PickSelection};
 use crate::resources::*;
 use crate::systems::create_paths_from_flow_curve;
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_selected_interface(
@@ -26,6 +26,7 @@ pub fn spawn_selected_interface(
                         transform: Transform::from_xyz(0.0, 0.0, 1.0),
                         ..default()
                     },
+                    PickParent,
                     fixed_system_element_geometries.interface.clone(),
                     Stroke::new(Color::WHITE, INTERFACE_SELECTED_INNER_LINE_WIDTH),
                 ))
@@ -96,6 +97,7 @@ pub fn spawn_selected_external_entity(
                         ..default()
                     },
                     fixed_system_element_geometries.external_entity.clone(),
+                    PickParent,
                     Stroke::new(Color::WHITE, EXTERNAL_ENTITY_SELECTED_INNER_LINE_WIDTH),
                 ))
                 .id();

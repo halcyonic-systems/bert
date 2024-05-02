@@ -5,6 +5,7 @@ mod flow;
 mod selected_helper;
 mod zoom;
 
+use crate::plugins::mouse_interaction::{deselect_all, PickSelection};
 pub use add_remove_buttons::*;
 pub use color::*;
 pub use drag::*;
@@ -18,7 +19,7 @@ use crate::bundles::{
 };
 use crate::components::*;
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator, Zoom};
-use crate::utils::combined_transform_of_entity_until_common_parent;
+use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -84,6 +85,7 @@ pub fn on_create_button_click(
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>,
     subsystem_query: Query<&Subsystem>,
+    mut pick_selection_query: Query<&mut PickSelection>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
@@ -91,6 +93,8 @@ pub fn on_create_button_click(
     zoom: Res<Zoom>,
 ) {
     event.stop_propagation();
+
+    deselect_all(&mut pick_selection_query);
 
     let (button, transform) = button_query
         .get(event.target)
@@ -127,7 +131,7 @@ pub fn on_create_button_click(
             &mut commands,
             &subsystem_query,
             button.connection_source,
-            &combined_transform_of_entity_until_common_parent(
+            &combined_transform_of_entity_until_ancestor(
                 event.target,
                 subsystem_query
                     .get(button.connection_source)
@@ -147,7 +151,7 @@ pub fn on_create_button_click(
             &mut commands,
             &subsystem_query,
             button.connection_source,
-            &combined_transform_of_entity_until_common_parent(
+            &combined_transform_of_entity_until_ancestor(
                 event.target,
                 subsystem_query
                     .get(button.connection_source)

@@ -25,7 +25,7 @@ pub fn compute_end_and_direction_from_system_child(
     parent_query: &Query<&Parent>,
     flow_parent: Option<Entity>,
 ) -> (Vec2, Vec2) {
-    let combined_transform = combined_transform_of_entity_until_common_parent(
+    let combined_transform = combined_transform_of_entity_until_ancestor(
         system_child,
         flow_parent,
         transform_query,
@@ -40,9 +40,9 @@ pub fn compute_end_and_direction_from_system_child(
     )
 }
 
-pub fn combined_transform_of_entity_until_common_parent(
+pub fn combined_transform_of_entity_until_ancestor(
     entity: Entity,
-    common_parent: Option<Entity>,
+    ancestor: Option<Entity>,
     transform_query: &Query<&Transform>,
     parent_query: &Query<&Parent>,
 ) -> Transform {
@@ -67,7 +67,7 @@ pub fn combined_transform_of_entity_until_common_parent(
             break;
         }
 
-        if Some(parent_entity) == common_parent {
+        if Some(parent_entity) == ancestor {
             break;
         }
     }

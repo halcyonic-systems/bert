@@ -2,6 +2,8 @@ use crate::components::*;
 use crate::constants::{INTERFACE_LINE_WIDTH, INTERFACE_SELECTED_LINE_WIDTH, INTERFACE_Z};
 use crate::events::InterfaceDrag;
 use crate::plugins::lyon_selection::HighlightBundles;
+use crate::plugins::mouse_interaction::DragPosition;
+use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
@@ -33,10 +35,8 @@ pub fn spawn_interface(
                 ..default()
             },
             Fill::color(substance_type.interface_color()),
-            PickableBundle {
-                selection: PickSelection { is_selected },
-                ..default()
-            },
+            PickableBundle::default(),
+            PickSelection { is_selected },
             HighlightBundles {
                 idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH),
                 selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
@@ -46,7 +46,7 @@ pub fn spawn_interface(
             ElementDescription::default(),
             initial_position,
             fixed_system_element_geometries.interface.clone(),
-            On::<Pointer<Drag>>::send_event::<InterfaceDrag>(),
+            On::<DragPosition>::send_event::<InterfaceDrag>(),
         ))
         .id();
 

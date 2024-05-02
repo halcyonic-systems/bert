@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::components::SubstanceType;
+use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]

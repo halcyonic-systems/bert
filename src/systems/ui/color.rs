@@ -95,7 +95,7 @@ pub fn update_system_color_from_subsystem(
     subsystem_query: Query<&Subsystem, Added<Subsystem>>,
     mut system_query: Query<&mut Fill, Without<Subsystem>>,
 ) {
-    for subsystem in &subsystem_query{
+    for subsystem in &subsystem_query {
         let mut system_fill = system_query
             .get_mut(subsystem.parent_system)
             .expect("System should exist");

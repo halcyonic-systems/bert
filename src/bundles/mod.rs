@@ -5,6 +5,7 @@ pub use spawn::*;
 
 use crate::components::{System, *};
 use crate::constants::SYSTEM_LINE_WIDTH;
+use crate::plugins::mouse_interaction::PickSelection;
 use bevy::prelude::*;
 use bevy::render::mesh::CircleMeshBuilder;
 use bevy::render::primitives::Aabb;
@@ -32,6 +33,7 @@ pub struct SystemBundle {
     pub system: System,
     pub name: Name,
     pub pickable_bundle: PickableBundle,
+    pub pick_selection: PickSelection,
     pub simplified_mesh: SimplifiedMesh,
     pub aabb: Aabb,
     pub system_shape_bundle: ShapeBundle,
@@ -57,6 +59,7 @@ impl SystemBundle {
             system: System { radius },
             name: Name::new("System"),
             pickable_bundle: PickableBundle::default(),
+            pick_selection: PickSelection::default(),
             simplified_mesh: SimplifiedMesh {
                 mesh: meshes.add(simplified_mesh).into(),
             },

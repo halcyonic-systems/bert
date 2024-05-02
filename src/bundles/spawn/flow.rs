@@ -2,6 +2,7 @@ use crate::bundles::{spawn_external_entity, spawn_interface};
 use crate::components::*;
 use crate::constants::*;
 use crate::plugins::lyon_selection::HighlightBundles;
+use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator};
 use crate::systems::{
     create_aabb_from_flow_curve, create_paths_from_flow_curve, tessellate_simplified_mesh,
@@ -131,10 +132,8 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
                 },
                 ..default()
             },
-            PickableBundle {
-                selection: PickSelection { is_selected },
-                ..default()
-            },
+            PickableBundle::default(),
+            PickSelection { is_selected },
             HighlightBundles {
                 idle: Stroke::new(color, FLOW_LINE_WIDTH),
                 selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH),

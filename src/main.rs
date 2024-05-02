@@ -11,6 +11,7 @@ use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
 use crate::events::*;
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
+use crate::plugins::mouse_interaction::MouseInteractionPlugin;
 use crate::resources::*;
 use crate::systems::*;
 use bevy::input::common_conditions::input_pressed;
@@ -28,6 +29,7 @@ fn main() {
         // EguiPlugin,
         ShapePlugin,
         LyonSelectionPlugin,
+        MouseInteractionPlugin,
     ))
     .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
@@ -104,7 +106,7 @@ fn main() {
             update_interface_color_from_flow::<Inflow, InflowInterfaceConnection>,
             update_interface_color_from_flow::<Outflow, OutflowInterfaceConnection>,
             update_interface_subsystem_color_from_interface,
-            update_system_color_from_subsystem
+            update_system_color_from_subsystem,
         ),
     )
     .add_systems(

@@ -1,7 +1,7 @@
 use crate::bundles::spawn_create_button;
 use crate::components::*;
 use crate::resources::{FocusedSystem, Zoom};
-use crate::utils::combined_transform_of_entity_until_common_parent;
+use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 
 macro_rules! interface_create_button {
@@ -28,7 +28,7 @@ macro_rules! interface_create_button {
                 }
 
                 let (direction, position) = if let Some(parent) = flow_parent {
-                    let transform = combined_transform_of_entity_until_common_parent(
+                    let transform = combined_transform_of_entity_until_ancestor(
                         **focused_system,
                         Some(parent.get()),
                         &transform_query,
@@ -38,8 +38,13 @@ macro_rules! interface_create_button {
                     let inverse_transform = transform.compute_affine().inverse();
 
                     (
-                        inverse_transform.transform_vector3(flow_curve.$side_dir.extend(0.0)).truncate(),
-                        inverse_transform.transform_point3(flow_curve.$side.extend(0.0)).truncate() / **zoom,
+                        inverse_transform
+                            .transform_vector3(flow_curve.$side_dir.extend(0.0))
+                            .truncate(),
+                        inverse_transform
+                            .transform_point3(flow_curve.$side.extend(0.0))
+                            .truncate()
+                            / **zoom,
                     )
                 } else {
                     (flow_curve.$side_dir, flow_curve.$side)

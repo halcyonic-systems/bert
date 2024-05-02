@@ -62,6 +62,7 @@ pub fn drag_external_entity(
     zoom: Res<Zoom>,
 ) {
     for event in events.read() {
+        info!("Dragging external entity: {:?}", event);
         if event.has_bubbled() {
             continue;
         }
@@ -69,8 +70,8 @@ pub fn drag_external_entity(
         let mut transform = transform_query
             .get_mut(event.target)
             .expect("External entity should have a Transform");
-        transform.translation.x += event.delta.x;
-        transform.translation.y -= event.delta.y;
+        transform.translation.x = event.position.x;
+        transform.translation.y = event.position.y;
 
         let system = get_system_from_connected_flow(event.target, &flow_query);
 
@@ -201,8 +202,8 @@ pub fn drag_interface(
         let mut transform = transform_query
             .get_mut(event.target)
             .expect("External entity should have a Transform");
-        transform.translation.x += event.delta.x;
-        transform.translation.y -= event.delta.y;
+        transform.translation.x = event.position.x;
+        transform.translation.y = event.position.y;
 
         let system = get_system_from_connected_flow(event.target, &flow_query);
 

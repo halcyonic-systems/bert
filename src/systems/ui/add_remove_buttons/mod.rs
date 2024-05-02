@@ -82,8 +82,18 @@ macro_rules! button_transform {
 
             (position, angle)
         }
-    }
+    };
 }
 
-button_transform!(next_outflow_button_transform, Outflow, OutflowInterfaceConnection, 1.0);
-button_transform!(next_inflow_button_transform, Inflow, InflowInterfaceConnection, -1.0);
+button_transform!(
+    next_outflow_button_transform,
+    Outflow,
+    OutflowInterfaceConnection,
+    1.0
+);
+button_transform!(
+    next_inflow_button_transform,
+    Inflow,
+    InflowInterfaceConnection,
+    -1.0
+);

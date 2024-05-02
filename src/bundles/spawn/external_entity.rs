@@ -5,6 +5,8 @@ use crate::constants::{
 };
 use crate::events::ExternalEntityDrag;
 use crate::plugins::lyon_selection::HighlightBundles;
+use crate::plugins::mouse_interaction::DragPosition;
+use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
@@ -48,16 +50,14 @@ pub fn spawn_external_entity(
                         .with_line_cap(LineCap::Round),
                 },
             },
-            PickableBundle {
-                selection: PickSelection { is_selected },
-                ..default()
-            },
+            PickableBundle::default(),
+            PickSelection { is_selected },
             SystemElement::ExternalEntity,
             Name::new("External Entity"),
             ElementDescription::default(),
             initial_position,
             fixed_system_element_geometries.external_entity.clone(),
-            On::<Pointer<Drag>>::send_event::<ExternalEntityDrag>(),
+            On::<DragPosition>::send_event::<ExternalEntityDrag>(),
         ))
         .id();
 
