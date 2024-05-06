@@ -1,6 +1,6 @@
 use crate::bundles::{aabb_from_radius, get_system_geometry_from_radius};
 use crate::components::*;
-use crate::constants::{EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_SELECTED_LINE_WIDTH};
+use crate::constants::{EXTERNAL_ENTITY_LINE_WIDTH};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::resources::{
     build_external_entity_aabb_half_extents, build_external_entity_path,
@@ -39,7 +39,7 @@ pub fn apply_zoom_to_system_radii(
 
         let (mesh, p) = get_system_geometry_from_radius(zoomed_radius);
 
-        simplified_mesh.mesh = meshes.add(mesh).into();
+        simplified_mesh.mesh = meshes.add(mesh);
         *path = p;
 
         *aabb = aabb_from_radius(zoomed_radius);
@@ -133,7 +133,7 @@ pub fn apply_zoom_to_system_geometries(
 ) {
     let zoom = **zoom;
 
-    for (nesting_level, mut geometries) in &mut **fixed_system_element_geometries {
+    for (nesting_level, geometries) in &mut **fixed_system_element_geometries {
         let scale = NestingLevel::compute_scale(*nesting_level, zoom);
 
         let external_entity_path = build_external_entity_path(scale);
@@ -181,7 +181,7 @@ pub fn apply_zoom_to_strokes(
 ) {
     for (nesting_level, mut highlight) in &mut highlight_query {
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-        highlight.idle.options.line_width = (scale * EXTERNAL_ENTITY_LINE_WIDTH);
+        highlight.idle.options.line_width = scale * EXTERNAL_ENTITY_LINE_WIDTH;
         // TODO : this assumes only one line width which is the case right now
         // highlight.selected.options.line_width = (scale * EXTERNAL_ENTITY_SELECTED_LINE_WIDTH);
     }

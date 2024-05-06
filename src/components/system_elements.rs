@@ -1,6 +1,4 @@
-use crate::constants::SUBSYSTEM_SCALING_FACTOR;
 use bevy::prelude::*;
-use num_traits::Pow;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]

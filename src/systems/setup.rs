@@ -1,12 +1,8 @@
-use crate::bundles::{FixedSystemElementGeometry, SystemBundle};
+use crate::bundles::{SystemBundle};
 use crate::constants::*;
 use crate::resources::*;
-use crate::systems::tessellate_simplified_mesh;
-use bevy::math::{vec2, Vec3A};
+use bevy::math::{vec2};
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
-use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
-use bevy_prototype_lyon::prelude::*;
 use crate::components::NestingLevel;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
@@ -16,8 +12,8 @@ pub fn setup(
     mut commands: Commands,
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut tess: ResMut<StrokeTessellator>,
-    mut geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
+    tess: ResMut<StrokeTessellator>,
+    geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     asset_server: Res<AssetServer>,
 ) {
     commands.spawn(Camera2dBundle::default());

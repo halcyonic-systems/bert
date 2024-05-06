@@ -33,7 +33,7 @@ pub fn spawn_outflow(
 
     let direction = transform.right().truncate();
 
-    let nesting_level = NestingLevel::current(system_entity, &nesting_query);
+    let nesting_level = NestingLevel::current(system_entity, nesting_query);
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let flow_curve = FlowCurve {
@@ -80,7 +80,7 @@ pub fn spawn_inflow(
 
     let direction = transform.right().truncate();
 
-    let nesting_level = NestingLevel::current(system_entity, &nesting_query);
+    let nesting_level = NestingLevel::current(system_entity, nesting_query);
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let flow_curve = FlowCurve {

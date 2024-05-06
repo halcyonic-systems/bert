@@ -1,4 +1,3 @@
-use crate::components::Subsystem;
 use crate::constants::SUBSYSTEM_SCALING_FACTOR;
 use bevy::prelude::*;
 use num_traits::Pow;

@@ -188,7 +188,7 @@ pub fn on_create_button_click(
                 .substance_type
                 .expect("Source button must have a substance type"),
             button.connection_source,
-            &transform,
+            transform,
             &mut fixed_system_element_geometries,
             **zoom,
             true,
@@ -205,7 +205,7 @@ pub fn on_create_button_click(
                 .substance_type
                 .expect("Sink button must have a substance type"),
             button.connection_source,
-            &transform,
+            transform,
             &mut fixed_system_element_geometries,
             **zoom,
             true,

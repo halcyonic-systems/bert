@@ -63,7 +63,7 @@ impl SystemBundle {
             pickable_bundle: PickableBundle::default(),
             pick_selection: PickSelection::default(),
             simplified_mesh: SimplifiedMesh {
-                mesh: meshes.add(simplified_mesh).into(),
+                mesh: meshes.add(simplified_mesh),
             },
             aabb: aabb_from_radius(zoomed_radius),
             system_shape_bundle: ShapeBundle {
@@ -101,7 +101,7 @@ impl Clone for FixedSystemElementGeometry {
             path: Path(self.path.0.clone()),
             mesh: self.mesh.clone(),
             material: self.material.clone(),
-            aabb: self.aabb.clone(),
+            aabb: self.aabb,
         }
     }
 }

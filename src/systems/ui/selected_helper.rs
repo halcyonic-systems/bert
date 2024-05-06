@@ -58,7 +58,7 @@ pub fn spawn_selected_flow(
     for (selected_entity, flow_curve, selection, nesting_level) in &curve_query {
         if selection.is_selected {
             let curve_path = create_path_from_flow_curve(
-                &flow_curve,
+                flow_curve,
                 NestingLevel::compute_scale(**nesting_level, **zoom),
             );
 
@@ -135,7 +135,7 @@ pub fn update_selected_flow_curve(
             .get_mut(helper.helper_entity)
             .expect("Helper entity should exist");
         let curve_path = create_path_from_flow_curve(
-            &flow_curve,
+            flow_curve,
             NestingLevel::compute_scale(**nesting_level, **zoom),
         );
 

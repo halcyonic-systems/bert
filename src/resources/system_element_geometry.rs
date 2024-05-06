@@ -2,7 +2,7 @@ use crate::bundles::FixedSystemElementGeometry;
 use crate::components::NestingLevel;
 use crate::constants::{
     EXTERNAL_ENTITY_HEIGHT_HALF, EXTERNAL_ENTITY_WIDTH_HALF, FLOW_CLICK_WIDTH,
-    INTERFACE_HEIGHT_HALF, INTERFACE_LINE_WIDTH, INTERFACE_WIDTH_HALF, SUBSYSTEM_SCALING_FACTOR,
+    INTERFACE_HEIGHT_HALF, INTERFACE_LINE_WIDTH, INTERFACE_WIDTH_HALF,
     WHITE_COLOR_MATERIAL_HANDLE,
 };
 use crate::resources::StrokeTessellator;
@@ -13,7 +13,6 @@ use bevy::render::primitives::Aabb;
 use bevy::utils::HashMap;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::markers::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
-use num_traits::Pow;
 
 #[derive(Clone)]
 pub struct FixedSystemElementGeometries {
@@ -84,8 +83,8 @@ pub fn build_external_entity_path(scale: f32) -> Path {
     external_entity_path_builder.line_to(vec2(-width_half, -height_half));
     external_entity_path_builder.line_to(vec2(width_half, -height_half));
 
-    let path = external_entity_path_builder.build();
-    path
+    
+    external_entity_path_builder.build()
 }
 
 fn init_interface_geometry(
@@ -141,5 +140,4 @@ pub fn build_interface_simplified_mesh(
             (INTERFACE_WIDTH_HALF + INTERFACE_LINE_WIDTH) * scale * 2.0,
             (INTERFACE_HEIGHT_HALF + INTERFACE_LINE_WIDTH) * scale * 2.0,
         ))
-        .into()
 }

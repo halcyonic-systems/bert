@@ -1,9 +1,8 @@
 use crate::components::{FlowCurve, NestingLevel};
 use crate::constants::{
-    FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH,
+    FLOW_ARROW_HEAD_LENGTH, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH,
 };
 use crate::resources::{StrokeTessellator, Zoom};
-use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::primitives::Aabb;
@@ -145,7 +144,7 @@ pub fn create_path_from_flow_curve(flow_curve: &FlowCurve, scale: f32) -> Path {
 }
 
 pub fn create_aabb_from_flow_curve(flow_curve: &FlowCurve) -> Aabb {
-    let mut aabb = Aabb::enclosing(&[
+    let mut aabb = Aabb::enclosing([
         (flow_curve.start).extend(0.0),
         (flow_curve.start + flow_curve.start_direction).extend(0.0),
         (flow_curve.end + flow_curve.end_direction).extend(0.0),

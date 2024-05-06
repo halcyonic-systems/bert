@@ -1,4 +1,4 @@
-use crate::components::{InitialPosition, Subsystem};
+use crate::components::{InitialPosition};
 use crate::constants::{FLOW_END_LENGTH, INTERFACE_WIDTH_HALF};
 use bevy::prelude::*;
 
