@@ -1,6 +1,6 @@
 use crate::bundles::{aabb_from_radius, get_system_geometry_from_radius};
 use crate::components::*;
-use crate::constants::{EXTERNAL_ENTITY_LINE_WIDTH};
+use crate::constants::EXTERNAL_ENTITY_LINE_WIDTH;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::resources::{
     build_external_entity_aabb_half_extents, build_external_entity_path,
@@ -93,11 +93,11 @@ pub fn apply_zoom_to_incomplete_flows(
 
 pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
     if input.just_pressed(KeyCode::Minus) {
-        zoom.add(0.2);
+        zoom.mul(1.2);
     }
 
     if input.just_pressed(KeyCode::Equal) {
-        zoom.add(-0.2);
+        zoom.mul(0.8);
     }
 }
 
@@ -108,10 +108,10 @@ pub fn control_zoom_from_mouse_wheel(
     for event in scroll_events.read() {
         match event.unit {
             MouseScrollUnit::Line => {
-                zoom.add(event.y * 0.01);
+                zoom.mul(1.0 + event.y * 0.01);
             }
             MouseScrollUnit::Pixel => {
-                zoom.add(event.y * 0.001);
+                zoom.mul(1.0 + event.y * 0.001);
             }
         }
     }
