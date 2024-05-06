@@ -1,5 +1,10 @@
 use crate::constants::SUBSYSTEM_SCALING_FACTOR;
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::tess::geom::euclid::default;
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct SystemOfInterest;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]

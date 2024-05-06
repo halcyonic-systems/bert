@@ -15,11 +15,13 @@ use crate::plugins::lyon_selection::LyonSelectionPlugin;
 use crate::plugins::mouse_interaction::MouseInteractionPlugin;
 use crate::resources::*;
 use crate::systems::*;
+use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
+use data_model::save_world;
 
 fn main() {
     let mut app = App::new();
@@ -75,6 +77,10 @@ fn main() {
             pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition.clone())),
             control_zoom_from_keyboard,
             control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition),
+            save_world.run_if(
+                input_pressed(KeyCode::SuperLeft)
+                .and_then(input_just_pressed(KeyCode::KeyS)),
+            )
         ),
     )
     .add_systems(

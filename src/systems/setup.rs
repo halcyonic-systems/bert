@@ -1,5 +1,5 @@
 use crate::bundles::{FixedSystemElementGeometry, SystemBundle};
-use crate::constants::*;
+use crate::{constants::*, SystemOfInterest};
 use crate::resources::*;
 use crate::systems::tessellate_simplified_mesh;
 use bevy::math::{vec2, Vec3A};
@@ -29,7 +29,7 @@ pub fn setup(
             0.0,
             &mut meshes,
             **zoom,
-        ))
+        )).insert(SystemOfInterest)
         .id();
 
     commands.insert_resource(FocusedSystem::new(system_entity));
