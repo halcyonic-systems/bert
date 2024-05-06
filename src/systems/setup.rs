@@ -1,14 +1,9 @@
-<<<<<<< HEAD
-use crate::bundles::{FixedSystemElementGeometry, SystemBundle};
-use crate::{constants::*, SystemOfInterest};
-=======
-use crate::bundles::{SystemBundle};
-use crate::constants::*;
->>>>>>> f80422c801fadc26981e3071556be85393402189
-use crate::resources::*;
-use bevy::math::{vec2};
-use bevy::prelude::*;
+use crate::bundles::SystemBundle;
 use crate::components::NestingLevel;
+use crate::constants::*;
+use crate::resources::*;
+use bevy::math::vec2;
+use bevy::prelude::*;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 
@@ -59,7 +54,6 @@ pub fn setup(
         );
     }
 }
-
 
 #[cfg(feature = "init_complete_system")]
 pub fn init_complete_system(

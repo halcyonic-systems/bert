@@ -1,20 +1,21 @@
-use serde::{Deserialize, Serialize};
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 pub fn save_world(
     world: &World,
     soi_info_query: Query<
         (Entity, &Name, &crate::components::ElementDescription),
-        With<crate::components::SystemOfInterest>
+        With<crate::components::SystemOfInterest>,
     >,
     // subsystem_query: Query<
     //     (Entity, &Name, &crate::components::ElementDescription, &crate::components::SystemElement),
     //     (With<crate::components::Subsystem>, Without<crate::components::SystemOfInterest>)
     // >
 ) {
-    
     let mut system_of_interest = System::default();
-    let (entity, name, description) = soi_info_query.get_single().expect("System of interest should exist");
+    let (entity, name, description) = soi_info_query
+        .get_single()
+        .expect("System of interest should exist");
     {
         system_of_interest.info = Info {
             entity,
@@ -25,14 +26,13 @@ pub fn save_world(
             parent: None,
         }
     };
-    
+
     let model = WorldModel {
         system_of_interest,
         ..default()
     };
     save_to_json(&model, "world_model.json");
 }
-
 
 fn save_to_json(world_model: &WorldModel, file_name: &str) {
     let json = serde_json::to_string(world_model).expect("This shouldn't fail");
@@ -74,7 +74,7 @@ pub enum Construct {
     BOUNDARY,
     INTERFACE,
     INTERACTION,
-    EXTERNALENTITY,
+    ExternalEntity,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -113,13 +113,21 @@ pub struct Environment {
 #[derive(Serialize, Deserialize)]
 pub enum ExternalEntity {
     SOURCE { info: Info },
-    SINK { info: Info }
+    SINK { info: Info },
 }
 
 #[derive(Serialize, Deserialize)]
 pub enum Interaction {
-    INFLOW {info: Info, substance: Substance, usability: InflowUsability},
-    OUTFLOW {info: Info,substance: Substance, usability: OutflowUsability}
+    INFLOW {
+        info: Info,
+        substance: Substance,
+        usability: InflowUsability,
+    },
+    OUTFLOW {
+        info: Info,
+        substance: Substance,
+        usability: OutflowUsability,
+    },
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -138,19 +146,19 @@ pub enum OutflowUsability {
 
 #[derive(Serialize, Deserialize)]
 pub enum Substance {
-    ENERGY  {sub_type: Option<String>},
-    MATTER  {sub_type: Option<String>},
-    MESSAGE {sub_type: Option<String>},
+    ENERGY { sub_type: Option<String> },
+    MATTER { sub_type: Option<String> },
+    MESSAGE { sub_type: Option<String> },
 }
 
 #[derive(Serialize, Deserialize)]
 pub enum Complexity {
     /* contains components */
-    COMPLEX {adaptable: bool, evolveable: bool},  
+    COMPLEX { adaptable: bool, evolveable: bool },
     /*  contains no subsystems */
     ATOMIC,
     /*  bounded to hold many instances of that same type of component */
-    MULTISET
+    MULTISET,
 }
 
 macro_rules! impl_enum_default {
@@ -163,9 +171,32 @@ macro_rules! impl_enum_default {
     };
 }
 
-impl_enum_default!(Complexity, Complexity::COMPLEX { adaptable: false, evolveable: false });
+impl_enum_default!(
+    Complexity,
+    Complexity::COMPLEX {
+        adaptable: false,
+        evolveable: false
+    }
+);
 impl_enum_default!(Substance, Substance::ENERGY { sub_type: None });
-impl_enum_default!(Interaction, Interaction::OUTFLOW { info: Info::default(), substance: Substance::default(), usability: OutflowUsability::default() });
-impl_enum_default!(ExternalEntity, ExternalEntity::SINK { info: Info::default() });
-impl_enum_default!(Interface, Interface::EXPORT { info: Info::default(), protocol: default() } );
-
+impl_enum_default!(
+    Interaction,
+    Interaction::OUTFLOW {
+        info: Info::default(),
+        substance: Substance::default(),
+        usability: OutflowUsability::default()
+    }
+);
+impl_enum_default!(
+    ExternalEntity,
+    ExternalEntity::SINK {
+        info: Info::default()
+    }
+);
+impl_enum_default!(
+    Interface,
+    Interface::EXPORT {
+        info: Info::default(),
+        protocol: default()
+    }
+);
