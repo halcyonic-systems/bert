@@ -19,7 +19,7 @@ pub fn spawn_external_entity(
     commands: &mut Commands,
     subsystem_query: &Query<&Subsystem>,
     nesting_level_query: &Query<&NestingLevel>,
-    focused_system: &Res<FocusedSystem>,
+    focused_system: Entity,
     interface_type: InterfaceType,
     substance_type: SubstanceType,
     flow_entity: Entity,
@@ -29,6 +29,8 @@ pub fn spawn_external_entity(
     is_selected: bool,
     meshes: &mut ResMut<Assets<Mesh>>,
     tess: &mut ResMut<StrokeTessellator>,
+    name: &str,
+    description: &str,
 ) -> Entity {
     let (transform, initial_position) = ui_transform_from_button(
         transform,
@@ -39,7 +41,7 @@ pub fn spawn_external_entity(
 
     let color = substance_type.flow_color();
 
-    let nesting_level = NestingLevel::current(***focused_system, nesting_level_query);
+    let nesting_level = NestingLevel::current(focused_system, nesting_level_query);
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let external_entity = commands
@@ -61,8 +63,8 @@ pub fn spawn_external_entity(
             PickableBundle::default(),
             PickSelection { is_selected },
             SystemElement::ExternalEntity,
-            Name::new("External Entity"),
-            ElementDescription::default(),
+            Name::new(name.to_string()),
+            ElementDescription::new(description),
             initial_position,
             fixed_system_element_geometries
                 .get_or_create(nesting_level, zoom, meshes, tess)
@@ -72,7 +74,7 @@ pub fn spawn_external_entity(
         ))
         .id();
 
-    if let Ok(subsystem) = subsystem_query.get(***focused_system) {
+    if let Ok(subsystem) = subsystem_query.get(focused_system) {
         commands
             .entity(subsystem.parent_system)
             .add_child(external_entity);

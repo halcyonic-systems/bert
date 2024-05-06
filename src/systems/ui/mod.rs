@@ -113,12 +113,14 @@ pub fn on_create_button_click(
             button.connection_source,
             transform,
             &nesting_query,
-            &focused_system,
+            **focused_system,
             &mut fixed_system_element_geometries,
             **zoom,
             true,
             &mut meshes,
             &mut stroke_tess,
+            "Interface",
+            "",
         ),
         CreateButtonType::ExportInterface => spawn_interface(
             &mut commands,
@@ -129,12 +131,14 @@ pub fn on_create_button_click(
             button.connection_source,
             transform,
             &nesting_query,
-            &focused_system,
+            **focused_system,
             &mut fixed_system_element_geometries,
             **zoom,
             true,
             &mut meshes,
             &mut stroke_tess,
+            "Interface",
+            "",
         ),
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
@@ -156,6 +160,8 @@ pub fn on_create_button_click(
             true,
             Default::default(),
             Default::default(),
+            "Inflow",
+            "",
         ),
         CreateButtonType::Outflow => spawn_outflow(
             &mut commands,
@@ -177,12 +183,14 @@ pub fn on_create_button_click(
             true,
             Default::default(),
             Default::default(),
+            "Outflow",
+            "",
         ),
         CreateButtonType::Source => spawn_external_entity(
             &mut commands,
             &subsystem_query,
             &nesting_query,
-            &focused_system,
+            **focused_system,
             InterfaceType::Import,
             button
                 .substance_type
@@ -194,12 +202,14 @@ pub fn on_create_button_click(
             true,
             &mut meshes,
             &mut stroke_tess,
+            "Source",
+            "",
         ),
         CreateButtonType::Sink => spawn_external_entity(
             &mut commands,
             &subsystem_query,
             &nesting_query,
-            &focused_system,
+            **focused_system,
             InterfaceType::Export,
             button
                 .substance_type
@@ -211,6 +221,8 @@ pub fn on_create_button_click(
             true,
             &mut meshes,
             &mut stroke_tess,
+            "Sink",
+            "",
         ),
         CreateButtonType::InterfaceSubsystem {
             is_child_of_interface,

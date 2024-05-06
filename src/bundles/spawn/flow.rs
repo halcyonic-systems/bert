@@ -28,6 +28,8 @@ pub fn spawn_outflow(
     is_selected: bool,
     substance_type: SubstanceType,
     usability: OutflowUsability,
+    name: &str,
+    description: &str,
 ) -> Entity {
     let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
 
@@ -51,7 +53,8 @@ pub fn spawn_outflow(
         flow_curve,
         SystemElement::Outflow,
         system_entity,
-        "Outflow",
+        name,
+        description,
         Outflow {
             system: system_entity,
             substance_type,
@@ -75,6 +78,8 @@ pub fn spawn_inflow(
     is_selected: bool,
     substance_type: SubstanceType,
     usability: InflowUsability,
+    name: &str,
+    description: &str,
 ) -> Entity {
     let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
 
@@ -98,7 +103,8 @@ pub fn spawn_inflow(
         flow_curve,
         SystemElement::Inflow,
         system_entity,
-        "Inflow",
+        name,
+        description,
         Inflow {
             system: system_entity,
             substance_type,
@@ -118,7 +124,8 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
     flow_curve: FlowCurve,
     system_element: SystemElement,
     system_entity: Entity,
-    name: &'static str,
+    name: &str,
+    description: &str,
     flow: F,
     is_selected: bool,
     nesting_level: u16,
@@ -161,8 +168,8 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
                 selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH),
             },
             system_element,
-            Name::new(name),
-            ElementDescription::default(),
+            Name::new(name.to_string()),
+            ElementDescription::new(description),
             NestingLevel::new(nesting_level),
         ))
         .with_children(|parent| {
@@ -197,7 +204,7 @@ macro_rules! spawn_complete_flow {
     ($fn_name:ident, $spawn_name:ident, $interface_ty:expr, $usability_ty:ty) => {
         pub fn $fn_name(
             mut commands: &mut Commands,
-            focused_system: &Res<FocusedSystem>,
+            focused_system: FocusedSystem,
             subsystem_query: &Query<&Subsystem>,
             nesting_query: &Query<&NestingLevel>,
             mut meshes: &mut ResMut<Assets<Mesh>>,
@@ -206,18 +213,28 @@ macro_rules! spawn_complete_flow {
                 FixedSystemElementGeometriesByNestingLevel,
             >,
             zoom: f32,
-            outflow_start_position: Vec2,
+            interface_angle: f32,
+            system_radius: f32,
             substance_type: SubstanceType,
             usability: $usability_ty,
+            interface_name: &str,
+            interface_description: &str,
+            flow_name: &str,
+            flow_description: &str,
+            external_entity_name: &str,
+            external_entity_description: &str,
         ) -> Entity {
-            let mut transform = Transform::from_translation(outflow_start_position.extend(0.0))
-                .with_rotation(Quat::from_rotation_z(outflow_start_position.to_angle()));
+            let mut translation = vec3(system_radius, 0.0, 0.0);
+            
+            let mut transform = Transform::from_rotation(Quat::from_rotation_z(interface_angle));
+            translation = transform.transform_point(translation);
+            transform.translation = translation;
 
             let product_flow = $spawn_name(
                 &mut commands,
                 subsystem_query,
                 nesting_query,
-                ***focused_system,
+                *focused_system,
                 &transform,
                 &mut stroke_tess,
                 &mut meshes,
@@ -225,6 +242,8 @@ macro_rules! spawn_complete_flow {
                 false,
                 substance_type,
                 usability,
+                flow_name,
+                flow_description,
             );
 
             let product_flow_interface = spawn_interface(
@@ -234,12 +253,14 @@ macro_rules! spawn_complete_flow {
                 product_flow,
                 &transform,
                 nesting_query,
-                &focused_system,
+                *focused_system,
                 fixed_system_element_geometries,
                 zoom,
                 false,
                 meshes,
                 stroke_tess,
+                interface_name,
+                interface_description,
             );
 
             let right = transform.right();
@@ -249,7 +270,7 @@ macro_rules! spawn_complete_flow {
                 &mut commands,
                 subsystem_query,
                 nesting_query,
-                focused_system,
+                *focused_system,
                 $interface_ty,
                 substance_type,
                 product_flow,
@@ -259,6 +280,8 @@ macro_rules! spawn_complete_flow {
                 false,
                 meshes,
                 stroke_tess,
+                external_entity_name,
+                external_entity_description,
             );
 
             product_flow_interface

@@ -1,8 +1,7 @@
 use crate::components::*;
+use crate::data_model::*;
+use bevy::core::Name;
 use bevy::prelude::*;
-use serde::de::{Error, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
 
 pub fn save_world(
     soi_info_query: Query<
@@ -12,6 +11,7 @@ pub fn save_world(
             &ElementDescription,
             &crate::components::System,
             &SystemEnvironment,
+            &Transform,
         ),
         Without<Subsystem>,
     >,
@@ -29,14 +29,19 @@ pub fn save_world(
         &OutflowSinkConnection,
         &OutflowInterfaceConnection,
     )>,
-    interface_query: Query<(&Name, &ElementDescription, &crate::components::Interface)>,
-    external_entity_query: Query<(&Name, &ElementDescription)>,
+    interface_query: Query<(
+        &Name,
+        &ElementDescription,
+        &crate::components::Interface,
+        &Transform,
+    )>,
+    external_entity_query: Query<(&Name, &ElementDescription, &Transform)>,
     // subsystem_query: Query<
     //     (Entity, &Name, &crate::components::ElementDescription, &crate::components::SystemElement),
     //     (With<crate::components::Subsystem>, Without<crate::components::SystemOfInterest>)
     // >
 ) {
-    let (system_entity, name, description, system, environment) = soi_info_query
+    let (system_entity, name, description, system, environment, transform) = soi_info_query
         .get_single()
         .expect("System of interest should exist");
 
@@ -106,7 +111,7 @@ pub fn save_world(
         sinks,
     };
 
-    let system_of_interest = System {
+    let system_of_interest = crate::data_model::System {
         info: Info {
             id: Id {
                 ty: IdType::System,
@@ -126,6 +131,7 @@ pub fn save_world(
         internal_interactions: vec![], // TODO
         external_interactions,
         components: vec![],
+        transform: Some(transform.into()),
     };
 
     let model = WorldModel { system_of_interest };
@@ -145,12 +151,17 @@ macro_rules! process_external_flow {
         $external_entity_field:tt
     ) => {
         fn $fn_name(
-            interface_query: &Query<(&Name, &ElementDescription, &crate::components::Interface)>,
-            external_entity_query: &Query<(&Name, &ElementDescription)>,
+            interface_query: &Query<(
+                &Name,
+                &ElementDescription,
+                &crate::components::Interface,
+                &Transform,
+            )>,
+            external_entity_query: &Query<(&Name, &ElementDescription, &Transform)>,
             system_entity: Entity,
-            interfaces: &mut Vec<Interface>,
-            interactions: &mut Vec<Interaction>,
-            external_entities: &mut Vec<ExternalEntity>,
+            interfaces: &mut Vec<crate::data_model::Interface>,
+            interactions: &mut Vec<crate::data_model::Interaction>,
+            external_entities: &mut Vec<crate::data_model::ExternalEntity>,
             name: &Name,
             description: &ElementDescription,
             flow: &$flow_ty,
@@ -167,7 +178,7 @@ macro_rules! process_external_flow {
                     indices: vec![-1, external_entities.len() as i64],
                 };
 
-                interactions.push(Interaction {
+                interactions.push(crate::data_model::Interaction {
                     info: Info {
                         id: interaction_id.clone(),
                         name: name.to_string(),
@@ -184,11 +195,12 @@ macro_rules! process_external_flow {
                     external_entity: external_entity_id.clone(),
                 });
 
-                let (interface_name, interface_description, interface) = interface_query
-                    .get(interface_connection.target)
-                    .expect("Interface should exist");
+                let (interface_name, interface_description, interface, interface_transform) =
+                    interface_query
+                        .get(interface_connection.target)
+                        .expect("Interface should exist");
 
-                let mut interface = Interface {
+                let mut interface = crate::data_model::Interface {
                     info: Info {
                         id: Id {
                             ty: IdType::Interface,
@@ -199,20 +211,24 @@ macro_rules! process_external_flow {
                         level: 1,
                     },
                     protocol: interface.protocol.clone(),
-                    ty: $interface_ty,                               // TODO: hybrid
+                    ty: $interface_ty,     // TODO: hybrid
                     receives_from: vec![], // TODO : multiple
-                    exports_to: vec![],                              // TODO
+                    exports_to: vec![],    // TODO
+                    angle: Some(interface_transform.right().truncate().to_angle()),
                 };
-                
-                interface.$external_entity_field.push(external_entity_id.clone());
-                
+
+                interface
+                    .$external_entity_field
+                    .push(external_entity_id.clone());
+
                 interfaces.push(interface);
 
-                let (external_entity_name, external_entity_description) = external_entity_query
-                    .get(source_connection.target)
-                    .expect("External entity should exist");
+                let (external_entity_name, external_entity_description, external_entity_transform) =
+                    external_entity_query
+                        .get(source_connection.target)
+                        .expect("External entity should exist");
 
-                external_entities.push(ExternalEntity {
+                external_entities.push(crate::data_model::ExternalEntity {
                     info: Info {
                         id: external_entity_id,
                         name: external_entity_name.to_string(),
@@ -221,6 +237,7 @@ macro_rules! process_external_flow {
                     },
                     ty: $external_entity_ty,
                     interactions: vec![interaction_id], // TODO : multiple
+                    transform: Some(external_entity_transform.into()),
                 });
             }
         }
@@ -233,7 +250,7 @@ process_external_flow!(
     InflowInterfaceConnection,
     InflowSourceConnection,
     Inflow,
-    InterfaceType::Import,
+    crate::data_model::InterfaceType::Import,
     ExternalEntityType::Source,
     IdType::Source,
     receives_from
@@ -245,7 +262,7 @@ process_external_flow!(
     OutflowInterfaceConnection,
     OutflowSinkConnection,
     Outflow,
-    InterfaceType::Export,
+    crate::data_model::InterfaceType::Export,
     ExternalEntityType::Sink,
     IdType::Sink,
     exports_to
@@ -254,195 +271,4 @@ process_external_flow!(
 fn save_to_json(world_model: &WorldModel, file_name: &str) {
     let json = serde_json::to_string(world_model).expect("This shouldn't fail");
     std::fs::write(file_name, json).expect("This shouldn't fail");
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct WorldModel {
-    pub system_of_interest: System,
-    //pub subsystems: Vec<System>
-}
-
-#[derive(Clone, Debug)]
-pub struct Id {
-    pub ty: IdType,
-    pub indices: Vec<i64>,
-}
-
-impl Serialize for Id {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut str_value = serde_json::to_string(&self.ty).expect("This shouldn't fail");
-        str_value = str_value[1..str_value.len() - 1].to_string();
-
-        str_value.push_str(
-            &self
-                .indices
-                .iter()
-                .map(|i| i.to_string())
-                .collect::<Vec<_>>()
-                .join("."),
-        );
-
-        serializer.serialize_str(&str_value)
-    }
-}
-
-struct IdVisitor;
-
-impl<'de> Visitor<'de> for IdVisitor {
-    type Value = Id;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a string with format <type><index1>.<index2>...")
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        if let Some(index) = v.find(|c: char| c.is_numeric()) {
-            let ty = serde_json::from_str(&v[..index])
-                .map_err(|err| E::custom(format!("Error parsing type prefix: {:?}", err)))?;
-
-            let indices = v[index..]
-                .split(".")
-                .map(|i| i.parse::<i64>())
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|err| E::custom(format!("Error parsing indices: {:?}", err)))?;
-
-            Ok(Id { ty, indices })
-        } else {
-            Err(E::custom("Didn't find any index"))
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Id {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(IdVisitor)
-    }
-}
-
-#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
-pub enum IdType {
-    #[serde(rename = "S")]
-    System,
-    #[serde(rename = "C")]
-    Subsystem,
-    #[serde(rename = "I")]
-    Interface,
-    #[serde(rename = "Src")]
-    Source,
-    #[serde(rename = "Snk")]
-    Sink,
-    #[serde(rename = "E")]
-    Environment,
-    #[serde(rename = "F")]
-    Flow,
-    #[serde(rename = "B")]
-    Boundary,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Info {
-    pub id: Id,
-    pub level: i32,
-    pub name: String,
-    pub description: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct System {
-    // #[serde(rename = "type")]
-    pub info: Info,
-    pub parent: Option<i32>,
-    pub complexity: Complexity,
-    pub environment: Environment,
-    pub boundary: Boundary,
-    pub internal_interactions: Vec<Interaction>,
-    pub external_interactions: Vec<Interaction>,
-    pub components: Vec<Id>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Boundary {
-    pub info: Info,
-    pub porosity: f32,
-    pub perceptive_fuzziness: f32,
-    pub interfaces: Vec<Interface>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Interface {
-    info: Info,
-    protocol: String,
-    #[serde(rename = "type")]
-    ty: InterfaceType,
-    exports_to: Vec<Id>,
-    receives_from: Vec<Id>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum InterfaceType {
-    Export,
-    Import,
-    Hybrid,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Environment {
-    pub info: Info,
-    pub sources: Vec<ExternalEntity>,
-    pub sinks: Vec<ExternalEntity>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct ExternalEntity {
-    info: Info,
-    #[serde(rename = "type")]
-    ty: ExternalEntityType,
-    interactions: Vec<Id>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum ExternalEntityType {
-    Source,
-    Sink,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Interaction {
-    info: Info,
-    substance: Substance,
-    #[serde(rename = "type")]
-    ty: InteractionType,
-    external_entity: Id,
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum InteractionType {
-    Inflow { usability: InflowUsability },
-    Outflow { usability: OutflowUsability },
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Substance {
-    sub_type: Option<String>,
-    #[serde(rename = "type")]
-    ty: SubstanceType,
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum Complexity {
-    /* contains components */
-    Complex { adaptable: bool, evolveable: bool },
-    /*  contains no subsystems */
-    Atomic,
-    /*  bounded to hold many instances of that same type of component */
-    Multiset,
 }

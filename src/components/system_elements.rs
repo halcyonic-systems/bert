@@ -152,6 +152,12 @@ pub struct ElementDescription {
     pub text: String,
 }
 
+impl ElementDescription {
+    pub fn new(text: &str) -> Self {
+        Self { text: text.into() }
+    }
+}
+
 impl From<&str> for ElementDescription {
     fn from(text: &str) -> Self {
         Self { text: text.into() }

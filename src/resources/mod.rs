@@ -4,7 +4,7 @@ pub use system_element_geometry::*;
 
 use bevy::prelude::*;
 
-#[derive(Debug, Resource, Deref, DerefMut)]
+#[derive(Debug, Resource, Deref, DerefMut, Copy, Clone)]
 pub struct FocusedSystem(Entity);
 
 impl FocusedSystem {

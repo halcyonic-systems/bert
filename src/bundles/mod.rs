@@ -49,6 +49,9 @@ impl SystemBundle {
         z: f32,
         radius: f32,
         angle: f32,
+        adaptable: bool,
+        evolveable: bool,
+        boundary: SystemBoundary,
         meshes: &mut ResMut<Assets<Mesh>>,
         zoom: f32,
         nesting_level: u16,
@@ -61,7 +64,9 @@ impl SystemBundle {
         Self {
             system: System {
                 radius,
-                ..default()
+                adaptable,
+                evolveable,
+                boundary,
             },
             name: Name::new("System"),
             description: ElementDescription::default(),

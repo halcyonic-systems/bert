@@ -1,5 +1,5 @@
-use crate::bundles::SystemBundle;
-use crate::components::{NestingLevel, SystemEnvironment};
+use crate::bundles::spawn_main_system;
+use crate::components::NestingLevel;
 use crate::constants::*;
 use crate::resources::*;
 use bevy::math::vec2;
@@ -19,20 +19,16 @@ pub fn setup(
     commands.spawn(Camera2dBundle::default());
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
-    let system_entity = commands
-        .spawn((
-            SystemBundle::new(
-                Vec2::ZERO,
-                0.0,
-                MAIN_SYSTEM_RADIUS,
-                0.0,
-                &mut meshes,
-                **zoom,
-                0,
-            ),
-            SystemEnvironment::default(),
-        ))
-        .id();
+    let system_entity = spawn_main_system(
+        &mut commands,
+        Vec2::ZERO,
+        0.0,
+        false,
+        false,
+        Default::default(),
+        **zoom,
+        &mut meshes,
+    );
 
     commands.insert_resource(FocusedSystem::new(system_entity));
 
@@ -74,57 +70,85 @@ pub fn init_complete_system(
 
     spawn_complete_outflow(
         &mut commands,
-        &focused_system,
+        *focused_system,
         &subsystem_query,
         &nesting_query,
         &mut meshes,
         &mut stroke_tess,
         &mut fixed_system_element_geometries,
         **zoom,
-        vec2(MAIN_SYSTEM_RADIUS, 0.0),
+        0.0,
+        MAIN_SYSTEM_RADIUS,
         Default::default(),
         OutflowUsability::Product,
+        "Interface",
+        "",
+        "Outflow",
+        "",
+        "Sink",
+        "",
     );
 
     spawn_complete_outflow(
         &mut commands,
-        &focused_system,
+        *focused_system,
         &subsystem_query,
         &nesting_query,
         &mut meshes,
         &mut stroke_tess,
         &mut fixed_system_element_geometries,
         **zoom,
-        vec2(1.0, -1.0).normalize() * MAIN_SYSTEM_RADIUS,
+        -std::f32::consts::FRAC_PI_4,
+        MAIN_SYSTEM_RADIUS,
         Default::default(),
         OutflowUsability::Waste,
+        "Interface",
+        "",
+        "Outflow",
+        "",
+        "Sink",
+        "",
     );
 
     spawn_complete_inflow(
         &mut commands,
-        &focused_system,
+        *focused_system,
         &subsystem_query,
         &nesting_query,
         &mut meshes,
         &mut stroke_tess,
         &mut fixed_system_element_geometries,
         **zoom,
-        vec2(-MAIN_SYSTEM_RADIUS, 0.0),
+        std::f32::consts::PI,
+        MAIN_SYSTEM_RADIUS,
         Default::default(),
         InflowUsability::Resource,
+        "Interface",
+        "",
+        "Inflow",
+        "",
+        "Source",
+        "",
     );
 
     spawn_complete_inflow(
         &mut commands,
-        &focused_system,
+        *focused_system,
         &subsystem_query,
         &nesting_query,
         &mut meshes,
         &mut stroke_tess,
         &mut fixed_system_element_geometries,
         **zoom,
-        vec2(-1.0, -1.0).normalize() * MAIN_SYSTEM_RADIUS,
+        std::f32::consts::FRAC_PI_4 * 3.0,
+        MAIN_SYSTEM_RADIUS,
         Default::default(),
         InflowUsability::Disruption,
+        "Interface",
+        "",
+        "Inflow",
+        "",
+        "Source",
+        "", 
     );
 }

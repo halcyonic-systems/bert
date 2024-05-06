@@ -21,7 +21,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
-use data_model::save_world;
+use data_model::save::save_world;
 
 fn main() {
     let mut app = App::new();

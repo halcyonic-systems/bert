@@ -66,7 +66,18 @@ pub fn spawn_interface_subsystem(
             },
             Subsystem { parent_system },
             NestingLevel::new(nesting_level),
-            SystemBundle::new(vec2(-radius * zoom, 0.0), z, radius, angle, meshes, zoom, nesting_level),
+            SystemBundle::new(
+                vec2(-radius * zoom, 0.0),
+                z,
+                radius,
+                angle,
+                false,
+                false,
+                Default::default(),
+                meshes,
+                zoom,
+                nesting_level,
+            ),
             ElementDescription::default(),
         ))
         .id();

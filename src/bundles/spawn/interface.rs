@@ -19,12 +19,14 @@ pub fn spawn_interface(
     flow_entity: Entity,
     transform: &Transform,
     nesting_level_query: &Query<&NestingLevel>,
-    focused_system: &Res<FocusedSystem>,
+    focused_system: Entity,
     fixed_system_element_geometries: &mut ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: f32,
     is_selected: bool,
     meshes: &mut ResMut<Assets<Mesh>>,
     tess: &mut ResMut<StrokeTessellator>,
+    name: &str,
+    description: &str,
 ) -> Entity {
     let (mut transform, initial_position) =
         ui_transform_from_button(transform, INTERFACE_Z, 0.0, zoom);
@@ -32,7 +34,7 @@ pub fn spawn_interface(
     // Normalize the rotation
     transform.rotation = Quat::from_rotation_z(transform.translation.truncate().to_angle());
 
-    let nesting_level = NestingLevel::current(***focused_system, nesting_level_query);
+    let nesting_level = NestingLevel::current(focused_system, nesting_level_query);
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let interface_entity = commands
@@ -50,8 +52,8 @@ pub fn spawn_interface(
                 selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
             },
             SystemElement::Interface,
-            Name::new("Interface"),
-            ElementDescription::default(),
+            Name::new(name.to_string()),
+            ElementDescription::new(description),
             initial_position,
             fixed_system_element_geometries
                 .get_or_create(nesting_level, zoom, meshes, tess)
@@ -63,7 +65,7 @@ pub fn spawn_interface(
         .id();
 
     commands
-        .entity(***focused_system)
+        .entity(focused_system)
         .add_child(interface_entity);
 
     let mut entity_commands = commands.entity(flow_entity);
