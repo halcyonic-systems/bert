@@ -1,4 +1,3 @@
-use crate::constants::SUBSYSTEM_SCALING_FACTOR;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::tess::geom::euclid::default;
 
@@ -84,19 +83,6 @@ pub struct ExternalEntity;
 #[reflect(Component)]
 pub struct Subsystem {
     pub parent_system: Entity,
-
-    // would be 0 for the root system (which doesn't have this component)
-    pub nesting_level: i32,
-}
-
-impl Subsystem {
-    pub fn scaling_factor(system_entity: Entity, subsystem_query: &Query<&Subsystem>) -> f32 {
-        if let Ok(subsystem) = subsystem_query.get(system_entity) {
-            SUBSYSTEM_SCALING_FACTOR.powi(subsystem.nesting_level)
-        } else {
-            1.0
-        }
-    }
 }
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]

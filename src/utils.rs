@@ -1,4 +1,4 @@
-use crate::components::InitialPosition;
+use crate::components::{InitialPosition};
 use crate::constants::{FLOW_END_LENGTH, INTERFACE_WIDTH_HALF};
 use bevy::prelude::*;
 
@@ -24,6 +24,8 @@ pub fn compute_end_and_direction_from_system_child(
     transform_query: &Query<&Transform>,
     parent_query: &Query<&Parent>,
     flow_parent: Option<Entity>,
+    zoom: f32,
+    scale: f32,
 ) -> (Vec2, Vec2) {
     let combined_transform = combined_transform_of_entity_until_ancestor(
         system_child,
@@ -35,8 +37,8 @@ pub fn compute_end_and_direction_from_system_child(
     let right = combined_transform.right().truncate();
 
     (
-        combined_transform.translation.truncate() + right * INTERFACE_WIDTH_HALF,
-        right * FLOW_END_LENGTH,
+        combined_transform.translation.truncate() + right * INTERFACE_WIDTH_HALF * scale,
+        right * FLOW_END_LENGTH * zoom,
     )
 }
 

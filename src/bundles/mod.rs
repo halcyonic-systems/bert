@@ -50,10 +50,12 @@ impl SystemBundle {
         angle: f32,
         meshes: &mut ResMut<Assets<Mesh>>,
         zoom: f32,
+        nesting_level: u16,
     ) -> Self {
         let zoomed_radius = radius * zoom;
 
         let (simplified_mesh, path) = get_system_geometry_from_radius(zoomed_radius);
+        let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
         Self {
             system: System { radius },
@@ -61,7 +63,7 @@ impl SystemBundle {
             pickable_bundle: PickableBundle::default(),
             pick_selection: PickSelection::default(),
             simplified_mesh: SimplifiedMesh {
-                mesh: meshes.add(simplified_mesh).into(),
+                mesh: meshes.add(simplified_mesh),
             },
             aabb: aabb_from_radius(zoomed_radius),
             system_shape_bundle: ShapeBundle {
@@ -75,7 +77,7 @@ impl SystemBundle {
                 ..default()
             },
             fill: Fill::color(Color::GRAY),
-            stroke: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH),
+            stroke: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH * scale),
             initial_position: InitialPosition::new(position),
         }
     }
@@ -99,7 +101,7 @@ impl Clone for FixedSystemElementGeometry {
             path: Path(self.path.0.clone()),
             mesh: self.mesh.clone(),
             material: self.material.clone(),
-            aabb: self.aabb.clone(),
+            aabb: self.aabb,
         }
     }
 }

@@ -44,20 +44,14 @@ pub struct FlowCurve {
     pub end_direction: Vec2,
 }
 
+impl FlowCurve {
+    pub fn head_rotation(&self) -> Quat {
+        Quat::from_rotation_z(self.end_direction.to_angle())
+    }
+}
+
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct SelectedHighlightHelperAdded {
     pub helper_entity: Entity,
 }
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
-#[reflect(Component)]
-pub struct ScaledDownElement {
-    pub factor: f32,
-}
-
-// impl ScaledDownElement {
-//     pub fn zoomed_factor(&self, zoom: f32) -> f32 {
-//         (self.factor * zoom).min(1.0)
-//     }
-// }

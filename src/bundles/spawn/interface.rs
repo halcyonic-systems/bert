@@ -4,7 +4,9 @@ use crate::events::InterfaceDrag;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
-use crate::resources::{FixedSystemElementGeometries, FocusedSystem};
+use crate::resources::{
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
+};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -16,10 +18,13 @@ pub fn spawn_interface(
     substance_type: SubstanceType,
     flow_entity: Entity,
     transform: &Transform,
+    nesting_level_query: &Query<&NestingLevel>,
     focused_system: &Res<FocusedSystem>,
-    fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
+    fixed_system_element_geometries: &mut ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: f32,
     is_selected: bool,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    tess: &mut ResMut<StrokeTessellator>,
 ) -> Entity {
     let (mut transform, initial_position) =
         ui_transform_from_button(transform, INTERFACE_Z, 0.0, zoom);
@@ -27,9 +32,12 @@ pub fn spawn_interface(
     // Normalize the rotation
     transform.rotation = Quat::from_rotation_z(transform.translation.truncate().to_angle());
 
+    let nesting_level = NestingLevel::current(***focused_system, nesting_level_query);
+    let scale = NestingLevel::compute_scale(nesting_level, zoom);
+
     let interface_entity = commands
         .spawn((
-            Interface::default(),
+            Interface,
             SpatialBundle {
                 transform,
                 ..default()
@@ -38,14 +46,18 @@ pub fn spawn_interface(
             PickableBundle::default(),
             PickSelection { is_selected },
             HighlightBundles {
-                idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH),
+                idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH * scale),
                 selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
             },
             SystemElement::Interface,
             Name::new("Interface"),
             ElementDescription::default(),
             initial_position,
-            fixed_system_element_geometries.interface.clone(),
+            fixed_system_element_geometries
+                .get_or_create(nesting_level, zoom, meshes, tess)
+                .interface
+                .clone(),
+            NestingLevel::new(nesting_level),
             On::<DragPosition>::send_event::<InterfaceDrag>(),
         ))
         .id();

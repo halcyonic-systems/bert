@@ -147,10 +147,8 @@ pub fn add_interface_subsystem_create_buttons(
                     &asset_server,
                 );
             }
-        } else {
-            if let Ok(interface_button) = interface_button {
-                despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
-            }
+        } else if let Ok(interface_button) = interface_button {
+            despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
         }
     }
 }

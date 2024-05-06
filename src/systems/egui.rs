@@ -132,7 +132,7 @@ pub fn egui_selected_context(
                             SystemElement::Interface => {
                                 interface_egui(
                                     ui,
-                                    &mut *interfaces.get_mut(entity).expect("Interface not found"),
+                                    &mut interfaces.get_mut(entity).expect("Interface not found"),
                                 );
                             }
                             SystemElement::System => {
@@ -140,11 +140,11 @@ pub fn egui_selected_context(
                             }
                             SystemElement::Inflow => inflow_egui(
                                 ui,
-                                &mut *inflows.get_mut(entity).expect("Inflow not found"),
+                                &mut inflows.get_mut(entity).expect("Inflow not found"),
                             ),
                             SystemElement::Outflow => outflow_egui(
                                 ui,
-                                &mut *outflows.get_mut(entity).expect("Outflow not found"),
+                                &mut outflows.get_mut(entity).expect("Outflow not found"),
                             ),
                             SystemElement::ExternalEntity => {
                                 // TODO: implement
