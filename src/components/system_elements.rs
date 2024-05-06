@@ -1,9 +1,5 @@
 use bevy::prelude::*;
-use bevy_prototype_lyon::prelude::tess::geom::euclid::default;
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
-pub struct SystemOfInterest;
+use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
@@ -27,15 +23,35 @@ impl std::fmt::Display for SystemElement {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Default)]
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Default)]
 #[reflect(Component)]
 pub struct System {
     pub radius: f32,
+    pub adaptable: bool,
+    pub evolveable: bool,
+    pub boundary: SystemBoundary,
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Reflect, Default)]
+pub struct SystemBoundary {
+    pub porosity: f32,
+    pub perceptive_fuzziness: f32,
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Reflect, Default, Component)]
 #[reflect(Component)]
-pub struct Interface;
+pub struct SystemEnvironment {
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[reflect(Component)]
+pub struct Interface {
+    pub protocol: String,
+}
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq)]
 pub enum InterfaceType {
@@ -85,14 +101,14 @@ pub struct Subsystem {
     pub parent_system: Entity,
 }
 
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum InflowUsability {
     #[default]
     Resource,
     Disruption,
 }
 
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum OutflowUsability {
     #[default]
     Product,
@@ -105,7 +121,7 @@ pub enum GeneralUsability {
     Outflow(OutflowUsability),
 }
 
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum SubstanceType {
     #[default]
     Energy,

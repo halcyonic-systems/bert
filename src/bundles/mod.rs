@@ -32,6 +32,7 @@ pub fn aabb_from_radius(radius: f32) -> Aabb {
 pub struct SystemBundle {
     pub system: System,
     pub name: Name,
+    pub description: ElementDescription,
     pub pickable_bundle: PickableBundle,
     pub pick_selection: PickSelection,
     pub simplified_mesh: SimplifiedMesh,
@@ -58,8 +59,12 @@ impl SystemBundle {
         let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
         Self {
-            system: System { radius },
+            system: System {
+                radius,
+                ..default()
+            },
             name: Name::new("System"),
+            description: ElementDescription::default(),
             pickable_bundle: PickableBundle::default(),
             pick_selection: PickSelection::default(),
             simplified_mesh: SimplifiedMesh {

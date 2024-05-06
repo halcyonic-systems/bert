@@ -37,7 +37,7 @@ pub fn spawn_interface(
 
     let interface_entity = commands
         .spawn((
-            Interface,
+            Interface::default(),
             SpatialBundle {
                 transform,
                 ..default()

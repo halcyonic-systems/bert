@@ -17,11 +17,6 @@ impl FocusedSystem {
 pub struct Zoom(f32);
 
 impl Zoom {
-    pub fn add(&mut self, step: f32) {
-        self.0 += step;
-        self.0 = self.0.max(0.1);
-    }
-
     pub fn mul(&mut self, fac: f32) {
         debug_assert!(fac > 0.0);
         self.0 *= fac;

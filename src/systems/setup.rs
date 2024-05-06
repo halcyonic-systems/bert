@@ -1,5 +1,5 @@
 use crate::bundles::SystemBundle;
-use crate::components::NestingLevel;
+use crate::components::{NestingLevel, SystemEnvironment};
 use crate::constants::*;
 use crate::resources::*;
 use bevy::math::vec2;
@@ -20,14 +20,17 @@ pub fn setup(
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
     let system_entity = commands
-        .spawn(SystemBundle::new(
-            Vec2::ZERO,
-            0.0,
-            MAIN_SYSTEM_RADIUS,
-            0.0,
-            &mut meshes,
-            **zoom,
-            0,
+        .spawn((
+            SystemBundle::new(
+                Vec2::ZERO,
+                0.0,
+                MAIN_SYSTEM_RADIUS,
+                0.0,
+                &mut meshes,
+                **zoom,
+                0,
+            ),
+            SystemEnvironment::default(),
         ))
         .id();
 
