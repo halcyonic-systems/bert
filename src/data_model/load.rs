@@ -110,7 +110,7 @@ pub fn load_world(
             .get(interaction_id)
             .expect("Interaction must exist");
 
-        let flow_entity = match interface.ty {
+        let _ = match interface.ty {
             InterfaceType::Export => {
                 let external_entity = id_to_external_entity
                     .get(&interface.exports_to[0]) // TODO: multiple connections
