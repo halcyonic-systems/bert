@@ -2,7 +2,6 @@ use crate::bundles::{spawn_complete_inflow, spawn_complete_outflow, spawn_main_s
 use crate::constants::MAIN_SYSTEM_RADIUS;
 use crate::data_model::*;
 use crate::resources::*;
-use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
@@ -16,7 +15,7 @@ pub fn load_world(
     subsystem_query: Query<&crate::components::Subsystem>,
     nesting_query: Query<&NestingLevel>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,

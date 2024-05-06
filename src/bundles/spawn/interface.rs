@@ -5,7 +5,7 @@ use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{
-    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
+    FixedSystemElementGeometriesByNestingLevel, StrokeTessellator,
 };
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;

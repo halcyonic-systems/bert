@@ -1,9 +1,9 @@
 use crate::bundles::spawn_main_system;
-use crate::components::NestingLevel;
 use crate::constants::*;
 use crate::resources::*;
 use bevy::math::vec2;
 use bevy::prelude::*;
+use crate::components::NestingLevel;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 

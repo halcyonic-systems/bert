@@ -12,7 +12,7 @@ pub fn spawn_main_system(
     evolveable: bool,
     boundary: SystemBoundary,
     zoom: f32,
-    mut meshes: &mut ResMut<Assets<Mesh>>,
+    meshes: &mut ResMut<Assets<Mesh>>,
 ) -> Entity {
     commands
         .spawn((
@@ -24,7 +24,7 @@ pub fn spawn_main_system(
                 adaptable,
                 evolveable,
                 boundary,
-                &mut meshes,
+                meshes,
                 zoom,
                 0,
             ),
