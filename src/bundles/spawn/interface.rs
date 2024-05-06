@@ -47,7 +47,7 @@ pub fn spawn_interface(
             PickSelection { is_selected },
             HighlightBundles {
                 idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH * scale),
-                selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH * scale),
+                selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
             },
             SystemElement::Interface,
             Name::new("Interface"),

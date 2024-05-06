@@ -158,7 +158,7 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
             PickSelection { is_selected },
             HighlightBundles {
                 idle: Stroke::new(color, FLOW_LINE_WIDTH * scale),
-                selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH * scale),
+                selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH),
             },
             system_element,
             Name::new(name),

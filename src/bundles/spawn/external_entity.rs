@@ -54,7 +54,7 @@ pub fn spawn_external_entity(
                 selected: Stroke {
                     color,
                     options: StrokeOptions::default()
-                        .with_line_width(EXTERNAL_ENTITY_SELECTED_LINE_WIDTH * scale)
+                        .with_line_width(EXTERNAL_ENTITY_SELECTED_LINE_WIDTH)
                         .with_line_cap(LineCap::Round),
                 },
             },
