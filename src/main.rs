@@ -1,12 +1,12 @@
 mod bundles;
 mod components;
 mod constants;
+mod data_model;
 mod events;
 mod plugins;
 mod resources;
 mod systems;
 mod utils;
-mod data_model;
 
 use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
@@ -35,6 +35,7 @@ fn main() {
     .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
+    .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .add_systems(Startup, setup);
@@ -84,6 +85,9 @@ fn main() {
             apply_zoom_to_system_radii,
             apply_zoom_to_camera_position,
             apply_zoom_to_incomplete_flows,
+            apply_zoom_to_system_geometries,
+            apply_zoom_to_strokes,
+            apply_zoom_to_scale,
         )
             .run_if(resource_changed::<Zoom>),
     )

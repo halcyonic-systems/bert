@@ -1,8 +1,8 @@
-use crate::components::FlowCurve;
+use crate::components::{FlowCurve, NestingLevel};
 use crate::constants::{
     FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH,
 };
-use crate::resources::StrokeTessellator;
+use crate::resources::{StrokeTessellator, Zoom};
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
@@ -22,21 +22,25 @@ pub fn draw_flow_curve(
             &mut SimplifiedMesh,
             &mut Aabb,
             &Children,
+            &NestingLevel,
         ),
         Changed<FlowCurve>,
     >,
-    mut path_query: Query<&mut Path, Without<FlowCurve>>,
+    mut transform_query: Query<&mut Transform, With<Path>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut meshes: ResMut<Assets<Mesh>>,
+    zoom: Res<Zoom>,
 ) {
-    for (flow_curve, path, simplified_mesh, aabb, children) in &mut query {
+    for (flow_curve, path, simplified_mesh, aabb, children, nesting_level) in &mut query {
         update_flow_curve(
-            &mut path_query,
+            &mut transform_query,
             flow_curve,
             path,
             simplified_mesh,
             aabb,
             children,
+            **nesting_level,
+            **zoom,
             &mut stroke_tess,
             &mut meshes,
         );
@@ -44,16 +48,19 @@ pub fn draw_flow_curve(
 }
 
 pub fn update_flow_curve(
-    path_query: &mut Query<&mut Path, Without<FlowCurve>>,
+    transform_query: &mut Query<&mut Transform, With<Path>>,
     flow_curve: &FlowCurve,
     mut path: Mut<Path>,
     mut simplified_mesh: Mut<SimplifiedMesh>,
     mut aabb: Mut<Aabb>,
     children: &Children,
+    nesting_level: u16,
+    zoom: f32,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) {
-    let (curve_path, head_path) = create_paths_from_flow_curve(flow_curve);
+    let curve_path =
+        create_path_from_flow_curve(flow_curve, NestingLevel::compute_scale(nesting_level, zoom));
 
     simplified_mesh.mesh = tessellate_simplified_mesh(&curve_path, meshes, stroke_tess);
     *aabb = create_aabb_from_flow_curve(flow_curve);
@@ -61,8 +68,9 @@ pub fn update_flow_curve(
     *path = curve_path;
 
     if let Some(child) = children.iter().next() {
-        if let Ok(mut path) = path_query.get_mut(*child) {
-            *path = head_path;
+        if let Ok(mut transform) = transform_query.get_mut(*child) {
+            transform.rotation = flow_curve.head_rotation();
+            transform.translation = flow_curve.end.extend(transform.translation.z);
         }
     }
 }
@@ -116,40 +124,24 @@ pub fn tessellate_simplified_mesh(
     meshes.add(mesh)
 }
 
-pub fn create_paths_from_flow_curve(flow_curve: &FlowCurve) -> (Path, Path) {
+pub fn create_path_from_flow_curve(flow_curve: &FlowCurve, scale: f32) -> Path {
     let mut curve_path_builder = PathBuilder::new();
 
-    let zoomed_start = flow_curve.start;
-    let zoomed_end = flow_curve.end;
+    let start = flow_curve.start;
+    let end = flow_curve.end;
 
-    curve_path_builder.move_to(zoomed_start);
+    curve_path_builder.move_to(start);
 
     let end_direction = flow_curve.end_direction.normalize();
-    let end = zoomed_end + end_direction * (FLOW_ARROW_HEAD_LENGTH - 2.0);
+    let end = end + end_direction * (FLOW_ARROW_HEAD_LENGTH - 2.0) * scale;
 
     curve_path_builder.cubic_bezier_to(
-        zoomed_start + flow_curve.start_direction,
+        start + flow_curve.start_direction,
         end + flow_curve.end_direction,
         end,
     );
 
-    let mut head_path_builder = PathBuilder::new();
-
-    let head_width_direction = vec2(end_direction.y, -end_direction.x);
-
-    head_path_builder.move_to(zoomed_end);
-    head_path_builder.line_to(
-        zoomed_end
-            + end_direction * FLOW_ARROW_HEAD_LENGTH
-            + head_width_direction * FLOW_ARROW_HEAD_WIDTH_HALF,
-    );
-    head_path_builder.line_to(
-        zoomed_end + end_direction * FLOW_ARROW_HEAD_LENGTH
-            - head_width_direction * FLOW_ARROW_HEAD_WIDTH_HALF,
-    );
-    head_path_builder.close();
-
-    (curve_path_builder.build(), head_path_builder.build())
+    curve_path_builder.build()
 }
 
 pub fn create_aabb_from_flow_curve(flow_curve: &FlowCurve) -> Aabb {

@@ -18,7 +18,9 @@ use crate::bundles::{
     spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
 };
 use crate::components::*;
-use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator, Zoom};
+use crate::resources::{
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom,
+};
 use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -85,11 +87,12 @@ pub fn on_create_button_click(
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>,
     subsystem_query: Query<&Subsystem>,
+    nesting_query: Query<&NestingLevel>,
     mut pick_selection_query: Query<&mut PickSelection>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
-    fixed_system_element_geometries: Res<FixedSystemElementGeometries>,
+    mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
     event.stop_propagation();
@@ -109,10 +112,13 @@ pub fn on_create_button_click(
                 .expect("Interface button must have a substance type"),
             button.connection_source,
             transform,
+            &nesting_query,
             &focused_system,
-            &fixed_system_element_geometries,
+            &mut fixed_system_element_geometries,
             **zoom,
             true,
+            &mut meshes,
+            &mut stroke_tess,
         ),
         CreateButtonType::ExportInterface => spawn_interface(
             &mut commands,
@@ -122,14 +128,18 @@ pub fn on_create_button_click(
                 .expect("Interface button must have a substance type"),
             button.connection_source,
             transform,
+            &nesting_query,
             &focused_system,
-            &fixed_system_element_geometries,
+            &mut fixed_system_element_geometries,
             **zoom,
             true,
+            &mut meshes,
+            &mut stroke_tess,
         ),
         CreateButtonType::Inflow => spawn_inflow(
             &mut commands,
             &subsystem_query,
+            &nesting_query,
             button.connection_source,
             &combined_transform_of_entity_until_ancestor(
                 event.target,
@@ -150,6 +160,7 @@ pub fn on_create_button_click(
         CreateButtonType::Outflow => spawn_outflow(
             &mut commands,
             &subsystem_query,
+            &nesting_query,
             button.connection_source,
             &combined_transform_of_entity_until_ancestor(
                 event.target,
@@ -170,6 +181,7 @@ pub fn on_create_button_click(
         CreateButtonType::Source => spawn_external_entity(
             &mut commands,
             &subsystem_query,
+            &nesting_query,
             &focused_system,
             InterfaceType::Import,
             button
@@ -177,13 +189,16 @@ pub fn on_create_button_click(
                 .expect("Source button must have a substance type"),
             button.connection_source,
             &transform,
-            &fixed_system_element_geometries,
+            &mut fixed_system_element_geometries,
             **zoom,
             true,
+            &mut meshes,
+            &mut stroke_tess,
         ),
         CreateButtonType::Sink => spawn_external_entity(
             &mut commands,
             &subsystem_query,
+            &nesting_query,
             &focused_system,
             InterfaceType::Export,
             button
@@ -191,9 +206,11 @@ pub fn on_create_button_click(
                 .expect("Sink button must have a substance type"),
             button.connection_source,
             &transform,
-            &fixed_system_element_geometries,
+            &mut fixed_system_element_geometries,
             **zoom,
             true,
+            &mut meshes,
+            &mut stroke_tess,
         ),
         CreateButtonType::InterfaceSubsystem {
             is_child_of_interface,
@@ -203,7 +220,7 @@ pub fn on_create_button_click(
             button.connection_source,
             &flow_interface_query,
             &system_query,
-            &subsystem_query,
+            &nesting_query,
             &focused_system,
             &mut meshes,
             **zoom,

@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use crate::components::NestingLevel;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 
@@ -16,6 +17,7 @@ pub fn setup(
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut tess: ResMut<StrokeTessellator>,
+    mut geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     asset_server: Res<AssetServer>,
 ) {
     commands.spawn(Camera2dBundle::default());
@@ -29,14 +31,11 @@ pub fn setup(
             0.0,
             &mut meshes,
             **zoom,
+            0,
         ))
         .id();
 
     commands.insert_resource(FocusedSystem::new(system_entity));
-    commands.insert_resource(FixedSystemElementGeometries {
-        interface: init_interface_geometry(&mut meshes),
-        external_entity: init_external_entity_geometry(&mut meshes, &mut tess),
-    });
 
     #[cfg(not(feature = "init_complete_system"))]
     {
@@ -60,87 +59,16 @@ pub fn setup(
     }
 }
 
-fn init_external_entity_geometry(
-    meshes: &mut ResMut<Assets<Mesh>>,
-    tess: &mut ResMut<StrokeTessellator>,
-) -> FixedSystemElementGeometry {
-    let mut external_entity_path_builder = PathBuilder::new();
-    external_entity_path_builder.move_to(vec2(
-        EXTERNAL_ENTITY_WIDTH_HALF,
-        EXTERNAL_ENTITY_HEIGHT_HALF,
-    ));
-    external_entity_path_builder.line_to(vec2(
-        -EXTERNAL_ENTITY_WIDTH_HALF,
-        EXTERNAL_ENTITY_HEIGHT_HALF,
-    ));
-    external_entity_path_builder.line_to(vec2(
-        -EXTERNAL_ENTITY_WIDTH_HALF,
-        -EXTERNAL_ENTITY_HEIGHT_HALF,
-    ));
-    external_entity_path_builder.line_to(vec2(
-        EXTERNAL_ENTITY_WIDTH_HALF,
-        -EXTERNAL_ENTITY_HEIGHT_HALF,
-    ));
-
-    let path = external_entity_path_builder.build();
-
-    FixedSystemElementGeometry {
-        simplified: SimplifiedMesh {
-            mesh: tessellate_simplified_mesh(&path, meshes, tess),
-        },
-        path,
-        mesh: Default::default(),
-        material: WHITE_COLOR_MATERIAL_HANDLE,
-        aabb: Aabb {
-            center: Vec3A::ZERO,
-            half_extents: Vec3A::new(
-                EXTERNAL_ENTITY_WIDTH_HALF + FLOW_CLICK_WIDTH * 0.5,
-                EXTERNAL_ENTITY_HEIGHT_HALF + FLOW_CLICK_WIDTH * 0.5,
-                0.0,
-            ),
-        },
-    }
-}
-
-fn init_interface_geometry(meshes: &mut ResMut<Assets<Mesh>>) -> FixedSystemElementGeometry {
-    FixedSystemElementGeometry {
-        simplified: SimplifiedMesh {
-            mesh: meshes
-                .add(Rectangle::new(
-                    INTERFACE_WIDTH_HALF * 2.0,
-                    INTERFACE_HEIGHT_HALF * 2.0,
-                ))
-                .into(),
-        },
-        path: GeometryBuilder::build_as(&shapes::RoundedPolygon {
-            points: [
-                vec2(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF), // top right
-                vec2(-INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF), // top left
-                vec2(-INTERFACE_WIDTH_HALF, -INTERFACE_HEIGHT_HALF), // bottom left
-                vec2(INTERFACE_WIDTH_HALF, -INTERFACE_HEIGHT_HALF), // bottom right
-            ]
-            .into_iter()
-            .collect(),
-            radius: 5.,
-            closed: false,
-        }),
-        mesh: Default::default(),
-        material: WHITE_COLOR_MATERIAL_HANDLE,
-        aabb: Aabb {
-            center: Vec3A::ZERO,
-            half_extents: Vec3A::new(INTERFACE_WIDTH_HALF, INTERFACE_HEIGHT_HALF, 0.0),
-        },
-    }
-}
 
 #[cfg(feature = "init_complete_system")]
 pub fn init_complete_system(
     mut commands: Commands,
     subsystem_query: Query<&crate::components::Subsystem>,
+    nesting_query: Query<&NestingLevel>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
-    fixed_system_element_geometries: Res<FixedSystemElementGeometries>,
+    mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
     use crate::bundles::*;
@@ -150,9 +78,10 @@ pub fn init_complete_system(
         &mut commands,
         &focused_system,
         &subsystem_query,
+        &nesting_query,
         &mut meshes,
         &mut stroke_tess,
-        &fixed_system_element_geometries,
+        &mut fixed_system_element_geometries,
         **zoom,
         vec2(MAIN_SYSTEM_RADIUS, 0.0),
         Default::default(),
@@ -163,9 +92,10 @@ pub fn init_complete_system(
         &mut commands,
         &focused_system,
         &subsystem_query,
+        &nesting_query,
         &mut meshes,
         &mut stroke_tess,
-        &fixed_system_element_geometries,
+        &mut fixed_system_element_geometries,
         **zoom,
         vec2(1.0, -1.0).normalize() * MAIN_SYSTEM_RADIUS,
         Default::default(),
@@ -176,9 +106,10 @@ pub fn init_complete_system(
         &mut commands,
         &focused_system,
         &subsystem_query,
+        &nesting_query,
         &mut meshes,
         &mut stroke_tess,
-        &fixed_system_element_geometries,
+        &mut fixed_system_element_geometries,
         **zoom,
         vec2(-MAIN_SYSTEM_RADIUS, 0.0),
         Default::default(),
@@ -189,9 +120,10 @@ pub fn init_complete_system(
         &mut commands,
         &focused_system,
         &subsystem_query,
+        &nesting_query,
         &mut meshes,
         &mut stroke_tess,
-        &fixed_system_element_geometries,
+        &mut fixed_system_element_geometries,
         **zoom,
         vec2(-1.0, -1.0).normalize() * MAIN_SYSTEM_RADIUS,
         Default::default(),

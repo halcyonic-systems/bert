@@ -3,11 +3,14 @@ use crate::components::*;
 use crate::constants::*;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::PickSelection;
-use crate::resources::{FixedSystemElementGeometries, FocusedSystem, StrokeTessellator};
+use crate::resources::{
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
+};
 use crate::systems::{
-    create_aabb_from_flow_curve, create_paths_from_flow_curve, tessellate_simplified_mesh,
+    create_aabb_from_flow_curve, create_path_from_flow_curve, tessellate_simplified_mesh,
 };
 use crate::utils::ui_transform_from_button;
+use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -16,6 +19,7 @@ use bevy_prototype_lyon::prelude::*;
 pub fn spawn_outflow(
     commands: &mut Commands,
     subsystem_query: &Query<&Subsystem>,
+    nesting_query: &Query<&NestingLevel>,
     system_entity: Entity,
     transform: &Transform,
     stroke_tess: &mut ResMut<StrokeTessellator>,
@@ -29,13 +33,14 @@ pub fn spawn_outflow(
 
     let direction = transform.right().truncate();
 
-    let scaling_factor = Subsystem::scaling_factor(system_entity, subsystem_query);
+    let nesting_level = NestingLevel::current(system_entity, &nesting_query);
+    let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let flow_curve = FlowCurve {
         start: *initial_position * zoom,
-        start_direction: direction * FLOW_END_LENGTH,
-        end: (*initial_position + direction * FLOW_LENGTH * scaling_factor) * zoom,
-        end_direction: direction * -FLOW_END_LENGTH,
+        start_direction: direction * FLOW_END_LENGTH * zoom,
+        end: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
+        end_direction: direction * -FLOW_END_LENGTH * zoom,
     };
 
     spawn_flow(
@@ -53,12 +58,15 @@ pub fn spawn_outflow(
             usability,
         },
         is_selected,
+        nesting_level,
+        scale,
     )
 }
 
 pub fn spawn_inflow(
     commands: &mut Commands,
     subsystem_query: &Query<&Subsystem>,
+    nesting_query: &Query<&NestingLevel>,
     system_entity: Entity,
     transform: &Transform,
     stroke_tess: &mut ResMut<StrokeTessellator>,
@@ -72,13 +80,14 @@ pub fn spawn_inflow(
 
     let direction = transform.right().truncate();
 
-    let scaling_factor = Subsystem::scaling_factor(system_entity, subsystem_query);
+    let nesting_level = NestingLevel::current(system_entity, &nesting_query);
+    let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let flow_curve = FlowCurve {
-        start: (*initial_position + direction * FLOW_LENGTH * scaling_factor) * zoom,
-        start_direction: direction * -FLOW_END_LENGTH,
+        start: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
+        start_direction: direction * -FLOW_END_LENGTH * zoom,
         end: *initial_position * zoom,
-        end_direction: direction * FLOW_END_LENGTH,
+        end_direction: direction * FLOW_END_LENGTH * zoom,
     };
 
     spawn_flow(
@@ -96,6 +105,8 @@ pub fn spawn_inflow(
             usability,
         },
         is_selected,
+        nesting_level,
+        scale,
     )
 }
 
@@ -110,8 +121,19 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
     name: &'static str,
     flow: F,
     is_selected: bool,
+    nesting_level: u16,
+    scale: f32,
 ) -> Entity {
-    let (curve_path, head_path) = create_paths_from_flow_curve(&flow_curve);
+    let curve_path = create_path_from_flow_curve(&flow_curve, scale);
+
+    let mut head_path_builder = PathBuilder::new();
+
+    head_path_builder.move_to(Vec2::ZERO);
+    head_path_builder.line_to(vec2(FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF));
+    head_path_builder.line_to(vec2(FLOW_ARROW_HEAD_LENGTH, -FLOW_ARROW_HEAD_WIDTH_HALF));
+    head_path_builder.close();
+    let head_path = head_path_builder.build();
+
     let aabb = create_aabb_from_flow_curve(&flow_curve);
 
     let color = flow.substance_type().flow_color();
@@ -135,24 +157,29 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
             PickableBundle::default(),
             PickSelection { is_selected },
             HighlightBundles {
-                idle: Stroke::new(color, FLOW_LINE_WIDTH),
-                selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH),
+                idle: Stroke::new(color, FLOW_LINE_WIDTH * scale),
+                selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH * scale),
             },
             system_element,
             Name::new(name),
             ElementDescription::default(),
+            NestingLevel::new(nesting_level),
         ))
         .with_children(|parent| {
             parent.spawn((
                 ShapeBundle {
                     path: head_path,
                     spatial: SpatialBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                        transform: Transform::from_translation(flow_curve.end.extend(2.0))
+                            .with_scale(vec3(scale, scale, 1.0))
+                            .with_rotation(flow_curve.head_rotation()),
                         ..default()
                     },
                     ..default()
                 },
                 Fill::color(color),
+                ApplyZoomToScale,
+                NestingLevel::new(nesting_level),
             ));
         })
         .id();
@@ -172,9 +199,12 @@ macro_rules! spawn_complete_flow {
             mut commands: &mut Commands,
             focused_system: &Res<FocusedSystem>,
             subsystem_query: &Query<&Subsystem>,
+            nesting_query: &Query<&NestingLevel>,
             mut meshes: &mut ResMut<Assets<Mesh>>,
             mut stroke_tess: &mut ResMut<StrokeTessellator>,
-            fixed_system_element_geometries: &Res<FixedSystemElementGeometries>,
+            fixed_system_element_geometries: &mut ResMut<
+                FixedSystemElementGeometriesByNestingLevel,
+            >,
             zoom: f32,
             outflow_start_position: Vec2,
             substance_type: SubstanceType,
@@ -186,6 +216,7 @@ macro_rules! spawn_complete_flow {
             let product_flow = $spawn_name(
                 &mut commands,
                 subsystem_query,
+                nesting_query,
                 ***focused_system,
                 &transform,
                 &mut stroke_tess,
@@ -202,10 +233,13 @@ macro_rules! spawn_complete_flow {
                 substance_type,
                 product_flow,
                 &transform,
+                nesting_query,
                 &focused_system,
-                &fixed_system_element_geometries,
+                fixed_system_element_geometries,
                 zoom,
                 false,
+                meshes,
+                stroke_tess,
             );
 
             let right = transform.right();
@@ -214,14 +248,17 @@ macro_rules! spawn_complete_flow {
             spawn_external_entity(
                 &mut commands,
                 subsystem_query,
+                nesting_query,
                 focused_system,
                 $interface_ty,
                 substance_type,
                 product_flow,
                 &transform,
-                &fixed_system_element_geometries,
+                fixed_system_element_geometries,
                 zoom,
                 false,
+                meshes,
+                stroke_tess,
             );
 
             product_flow_interface
