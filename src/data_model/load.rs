@@ -12,15 +12,18 @@ fn load_from_json(file_name: &str) -> WorldModel {
 
 pub fn load_world(
     mut commands: Commands,
-    subsystem_query: Query<&crate::components::Subsystem>,
+    existing_elemens_query: Query<Entity, With<SystemElement>>,
+    subsystem_query: Query<&Subsystem>,
     nesting_query: Query<&NestingLevel>,
     mut meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
+    for entity in &existing_elemens_query {
+        commands.entity(entity).despawn_recursive();
+    }
+    
     let world_model = load_from_json("world_model.json");
 
     let system = world_model.system_of_interest;
@@ -136,7 +139,7 @@ pub fn load_world(
                     &interaction.info.description,
                     &external_entity.info.name,
                     &external_entity.info.description,
-                    // TODO : transforms
+                    external_entity.transform.as_ref(),
                 )
             }
             InterfaceType::Import => {
@@ -167,7 +170,7 @@ pub fn load_world(
                     &interaction.info.description,
                     &external_entity.info.name,
                     &external_entity.info.description,
-                    // TODO : transforms
+                    external_entity.transform.as_ref(),
                 )
             }
             InterfaceType::Hybrid => todo!(),

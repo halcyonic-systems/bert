@@ -10,6 +10,8 @@ mod utils;
 
 use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
+use crate::data_model::load::load_world;
+use crate::data_model::save::save_world;
 use crate::events::*;
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
 use crate::plugins::mouse_interaction::MouseInteractionPlugin;
@@ -21,7 +23,6 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
-use data_model::save::save_world;
 
 fn main() {
     let mut app = App::new();
@@ -78,10 +79,17 @@ fn main() {
             pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition.clone())),
             control_zoom_from_keyboard,
             control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition),
+        ),
+    )
+    .add_systems(
+        Update,
+        (
             save_world.run_if(
-                input_pressed(KeyCode::SuperLeft)
-                .and_then(input_just_pressed(KeyCode::KeyS)),
-            )
+                input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyS)),
+            ),
+            load_world.run_if(
+                input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyL)),
+            ),
         ),
     )
     .add_systems(

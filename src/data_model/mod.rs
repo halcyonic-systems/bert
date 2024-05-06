@@ -53,8 +53,8 @@ impl<'de> Visitor<'de> for IdVisitor {
     where
         E: Error,
     {
-        if let Some(index) = v.find(|c: char| c.is_numeric()) {
-            let ty = serde_json::from_str(&v[..index])
+        if let Some(index) = v.find(|c: char| c.is_numeric() || c == '-') {
+            let ty = serde_json::from_str(&format!("\"{}\"", &v[..index]))
                 .map_err(|err| E::custom(format!("Error parsing type prefix: {:?}", err)))?;
 
             let indices = v[index..]

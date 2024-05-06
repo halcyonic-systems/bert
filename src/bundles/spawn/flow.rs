@@ -15,6 +15,7 @@ use bevy::prelude::*;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use crate::data_model::Transform2d;
 
 pub fn spawn_outflow(
     commands: &mut Commands,
@@ -223,6 +224,7 @@ macro_rules! spawn_complete_flow {
             flow_description: &str,
             external_entity_name: &str,
             external_entity_description: &str,
+            external_entity_transform: Option<&Transform2d>
         ) -> Entity {
             let mut translation = vec3(system_radius, 0.0, 0.0);
             
@@ -263,8 +265,14 @@ macro_rules! spawn_complete_flow {
                 interface_description,
             );
 
-            let right = transform.right();
-            transform.translation += right * FLOW_LENGTH;
+            let transform = if let Some(t2d) = external_entity_transform {
+                Transform::from_translation(t2d.translation.extend(transform.translation.z))
+                    .with_rotation(Quat::from_rotation_z(t2d.rotation))
+            } else {
+                let right = transform.right();
+                transform.translation += right * FLOW_LENGTH;
+                transform
+            };
 
             spawn_external_entity(
                 &mut commands,
