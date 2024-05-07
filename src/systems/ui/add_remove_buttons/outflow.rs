@@ -45,9 +45,7 @@ pub fn add_first_outflow_create_button(
         &system_query,
         focused_system,
     );
-
-    info!("first outflow button: {} {}", position, angle);
-
+    
     spawn_create_button(
         &mut commands,
         CreateButton {
@@ -83,7 +81,6 @@ pub fn add_consecutive_outflow_create_button(
             &system_query,
             **focused_system,
         );
-        info!("consecutive outflow button: {} {}", position, angle);
 
         spawn_create_button(
             &mut commands,

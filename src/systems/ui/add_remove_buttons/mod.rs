@@ -35,8 +35,6 @@ macro_rules! button_transform {
                 }
             }
             
-            info!("existing interfaces: {:?}", existing_interfaces);
-
             let angle = if existing_interfaces.is_empty() {
                 0.0
             } else {

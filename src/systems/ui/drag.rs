@@ -62,7 +62,6 @@ pub fn drag_external_entity(
     zoom: Res<Zoom>,
 ) {
     for event in events.read() {
-        info!("Dragging external entity: {:?}", event);
         if event.has_bubbled() {
             continue;
         }
