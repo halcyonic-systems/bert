@@ -22,6 +22,8 @@ pub fn spawn_interface_subsystem(
     focused_system: &Res<FocusedSystem>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
+    name: &str,
+    description: &str,
 ) -> Entity {
     let mut interface_flow_entity = Entity::PLACEHOLDER;
     let mut angle = 0.0;
@@ -77,8 +79,9 @@ pub fn spawn_interface_subsystem(
                 meshes,
                 zoom,
                 nesting_level,
+                name,
+                description,
             ),
-            ElementDescription::default(),
         ))
         .id();
 

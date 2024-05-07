@@ -55,6 +55,8 @@ impl SystemBundle {
         meshes: &mut ResMut<Assets<Mesh>>,
         zoom: f32,
         nesting_level: u16,
+        name: &str,
+        description: &str,
     ) -> Self {
         let zoomed_radius = radius * zoom;
 
@@ -68,8 +70,8 @@ impl SystemBundle {
                 evolveable,
                 boundary,
             },
-            name: Name::new("System"),
-            description: ElementDescription::default(),
+            name: Name::new(name.to_string()),
+            description: ElementDescription::new(description),
             pickable_bundle: PickableBundle::default(),
             pick_selection: PickSelection::default(),
             simplified_mesh: SimplifiedMesh {

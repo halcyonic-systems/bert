@@ -26,6 +26,8 @@ pub fn setup(
         false,
         Default::default(),
         **zoom,
+        "System",
+        "",
         &mut meshes,
     );
 

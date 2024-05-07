@@ -236,6 +236,8 @@ pub fn on_create_button_click(
             &focused_system,
             &mut meshes,
             **zoom,
+            "Subsystem",
+            "",
         ),
     };
 

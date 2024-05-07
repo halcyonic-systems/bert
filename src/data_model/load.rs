@@ -23,7 +23,7 @@ pub fn load_world(
     for entity in &existing_elemens_query {
         commands.entity(entity).despawn_recursive();
     }
-    
+
     let world_model = load_from_json("world_model.json");
 
     let system = world_model.system_of_interest;
@@ -56,6 +56,8 @@ pub fn load_world(
             description: system.boundary.info.description.clone(),
         },
         **zoom,
+        &system.info.name,
+        &system.info.description,
         &mut meshes,
     );
 

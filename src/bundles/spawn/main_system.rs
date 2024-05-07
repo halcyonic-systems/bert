@@ -12,6 +12,8 @@ pub fn spawn_main_system(
     evolveable: bool,
     boundary: SystemBoundary,
     zoom: f32,
+    name: &str,
+    description: &str,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) -> Entity {
     commands
@@ -27,6 +29,8 @@ pub fn spawn_main_system(
                 meshes,
                 zoom,
                 0,
+                name,
+                description,
             ),
             SystemEnvironment::default(),
         ))
