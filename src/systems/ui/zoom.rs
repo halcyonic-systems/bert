@@ -30,19 +30,28 @@ pub fn apply_zoom_to_system_radii(
         &mut Path,
         &mut Aabb,
         &crate::components::System,
+        Option<&SelectedHighlightHelperAdded>,
     )>,
+    mut child_query: Query<&mut Path, Without<crate::components::System>>,
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    for (mut simplified_mesh, mut path, mut aabb, system) in &mut query {
+    for (mut simplified_mesh, mut path, mut aabb, system, helper) in &mut query {
         let zoomed_radius = system.radius * **zoom;
 
         let (mesh, p) = get_system_geometry_from_radius(zoomed_radius);
 
         simplified_mesh.mesh = meshes.add(mesh);
-        *path = p;
+        *path = Path(p.0.clone());
 
         *aabb = aabb_from_radius(zoomed_radius);
+
+        if let Some(helper) = helper {
+            let mut child_path = child_query
+                .get_mut(helper.helper_entity)
+                .expect("Helper entity should exist");
+            *child_path = p;
+        }
     }
 }
 

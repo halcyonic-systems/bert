@@ -108,6 +108,7 @@ fn main() {
     .add_systems(
         Update,
         (
+            spawn_selected_system,
             spawn_selected_flow,
             spawn_selected_interface,
             spawn_selected_external_entity,

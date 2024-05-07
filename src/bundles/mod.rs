@@ -4,7 +4,8 @@ use bevy::math::vec3;
 pub use spawn::*;
 
 use crate::components::{System, *};
-use crate::constants::SYSTEM_LINE_WIDTH;
+use crate::constants::{SYSTEM_LINE_WIDTH, SYSTEM_SELECTED_LINE_WIDTH};
+use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::PickSelection;
 use bevy::prelude::*;
 use bevy::render::mesh::CircleMeshBuilder;
@@ -39,7 +40,7 @@ pub struct SystemBundle {
     pub aabb: Aabb,
     pub system_shape_bundle: ShapeBundle,
     pub fill: Fill,
-    pub stroke: Stroke,
+    pub highlight: HighlightBundles<Stroke, Stroke>,
     pub initial_position: InitialPosition,
 }
 
@@ -89,7 +90,10 @@ impl SystemBundle {
                 ..default()
             },
             fill: Fill::color(Color::GRAY),
-            stroke: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH * scale),
+            highlight: HighlightBundles {
+                idle: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH * scale),
+                selected: Stroke::new(Color::BLACK, SYSTEM_SELECTED_LINE_WIDTH),
+            },
             initial_position: InitialPosition::new(position),
         }
     }

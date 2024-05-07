@@ -6,6 +6,45 @@ use crate::systems::create_path_from_flow_curve;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
+pub fn spawn_selected_system(
+    mut commands: Commands,
+    system_query: Query<
+        (Entity, &PickSelection, &crate::components::System),
+        (
+            Changed<PickSelection>,
+            Without<SelectedHighlightHelperAdded>,
+        ),
+    >,
+    zoom: Res<Zoom>,
+) {
+    for (selected_entity, selection, system) in &system_query {
+        if selection.is_selected {
+            let helper_entity = commands
+                .spawn((
+                    PickParent,
+                    ShapeBundle {
+                        spatial: SpatialBundle {
+                            transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                            ..default()
+                        },
+                        path: GeometryBuilder::build_as(&shapes::Circle {
+                            radius: system.radius * **zoom,
+                            ..default()
+                        }),
+                        ..default()
+                    },
+                    Stroke::new(Color::WHITE, SYSTEM_SELECTED_INNER_LINE_WIDTH),
+                ))
+                .id();
+
+            commands
+                .entity(selected_entity)
+                .add_child(helper_entity)
+                .insert(SelectedHighlightHelperAdded { helper_entity });
+        }
+    }
+}
+
 pub fn spawn_selected_interface(
     mut commands: Commands,
     interface_query: Query<
