@@ -3,6 +3,7 @@ use crate::components::NestingLevel;
 use crate::constants::*;
 use crate::resources::*;
 use bevy::prelude::*;
+use bevy::render::deterministic::DeterministicRenderingConfig;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 
@@ -13,8 +14,11 @@ pub fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     tess: ResMut<StrokeTessellator>,
     geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
+    mut deterministic_rendering_config: ResMut<DeterministicRenderingConfig>,
     asset_server: Res<AssetServer>,
 ) {
+    deterministic_rendering_config.stable_sort_z_fighting = true;
+
     commands.spawn(Camera2dBundle::default());
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 

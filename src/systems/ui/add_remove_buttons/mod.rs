@@ -23,7 +23,7 @@ macro_rules! button_transform {
     ($fn_name:ident, $flow:ty, $interface_connection:ty, $sign:literal) => {
         pub fn $fn_name(
             flow_interface_query: &Query<(&$flow, &$interface_connection)>,
-            transform_query: &Query<&GlobalTransform>,
+            transform_query: &Query<&Transform>,
             system_query: &Query<&System>,
             focused_system: Entity,
         ) -> (Vec2, f32) {
@@ -34,6 +34,8 @@ macro_rules! button_transform {
                     existing_interfaces.insert(flow_interface_connection.target);
                 }
             }
+            
+            info!("existing interfaces: {:?}", existing_interfaces);
 
             let angle = if existing_interfaces.is_empty() {
                 0.0
@@ -45,7 +47,7 @@ macro_rules! button_transform {
                     let interface_pos = transform_query
                         .get(interface)
                         .expect("Interface should have a Transform")
-                        .translation();
+                        .translation;
 
                     let mut diff = interface_pos.truncate();
                     diff.x *= $sign;

@@ -16,7 +16,7 @@ pub fn add_first_outflow_create_button(
         )>,
     >,
     flow_interface_query: Query<(&Outflow, &OutflowInterfaceConnection)>,
-    transform_query: Query<&GlobalTransform>,
+    transform_query: Query<&Transform>,
     system_query: Query<&System>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
@@ -46,6 +46,8 @@ pub fn add_first_outflow_create_button(
         focused_system,
     );
 
+    info!("first outflow button: {} {}", position, angle);
+
     spawn_create_button(
         &mut commands,
         CreateButton {
@@ -66,7 +68,7 @@ pub fn add_consecutive_outflow_create_button(
     mut commands: Commands,
     query: Query<&Outflow, Added<OutflowSinkConnection>>,
     flow_interface_query: Query<(&Outflow, &OutflowInterfaceConnection)>,
-    transform_query: Query<&GlobalTransform>,
+    transform_query: Query<&Transform>,
     system_query: Query<&crate::components::System>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
@@ -81,6 +83,7 @@ pub fn add_consecutive_outflow_create_button(
             &system_query,
             **focused_system,
         );
+        info!("consecutive outflow button: {} {}", position, angle);
 
         spawn_create_button(
             &mut commands,
