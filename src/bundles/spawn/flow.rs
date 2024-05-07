@@ -1,6 +1,7 @@
 use crate::bundles::{spawn_external_entity, spawn_interface};
 use crate::components::*;
 use crate::constants::*;
+use crate::data_model::Transform2d;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{
@@ -15,109 +16,91 @@ use bevy::prelude::*;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-use crate::data_model::Transform2d;
+use rust_decimal::Decimal;
 
-pub fn spawn_outflow(
-    commands: &mut Commands,
-    subsystem_query: &Query<&Subsystem>,
-    nesting_query: &Query<&NestingLevel>,
-    system_entity: Entity,
-    transform: &Transform,
-    stroke_tess: &mut ResMut<StrokeTessellator>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    zoom: f32,
-    is_selected: bool,
-    substance_type: SubstanceType,
-    usability: OutflowUsability,
-    name: &str,
-    description: &str,
-) -> Entity {
-    let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
+macro_rules! spawn_flow {
+    (
+        $fn_name:ident,
+        $usability_ty:ty,
+        $curve_method:tt,
+        $system_el:expr,
+        $flow_conn_ty:tt,
+        $target_ty:tt
+    ) => {
+        pub fn $fn_name(
+            commands: &mut Commands,
+            subsystem_query: &Query<&Subsystem>,
+            nesting_query: &Query<&NestingLevel>,
+            system_entity: Entity,
+            transform: &Transform,
+            stroke_tess: &mut ResMut<StrokeTessellator>,
+            meshes: &mut ResMut<Assets<Mesh>>,
+            zoom: f32,
+            is_selected: bool,
+            substance_type: SubstanceType,
+            usability: $usability_ty,
+            amount: Decimal,
+            unit: &str,
+            time_unit: Decimal,
+            name: &str,
+            description: &str,
+        ) -> Entity {
+            let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
 
-    let direction = transform.right().truncate();
+            let direction = transform.right().truncate();
 
-    let nesting_level = NestingLevel::current(system_entity, nesting_query);
-    let scale = NestingLevel::compute_scale(nesting_level, zoom);
+            let nesting_level = NestingLevel::current(system_entity, nesting_query);
+            let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
-    let flow_curve = FlowCurve {
-        start: *initial_position * zoom,
-        start_direction: direction * FLOW_END_LENGTH * zoom,
-        end: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
-        end_direction: direction * -FLOW_END_LENGTH * zoom,
+            let flow_curve = FlowCurve::$curve_method(zoom, initial_position, direction, scale);
+
+            spawn_flow(
+                commands,
+                subsystem_query,
+                stroke_tess,
+                meshes,
+                flow_curve,
+                $system_el,
+                system_entity,
+                name,
+                description,
+                Flow {
+                    substance_type,
+                    amount,
+                    unit: unit.to_string(),
+                    time_unit,
+                    is_useful: usability.is_useful(),
+                },
+                $flow_conn_ty {
+                    target: system_entity,
+                    target_type: $target_ty::System,
+                },
+                is_selected,
+                nesting_level,
+                scale,
+            )
+        }
     };
-
-    spawn_flow(
-        commands,
-        subsystem_query,
-        stroke_tess,
-        meshes,
-        flow_curve,
-        SystemElement::Outflow,
-        system_entity,
-        name,
-        description,
-        Outflow {
-            system: system_entity,
-            substance_type,
-            usability,
-        },
-        is_selected,
-        nesting_level,
-        scale,
-    )
 }
 
-pub fn spawn_inflow(
-    commands: &mut Commands,
-    subsystem_query: &Query<&Subsystem>,
-    nesting_query: &Query<&NestingLevel>,
-    system_entity: Entity,
-    transform: &Transform,
-    stroke_tess: &mut ResMut<StrokeTessellator>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    zoom: f32,
-    is_selected: bool,
-    substance_type: SubstanceType,
-    usability: InflowUsability,
-    name: &str,
-    description: &str,
-) -> Entity {
-    let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
+spawn_flow!(
+    spawn_outflow,
+    OutflowUsability,
+    outflow,
+    SystemElement::Outflow,
+    FlowStartConnection,
+    StartTargetType
+);
+spawn_flow!(
+    spawn_inflow,
+    InflowUsability,
+    inflow,
+    SystemElement::Inflow,
+    FlowEndConnection,
+    EndTargetType
+);
 
-    let direction = transform.right().truncate();
-
-    let nesting_level = NestingLevel::current(system_entity, nesting_query);
-    let scale = NestingLevel::compute_scale(nesting_level, zoom);
-
-    let flow_curve = FlowCurve {
-        start: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
-        start_direction: direction * -FLOW_END_LENGTH * zoom,
-        end: *initial_position * zoom,
-        end_direction: direction * FLOW_END_LENGTH * zoom,
-    };
-
-    spawn_flow(
-        commands,
-        subsystem_query,
-        stroke_tess,
-        meshes,
-        flow_curve,
-        SystemElement::Inflow,
-        system_entity,
-        name,
-        description,
-        Inflow {
-            system: system_entity,
-            substance_type,
-            usability,
-        },
-        is_selected,
-        nesting_level,
-        scale,
-    )
-}
-
-fn spawn_flow<F: Bundle + HasSubstanceType>(
+fn spawn_flow<C: Component>(
     commands: &mut Commands,
     subsystem_query: &Query<&Subsystem>,
     stroke_tess: &mut ResMut<StrokeTessellator>,
@@ -127,7 +110,8 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
     system_entity: Entity,
     name: &str,
     description: &str,
-    flow: F,
+    flow: Flow,
+    flow_connection: C,
     is_selected: bool,
     nesting_level: u16,
     scale: f32,
@@ -144,11 +128,12 @@ fn spawn_flow<F: Bundle + HasSubstanceType>(
 
     let aabb = create_aabb_from_flow_curve(&flow_curve);
 
-    let color = flow.substance_type().flow_color();
+    let color = flow.substance_type.flow_color();
 
     let flow_entity = commands
         .spawn((
             flow,
+            flow_connection,
             flow_curve,
             SimplifiedMesh {
                 mesh: tessellate_simplified_mesh(&curve_path, meshes, stroke_tess),
@@ -218,16 +203,19 @@ macro_rules! spawn_complete_flow {
             system_radius: f32,
             substance_type: SubstanceType,
             usability: $usability_ty,
+            amount: Decimal,
+            unit: &str,
+            time_unit: Decimal,
             interface_name: &str,
             interface_description: &str,
             flow_name: &str,
             flow_description: &str,
             external_entity_name: &str,
             external_entity_description: &str,
-            external_entity_transform: Option<&Transform2d>
+            external_entity_transform: Option<&Transform2d>,
         ) -> Entity {
             let mut translation = vec3(system_radius, 0.0, 0.0);
-            
+
             let mut transform = Transform::from_rotation(Quat::from_rotation_z(interface_angle));
             translation = transform.transform_point(translation);
             transform.translation = translation;
@@ -244,6 +232,9 @@ macro_rules! spawn_complete_flow {
                 false,
                 substance_type,
                 usability,
+                amount,
+                unit,
+                time_unit,
                 flow_name,
                 flow_description,
             );

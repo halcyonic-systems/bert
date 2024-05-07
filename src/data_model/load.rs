@@ -135,6 +135,9 @@ pub fn load_world(
                     } else {
                         unreachable!("Export interface must have an outflow interaction")
                     },
+                    interaction.amount,
+                    &interaction.unit,
+                    interaction.time_unit,
                     &interface.info.name,
                     &interface.info.description,
                     &interaction.info.name,
@@ -166,6 +169,9 @@ pub fn load_world(
                     } else {
                         unreachable!("Import interface must have an inflow interaction")
                     },
+                    interaction.amount,
+                    &interaction.unit,
+                    interaction.time_unit,
                     &interface.info.name,
                     &interface.info.description,
                     &interaction.info.name,

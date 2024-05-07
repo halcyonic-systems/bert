@@ -1,9 +1,5 @@
 use crate::bundles::{despawn_create_button, spawn_create_button};
-use crate::components::{
-    CreateButton, CreateButtonType, GeneralUsability, Inflow, InflowInterfaceConnection,
-    InflowSourceConnection, InterfaceSubsystemButton, InterfaceSubsystemConnection, Outflow,
-    OutflowInterfaceConnection, OutflowSinkConnection,
-};
+use crate::components::*;
 use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::math::vec2;
@@ -15,36 +11,25 @@ pub fn add_interface_subsystem_create_buttons(
     changed_query: Query<
         Entity,
         Or<(
-            Added<InflowSourceConnection>,
-            Added<OutflowSinkConnection>,
-            Changed<Inflow>,
-            Changed<Outflow>,
+            Added<FlowStartConnection>,
+            Added<FlowEndConnection>,
+            Changed<Flow>,
         )>,
     >,
     incomplete_flow_query: Query<
         (),
         (
-            Or<(With<Inflow>, With<Outflow>)>,
-            Without<InflowSourceConnection>,
-            Without<OutflowSinkConnection>,
+            With<Flow>,
+            Or<(Without<FlowStartConnection>, Without<FlowEndConnection>)>,
         ),
     >,
-    flow_query: Query<
-        (Option<&Outflow>, Option<&Inflow>),
-        (
-            Or<(With<InflowSourceConnection>, With<OutflowSinkConnection>)>,
-            Or<(With<Inflow>, With<Outflow>)>,
-        ),
-    >,
-    flow_interface_query: Query<
-        (
-            Option<&Inflow>,
-            Option<&Outflow>,
-            Option<&InflowInterfaceConnection>,
-            Option<&OutflowInterfaceConnection>,
-        ),
-        Or<(With<InflowSourceConnection>, With<OutflowSinkConnection>)>,
-    >,
+    complete_flow_query: Query<(&Flow, &FlowStartConnection, &FlowEndConnection)>,
+    flow_interface_query: Query<(
+        &FlowStartConnection,
+        &FlowEndConnection,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
+    )>,
     interface_button_query: Query<&InterfaceSubsystemButton>,
     interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
     button_query: Query<&CreateButton>,
@@ -62,67 +47,35 @@ pub fn add_interface_subsystem_create_buttons(
 
     let mut flow_usabilities = HashSet::new();
 
-    for (outflow, inflow) in &flow_query {
-        match (inflow, outflow) {
-            (Some(inflow), None) => {
-                if inflow.system != **focused_system {
-                    continue;
-                }
-                flow_usabilities.insert(GeneralUsability::Inflow(inflow.usability));
-            }
-            (None, Some(outflow)) => {
-                if outflow.system != **focused_system {
-                    continue;
-                }
-                flow_usabilities.insert(GeneralUsability::Outflow(outflow.usability));
-            }
-            (Some(inflow), Some(outflow)) => {
-                if inflow.system == **focused_system {
-                    flow_usabilities.insert(GeneralUsability::Inflow(inflow.usability));
-                } else if outflow.system == **focused_system {
-                    flow_usabilities.insert(GeneralUsability::Outflow(outflow.usability));
-                }
-            }
-            _ => unreachable!("Outflow and inflow can't both be None"),
+    for (flow, flow_start_connection, flow_end_connection) in &complete_flow_query {
+        if flow_end_connection.target == **focused_system {
+            flow_usabilities.insert(GeneralUsability::Inflow(InflowUsability::from_useful(
+                flow.is_useful,
+            )));
+        } else if flow_start_connection.target == **focused_system {
+            flow_usabilities.insert(GeneralUsability::Outflow(OutflowUsability::from_useful(
+                flow.is_useful,
+            )));
         }
     }
 
-    for (inflow, outflow, inflow_interface_connection, outflow_interface_connection) in
-        &flow_interface_query
+    for (
+        flow_start_connection,
+        flow_end_connection,
+        flow_start_interface_connection,
+        flow_end_interface_connection,
+    ) in &flow_interface_query
     {
-        let interface_entity = match (inflow, outflow) {
-            (Some(inflow), None) => {
-                if inflow.system != **focused_system {
-                    continue;
-                }
-
-                inflow_interface_connection
-                    .expect("Should be there because we have an Inflow")
-                    .target
-            }
-            (None, Some(outflow)) => {
-                if outflow.system != **focused_system {
-                    continue;
-                }
-
-                outflow_interface_connection
-                    .expect("Should be there because we have an Outflow")
-                    .target
-            }
-            (Some(inflow), Some(outflow)) => {
-                if inflow.system == **focused_system {
-                    inflow_interface_connection
-                        .expect("Should be there because we have an Inflow")
-                        .target
-                } else if outflow.system == **focused_system {
-                    outflow_interface_connection
-                        .expect("Should be there because we have an Outflow")
-                        .target
-                } else {
-                    continue;
-                }
-            }
-            _ => unreachable!("Outflow and inflow can't both be None"),
+        let interface_entity = if flow_end_connection.target == **focused_system {
+            flow_end_interface_connection
+                .expect("Should be there because we have an Inflow")
+                .target
+        } else if flow_start_connection.target == **focused_system {
+            flow_start_interface_connection
+                .expect("Should be there because we have an Outflow")
+                .target
+        } else {
+            continue;
         };
 
         let interface_button = interface_button_query.get(interface_entity);

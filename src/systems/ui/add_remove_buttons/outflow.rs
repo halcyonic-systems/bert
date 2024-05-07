@@ -9,13 +9,13 @@ pub fn add_first_outflow_create_button(
     focused_system: Res<FocusedSystem>,
     button_query: Query<&CreateButton>,
     flow_system_query: Query<
-        &Outflow,
+        &FlowStartConnection,
         Or<(
-            Without<OutflowSinkConnection>,
-            Without<OutflowInterfaceConnection>,
+            Without<FlowEndConnection>,
+            Without<FlowStartInterfaceConnection>,
         )>,
     >,
-    flow_interface_query: Query<(&Outflow, &OutflowInterfaceConnection)>,
+    flow_interface_query: Query<(&FlowStartConnection, &FlowStartInterfaceConnection)>,
     transform_query: Query<&Transform>,
     system_query: Query<&System>,
     zoom: Res<Zoom>,
@@ -33,8 +33,8 @@ pub fn add_first_outflow_create_button(
         }
     }
 
-    for outflow in &flow_system_query {
-        if outflow.system == focused_system {
+    for outflow_connection in &flow_system_query {
+        if outflow_connection.target == focused_system {
             return;
         }
     }
@@ -45,7 +45,7 @@ pub fn add_first_outflow_create_button(
         &system_query,
         focused_system,
     );
-    
+
     spawn_create_button(
         &mut commands,
         CreateButton {
@@ -64,16 +64,16 @@ pub fn add_first_outflow_create_button(
 
 pub fn add_consecutive_outflow_create_button(
     mut commands: Commands,
-    query: Query<&Outflow, Added<OutflowSinkConnection>>,
-    flow_interface_query: Query<(&Outflow, &OutflowInterfaceConnection)>,
+    outflow_query: Query<&FlowStartConnection, Added<FlowEndConnection>>,
+    flow_interface_query: Query<(&FlowStartConnection, &FlowStartInterfaceConnection)>,
     transform_query: Query<&Transform>,
     system_query: Query<&crate::components::System>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    if let Ok(outflow) = query.get_single() {
-        let system_entity = outflow.system;
+    if let Ok(outflow_connection) = outflow_query.get_single() {
+        let system_entity = outflow_connection.target;
 
         let (position, angle) = next_outflow_button_transform(
             &flow_interface_query,

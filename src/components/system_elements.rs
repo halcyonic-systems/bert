@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
@@ -59,36 +60,16 @@ pub enum InterfaceType {
     Export,
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct Inflow {
-    pub usability: InflowUsability,
+pub struct Flow {
     pub substance_type: SubstanceType,
-    pub system: Entity,
-}
-
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
-pub struct Outflow {
-    pub usability: OutflowUsability,
-    pub substance_type: SubstanceType,
-    pub system: Entity,
-}
-
-pub trait HasSubstanceType {
-    fn substance_type(&self) -> SubstanceType;
-}
-
-impl HasSubstanceType for Inflow {
-    fn substance_type(&self) -> SubstanceType {
-        self.substance_type
-    }
-}
-
-impl HasSubstanceType for Outflow {
-    fn substance_type(&self) -> SubstanceType {
-        self.substance_type
-    }
+    #[reflect(ignore)]
+    pub amount: Decimal,
+    pub unit: String,
+    #[reflect(ignore)]
+    pub time_unit: Decimal,
+    pub is_useful: bool,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
@@ -101,6 +82,19 @@ pub struct Subsystem {
     pub parent_system: Entity,
 }
 
+pub trait Usability: Sized {
+    fn is_useful(&self) -> bool;
+
+    fn from_useful(is_useful: bool) -> Self;
+
+    #[inline(always)]
+    fn mutate<F: FnOnce(&mut Self)>(value: &mut bool, f: F) {
+        let mut usability = Self::from_useful(*value);
+        f(&mut usability);
+        *value = usability.is_useful();
+    }
+}
+
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum InflowUsability {
     #[default]
@@ -108,11 +102,37 @@ pub enum InflowUsability {
     Disruption,
 }
 
+impl Usability for InflowUsability {
+    fn is_useful(&self) -> bool {
+        matches!(self, InflowUsability::Resource)
+    }
+
+    fn from_useful(is_useful: bool) -> Self {
+        match is_useful {
+            true => InflowUsability::Resource,
+            false => InflowUsability::Disruption,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum OutflowUsability {
     #[default]
     Product,
     Waste,
+}
+
+impl Usability for OutflowUsability {
+    fn is_useful(&self) -> bool {
+        matches!(self, OutflowUsability::Product)
+    }
+
+    fn from_useful(is_useful: bool) -> Self {
+        match is_useful {
+            true => OutflowUsability::Product,
+            false => OutflowUsability::Waste,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash)]

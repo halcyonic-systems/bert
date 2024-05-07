@@ -119,12 +119,11 @@ fn main() {
     .add_systems(
         Update,
         (
-            update_color_from_substance_type::<Inflow, InflowSourceConnection>,
-            update_color_from_substance_type::<Outflow, OutflowSinkConnection>,
-            update_button_substance_type_from_flow::<Inflow>,
-            update_button_substance_type_from_flow::<Outflow>,
-            update_interface_color_from_flow::<Inflow, InflowInterfaceConnection>,
-            update_interface_color_from_flow::<Outflow, OutflowInterfaceConnection>,
+            update_color_from_substance_type::<FlowStartConnection>,
+            update_color_from_substance_type::<FlowEndConnection>,
+            update_button_substance_type_from_flow,
+            update_interface_color_from_flow::<FlowStartInterfaceConnection>,
+            update_interface_color_from_flow::<FlowEndInterfaceConnection>,
             update_interface_subsystem_color_from_interface,
             update_system_color_from_subsystem,
         ),
@@ -138,17 +137,16 @@ fn main() {
             update_flow_from_external_entity,
         ),
     )
-    .register_type::<OutflowInterfaceConnection>()
-    .register_type::<InflowInterfaceConnection>()
-    .register_type::<InflowSourceConnection>()
-    .register_type::<OutflowSinkConnection>()
+    .register_type::<FlowStartInterfaceConnection>()
+    .register_type::<FlowEndInterfaceConnection>()
+    .register_type::<FlowStartConnection>()
+    .register_type::<FlowEndConnection>()
     .register_type::<InterfaceSubsystemConnection>()
     .register_type::<SubsystemParentFlowConnection>()
     .register_type::<SystemElement>()
     .register_type::<crate::components::System>()
     .register_type::<Interface>()
-    .register_type::<Inflow>()
-    .register_type::<Outflow>()
+    .register_type::<Flow>()
     .register_type::<ExternalEntity>()
     .register_type::<Subsystem>()
     .register_type::<ElementDescription>()

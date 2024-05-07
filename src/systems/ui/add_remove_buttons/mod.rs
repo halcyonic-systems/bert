@@ -11,30 +11,28 @@ pub use interface::*;
 pub use outflow::*;
 pub use subsystem::*;
 
-use crate::components::{
-    Inflow, InflowInterfaceConnection, Outflow, OutflowInterfaceConnection, System,
-};
+use crate::components::*;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 
 const INTERFACE_ANGLE_INCREMENT: f32 = std::f32::consts::PI * 0.16;
 
 macro_rules! button_transform {
-    ($fn_name:ident, $flow:ty, $interface_connection:ty, $sign:literal) => {
+    ($fn_name:ident, $flow_system_connection:ty, $interface_connection:ty, $sign:literal) => {
         pub fn $fn_name(
-            flow_interface_query: &Query<(&$flow, &$interface_connection)>,
+            flow_interface_query: &Query<(&$flow_system_connection, &$interface_connection)>,
             transform_query: &Query<&Transform>,
-            system_query: &Query<&System>,
+            system_query: &Query<&crate::components::System>,
             focused_system: Entity,
         ) -> (Vec2, f32) {
             let mut existing_interfaces = HashSet::new();
 
-            for (outflow, flow_interface_connection) in flow_interface_query {
-                if outflow.system == focused_system {
+            for (flow_system_connection, flow_interface_connection) in flow_interface_query {
+                if flow_system_connection.target == focused_system {
                     existing_interfaces.insert(flow_interface_connection.target);
                 }
             }
-            
+
             let angle = if existing_interfaces.is_empty() {
                 0.0
             } else {
@@ -87,13 +85,13 @@ macro_rules! button_transform {
 
 button_transform!(
     next_outflow_button_transform,
-    Outflow,
-    OutflowInterfaceConnection,
+    FlowStartConnection,
+    FlowStartInterfaceConnection,
     1.0
 );
 button_transform!(
     next_inflow_button_transform,
-    Inflow,
-    InflowInterfaceConnection,
+    FlowEndConnection,
+    FlowEndInterfaceConnection,
     -1.0
 );

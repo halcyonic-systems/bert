@@ -5,6 +5,7 @@ use crate::constants::*;
 use crate::resources::*;
 use bevy::prelude::*;
 use bevy::render::deterministic::DeterministicRenderingConfig;
+use rust_decimal_macros::dec;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 
@@ -87,6 +88,9 @@ pub fn init_complete_system(
         MAIN_SYSTEM_RADIUS,
         Default::default(),
         OutflowUsability::Product,
+        dec!(1),
+        "",
+        dec!(1),
         "Interface",
         "",
         "Outflow",
@@ -109,6 +113,9 @@ pub fn init_complete_system(
         MAIN_SYSTEM_RADIUS,
         Default::default(),
         OutflowUsability::Waste,
+        dec!(1),
+        "",
+        dec!(1),
         "Interface",
         "",
         "Outflow",
@@ -131,6 +138,9 @@ pub fn init_complete_system(
         MAIN_SYSTEM_RADIUS,
         Default::default(),
         InflowUsability::Resource,
+        dec!(1),
+        "",
+        dec!(1),
         "Interface",
         "",
         "Inflow",
@@ -153,6 +163,9 @@ pub fn init_complete_system(
         MAIN_SYSTEM_RADIUS,
         Default::default(),
         InflowUsability::Disruption,
+        dec!(1),
+        "",
+        dec!(1),
         "Interface",
         "",
         "Inflow",

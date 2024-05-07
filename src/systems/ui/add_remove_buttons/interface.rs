@@ -5,11 +5,11 @@ use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 
 macro_rules! interface_create_button {
-    ($fn_name:ident, $flow:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr, $side:tt, $side_dir:tt) => {
+    ($fn_name:ident, $flow_conn_ty:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr, $side:tt, $side_dir:tt) => {
         pub fn $fn_name(
             mut commands: Commands,
             query: Query<
-                (Entity, &FlowCurve, &$flow, Option<&Parent>),
+                (Entity, &FlowCurve, &Flow, &$flow_conn_ty, Option<&Parent>),
                 (
                     Without<$interface_connection>,
                     Without<$terminal_connection>,
@@ -22,8 +22,8 @@ macro_rules! interface_create_button {
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            for (entity, flow_curve, flow, flow_parent) in &query {
-                if flow.system != **focused_system {
+            for (entity, flow_curve, flow, flow_system_connection, flow_parent) in &query {
+                if flow_system_connection.target != **focused_system {
                     continue;
                 }
 
@@ -71,18 +71,18 @@ macro_rules! interface_create_button {
 
 interface_create_button!(
     add_outflow_interface_create_button,
-    Outflow,
-    OutflowInterfaceConnection,
-    OutflowSinkConnection,
+    FlowStartConnection,
+    FlowStartInterfaceConnection,
+    FlowEndConnection,
     CreateButtonType::ExportInterface,
     start,
     start_direction
 );
 interface_create_button!(
     add_inflow_interface_create_button,
-    Inflow,
-    InflowInterfaceConnection,
-    InflowSourceConnection,
+    FlowEndConnection,
+    FlowEndInterfaceConnection,
+    FlowStartConnection,
     CreateButtonType::ImportInterface,
     end,
     end_direction

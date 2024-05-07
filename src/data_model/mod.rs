@@ -6,6 +6,7 @@ use bevy::prelude::*;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
+use rust_decimal::Decimal;
 
 #[derive(Serialize, Deserialize)]
 pub struct WorldModel {
@@ -176,6 +177,9 @@ pub struct Interaction {
     #[serde(rename = "type")]
     ty: InteractionType,
     external_entity: Id,
+    amount: Decimal,
+    unit: String,
+    time_unit: Decimal,
 }
 
 #[derive(Serialize, Deserialize)]

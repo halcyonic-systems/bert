@@ -12,10 +12,10 @@ pub fn spawn_interface_subsystem(
     flow_interface_query: &Query<
         (
             Entity,
-            Option<&InflowInterfaceConnection>,
-            Option<&OutflowInterfaceConnection>,
+            Option<&FlowEndInterfaceConnection>,
+            Option<&FlowStartInterfaceConnection>,
         ),
-        Or<(With<Inflow>, With<Outflow>)>,
+        With<Flow>,
     >,
     system_query: &Query<(&Transform, &crate::components::System)>,
     nesting_level_query: &Query<&NestingLevel>,

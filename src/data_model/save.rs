@@ -18,16 +18,18 @@ pub fn save_world(
     inflow_query: Query<(
         &Name,
         &ElementDescription,
-        &Inflow,
-        &InflowSourceConnection,
-        &InflowInterfaceConnection,
+        &Flow,
+        &FlowEndConnection,
+        &FlowStartConnection,
+        &FlowEndInterfaceConnection,
     )>,
     outflow_query: Query<(
         &Name,
         &ElementDescription,
-        &Outflow,
-        &OutflowSinkConnection,
-        &OutflowInterfaceConnection,
+        &Flow,
+        &FlowStartConnection,
+        &FlowEndConnection,
+        &FlowStartInterfaceConnection,
     )>,
     interface_query: Query<(
         &Name,
@@ -50,7 +52,9 @@ pub fn save_world(
     let mut sources = vec![];
     let mut sinks = vec![];
 
-    for (name, description, flow, source_connection, interface_connection) in &inflow_query {
+    for (name, description, flow, flow_end_connection, source_connection, interface_connection) in
+        &inflow_query
+    {
         process_external_inflow(
             &interface_query,
             &external_entity_query,
@@ -61,12 +65,15 @@ pub fn save_world(
             name,
             description,
             flow,
+            flow_end_connection,
             source_connection,
             interface_connection,
         );
     }
 
-    for (name, description, flow, sink_connection, interface_connection) in &outflow_query {
+    for (name, description, flow, flow_start_connection, sink_connection, interface_connection) in
+        &outflow_query
+    {
         process_external_outflow(
             &interface_query,
             &external_entity_query,
@@ -77,6 +84,7 @@ pub fn save_world(
             name,
             description,
             flow,
+            flow_start_connection,
             sink_connection,
             interface_connection,
         );
@@ -141,14 +149,15 @@ pub fn save_world(
 macro_rules! process_external_flow {
     (
         $fn_name:ident,
-        $flow_ty:ty,
+        $flow_conn_ty:ty,
         $interface_connection_ty:ty,
         $external_entity_connection_ty:ty,
         $interaction_ty:tt,
         $interface_ty:expr,
         $external_entity_ty:expr,
         $id_ty:expr,
-        $external_entity_field:tt
+        $external_entity_field:tt,
+        $usability_ty:tt
     ) => {
         fn $fn_name(
             interface_query: &Query<(
@@ -164,11 +173,12 @@ macro_rules! process_external_flow {
             external_entities: &mut Vec<crate::data_model::ExternalEntity>,
             name: &Name,
             description: &ElementDescription,
-            flow: &$flow_ty,
+            flow: &Flow,
+            flow_system_connection: &$flow_conn_ty,
             source_connection: &$external_entity_connection_ty,
             interface_connection: &$interface_connection_ty,
         ) {
-            if flow.system == system_entity {
+            if flow_system_connection.target == system_entity {
                 let interaction_id = Id {
                     ty: IdType::Flow,
                     indices: vec![-1, interactions.len() as i64],
@@ -190,9 +200,12 @@ macro_rules! process_external_flow {
                         ty: flow.substance_type,
                     },
                     ty: InteractionType::$interaction_ty {
-                        usability: flow.usability,
+                        usability: $usability_ty::from_useful(flow.is_useful),
                     },
                     external_entity: external_entity_id.clone(),
+                    amount: flow.amount,
+                    unit: flow.unit.clone(),
+                    time_unit: flow.time_unit,
                 });
 
                 let (interface_name, interface_description, interface, interface_transform) =
@@ -246,26 +259,28 @@ macro_rules! process_external_flow {
 
 process_external_flow!(
     process_external_inflow,
-    Inflow,
-    InflowInterfaceConnection,
-    InflowSourceConnection,
+    FlowEndConnection,
+    FlowEndInterfaceConnection,
+    FlowStartConnection,
     Inflow,
     crate::data_model::InterfaceType::Import,
     ExternalEntityType::Source,
     IdType::Source,
-    receives_from
+    receives_from,
+    InflowUsability
 );
 
 process_external_flow!(
     process_external_outflow,
-    Outflow,
-    OutflowInterfaceConnection,
-    OutflowSinkConnection,
+    FlowStartConnection,
+    FlowStartInterfaceConnection,
+    FlowEndConnection,
     Outflow,
     crate::data_model::InterfaceType::Export,
     ExternalEntityType::Sink,
     IdType::Sink,
-    exports_to
+    exports_to,
+    OutflowUsability
 );
 
 fn save_to_json(world_model: &WorldModel, file_name: &str) {

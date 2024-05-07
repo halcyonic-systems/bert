@@ -1,6 +1,6 @@
 use crate::components::{
-    ElementDescription, Inflow, InflowUsability, Interface, Outflow, OutflowUsability,
-    SystemElement,
+    ElementDescription, Flow, InflowUsability, Interface, OutflowUsability, SystemElement,
+    Usability,
 };
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::SubstanceType;
@@ -13,93 +13,80 @@ fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
     let _ = interface;
 }
 
-fn outflow_egui(ui: &mut Ui, outflow: &mut Outflow) {
+fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
     ui.horizontal(|ui| {
         ui.label("Usability");
-        ComboBox::from_label("")
-            .selected_text(format!("{:?}", outflow.usability))
-            .show_ui(ui, |ui| {
-                ui.style_mut().wrap = Some(false);
-                ui.set_min_width(60.0);
-                ui.selectable_value(&mut outflow.usability, OutflowUsability::Product, "Product");
-                ui.selectable_value(&mut outflow.usability, OutflowUsability::Waste, "Waste");
-            });
+
+        OutflowUsability::mutate(&mut flow.is_useful, |outflow_usability| {
+            ComboBox::from_label("")
+                .selected_text(format!("{:?}", outflow_usability))
+                .show_ui(ui, |ui| {
+                    ui.style_mut().wrap = Some(false);
+                    ui.set_min_width(60.0);
+                    ui.selectable_value(outflow_usability, OutflowUsability::Product, "Product");
+                    ui.selectable_value(outflow_usability, OutflowUsability::Waste, "Waste");
+                });
+        });
     });
 
+    flow_egui(ui, flow);
+}
+
+fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
     ui.horizontal(|ui| {
         ui.label("Substance Type");
         ComboBox::from_label(" ")
-            .selected_text(format!("{:?}", outflow.substance_type))
+            .selected_text(format!("{:?}", flow.substance_type))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap = Some(false);
                 ui.set_min_width(60.0);
-                ui.selectable_value(&mut outflow.substance_type, SubstanceType::Energy, "Energy");
+                ui.selectable_value(&mut flow.substance_type, SubstanceType::Energy, "Energy");
                 ui.selectable_value(
-                    &mut outflow.substance_type,
+                    &mut flow.substance_type,
                     SubstanceType::Material,
                     "Material",
                 );
-                ui.selectable_value(
-                    &mut outflow.substance_type,
-                    SubstanceType::Message,
-                    "Message",
-                );
+                ui.selectable_value(&mut flow.substance_type, SubstanceType::Message, "Message");
             });
     });
 }
 
-fn inflow_egui(ui: &mut Ui, inflow: &mut Inflow) {
+fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
     ui.horizontal(|ui| {
         ui.label("Usability");
-        ComboBox::from_label("")
-            .selected_text(format!("{:?}", inflow.usability))
-            .show_ui(ui, |ui| {
-                ui.style_mut().wrap = Some(false);
-                ui.set_min_width(60.0);
-                ui.selectable_value(&mut inflow.usability, InflowUsability::Resource, "Resource");
-                ui.selectable_value(
-                    &mut inflow.usability,
-                    InflowUsability::Disruption,
-                    "Disruption",
-                );
-            });
+
+        InflowUsability::mutate(&mut flow.is_useful, |inflow_usability| {
+            ComboBox::from_label("")
+                .selected_text(format!("{:?}", inflow_usability))
+                .show_ui(ui, |ui| {
+                    ui.style_mut().wrap = Some(false);
+                    ui.set_min_width(60.0);
+                    ui.selectable_value(inflow_usability, InflowUsability::Resource, "Resource");
+                    ui.selectable_value(
+                        inflow_usability,
+                        InflowUsability::Disruption,
+                        "Disruption",
+                    );
+                });
+        });
     });
-    ui.horizontal(|ui| {
-        ui.label("Substance Type");
-        ComboBox::from_label(" ")
-            .selected_text(format!("{:?}", inflow.substance_type))
-            .show_ui(ui, |ui| {
-                ui.style_mut().wrap = Some(false);
-                ui.set_min_width(60.0);
-                ui.selectable_value(&mut inflow.substance_type, SubstanceType::Energy, "Energy");
-                ui.selectable_value(
-                    &mut inflow.substance_type,
-                    SubstanceType::Material,
-                    "Material",
-                );
-                ui.selectable_value(
-                    &mut inflow.substance_type,
-                    SubstanceType::Message,
-                    "Message",
-                );
-            });
-    });
+
+    flow_egui(ui, flow);
 }
 
 pub fn egui_selected_context(
     mut egui_contexts: EguiContexts,
-    mut selectables: Query<(
+    mut selectable_query: Query<(
         Entity,
         &PickSelection,
         &SystemElement,
         &mut Name,
         &mut ElementDescription,
     )>,
-    mut interfaces: Query<&mut Interface>,
-    mut outflows: Query<&mut Outflow>,
-    mut inflows: Query<&mut Inflow>,
+    mut interface_query: Query<&mut Interface>,
+    mut flow_query: Query<&mut Flow>,
 ) {
-    for (entity, selectable, system_element, mut name, mut description) in &mut selectables {
+    for (entity, selectable, system_element, mut name, mut description) in &mut selectable_query {
         if selectable.is_selected {
             egui_contexts.ctx_mut().set_visuals(Visuals::light());
             egui_contexts.ctx_mut().style_mut(|style| {
@@ -132,7 +119,7 @@ pub fn egui_selected_context(
                             SystemElement::Interface => {
                                 interface_egui(
                                     ui,
-                                    &mut interfaces.get_mut(entity).expect("Interface not found"),
+                                    &mut interface_query.get_mut(entity).expect("Interface not found"),
                                 );
                             }
                             SystemElement::System => {
@@ -140,11 +127,11 @@ pub fn egui_selected_context(
                             }
                             SystemElement::Inflow => inflow_egui(
                                 ui,
-                                &mut inflows.get_mut(entity).expect("Inflow not found"),
+                                &mut flow_query.get_mut(entity).expect("Inflow not found"),
                             ),
                             SystemElement::Outflow => outflow_egui(
                                 ui,
-                                &mut outflows.get_mut(entity).expect("Outflow not found"),
+                                &mut flow_query.get_mut(entity).expect("Outflow not found"),
                             ),
                             SystemElement::ExternalEntity => {
                                 // TODO: implement

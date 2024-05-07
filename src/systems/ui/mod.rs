@@ -24,6 +24,7 @@ use crate::resources::{
 use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
+use rust_decimal_macros::dec;
 
 pub fn change_focused_system(
     selected_query: Query<
@@ -78,10 +79,10 @@ pub fn on_create_button_click(
     flow_interface_query: Query<
         (
             Entity,
-            Option<&InflowInterfaceConnection>,
-            Option<&OutflowInterfaceConnection>,
+            Option<&FlowEndInterfaceConnection>,
+            Option<&FlowStartInterfaceConnection>,
         ),
-        Or<(With<Inflow>, With<Outflow>)>,
+        With<Flow>,
     >,
     system_query: Query<(&Transform, &crate::components::System)>,
     transform_query: Query<&Transform>,
@@ -160,6 +161,9 @@ pub fn on_create_button_click(
             true,
             Default::default(),
             Default::default(),
+            dec!(1),
+            "",
+            dec!(1),
             "Inflow",
             "",
         ),
@@ -183,6 +187,9 @@ pub fn on_create_button_click(
             true,
             Default::default(),
             Default::default(),
+            dec!(1),
+            "",
+            dec!(1),
             "Outflow",
             "",
         ),

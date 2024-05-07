@@ -66,34 +66,26 @@ pub fn apply_zoom_to_camera_position(
 }
 
 pub fn apply_zoom_to_incomplete_flows(
-    mut inflow_query: Query<
-        (&mut FlowCurve, Option<&InflowInterfaceConnection>),
-        (With<Inflow>, Without<InflowSourceConnection>),
-    >,
-    mut outflow_query: Query<
-        (&mut FlowCurve, Option<&OutflowInterfaceConnection>),
+    mut flow_query: Query<
         (
-            With<Outflow>,
-            Without<OutflowSinkConnection>,
-            Without<Inflow>,
+            &mut FlowCurve,
+            Option<&FlowStartInterfaceConnection>,
+            Option<&FlowEndInterfaceConnection>,
         ),
+        Or<(Without<FlowStartConnection>, Without<FlowEndConnection>)>,
     >,
     zoom: Res<Zoom>,
     mut prev_zoom: Local<Zoom>,
 ) {
-    for (mut flow_curve, inflow_interface_connection) in &mut inflow_query {
-        flow_curve.start *= **zoom / **prev_zoom;
-
-        if inflow_interface_connection.is_none() {
-            flow_curve.end *= **zoom / **prev_zoom;
-        }
-    }
-
-    for (mut flow_curve, outflow_interface_connection) in &mut outflow_query {
-        flow_curve.end *= **zoom / **prev_zoom;
-
-        if outflow_interface_connection.is_none() {
+    for (mut flow_curve, flow_start_interface_connection, flow_end_interface_connection) in
+        &mut flow_query
+    {
+        if flow_start_interface_connection.is_none() {
             flow_curve.start *= **zoom / **prev_zoom;
+        }
+
+        if flow_end_interface_connection.is_none() {
+            flow_curve.end *= **zoom / **prev_zoom;
         }
     }
 

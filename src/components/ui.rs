@@ -1,4 +1,5 @@
-use crate::components::SubstanceType;
+use crate::components::{InitialPosition, SubstanceType};
+use crate::constants::{FLOW_END_LENGTH, FLOW_LENGTH};
 use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
@@ -47,6 +48,34 @@ pub struct FlowCurve {
 impl FlowCurve {
     pub fn head_rotation(&self) -> Quat {
         Quat::from_rotation_z(self.end_direction.to_angle())
+    }
+
+    pub fn inflow(
+        zoom: f32,
+        initial_position: InitialPosition,
+        direction: Vec2,
+        scale: f32,
+    ) -> Self {
+        Self {
+            start: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
+            start_direction: direction * -FLOW_END_LENGTH * zoom,
+            end: *initial_position * zoom,
+            end_direction: direction * FLOW_END_LENGTH * zoom,
+        }
+    }
+    
+    pub fn outflow(
+        zoom: f32,
+        initial_position: InitialPosition,
+        direction: Vec2,
+        scale: f32,
+    ) -> Self {
+        Self {
+            start: *initial_position * zoom,
+            start_direction: direction * FLOW_END_LENGTH * zoom,
+            end: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
+            end_direction: direction * -FLOW_END_LENGTH * zoom,
+        }
     }
 }
 

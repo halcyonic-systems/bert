@@ -6,57 +6,10 @@ use crate::utils::compute_end_and_direction_from_system_child;
 use bevy::prelude::*;
 use std::ops::DerefMut;
 
-fn get_system_from_connected_flow<InConn, OutConn>(
-    target: Entity,
-    flow_query: &Query<
-        (
-            Option<&Inflow>,
-            Option<&InConn>,
-            Option<&Outflow>,
-            Option<&OutConn>,
-        ),
-        With<FlowCurve>,
-    >,
-) -> Entity
-where
-    InConn: Component + Connection,
-    OutConn: Component + Connection,
-{
-    for (inflow, inflow_connection, outflow, outflow_connection) in flow_query {
-        match (inflow, inflow_connection, outflow, outflow_connection) {
-            (Some(inflow), Some(inflow_connection), None, None) => {
-                if inflow_connection.target() == target {
-                    return inflow.system;
-                } else {
-                    continue;
-                }
-            }
-            (None, None, Some(outflow), Some(outflow_connection)) => {
-                if outflow_connection.target() == target {
-                    return outflow.system;
-                } else {
-                    continue;
-                }
-            }
-            _ => unreachable!("Either Inflow or Outflow has to be there but not both"),
-        };
-    }
-
-    unreachable!("System should exist")
-}
-
 pub fn drag_external_entity(
     mut events: EventReader<ExternalEntityDrag>,
     mut transform_query: Query<&mut Transform>,
-    flow_query: Query<
-        (
-            Option<&Inflow>,
-            Option<&InflowSourceConnection>,
-            Option<&Outflow>,
-            Option<&OutflowSinkConnection>,
-        ),
-        With<FlowCurve>,
-    >,
+    flow_query: Query<(&FlowStartConnection, &FlowEndConnection), With<FlowCurve>>,
     subsystem_query: Query<&Subsystem>,
     system_query: Query<&crate::components::System>,
     zoom: Res<Zoom>,
@@ -72,7 +25,19 @@ pub fn drag_external_entity(
         transform.translation.x = event.position.x;
         transform.translation.y = event.position.y;
 
-        let system = get_system_from_connected_flow(event.target, &flow_query);
+        let mut system = Entity::PLACEHOLDER;
+
+        for (start_connection, end_connection) in &flow_query {
+            if start_connection.target == event.target {
+                debug_assert!(end_connection.target_type == EndTargetType::System);
+                system = end_connection.target;
+                break;
+            } else if end_connection.target == event.target {
+                debug_assert!(start_connection.target_type == StartTargetType::System);
+                system = start_connection.target;
+                break;
+            }
+        }
 
         if let Ok(subsystem) = subsystem_query.get(system) {
             let parent_system = system_query
@@ -90,41 +55,25 @@ pub fn update_flow_from_external_entity(
         (Entity, &Transform, &NestingLevel),
         (With<ExternalEntity>, Changed<Transform>),
     >,
-    mut flow_query: Query<(
-        &mut FlowCurve,
-        Option<&InflowSourceConnection>,
-        Option<&OutflowSinkConnection>,
-    )>,
+    mut flow_query: Query<(&mut FlowCurve, &FlowStartConnection, &FlowEndConnection)>,
     zoom: Res<Zoom>,
 ) {
     for (target, transform, nesting_level) in &external_entity_query {
-        for (mut flow_curve, inflow_source_connection, outflow_sink_connection) in &mut flow_query {
+        for (mut flow_curve, flow_start_connection, flow_end_connection) in &mut flow_query {
             let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
 
-            match (inflow_source_connection, outflow_sink_connection) {
-                (Some(inflow_source_connection), None) => {
-                    if inflow_source_connection.target == target {
-                        let right = transform.right().truncate();
-                        flow_curve.start = transform.translation.truncate()
-                            - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                        flow_curve.start_direction = -right * FLOW_END_LENGTH * scale;
-                    } else {
-                        continue;
-                    }
-                }
-                (None, Some(outflow_sink_connection)) => {
-                    if outflow_sink_connection.target == target {
-                        let right = transform.right().truncate();
-                        flow_curve.end = transform.translation.truncate()
-                            - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                        flow_curve.end_direction = -right * FLOW_END_LENGTH * scale;
-                    } else {
-                        continue;
-                    }
-                }
-                _ => {
-                    // do nothing
-                }
+            if flow_start_connection.target == target {
+                let right = transform.right().truncate();
+                flow_curve.start =
+                    transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
+                flow_curve.start_direction = -right * FLOW_END_LENGTH * scale;
+            } else if flow_end_connection.target == target {
+                let right = transform.right().truncate();
+                flow_curve.end =
+                    transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
+                flow_curve.end_direction = -right * FLOW_END_LENGTH * scale;
+            } else {
+                continue;
             }
         }
     }
@@ -137,58 +86,45 @@ pub fn update_flow_from_interface(
     mut flow_query: Query<(
         &mut FlowCurve,
         Option<&Parent>,
-        Option<&InflowInterfaceConnection>,
-        Option<&OutflowInterfaceConnection>,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
     )>,
     zoom: Res<Zoom>,
 ) {
     for (target, nesting_level) in &interface_query {
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
 
-        for (
-            mut flow_curve,
-            flow_parent,
-            inflow_interface_connection,
-            outflow_interface_connection,
-        ) in &mut flow_query
+        for (mut flow_curve, flow_parent, flow_start_connection, flow_end_connection) in
+            &mut flow_query
         {
             let flow_parent = flow_parent.map(|p| p.get());
 
-            match (inflow_interface_connection, outflow_interface_connection) {
-                (Some(inflow_interface_connection), None) => {
-                    if inflow_interface_connection.target == target {
-                        let (end, dir) = compute_end_and_direction_from_system_child(
-                            target,
-                            &transform_query,
-                            &parent_query,
-                            flow_parent,
-                            **zoom,
-                            scale,
-                        );
-                        flow_curve.end = end;
-                        flow_curve.end_direction = dir;
-                    } else {
-                        continue;
-                    }
+            if let Some(flow_end_connection) = flow_end_connection {
+                if flow_end_connection.target == target {
+                    let (end, dir) = compute_end_and_direction_from_system_child(
+                        target,
+                        &transform_query,
+                        &parent_query,
+                        flow_parent,
+                        **zoom,
+                        scale,
+                    );
+                    flow_curve.end = end;
+                    flow_curve.end_direction = dir;
                 }
-                (None, Some(outflow_interface_connection)) => {
-                    if outflow_interface_connection.target == target {
-                        let (start, dir) = compute_end_and_direction_from_system_child(
-                            target,
-                            &transform_query,
-                            &parent_query,
-                            flow_parent,
-                            **zoom,
-                            scale,
-                        );
-                        flow_curve.start = start;
-                        flow_curve.start_direction = dir;
-                    } else {
-                        continue;
-                    }
-                }
-                _ => {
-                    // do nothing
+            }
+            if let Some(flow_start_connection) = flow_start_connection {
+                if flow_start_connection.target == target {
+                    let (start, dir) = compute_end_and_direction_from_system_child(
+                        target,
+                        &transform_query,
+                        &parent_query,
+                        flow_parent,
+                        **zoom,
+                        scale,
+                    );
+                    flow_curve.start = start;
+                    flow_curve.start_direction = dir;
                 }
             }
         }
@@ -198,15 +134,7 @@ pub fn update_flow_from_interface(
 pub fn drag_interface(
     mut events: EventReader<InterfaceDrag>,
     mut transform_query: Query<&mut Transform, Without<crate::components::System>>,
-    flow_query: Query<
-        (
-            Option<&Inflow>,
-            Option<&InflowInterfaceConnection>,
-            Option<&Outflow>,
-            Option<&OutflowInterfaceConnection>,
-        ),
-        With<FlowCurve>,
-    >,
+    parent_query: Query<&Parent>,
     system_query: Query<&crate::components::System>,
     zoom: Res<Zoom>,
 ) {
@@ -221,10 +149,13 @@ pub fn drag_interface(
         transform.translation.x = event.position.x;
         transform.translation.y = event.position.y;
 
-        let system = get_system_from_connected_flow(event.target, &flow_query);
+        let parent_system_entity = parent_query
+            .get(event.target)
+            .expect("Parent should exist")
+            .get();
 
         let system = system_query
-            .get(system)
+            .get(parent_system_entity)
             .expect("System should have a Transform");
 
         let interface_pos = transform.translation.truncate();

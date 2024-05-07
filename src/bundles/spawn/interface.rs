@@ -72,12 +72,12 @@ pub fn spawn_interface(
 
     match interface_type {
         InterfaceType::Import => {
-            entity_commands.insert(InflowInterfaceConnection {
+            entity_commands.insert(FlowEndInterfaceConnection {
                 target: interface_entity,
             });
         }
         InterfaceType::Export => {
-            entity_commands.insert(OutflowInterfaceConnection {
+            entity_commands.insert(FlowStartInterfaceConnection {
                 target: interface_entity,
             });
         }
