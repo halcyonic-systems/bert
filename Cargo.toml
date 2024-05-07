@@ -16,6 +16,7 @@ rust_decimal = { version = "1", features = ["serde"] }
 rust_decimal_macros = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+regex = "1.10.4"
 
 [dependencies.bevy_mod_picking]
 version = "0.18"

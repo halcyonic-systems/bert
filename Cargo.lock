@@ -3830,6 +3830,7 @@ dependencies = [
  "bevy_mod_picking",
  "bevy_prototype_lyon",
  "num-traits",
+ "regex",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
