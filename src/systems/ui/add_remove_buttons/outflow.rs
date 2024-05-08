@@ -1,4 +1,4 @@
-use crate::bundles::spawn_create_button;
+use crate::bundles::{despawn_create_button_with_component, spawn_create_button};
 use crate::components::{System, *};
 use crate::resources::{FocusedSystem, Zoom};
 use crate::systems::next_outflow_button_transform;
@@ -8,7 +8,7 @@ pub fn add_outflow_create_button(
     mut commands: Commands,
     focused_system: Res<FocusedSystem>,
     outflow_finished_query: Query<&FlowStartConnection, Added<FlowEndConnection>>,
-    button_query: Query<&CreateButton>,
+    button_query: Query<(Entity, &CreateButton)>,
     flow_system_query: Query<
         &FlowStartConnection,
         Or<(
@@ -20,30 +20,40 @@ pub fn add_outflow_create_button(
     import_subsystem_query: Query<(), Or<(With<ImportSubsystem>, Without<Subsystem>)>>,
     transform_query: Query<&Transform>,
     system_query: Query<&System>,
+    removed_end_connections: RemovedComponents<FlowEndConnection>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    // TODO : also detect removal
-
-    if !focused_system.is_changed() && outflow_finished_query.get_single().is_err() {
+    if !focused_system.is_changed()
+        && outflow_finished_query.get_single().is_err()
+        && removed_end_connections.is_empty()
+    {
         return;
     }
 
     let focused_system = **focused_system;
 
-    for button in &button_query {
+    if import_subsystem_query.get(focused_system).is_err() {
+        return;
+    }
+
+    let mut button_entities = vec![];
+    for (button_entity, button) in &button_query {
         if button.system == focused_system && matches!(button.ty, CreateButtonType::Outflow) {
-            return;
+            button_entities.push((button_entity, button));
         }
     }
 
     for outflow_connection in &flow_system_query {
         if outflow_connection.target == focused_system {
+            for (entity, button) in button_entities {
+                despawn_create_button_with_component(&mut commands, entity, button)
+            }
             return;
         }
     }
 
-    if import_subsystem_query.get(focused_system).is_err() {
+    if !button_entities.is_empty() {
         return;
     }
 

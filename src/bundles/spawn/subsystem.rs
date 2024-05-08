@@ -27,7 +27,7 @@ pub fn spawn_interface_subsystem(
     let mut angle = 0.0;
     let mut is_import_subsystem = false;
     let mut is_export_subsystem = false;
-    let mut interface_subsystem = InterfaceSubsystem::default();
+    let mut interface_subsystem = InterfaceSubsystem::new(interface_entity);
 
     for (entity, flow, inflow_connection, outflow_connection) in flow_interface_query {
         if let Some(connection) = inflow_connection {

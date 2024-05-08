@@ -90,15 +90,28 @@ pub struct ImportSubsystem;
 #[reflect(Component)]
 pub struct ExportSubsystem;
 
-#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct InterfaceSubsystem {
+    pub interface_entity: Entity,
     #[reflect(ignore)]
     pub total_inflow: Decimal,
     #[reflect(ignore)]
     pub total_outflow: Decimal,
     pub substance_type: SubstanceType,
     pub is_useful: bool,
+}
+
+impl InterfaceSubsystem {
+    pub fn new(interface_entity: Entity) -> Self {
+        Self {
+            interface_entity,
+            total_inflow: Default::default(),
+            total_outflow: Default::default(),
+            substance_type: Default::default(),
+            is_useful: false,
+        }
+    }
 }
 
 pub trait Usability: Sized {

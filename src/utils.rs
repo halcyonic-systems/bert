@@ -1,4 +1,7 @@
-use crate::components::{InitialPosition};
+use crate::components::{
+    EndTargetType, FlowEndConnection, FlowEndInterfaceConnection, FlowStartConnection,
+    FlowStartInterfaceConnection, InitialPosition, InterfaceSubsystem, StartTargetType,
+};
 use crate::constants::{FLOW_END_LENGTH, INTERFACE_WIDTH_HALF};
 use bevy::prelude::*;
 
@@ -76,3 +79,51 @@ pub fn combined_transform_of_entity_until_ancestor(
 
     combined_transform
 }
+
+macro_rules! all_flow_connected_systems {
+    (
+        $fn_name:ident,
+        $conn_ty:ty,
+        $interface_conn_ty:ty,
+        $target_ty:tt
+    ) => {
+        pub fn $fn_name(
+            flow: (Option<&$conn_ty>, Option<&$interface_conn_ty>),
+            interface_subsystem_query: &Query<(Entity, &InterfaceSubsystem)>,
+        ) -> Vec<Entity> {
+            let mut connected_systems = vec![];
+
+            let (connection, interface_connection) = flow;
+
+            if let Some(connection) = connection {
+                if matches!(connection.target_type, $target_ty::System) {
+                    connected_systems.push(connection.target);
+                }
+            }
+
+            if let Some(interface_connection) = interface_connection {
+                let interface_entity = interface_connection.target;
+                for (subsystem_entity, interface_subsystem) in interface_subsystem_query {
+                    if interface_subsystem.interface_entity == interface_entity {
+                        connected_systems.push(subsystem_entity);
+                    }
+                }
+            }
+
+            connected_systems
+        }
+    };
+}
+
+all_flow_connected_systems!(
+    all_flow_end_connected_systems,
+    FlowEndConnection,
+    FlowEndInterfaceConnection,
+    EndTargetType
+);
+all_flow_connected_systems!(
+    all_flow_start_connected_systems,
+    FlowStartConnection,
+    FlowStartInterfaceConnection,
+    StartTargetType
+);
