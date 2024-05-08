@@ -3,10 +3,10 @@ pub mod save;
 
 use crate::components::*;
 use bevy::prelude::*;
+use rust_decimal::Decimal;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
-use rust_decimal::Decimal;
 
 #[derive(Serialize, Deserialize)]
 pub struct WorldModel {
@@ -211,10 +211,10 @@ pub struct Transform2d {
     pub rotation: f32,
 }
 
-impl From<&Transform> for Transform2d {
-    fn from(t: &Transform) -> Self {
+impl From<(&Transform, &InitialPosition)> for Transform2d {
+    fn from((t, ip): (&Transform, &InitialPosition)) -> Self {
         Transform2d {
-            translation: t.translation.truncate(),
+            translation: **ip,
             rotation: t.right().truncate().to_angle(),
         }
     }

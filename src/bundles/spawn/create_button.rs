@@ -41,7 +41,7 @@ pub fn spawn_create_button(
             create_button,
             SpriteBundle {
                 texture: asset_server.load(path),
-                transform: Transform::from_translation((position * zoom).extend(10.))
+                transform: Transform::from_translation((position * zoom).extend(200.))
                     .with_rotation(Quat::from_rotation_z(angle)),
                 sprite: Sprite {
                     custom_size: Some(Vec2::new(button_width, button_width)),

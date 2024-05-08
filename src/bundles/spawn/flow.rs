@@ -214,7 +214,7 @@ macro_rules! spawn_complete_flow {
             external_entity_description: &str,
             external_entity_transform: Option<&Transform2d>,
         ) -> Entity {
-            let mut translation = vec3(system_radius, 0.0, 0.0);
+            let mut translation = vec3(system_radius * zoom, 0.0, 0.0);
 
             let mut transform = Transform::from_rotation(Quat::from_rotation_z(interface_angle));
             translation = transform.transform_point(translation);
@@ -257,7 +257,7 @@ macro_rules! spawn_complete_flow {
             );
 
             let transform = if let Some(t2d) = external_entity_transform {
-                Transform::from_translation(t2d.translation.extend(transform.translation.z))
+                Transform::from_translation((t2d.translation * zoom).extend(transform.translation.z))
                     .with_rotation(Quat::from_rotation_z(t2d.rotation))
             } else {
                 let right = transform.right();

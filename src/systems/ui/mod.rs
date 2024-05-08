@@ -76,14 +76,12 @@ pub fn on_create_button_click(
     mut event: ListenerMut<Pointer<Click>>,
     button_query: Query<(&CreateButton, &Transform)>,
     only_button_query: Query<&CreateButton>,
-    flow_interface_query: Query<
-        (
-            Entity,
-            Option<&FlowEndInterfaceConnection>,
-            Option<&FlowStartInterfaceConnection>,
-        ),
-        With<Flow>,
-    >,
+    flow_interface_query: Query<(
+        Entity,
+        &Flow,
+        Option<&FlowEndInterfaceConnection>,
+        Option<&FlowStartInterfaceConnection>,
+    )>,
     system_query: Query<(&Transform, &crate::components::System)>,
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>,

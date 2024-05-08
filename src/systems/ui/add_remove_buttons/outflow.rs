@@ -4,9 +4,10 @@ use crate::resources::{FocusedSystem, Zoom};
 use crate::systems::next_outflow_button_transform;
 use bevy::prelude::*;
 
-pub fn add_first_outflow_create_button(
+pub fn add_outflow_create_button(
     mut commands: Commands,
     focused_system: Res<FocusedSystem>,
+    outflow_finished_query: Query<&FlowStartConnection, Added<FlowEndConnection>>,
     button_query: Query<&CreateButton>,
     flow_system_query: Query<
         &FlowStartConnection,
@@ -16,12 +17,15 @@ pub fn add_first_outflow_create_button(
         )>,
     >,
     flow_interface_query: Query<(&FlowStartConnection, &FlowStartInterfaceConnection)>,
+    import_subsystem_query: Query<(), Or<(With<ImportSubsystem>, Without<Subsystem>)>>,
     transform_query: Query<&Transform>,
     system_query: Query<&System>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    if !focused_system.is_changed() {
+    // TODO : also detect removal
+
+    if !focused_system.is_changed() && outflow_finished_query.get_single().is_err() {
         return;
     }
 
@@ -39,11 +43,16 @@ pub fn add_first_outflow_create_button(
         }
     }
 
+    if import_subsystem_query.get(focused_system).is_err() {
+        return;
+    }
+
     let (position, angle) = next_outflow_button_transform(
         &flow_interface_query,
         &transform_query,
         &system_query,
         focused_system,
+        false, // TODO
     );
 
     spawn_create_button(
@@ -60,41 +69,4 @@ pub fn add_first_outflow_create_button(
         Some(focused_system),
         &asset_server,
     );
-}
-
-pub fn add_consecutive_outflow_create_button(
-    mut commands: Commands,
-    outflow_query: Query<&FlowStartConnection, Added<FlowEndConnection>>,
-    flow_interface_query: Query<(&FlowStartConnection, &FlowStartInterfaceConnection)>,
-    transform_query: Query<&Transform>,
-    system_query: Query<&crate::components::System>,
-    focused_system: Res<FocusedSystem>,
-    zoom: Res<Zoom>,
-    asset_server: Res<AssetServer>,
-) {
-    if let Ok(outflow_connection) = outflow_query.get_single() {
-        let system_entity = outflow_connection.target;
-
-        let (position, angle) = next_outflow_button_transform(
-            &flow_interface_query,
-            &transform_query,
-            &system_query,
-            **focused_system,
-        );
-
-        spawn_create_button(
-            &mut commands,
-            CreateButton {
-                ty: CreateButtonType::Outflow,
-                connection_source: system_entity,
-                system: **focused_system,
-                substance_type: None,
-            },
-            position,
-            angle,
-            **zoom,
-            Some(**focused_system),
-            &asset_server,
-        );
-    }
 }
