@@ -66,12 +66,9 @@ pub fn update_interface_color_from_flow<C>(
     C: Connection + Component,
 {
     for (flow, interface_connection) in &mut query {
-        let color = flow.substance_type.interface_color();
-
-        let mut interface_fill = interface_query
-            .get_mut(interface_connection.target())
-            .expect("Interface should exist");
-        interface_fill.color = color;
+        if let Ok(mut interface_fill) = interface_query.get_mut(interface_connection.target()) {
+            interface_fill.color = flow.substance_type.interface_color();
+        }
     }
 }
 
