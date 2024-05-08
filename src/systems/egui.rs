@@ -1,9 +1,8 @@
 use crate::components::{
     ElementDescription, Flow, InflowUsability, Interface, OutflowUsability, SystemElement,
-    Usability, System, SystemEnvironment, SubstanceType
+    Usability, System, SystemEnvironment, SubstanceType, ExternalEntity
 };
 use crate::plugins::mouse_interaction::PickSelection;
-use crate::ExternalEntity;
 use bevy::prelude::*;
 use bevy_egui::egui::{vec2, ComboBox, DragValue, Margin, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
@@ -101,14 +100,28 @@ fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
     flow_egui(ui, flow);
 }
 
-fn system_egui(ui: &mut Ui, system: &mut System) {
+fn system_of_interest_egui(
+    ui: &mut Ui,
+    system: &mut System,
+    system_environment: &mut SystemEnvironment,
+) {
     ui.separator();
+    boundary_egui(ui, system);
+    ui.separator();
+    mut_environment_egui(ui, system_environment);
+}
+
+fn boundary_egui(
+    ui: &mut Ui,
+    system: &mut System,
+) { 
+    ui.label("Boundary");
     ui.horizontal(|ui| {
-        ui.label("Boundary Name");
+        ui.label("Name");
         ui.text_edit_singleline(&mut system.boundary.name);
     });
     ui.horizontal(|ui| {
-        ui.label("Boundary Description");
+        ui.label("Description");
         ui.text_edit_singleline(&mut system.boundary.description);
     });
     ui.horizontal(|ui| {
@@ -125,15 +138,39 @@ fn system_egui(ui: &mut Ui, system: &mut System) {
     });
 }
 
-fn system_environment_egui(ui: &mut Ui, system: &mut SystemEnvironment) {
+fn mut_environment_egui(
+    ui: &mut Ui,
+    system_environment: &mut SystemEnvironment,
+) {
+    ui.label("System Environment");
     ui.horizontal(|ui| {
-        ui.label("Name: ");
-        ui.text_edit_singleline(&mut system.name);
+        ui.label("Name");
+        ui.text_edit_singleline(&mut system_environment.name);
     });
     ui.horizontal(|ui| {
-        ui.label("Description: ");
-        ui.text_edit_singleline(&mut system.description);
+        ui.label("Description");
+        ui.text_edit_singleline(&mut system_environment.description);
     });
+}
+
+fn subsystem_egui(ui: &mut Ui, system: &mut System, system_environment: &SystemEnvironment) {
+    ui.separator();
+    boundary_egui(ui, system);
+    ui.separator();
+    ui.label("Parent System");
+    ui.horizontal(|ui| {
+        ui.label("Name");
+        ui.label(&system_environment.name);
+    });
+    ui.horizontal(|ui| {
+        ui.label("Description");
+        ui.label(&system_environment.description);
+    });
+}
+
+fn external_entity_egui(ui: &mut Ui, external_entity: &mut ExternalEntity) {
+    let _ = ui;
+    let _ = external_entity;
 }
 
 pub fn egui_selected_context(
@@ -147,7 +184,9 @@ pub fn egui_selected_context(
     )>,
     mut interface_query: Query<&mut Interface>,
     mut flow_query: Query<&mut Flow>,
+    mut system_environment_query: Query<&mut SystemEnvironment>,
     mut system_query: Query<&mut System>,
+    mut external_entity_query: Query<&mut ExternalEntity>
 ) {
     for (entity, selectable, system_element, mut name, mut description) in &mut selectable_query {
         if selectable.is_selected {
@@ -181,10 +220,25 @@ pub fn egui_selected_context(
                                 ui,
                                 &mut interface_query.get_mut(entity).expect("Interface not found"),
                             ),
-                            SystemElement::System => system_egui(
-                                ui,
-                                &mut system_query.get_mut(entity).expect("System not found"),
-                            ),
+                            SystemElement::System => { 
+                                let mut system = system_query
+                                    .get_mut(entity)
+                                    .expect("System not found");
+                                
+                                if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
+                                    system_of_interest_egui(
+                                        ui,
+                                        &mut system,
+                                        &mut sys_env
+                                    )
+                                } else {
+                                    subsystem_egui(
+                                        ui,
+                                        &mut system,
+                                        &SystemEnvironment::default()
+                                    )
+                                }
+                            },
                             SystemElement::Inflow => inflow_egui(
                                 ui,
                                 &mut flow_query.get_mut(entity).expect("Inflow not found"),
@@ -193,9 +247,10 @@ pub fn egui_selected_context(
                                 ui,
                                 &mut flow_query.get_mut(entity).expect("Outflow not found"),
                             ),
-                            SystemElement::ExternalEntity => {
-                                // TODO: implement
-                            }
+                            SystemElement::ExternalEntity => external_entity_egui(
+                                ui,
+                                &mut external_entity_query.get_mut(entity).expect("External Entity not found"),
+                            )
                         };
                     });
             });

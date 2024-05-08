@@ -34,6 +34,7 @@ pub struct SystemBundle {
     pub system: System,
     pub name: Name,
     pub description: ElementDescription,
+    pub system_element: SystemElement,
     pub pickable_bundle: PickableBundle,
     pub pick_selection: PickSelection,
     pub simplified_mesh: SimplifiedMesh,
@@ -73,6 +74,7 @@ impl SystemBundle {
             },
             name: Name::new(name.to_string()),
             description: ElementDescription::new(description),
+            system_element: SystemElement::System,
             pickable_bundle: PickableBundle::default(),
             pick_selection: PickSelection::default(),
             simplified_mesh: SimplifiedMesh {
