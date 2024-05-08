@@ -13,7 +13,6 @@ pub use subsystem::*;
 
 use crate::components::*;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
 
 const INTERFACE_ANGLE_INCREMENT: f32 = std::f32::consts::PI * 0.16;
 
@@ -24,31 +23,37 @@ macro_rules! button_transform {
             transform_query: &Query<&Transform>,
             system_query: &Query<&crate::components::System>,
             focused_system: Entity,
+            initial_position_is_occupied: bool,
         ) -> (Vec2, f32) {
-            let mut existing_interfaces = HashSet::new();
+            let mut existing_interface_angles = vec![];
 
             for (flow_system_connection, flow_interface_connection) in flow_interface_query {
                 if flow_system_connection.target == focused_system {
-                    existing_interfaces.insert(flow_interface_connection.target);
-                }
-            }
-
-            let angle = if existing_interfaces.is_empty() {
-                0.0
-            } else {
-                let mut min_angle = f32::MAX;
-                let mut max_angle = -f32::MAX;
-
-                for interface in existing_interfaces {
                     let interface_pos = transform_query
-                        .get(interface)
+                        .get(flow_interface_connection.target)
                         .expect("Interface should have a Transform")
                         .translation;
 
                     let mut diff = interface_pos.truncate();
                     diff.x *= $sign;
 
-                    let angle = diff.to_angle();
+                    existing_interface_angles.push(diff.to_angle());
+                }
+            }
+
+            if initial_position_is_occupied {
+                existing_interface_angles.push(0.0);
+                existing_interface_angles.push(INTERFACE_ANGLE_INCREMENT);
+                existing_interface_angles.push(-INTERFACE_ANGLE_INCREMENT);
+            }
+
+            let angle = if existing_interface_angles.is_empty() {
+                0.0
+            } else {
+                let mut min_angle = f32::MAX;
+                let mut max_angle = -f32::MAX;
+
+                for angle in existing_interface_angles {
 
                     min_angle = min_angle.min(angle);
                     max_angle = max_angle.max(angle);

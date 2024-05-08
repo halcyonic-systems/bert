@@ -94,11 +94,11 @@ pub struct ExportSubsystem;
 #[reflect(Component)]
 pub struct InterfaceSubsystem {
     #[reflect(ignore)]
-    total_inflow: Decimal,
+    pub total_inflow: Decimal,
     #[reflect(ignore)]
-    total_outflow: Decimal,
-    substance_type: SubstanceType,
-    is_useful: bool,
+    pub total_outflow: Decimal,
+    pub substance_type: SubstanceType,
+    pub is_useful: bool,
 }
 
 pub trait Usability: Sized {

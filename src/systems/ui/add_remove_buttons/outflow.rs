@@ -50,6 +50,7 @@ pub fn add_outflow_create_button(
         &transform_query,
         &system_query,
         focused_system,
+        false, // TODO
     );
 
     spawn_create_button(

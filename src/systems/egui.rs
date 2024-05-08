@@ -1,13 +1,11 @@
 use crate::components::{
-    ElementDescription, Flow, InflowUsability, Interface, OutflowUsability, SystemElement,
-    Usability, System, SystemEnvironment, SubstanceType
+    ElementDescription, Flow, InflowUsability, Interface, OutflowUsability, SubstanceType, System,
+    SystemElement, SystemEnvironment, Usability,
 };
 use crate::plugins::mouse_interaction::PickSelection;
-use crate::ExternalEntity;
 use bevy::prelude::*;
 use bevy_egui::egui::{vec2, ComboBox, DragValue, Margin, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
-use regex::Regex;
 use rust_decimal::Decimal;
 
 fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
@@ -57,25 +55,27 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
         ui.label("Substance Unit: ");
         ui.text_edit_singleline(&mut flow.unit);
     });
+    // TODO : update on focus lost
     let mut amount_string = flow.amount.to_string();
     ui.horizontal(|ui| {
         ui.label("Substance Amount: ");
         ui.text_edit_singleline(&mut amount_string);
-        only_valid_positive_decimal(&mut amount_string);
-        flow.amount = Decimal::from_str_exact(&amount_string).expect("this should be a valid decimal string");
+        only_valid_positive_decimal(&mut amount_string, &mut flow.amount);
     });
     let mut time_unit_string = flow.time_unit.to_string();
     ui.horizontal(|ui| {
         ui.label("Time Unit: ");
         ui.text_edit_singleline(&mut time_unit_string);
-        only_valid_positive_decimal(&mut time_unit_string);
-        flow.amount = Decimal::from_str_exact(&time_unit_string).expect("this should be a valid decimal string");
+        only_valid_positive_decimal(&mut time_unit_string, &mut flow.time_unit);
     });
 }
 
-pub fn only_valid_positive_decimal(s: &mut String) {
-    let re = Regex::new(r"/^[+]?([0-9]+(?:[\.][0-9]*)?|\.[0-9]+)$/").unwrap();
-    *s = re.replace_all(s, "").to_string();
+pub fn only_valid_positive_decimal(s: &mut String, decimal: &mut Decimal) {
+    if let Ok(value) = Decimal::from_str_exact(&s) {
+        *decimal = value;
+    } else {
+        *s = decimal.to_string();
+    }
 }
 
 fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
@@ -113,15 +113,19 @@ fn system_egui(ui: &mut Ui, system: &mut System) {
     });
     ui.horizontal(|ui| {
         ui.label("Porosity");
-        ui.add(DragValue::new(&mut system.boundary.porosity)
-            .speed(0.01)
-            .clamp_range(0.0..=1.0));
+        ui.add(
+            DragValue::new(&mut system.boundary.porosity)
+                .speed(0.01)
+                .clamp_range(0.0..=1.0),
+        );
     });
     ui.horizontal(|ui| {
         ui.label("Perceptive Fuzziness");
-        ui.add(DragValue::new(&mut system.boundary.perceptive_fuzziness)
-            .speed(0.01)
-            .clamp_range(0.0..=1.0));
+        ui.add(
+            DragValue::new(&mut system.boundary.perceptive_fuzziness)
+                .speed(0.01)
+                .clamp_range(0.0..=1.0),
+        );
     });
 }
 
@@ -179,7 +183,9 @@ pub fn egui_selected_context(
                         match system_element {
                             SystemElement::Interface => interface_egui(
                                 ui,
-                                &mut interface_query.get_mut(entity).expect("Interface not found"),
+                                &mut interface_query
+                                    .get_mut(entity)
+                                    .expect("Interface not found"),
                             ),
                             SystemElement::System => system_egui(
                                 ui,
