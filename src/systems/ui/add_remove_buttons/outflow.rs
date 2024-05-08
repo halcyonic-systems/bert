@@ -23,6 +23,8 @@ pub fn add_outflow_create_button(
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
+    // TODO : also detect removal
+
     if !focused_system.is_changed() && outflow_finished_query.get_single().is_err() {
         return;
     }

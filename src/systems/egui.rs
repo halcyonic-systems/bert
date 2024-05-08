@@ -55,7 +55,7 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
         ui.label("Substance Unit: ");
         ui.text_edit_singleline(&mut flow.unit);
     });
-    // TODO : update on focus lost
+    // TODO : allow empty strings
     let mut amount_string = flow.amount.to_string();
     ui.horizontal(|ui| {
         ui.label("Substance Amount: ");

@@ -66,15 +66,44 @@ pub fn update_flow_from_external_entity(
                 let right = transform.right().truncate();
                 flow_curve.start =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                flow_curve.start_direction = -right * FLOW_END_LENGTH * scale;
             } else if flow_end_connection.target == target {
                 let right = transform.right().truncate();
                 flow_curve.end =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                flow_curve.end_direction = -right * FLOW_END_LENGTH * scale;
             } else {
                 continue;
             }
+        }
+    }
+}
+
+pub fn update_external_entity_from_flow(
+    mut external_entity_query: Query<(Entity, &mut Transform, &NestingLevel), With<ExternalEntity>>,
+    mut flow_query: Query<
+        (&mut FlowCurve, &FlowStartConnection, &FlowEndConnection),
+        Changed<FlowCurve>,
+    >,
+    zoom: Res<Zoom>,
+) {
+    for (mut flow_curve, flow_start_connection, flow_end_connection) in &mut flow_query {
+        for (target, mut transform, nesting_level) in &mut external_entity_query {
+            let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
+
+            let right = if flow_start_connection.target == target {
+                let right = (transform.translation.truncate() - flow_curve.end - flow_curve.end_direction).normalize();
+                flow_curve.start_direction = -right * FLOW_END_LENGTH * scale;
+
+                right
+            } else if flow_end_connection.target == target {
+                let right = (transform.translation.truncate() - flow_curve.start - flow_curve.start_direction).normalize();
+                flow_curve.end_direction = -right * FLOW_END_LENGTH * scale;
+
+                right
+            } else {
+                continue;
+            };
+
+            transform.rotation = Quat::from_rotation_z(right.to_angle());
         }
     }
 }
