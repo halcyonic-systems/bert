@@ -27,19 +27,23 @@ pub fn spawn_interface_subsystem(
 ) -> Entity {
     let mut interface_flow_entity = Entity::PLACEHOLDER;
     let mut angle = 0.0;
+    let mut is_import_subsystem = false;
+    let mut is_export_subsystem = false;
 
-    for (entity, inflow_connection, outflow_connection) in flow_interface_query {
-        if let Some(connection) = inflow_connection {
-            if connection.target == interface_entity {
-                interface_flow_entity = entity;
-                angle = std::f32::consts::PI;
-                break;
+    if is_child_of_interface {
+        for (entity, inflow_connection, outflow_connection) in flow_interface_query {
+            if let Some(connection) = inflow_connection {
+                if connection.target == interface_entity {
+                    interface_flow_entity = entity;
+                    angle = std::f32::consts::PI;
+                    is_import_subsystem = true;
+                }
             }
-        }
-        if let Some(connection) = outflow_connection {
-            if connection.target == interface_entity {
-                interface_flow_entity = entity;
-                break;
+            if let Some(connection) = outflow_connection {
+                if connection.target == interface_entity {
+                    interface_flow_entity = entity;
+                    is_export_subsystem = true;
+                }
             }
         }
     }
@@ -61,29 +65,36 @@ pub fn spawn_interface_subsystem(
 
     let nesting_level = NestingLevel::current(parent_system, nesting_level_query) + 1;
 
-    let subsystem_entity = commands
-        .spawn((
-            SubsystemParentFlowConnection {
-                target: interface_flow_entity,
-            },
-            Subsystem { parent_system },
-            NestingLevel::new(nesting_level),
-            SystemBundle::new(
-                vec2(-radius * zoom, 0.0),
-                z,
-                radius,
-                angle,
-                false,
-                false,
-                Default::default(),
-                meshes,
-                zoom,
-                nesting_level,
-                name,
-                description,
-            ),
-        ))
-        .id();
+    let mut subsystem_commands = commands.spawn((
+        SubsystemParentFlowConnection {
+            target: interface_flow_entity,
+        },
+        Subsystem { parent_system },
+        NestingLevel::new(nesting_level),
+        SystemBundle::new(
+            vec2(-radius * zoom, 0.0),
+            z,
+            radius,
+            angle,
+            false,
+            false,
+            Default::default(),
+            meshes,
+            zoom,
+            nesting_level,
+            name,
+            description,
+        ),
+    ));
+    
+    if is_import_subsystem {
+        subsystem_commands.insert(ImportSubsystem);
+    }
+    if is_export_subsystem {
+        subsystem_commands.insert(ExportSubsystem);
+    }
+    
+    let subsystem_entity = subsystem_commands.id();
 
     let mut interface_commands = commands.entity(interface_entity);
     interface_commands.insert(InterfaceSubsystemConnection {

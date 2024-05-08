@@ -82,6 +82,25 @@ pub struct Subsystem {
     pub parent_system: Entity,
 }
 
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[reflect(Component)]
+pub struct ImportSubsystem;
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[reflect(Component)]
+pub struct ExportSubsystem;
+
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[reflect(Component)]
+pub struct InterfaceSubsystem {
+    #[reflect(ignore)]
+    total_inflow: Decimal,
+    #[reflect(ignore)]
+    total_outflow: Decimal,
+    substance_type: SubstanceType,
+    is_useful: bool,
+}
+
 pub trait Usability: Sized {
     fn is_useful(&self) -> bool;
 

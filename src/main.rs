@@ -59,11 +59,9 @@ fn main() {
             add_inflow_interface_create_button,
             add_source_create_button,
             add_sink_create_button,
-            add_consecutive_outflow_create_button,
-            add_first_inflow_create_button,
-            add_consecutive_inflow_create_button,
+            add_inflow_create_button,
             add_interface_subsystem_create_buttons,
-            add_first_outflow_create_button,
+            add_outflow_create_button,
             change_focused_system,
             remove_unfocused_system_buttons,
             draw_flow_curve,
@@ -145,6 +143,9 @@ fn main() {
     .register_type::<SubsystemParentFlowConnection>()
     .register_type::<SystemElement>()
     .register_type::<crate::components::System>()
+    .register_type::<ImportSubsystem>()
+    .register_type::<ExportSubsystem>()
+    .register_type::<InterfaceSubsystem>()
     .register_type::<Interface>()
     .register_type::<Flow>()
     .register_type::<ExternalEntity>()
