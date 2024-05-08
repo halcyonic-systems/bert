@@ -4,7 +4,7 @@ use bevy::core::Name;
 use bevy::prelude::*;
 
 pub fn save_world(
-    soi_info_query: Query<
+    main_system_info_query: Query<
         (
             Entity,
             &Name,
@@ -12,6 +12,7 @@ pub fn save_world(
             &crate::components::System,
             &SystemEnvironment,
             &Transform,
+            &InitialPosition,
         ),
         Without<Subsystem>,
     >,
@@ -37,15 +38,16 @@ pub fn save_world(
         &crate::components::Interface,
         &Transform,
     )>,
-    external_entity_query: Query<(&Name, &ElementDescription, &Transform)>,
+    external_entity_query: Query<(&Name, &ElementDescription, &Transform, &InitialPosition)>,
     // subsystem_query: Query<
     //     (Entity, &Name, &crate::components::ElementDescription, &crate::components::SystemElement),
     //     (With<crate::components::Subsystem>, Without<crate::components::SystemOfInterest>)
     // >
 ) {
-    let (system_entity, name, description, system, environment, transform) = soi_info_query
-        .get_single()
-        .expect("System of interest should exist");
+    let (system_entity, name, description, system, environment, transform, initial_position) =
+        main_system_info_query
+            .get_single()
+            .expect("System of interest should exist");
 
     let mut interfaces = vec![];
     let mut external_interactions = vec![];
@@ -139,7 +141,7 @@ pub fn save_world(
         internal_interactions: vec![], // TODO
         external_interactions,
         components: vec![],
-        transform: Some(transform.into()),
+        transform: Some(Transform2d::from((transform, initial_position))),
     };
 
     let model = WorldModel { system_of_interest };
@@ -166,7 +168,7 @@ macro_rules! process_external_flow {
                 &crate::components::Interface,
                 &Transform,
             )>,
-            external_entity_query: &Query<(&Name, &ElementDescription, &Transform)>,
+            external_entity_query: &Query<(&Name, &ElementDescription, &Transform, &InitialPosition)>,
             system_entity: Entity,
             interfaces: &mut Vec<crate::data_model::Interface>,
             interactions: &mut Vec<crate::data_model::Interaction>,
@@ -236,7 +238,7 @@ macro_rules! process_external_flow {
 
                 interfaces.push(interface);
 
-                let (external_entity_name, external_entity_description, external_entity_transform) =
+                let (external_entity_name, external_entity_description, external_entity_transform, initial_position) =
                     external_entity_query
                         .get(source_connection.target)
                         .expect("External entity should exist");
@@ -250,7 +252,7 @@ macro_rules! process_external_flow {
                     },
                     ty: $external_entity_ty,
                     interactions: vec![interaction_id], // TODO : multiple
-                    transform: Some(external_entity_transform.into()),
+                    transform: Some(Transform2d::from((external_entity_transform, initial_position))),
                 });
             }
         }

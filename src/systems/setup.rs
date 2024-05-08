@@ -1,6 +1,5 @@
 use crate::bundles::spawn_main_system;
 use crate::components::NestingLevel;
-use bevy::math::vec2;
 use crate::constants::*;
 use crate::resources::*;
 use bevy::prelude::*;
