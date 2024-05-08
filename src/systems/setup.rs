@@ -3,6 +3,7 @@ use crate::components::NestingLevel;
 use crate::constants::*;
 use crate::resources::*;
 use bevy::prelude::*;
+use bevy::math::vec2;
 use bevy::render::deterministic::DeterministicRenderingConfig;
 use rust_decimal_macros::dec;
 

@@ -116,14 +116,20 @@ fn boundary_egui(
     ui: &mut Ui,
     system: &mut System,
 ) { 
-    ui.label("Boundary");
+    ui.vertical_centered(|ui| {
+        ui.label("Boundary");
+    });
     ui.horizontal(|ui| {
         ui.label("Name");
+    });
+    ui.vertical_centered_justified(|ui| {
         ui.text_edit_singleline(&mut system.boundary.name);
     });
     ui.horizontal(|ui| {
         ui.label("Description");
-        ui.text_edit_singleline(&mut system.boundary.description);
+    });
+    ui.vertical_centered_justified(|ui| {
+        ui.text_edit_multiline(&mut system.boundary.description);
     });
     ui.horizontal(|ui| {
         ui.label("Porosity");
@@ -147,14 +153,20 @@ fn mut_environment_egui(
     ui: &mut Ui,
     system_environment: &mut SystemEnvironment,
 ) {
-    ui.label("System Environment");
+    ui.vertical_centered(|ui| {
+        ui.label("Environment");
+    });
     ui.horizontal(|ui| {
         ui.label("Name");
+    });
+    ui.vertical_centered_justified(|ui| {
         ui.text_edit_singleline(&mut system_environment.name);
     });
     ui.horizontal(|ui| {
         ui.label("Description");
-        ui.text_edit_singleline(&mut system_environment.description);
+    });
+    ui.vertical_centered_justified(|ui| {
+        ui.text_edit_multiline(&mut system_environment.description);
     });
 }
 
@@ -162,13 +174,19 @@ fn subsystem_egui(ui: &mut Ui, system: &mut System, system_environment: &SystemE
     ui.separator();
     boundary_egui(ui, system);
     ui.separator();
-    ui.label("Parent System");
+    ui.vertical_centered_justified(|ui| {
+        ui.label("Parent System");
+    });
     ui.horizontal(|ui| {
         ui.label("Name");
+    });
+    ui.vertical_centered_justified(|ui| {
         ui.label(&system_environment.name);
     });
     ui.horizontal(|ui| {
         ui.label("Description");
+    });
+    ui.vertical_centered_justified(|ui| {
         ui.label(&system_environment.description);
     });
 }
@@ -194,74 +212,82 @@ pub fn egui_selected_context(
     mut external_entity_query: Query<&mut ExternalEntity>
 ) {
     for (entity, selectable, system_element, mut name, mut description) in &mut selectable_query {
-        if selectable.is_selected {
-            egui_contexts.ctx_mut().set_visuals(Visuals::light());
-            egui_contexts.ctx_mut().style_mut(|style| {
-                style.spacing.window_margin = Margin {
-                    left: 10.0,
-                    right: 10.0,
-                    top: 10.0,
-                    bottom: 10.0,
-                };
-                style.spacing.item_spacing = vec2(10.0, 10.0);
-            });
-            egui::Window::new(&system_element.to_string()).show(egui_contexts.ctx_mut(), |ui| {
-                egui::ScrollArea::both()
-                    .auto_shrink([false; 2])
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("Name: ");
-                            name.mutate(|name| {
-                                ui.text_edit_singleline(name);
-                            });
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Description: ");
-                            ui.text_edit_multiline(&mut description.text);
-                        });
-
-                        match system_element {
-                            SystemElement::Interface => interface_egui(
-                                ui,
-                                &mut interface_query
-                                    .get_mut(entity)
-                                    .expect("Interface not found"),
-                            ),
-                            SystemElement::System => { 
-                                let mut system = system_query
-                                    .get_mut(entity)
-                                    .expect("System not found");
-                                
-                                if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
-                                    system_of_interest_egui(
-                                        ui,
-                                        &mut system,
-                                        &mut sys_env
-                                    )
-                                } else {
-                                    subsystem_egui(
-                                        ui,
-                                        &mut system,
-                                        &SystemEnvironment::default()
-                                    )
-                                }
-                            },
-                            SystemElement::Inflow => inflow_egui(
-                                ui,
-                                &mut flow_query.get_mut(entity).expect("Inflow not found"),
-                            ),
-                            SystemElement::Outflow => outflow_egui(
-                                ui,
-                                &mut flow_query.get_mut(entity).expect("Outflow not found"),
-                            ),
-                            SystemElement::ExternalEntity => external_entity_egui(
-                                ui,
-                                &mut external_entity_query.get_mut(entity).expect("External Entity not found"),
-                            )
-                        };
-                    });
-            });
-            return;
+        if !selectable.is_selected {
+            continue;
         }
+        egui_contexts.ctx_mut().set_visuals(Visuals::light());
+        egui_contexts.ctx_mut().style_mut(|style| {
+            style.spacing.window_margin = Margin {
+                left: 10.0,
+                right: 10.0,
+                top: 10.0,
+                bottom: 10.0,
+            };
+            style.spacing.item_spacing = vec2(10.0, 10.0);
+        });
+        egui::SidePanel::right(system_element.to_string())
+            .show(egui_contexts.ctx_mut(), |ui| {
+            ui.vertical_centered(|ui| {
+                ui.heading("Element Details");
+            });
+            egui::ScrollArea::both()
+                .auto_shrink([false; 2])
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Name");
+                    });
+                    ui.vertical_centered_justified(|ui| {
+                        name.mutate(|name| {
+                            ui.text_edit_singleline(name);
+                        });
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Description");
+                    });
+                    ui.vertical_centered_justified(|ui| {
+                        ui.text_edit_multiline(&mut description.text);
+                    });
+
+                    match system_element {
+                        SystemElement::Interface => interface_egui(
+                            ui,
+                            &mut interface_query
+                                .get_mut(entity)
+                                .expect("Interface not found"),
+                        ),
+                        SystemElement::System => { 
+                            let mut system = system_query
+                                .get_mut(entity)
+                                .expect("System not found");
+                            
+                            if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
+                                system_of_interest_egui(
+                                    ui,
+                                    &mut system,
+                                    &mut sys_env
+                                )
+                            } else {
+                                subsystem_egui(
+                                    ui,
+                                    &mut system,
+                                    &SystemEnvironment::default()
+                                )
+                            }
+                        },
+                        SystemElement::Inflow => inflow_egui(
+                            ui,
+                            &mut flow_query.get_mut(entity).expect("Inflow not found"),
+                        ),
+                        SystemElement::Outflow => outflow_egui(
+                            ui,
+                            &mut flow_query.get_mut(entity).expect("Outflow not found"),
+                        ),
+                        SystemElement::ExternalEntity => external_entity_egui(
+                            ui,
+                            &mut external_entity_query.get_mut(entity).expect("External Entity not found"),
+                        )
+                    };
+                });
+        });
     }
 }
