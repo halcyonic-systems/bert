@@ -32,7 +32,7 @@ pub fn add_inflow_create_button(
     transform_query: Query<&Transform>,
     system_query: Query<&crate::components::System>,
     system_entity_query: Query<Entity, With<crate::components::System>>,
-    export_subsystem_query: Query<(), With<ExportSubsystem>>,
+    export_subsystem_query: Query<&ExportSubsystem>,
     import_subsystem_query: Query<&InterfaceSubsystem, With<ImportSubsystem>>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
