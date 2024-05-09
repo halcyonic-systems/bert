@@ -9,7 +9,7 @@ use std::ops::DerefMut;
 pub fn drag_external_entity(
     mut events: EventReader<ExternalEntityDrag>,
     mut transform_query: Query<&mut Transform>,
-    flow_query: Query<(&FlowStartConnection, &FlowEndConnection), With<FlowCurve>>,
+    flow_query: Query<(&FlowStartConnection, &FlowEndConnection, &FlowCurve), With<FlowCurve>>,
     subsystem_query: Query<&Subsystem>,
     system_query: Query<&crate::components::System>,
     zoom: Res<Zoom>,
@@ -26,18 +26,27 @@ pub fn drag_external_entity(
         transform.translation.y = event.position.y;
 
         let mut system = Entity::PLACEHOLDER;
+        let mut other_end = Vec2::ZERO;
+        let mut other_end_direction = Vec2::ZERO;
 
-        for (start_connection, end_connection) in &flow_query {
+        for (start_connection, end_connection, flow_curve) in &flow_query {
             if start_connection.target == event.target {
                 debug_assert!(end_connection.target_type == EndTargetType::System);
                 system = end_connection.target;
+                other_end = flow_curve.end;
+                other_end_direction = flow_curve.end_direction;
                 break;
             } else if end_connection.target == event.target {
                 debug_assert!(start_connection.target_type == StartTargetType::System);
                 system = start_connection.target;
+                other_end = flow_curve.start;
+                other_end_direction = flow_curve.start_direction;
                 break;
             }
         }
+
+        transform.rotation =
+            compute_external_entity_rotation(event.position, other_end, other_end_direction);
 
         if let Ok(subsystem) = subsystem_query.get(system) {
             let parent_system = system_query
@@ -66,44 +75,15 @@ pub fn update_flow_from_external_entity(
                 let right = transform.right().truncate();
                 flow_curve.start =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
+                flow_curve.start_direction = -right * FLOW_END_LENGTH * scale;
             } else if flow_end_connection.target == target {
                 let right = transform.right().truncate();
                 flow_curve.end =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
+                flow_curve.end_direction = -right * FLOW_END_LENGTH * scale;
             } else {
                 continue;
             }
-        }
-    }
-}
-
-pub fn update_external_entity_from_flow(
-    mut external_entity_query: Query<(Entity, &mut Transform, &NestingLevel), With<ExternalEntity>>,
-    mut flow_query: Query<
-        (&mut FlowCurve, &FlowStartConnection, &FlowEndConnection),
-        Changed<FlowCurve>,
-    >,
-    zoom: Res<Zoom>,
-) {
-    for (mut flow_curve, flow_start_connection, flow_end_connection) in &mut flow_query {
-        for (target, mut transform, nesting_level) in &mut external_entity_query {
-            let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-
-            let right = if flow_start_connection.target == target {
-                let right = (transform.translation.truncate() - flow_curve.end - flow_curve.end_direction).normalize();
-                flow_curve.start_direction = -right * FLOW_END_LENGTH * scale;
-
-                right
-            } else if flow_end_connection.target == target {
-                let right = (transform.translation.truncate() - flow_curve.start - flow_curve.start_direction).normalize();
-                flow_curve.end_direction = -right * FLOW_END_LENGTH * scale;
-
-                right
-            } else {
-                continue;
-            };
-
-            transform.rotation = Quat::from_rotation_z(right.to_angle());
         }
     }
 }
@@ -165,6 +145,13 @@ pub fn drag_interface(
     mut transform_query: Query<&mut Transform, Without<crate::components::System>>,
     parent_query: Query<&Parent>,
     system_query: Query<&crate::components::System>,
+    flow_query: Query<(
+        &FlowCurve,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
+        &FlowStartConnection,
+        &FlowEndConnection,
+    )>,
     zoom: Res<Zoom>,
 ) {
     for event in events.read() {
@@ -195,6 +182,50 @@ pub fn drag_interface(
         transform.rotation = Quat::from_rotation_z(pos.to_angle());
 
         transform.translation = pos.extend(transform.translation.z);
+
+        let mut external_entity = Entity::PLACEHOLDER;
+        let mut external_entity_pos = Vec2::ZERO;
+        let mut other_end = Vec2::ZERO;
+        let mut other_end_direction = Vec2::ZERO;
+
+        for (
+            flow_curve,
+            flow_start_interface_connection,
+            flow_end_interface_connection,
+            flow_start_connection,
+            flow_end_connection,
+        ) in &flow_query
+        {
+            if let Some(flow_start_interface_connection) = flow_start_interface_connection {
+                if flow_start_interface_connection.target == event.target
+                    && flow_end_connection.target_type == EndTargetType::Sink
+                {
+                    external_entity = flow_end_connection.target;
+                    external_entity_pos = flow_curve.end;
+                    other_end = flow_curve.start;
+                    other_end_direction = flow_curve.start_direction;
+                    break; // TODO : multiconnection
+                }
+            }
+            if let Some(flow_end_interface_connection) = flow_end_interface_connection {
+                if flow_end_interface_connection.target == event.target
+                    && flow_start_connection.target_type == StartTargetType::Source
+                {
+                    external_entity = flow_start_connection.target;
+                    external_entity_pos = flow_curve.start;
+                    other_end = flow_curve.end;
+                    other_end_direction = flow_curve.end_direction;
+                    break; // TODO : multiconnection
+                }
+            }
+        }
+
+        let mut transform = transform_query
+            .get_mut(external_entity)
+            .expect("External entity should have a Transform");
+
+        transform.rotation =
+            compute_external_entity_rotation(external_entity_pos, other_end, other_end_direction);
     }
 }
 
@@ -240,4 +271,9 @@ pub fn update_flow_from_interface_subsystem(
             let _ = transform.deref_mut();
         }
     }
+}
+
+fn compute_external_entity_rotation(pos: Vec2, other_end: Vec2, other_end_direction: Vec2) -> Quat {
+    let dir = pos - other_end - other_end_direction;
+    Quat::from_rotation_z(dir.to_angle())
 }

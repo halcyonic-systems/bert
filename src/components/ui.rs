@@ -63,7 +63,7 @@ impl FlowCurve {
             end_direction: direction * FLOW_END_LENGTH * zoom,
         }
     }
-    
+
     pub fn outflow(
         zoom: f32,
         initial_position: InitialPosition,

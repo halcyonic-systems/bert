@@ -142,7 +142,6 @@ fn main() {
             update_flow_from_system.before(update_flow_from_interface),
             update_flow_from_interface,
             update_flow_from_external_entity,
-            update_external_entity_from_flow,
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
             update_pin_rotation
         ),
