@@ -84,3 +84,15 @@ impl FlowCurve {
 pub struct SelectedHighlightHelperAdded {
     pub helper_entity: Entity,
 }
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
+#[reflect(Component)]
+pub struct Pin {
+       pub target: Entity,
+}
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Default)]
+#[reflect(Component)]
+pub struct Pinnable {
+        pub has_pins: bool
+}

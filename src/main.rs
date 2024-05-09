@@ -131,6 +131,7 @@ fn main() {
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
                 update_interface_subsystem_color_from_interface,
                 update_system_color_from_subsystem,
+                update_pins
             ),
         ),
     )
@@ -175,7 +176,9 @@ fn main() {
     .register_type::<InterfaceSubsystemButton>()
     .register_type::<FlowCurve>()
     .register_type::<InitialPosition>()
-    .register_type::<SelectedHighlightHelperAdded>();
+    .register_type::<SelectedHighlightHelperAdded>()
+    .register_type::<Pinnable>()
+    .register_type::<Pin>();
 
     app.world.resource_mut::<Assets<ColorMaterial>>().insert(
         WHITE_COLOR_MATERIAL_HANDLE,

@@ -4,6 +4,7 @@ mod flow;
 mod interface;
 mod main_system;
 mod subsystem;
+mod pin;
 
 pub use create_button::*;
 pub use external_entity::*;
@@ -11,3 +12,4 @@ pub use flow::*;
 pub use interface::*;
 pub use main_system::*;
 pub use subsystem::*;
+pub use pin::*;

@@ -4,6 +4,7 @@ mod drag;
 mod flow;
 mod selected_helper;
 mod zoom;
+mod pin;
 
 use crate::plugins::mouse_interaction::{deselect_all, PickSelection};
 pub use add_remove_buttons::*;
@@ -12,6 +13,7 @@ pub use drag::*;
 pub use flow::*;
 pub use selected_helper::*;
 pub use zoom::*;
+pub use pin::*;
 
 use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_external_entity,

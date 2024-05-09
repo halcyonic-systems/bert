@@ -89,6 +89,7 @@ pub fn spawn_interface_subsystem(
             description,
         ),
         interface_subsystem,
+        Pinnable { has_pins: false },
     ));
 
     if is_import_subsystem {

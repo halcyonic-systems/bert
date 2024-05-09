@@ -1,6 +1,7 @@
 use crate::bundles::SystemBundle;
 use crate::components::{SystemBoundary, SystemEnvironment};
 use crate::constants::MAIN_SYSTEM_RADIUS;
+use crate::Pinnable;
 use bevy::math::Vec2;
 use bevy::prelude::*;
 
@@ -33,6 +34,9 @@ pub fn spawn_main_system(
                 description,
             ),
             SystemEnvironment::default(),
+            Pinnable {
+                has_pins: false
+            },
         ))
         .id()
 }

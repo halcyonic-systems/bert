@@ -36,6 +36,7 @@ pub fn setup(
         "",
         &mut meshes,
     );
+    
 
     commands.insert_resource(FocusedSystem::new(system_entity));
 
