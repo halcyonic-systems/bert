@@ -2,8 +2,7 @@ use crate::bundles::FixedSystemElementGeometry;
 use crate::components::NestingLevel;
 use crate::constants::{
     EXTERNAL_ENTITY_HEIGHT_HALF, EXTERNAL_ENTITY_WIDTH_HALF, FLOW_CLICK_WIDTH,
-    INTERFACE_HEIGHT_HALF, INTERFACE_LINE_WIDTH, INTERFACE_WIDTH_HALF,
-    WHITE_COLOR_MATERIAL_HANDLE,
+    INTERFACE_HEIGHT_HALF, INTERFACE_LINE_WIDTH, INTERFACE_WIDTH_HALF, WHITE_COLOR_MATERIAL_HANDLE,
 };
 use crate::resources::StrokeTessellator;
 use crate::systems::tessellate_simplified_mesh;
@@ -83,7 +82,6 @@ pub fn build_external_entity_path(scale: f32) -> Path {
     external_entity_path_builder.line_to(vec2(-width_half, -height_half));
     external_entity_path_builder.line_to(vec2(width_half, -height_half));
 
-    
     external_entity_path_builder.build()
 }
 
@@ -135,9 +133,8 @@ pub fn build_interface_simplified_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
     scale: f32,
 ) -> Handle<Mesh> {
-    meshes
-        .add(Rectangle::new(
-            (INTERFACE_WIDTH_HALF + INTERFACE_LINE_WIDTH) * scale * 2.0,
-            (INTERFACE_HEIGHT_HALF + INTERFACE_LINE_WIDTH) * scale * 2.0,
-        ))
+    meshes.add(Rectangle::new(
+        (INTERFACE_WIDTH_HALF + INTERFACE_LINE_WIDTH) * scale * 2.0,
+        (INTERFACE_HEIGHT_HALF + INTERFACE_LINE_WIDTH) * scale * 2.0,
+    ))
 }

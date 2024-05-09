@@ -35,7 +35,7 @@ pub struct System {
 
 #[derive(Clone, Debug, PartialEq, Reflect, Default)]
 pub struct SystemBoundary {
-    pub porosity: f32, // TODO: Implement Decimal Type
+    pub porosity: f32,             // TODO: Implement Decimal Type
     pub perceptive_fuzziness: f32, // TODO: Implement Decimal Type
     pub name: String,
     pub description: String,

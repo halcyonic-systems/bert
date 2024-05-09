@@ -54,7 +54,6 @@ macro_rules! button_transform {
                 let mut max_angle = -f32::MAX;
 
                 for angle in existing_interface_angles {
-
                     min_angle = min_angle.min(angle);
                     max_angle = max_angle.max(angle);
                 }

@@ -34,9 +34,7 @@ pub fn spawn_main_system(
                 description,
             ),
             SystemEnvironment::default(),
-            Pinnable {
-                has_pins: false
-            },
+            Pinnable { has_pins: false },
         ))
         .id()
 }

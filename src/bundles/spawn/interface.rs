@@ -4,9 +4,7 @@ use crate::events::InterfaceDrag;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
-use crate::resources::{
-    FixedSystemElementGeometriesByNestingLevel, StrokeTessellator,
-};
+use crate::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
 use crate::utils::ui_transform_from_button;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -64,9 +62,7 @@ pub fn spawn_interface(
         ))
         .id();
 
-    commands
-        .entity(focused_system)
-        .add_child(interface_entity);
+    commands.entity(focused_system).add_child(interface_entity);
 
     let mut entity_commands = commands.entity(flow_entity);
 

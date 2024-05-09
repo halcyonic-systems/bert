@@ -1,7 +1,5 @@
 use crate::components::{FlowCurve, NestingLevel};
-use crate::constants::{
-    FLOW_ARROW_HEAD_LENGTH, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH,
-};
+use crate::constants::{FLOW_ARROW_HEAD_LENGTH, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH};
 use crate::resources::{StrokeTessellator, Zoom};
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};

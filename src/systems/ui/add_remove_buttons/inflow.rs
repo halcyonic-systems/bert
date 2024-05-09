@@ -68,9 +68,7 @@ pub fn add_inflow_create_button(
                     false
                 };
 
-            if outflow_usabilities.len() > 1
-                || is_export_subsystem
-                || is_completed_import_subsystem
+            if outflow_usabilities.len() > 1 || is_export_subsystem || is_completed_import_subsystem
             {
                 for inflow_end_connection in incomplete_inflow_query.iter() {
                     if inflow_end_connection.target == system_entity {

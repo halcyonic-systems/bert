@@ -257,8 +257,10 @@ macro_rules! spawn_complete_flow {
             );
 
             let transform = if let Some(t2d) = external_entity_transform {
-                Transform::from_translation((t2d.translation * zoom).extend(transform.translation.z))
-                    .with_rotation(Quat::from_rotation_z(t2d.rotation))
+                Transform::from_translation(
+                    (t2d.translation * zoom).extend(transform.translation.z),
+                )
+                .with_rotation(Quat::from_rotation_z(t2d.rotation))
             } else {
                 let right = transform.right();
                 transform.translation += right * FLOW_LENGTH;

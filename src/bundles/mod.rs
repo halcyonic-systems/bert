@@ -96,7 +96,7 @@ impl SystemBundle {
                 idle: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH * scale),
                 selected: Stroke::new(Color::BLACK, SYSTEM_SELECTED_LINE_WIDTH),
             },
-            initial_position: InitialPosition::new(position)
+            initial_position: InitialPosition::new(position),
         }
     }
 }

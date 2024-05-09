@@ -88,11 +88,11 @@ pub struct SelectedHighlightHelperAdded {
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]
 pub struct Pin {
-       pub target: Entity,
+    pub target: Entity,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Default)]
 #[reflect(Component)]
 pub struct Pinnable {
-        pub has_pins: bool
+    pub has_pins: bool,
 }

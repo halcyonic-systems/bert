@@ -1,6 +1,6 @@
 use crate::components::{
-    ElementDescription, Flow, InflowUsability, Interface, OutflowUsability, SubstanceType, System,
-    SystemElement, SystemEnvironment, Usability, ExternalEntity
+    ElementDescription, ExternalEntity, Flow, InflowUsability, Interface, OutflowUsability,
+    SubstanceType, System, SystemElement, SystemEnvironment, Usability,
 };
 use crate::plugins::mouse_interaction::PickSelection;
 use bevy::prelude::*;
@@ -112,10 +112,7 @@ fn system_of_interest_egui(
     mut_environment_egui(ui, system_environment);
 }
 
-fn boundary_egui(
-    ui: &mut Ui,
-    system: &mut System,
-) { 
+fn boundary_egui(ui: &mut Ui, system: &mut System) {
     ui.vertical_centered(|ui| {
         ui.label("Boundary");
     });
@@ -149,10 +146,7 @@ fn boundary_egui(
     });
 }
 
-fn mut_environment_egui(
-    ui: &mut Ui,
-    system_environment: &mut SystemEnvironment,
-) {
+fn mut_environment_egui(ui: &mut Ui, system_environment: &mut SystemEnvironment) {
     ui.vertical_centered(|ui| {
         ui.label("Environment");
     });
@@ -209,7 +203,7 @@ pub fn egui_selected_context(
     mut flow_query: Query<&mut Flow>,
     mut system_environment_query: Query<&mut SystemEnvironment>,
     mut system_query: Query<&mut System>,
-    mut external_entity_query: Query<&mut ExternalEntity>
+    mut external_entity_query: Query<&mut ExternalEntity>,
 ) {
     for (entity, selectable, system_element, mut name, mut description) in &mut selectable_query {
         if !selectable.is_selected {
@@ -225,8 +219,7 @@ pub fn egui_selected_context(
             };
             style.spacing.item_spacing = vec2(10.0, 10.0);
         });
-        egui::SidePanel::right(system_element.to_string())
-            .show(egui_contexts.ctx_mut(), |ui| {
+        egui::SidePanel::right(system_element.to_string()).show(egui_contexts.ctx_mut(), |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading("Element Details");
             });
@@ -255,25 +248,16 @@ pub fn egui_selected_context(
                                 .get_mut(entity)
                                 .expect("Interface not found"),
                         ),
-                        SystemElement::System => { 
-                            let mut system = system_query
-                                .get_mut(entity)
-                                .expect("System not found");
-                            
+                        SystemElement::System => {
+                            let mut system =
+                                system_query.get_mut(entity).expect("System not found");
+
                             if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
-                                system_of_interest_egui(
-                                    ui,
-                                    &mut system,
-                                    &mut sys_env
-                                )
+                                system_of_interest_egui(ui, &mut system, &mut sys_env)
                             } else {
-                                subsystem_egui(
-                                    ui,
-                                    &mut system,
-                                    &SystemEnvironment::default()
-                                )
+                                subsystem_egui(ui, &mut system, &SystemEnvironment::default())
                             }
-                        },
+                        }
                         SystemElement::Inflow => inflow_egui(
                             ui,
                             &mut flow_query.get_mut(entity).expect("Inflow not found"),
@@ -284,8 +268,10 @@ pub fn egui_selected_context(
                         ),
                         SystemElement::ExternalEntity => external_entity_egui(
                             ui,
-                            &mut external_entity_query.get_mut(entity).expect("External Entity not found"),
-                        )
+                            &mut external_entity_query
+                                .get_mut(entity)
+                                .expect("External Entity not found"),
+                        ),
                     };
                 });
         });

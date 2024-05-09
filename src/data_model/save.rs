@@ -168,7 +168,12 @@ macro_rules! process_external_flow {
                 &crate::components::Interface,
                 &Transform,
             )>,
-            external_entity_query: &Query<(&Name, &ElementDescription, &Transform, &InitialPosition)>,
+            external_entity_query: &Query<(
+                &Name,
+                &ElementDescription,
+                &Transform,
+                &InitialPosition,
+            )>,
             system_entity: Entity,
             interfaces: &mut Vec<crate::data_model::Interface>,
             interactions: &mut Vec<crate::data_model::Interaction>,
@@ -238,10 +243,14 @@ macro_rules! process_external_flow {
 
                 interfaces.push(interface);
 
-                let (external_entity_name, external_entity_description, external_entity_transform, initial_position) =
-                    external_entity_query
-                        .get(source_connection.target)
-                        .expect("External entity should exist");
+                let (
+                    external_entity_name,
+                    external_entity_description,
+                    external_entity_transform,
+                    initial_position,
+                ) = external_entity_query
+                    .get(source_connection.target)
+                    .expect("External entity should exist");
 
                 external_entities.push(crate::data_model::ExternalEntity {
                     info: Info {
@@ -252,7 +261,10 @@ macro_rules! process_external_flow {
                     },
                     ty: $external_entity_ty,
                     interactions: vec![interaction_id], // TODO : multiple
-                    transform: Some(Transform2d::from((external_entity_transform, initial_position))),
+                    transform: Some(Transform2d::from((
+                        external_entity_transform,
+                        initial_position,
+                    ))),
                 });
             }
         }
