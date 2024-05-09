@@ -1,8 +1,6 @@
-use crate::components::{
-    ElementDescription, ExternalEntity, Flow, InflowUsability, Interface, OutflowUsability,
-    SubstanceType, System, SystemElement, SystemEnvironment, Usability,
-};
+use crate::components::*;
 use crate::plugins::mouse_interaction::PickSelection;
+use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy_egui::egui::{vec2, ComboBox, DragValue, Margin, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
@@ -103,7 +101,7 @@ fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
 
 fn system_of_interest_egui(
     ui: &mut Ui,
-    system: &mut System,
+    system: &mut crate::components::System,
     system_environment: &mut SystemEnvironment,
 ) {
     ui.separator();
@@ -112,7 +110,7 @@ fn system_of_interest_egui(
     mut_environment_egui(ui, system_environment);
 }
 
-fn boundary_egui(ui: &mut Ui, system: &mut System) {
+fn boundary_egui(ui: &mut Ui, system: &mut crate::components::System) {
     ui.vertical_centered(|ui| {
         ui.label("Boundary");
     });
@@ -164,7 +162,7 @@ fn mut_environment_egui(ui: &mut Ui, system_environment: &mut SystemEnvironment)
     });
 }
 
-fn subsystem_egui(ui: &mut Ui, system: &mut System, system_environment: &SystemEnvironment) {
+fn subsystem_egui(ui: &mut Ui, system: &mut crate::components::System, system_environment: &SystemEnvironment) {
     ui.separator();
     boundary_egui(ui, system);
     ui.separator();
@@ -202,7 +200,7 @@ pub fn egui_selected_context(
     mut interface_query: Query<&mut Interface>,
     mut flow_query: Query<&mut Flow>,
     mut system_environment_query: Query<&mut SystemEnvironment>,
-    mut system_query: Query<&mut System>,
+    mut system_query: Query<&mut crate::components::System>,
     mut external_entity_query: Query<&mut ExternalEntity>,
 ) {
     for (entity, selectable, system_element, mut name, mut description) in &mut selectable_query {
@@ -275,5 +273,36 @@ pub fn egui_selected_context(
                     };
                 });
         });
+    }
+}
+
+pub fn absorb_egui_inputs(
+    mut contexts: EguiContexts,
+    mut mouse: ResMut<ButtonInput<MouseButton>>,
+    mut mouse_wheel: ResMut<Events<MouseWheel>>,
+    mut keyboard: ResMut<ButtonInput<KeyCode>>,
+) {
+    let ctx = contexts.ctx_mut();
+    if ctx.wants_pointer_input() || ctx.is_pointer_over_area() {
+        let modifiers = [
+            KeyCode::SuperLeft,
+            KeyCode::SuperRight,
+            KeyCode::ControlLeft,
+            KeyCode::ControlRight,
+            KeyCode::AltLeft,
+            KeyCode::AltRight,
+            KeyCode::ShiftLeft,
+            KeyCode::ShiftRight,
+        ];
+
+        let pressed = modifiers.map(|key| keyboard.pressed(key).then_some(key));
+
+        mouse.reset_all();
+        mouse_wheel.clear();
+        keyboard.reset_all();
+
+        for key in pressed.into_iter().flatten() {
+            keyboard.press(key);
+        }
     }
 }

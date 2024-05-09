@@ -1,14 +1,12 @@
 use crate::bundles::spawn_main_system;
-use crate::components::NestingLevel;
 use crate::constants::*;
 use crate::resources::*;
 use bevy::prelude::*;
 use bevy::render::deterministic::DeterministicRenderingConfig;
-use rust_decimal_macros::dec;
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
 
-#[cfg_attr(feature = "init_complete_system", allow(unused_variables))]
+#[allow(unused_variables)]
 pub fn setup(
     mut commands: Commands,
     zoom: Res<Zoom>,
@@ -51,7 +49,7 @@ pub fn setup(
                 system: system_entity,
                 substance_type: None,
             },
-            vec2(MAIN_SYSTEM_RADIUS, 0.0),
+            bevy::math::vec2(MAIN_SYSTEM_RADIUS, 0.0),
             0.0,
             **zoom,
             Some(system_entity),
@@ -64,7 +62,7 @@ pub fn setup(
 pub fn init_complete_system(
     mut commands: Commands,
     subsystem_query: Query<&crate::components::Subsystem>,
-    nesting_query: Query<&NestingLevel>,
+    nesting_query: Query<&crate::components::NestingLevel>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
@@ -73,6 +71,7 @@ pub fn init_complete_system(
 ) {
     use crate::bundles::*;
     use crate::components::*;
+    use rust_decimal_macros::dec;
 
     spawn_complete_outflow(
         &mut commands,

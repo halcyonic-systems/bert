@@ -64,16 +64,22 @@ fn main() {
         ));
 
     app.add_systems(
+        PreUpdate,
+        (absorb_egui_inputs,)
+            .after(bevy_egui::systems::process_input_system)
+            .before(bevy_egui::EguiSet::BeginFrame),
+    );
+
+    app.add_systems(
         Update,
         (
             (
                 egui_selected_context,
                 change_focused_system,
                 draw_flow_curve,
-                drag_external_entity,
-                drag_interface,
                 update_initial_position_from_transform,
             ),
+            (drag_external_entity, drag_interface),
             (
                 add_outflow_interface_create_button,
                 add_inflow_interface_create_button,
