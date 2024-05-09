@@ -12,9 +12,7 @@ pub fn spawn_pin(
         let pin_width = BUTTON_WIDTH_HALF * 2.0;
         let pin_entity = commands
             .spawn((
-                Pin {
-                    target: *parent
-                },
+                Pin { target: *parent },
                 Name::new(name),
                 SpriteBundle {
                     texture: asset_server.load(path),
