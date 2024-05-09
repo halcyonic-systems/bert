@@ -3,7 +3,7 @@ use crate::constants::*;
 use bevy::prelude::*;
 
 pub fn spawn_pin(parent: &Entity, commands: &mut Commands, asset_server: &Res<AssetServer>) {
-    let path = "todo-pin.png";
+    let path = "pin/energy-deficit-pin.png";
     let name = "Pin";
     let pin_width = BUTTON_WIDTH_HALF * 2.0;
     let pin_entity = commands
