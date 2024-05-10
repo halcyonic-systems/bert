@@ -89,7 +89,7 @@ fn main() {
                 add_interface_subsystem_create_buttons,
                 add_outflow_create_button,
                 remove_unfocused_system_buttons,
-                update_unpinned_pinnables,
+                // update_unpinned_pinnables,
             )
                 .in_set(CreateButtonSet),
             (
@@ -149,7 +149,7 @@ fn main() {
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
-            update_pin_rotation,
+            // update_pin_rotation,
         ),
     )
     .configure_sets(
