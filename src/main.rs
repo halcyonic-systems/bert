@@ -23,6 +23,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
+use data_model::file_dialog::*;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct RemovalCleanupSet;
@@ -47,6 +48,7 @@ fn main() {
         LyonSelectionPlugin,
         MouseInteractionPlugin,
     ))
+    .init_state::<FileImportState>()
     .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
@@ -59,8 +61,10 @@ fn main() {
     app.add_systems(Startup, init_complete_system.after(setup));
 
     let wheel_zoom_condition = input_pressed(KeyCode::ControlLeft)
-        .or_else(input_pressed(KeyCode::ControlRight).or_else(
-            input_pressed(KeyCode::SuperLeft).or_else(input_pressed(KeyCode::SuperRight)),
+        .or_else(
+            input_pressed(KeyCode::ControlRight)
+                .or_else(input_pressed(KeyCode::SuperLeft)
+                .or_else(input_pressed(KeyCode::SuperRight)),
         ));
 
     app.add_systems(
@@ -106,16 +110,22 @@ fn main() {
                     .run_if(wheel_zoom_condition),
             )
                 .in_set(CameraControlSet),
-            (
+            (                
+                import_file.run_if(in_state(FileImportState::Inactive)
+                    .and_then(input_pressed(KeyCode::SuperLeft))
+                    .and_then(input_just_pressed(KeyCode::KeyL))
+                ),
+                file_dialog_selection
+                    .run_if(in_state(FileImportState::Select)),
+                poll_for_selected_file
+                    .run_if(in_state(FileImportState::Poll)),
+                load_world
+                    .run_if(in_state(FileImportState::Load)),
+                import_clean_up
+                    .run_if(in_state(FileImportState::CleanUp)),
                 save_world.run_if(
-                    input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyS)),
-                ),
-                load_world.run_if(
-                    input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyL)),
-                ),
-                remove_selected_elements.run_if(
-                    input_just_pressed(KeyCode::Delete)
-                        .or_else(input_just_pressed(KeyCode::Backspace)),
+                    input_pressed(KeyCode::SuperLeft)
+                    .and_then(input_just_pressed(KeyCode::KeyS)),
                 ),
             ),
             (cleanup_external_entity_removal,).in_set(RemovalCleanupSet),
