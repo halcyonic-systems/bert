@@ -79,13 +79,17 @@ fn main() {
                 draw_flow_curve,
                 update_initial_position_from_transform,
             ),
-            (drag_external_entity, drag_interface),
+            (
+                drag_external_entity,
+                drag_interface
+            ),
             (
                 add_outflow_interface_create_button,
                 add_inflow_interface_create_button,
                 add_source_create_button,
                 add_sink_create_button,
-                add_inflow_create_button.run_if(inflow_create_button_needs_update),
+                add_inflow_create_button
+                    .run_if(inflow_create_button_needs_update),
                 add_interface_subsystem_create_buttons,
                 add_outflow_create_button,
                 remove_unfocused_system_buttons,
@@ -93,10 +97,13 @@ fn main() {
             )
                 .in_set(CreateButtonSet),
             (
-                pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
-                pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition.clone())),
+                pan_camera_with_mouse
+                    .run_if(input_pressed(MouseButton::Right)),
+                pan_camera_with_mouse_wheel
+                    .run_if(not(wheel_zoom_condition.clone())),
                 control_zoom_from_keyboard,
-                control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition),
+                control_zoom_from_mouse_wheel
+                    .run_if(wheel_zoom_condition),
             )
                 .in_set(CameraControlSet),
             (
@@ -144,20 +151,26 @@ fn main() {
     .add_systems(
         PostUpdate,
         (
-            update_flow_from_interface_subsystem.before(update_flow_from_system),
-            update_flow_from_system.before(update_flow_from_interface),
+            update_flow_from_interface_subsystem
+                .before(update_flow_from_system),
+            update_flow_from_system
+                .before(update_flow_from_interface),
             update_flow_from_interface,
             update_flow_from_external_entity,
-            update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
-            // update_pin_rotation,
+            update_interface_subsystem_from_flows
+                .run_if(interface_subsystem_should_update),
+            //update_pin_rotation,
         ),
     )
     .configure_sets(
         Update,
         (
-            RemovalCleanupSet.after(remove_selected_elements),
-            CreateButtonSet.after(RemovalCleanupSet),
-            ZoomSet.run_if(resource_changed::<Zoom>),
+            RemovalCleanupSet
+                .after(remove_selected_elements),
+            CreateButtonSet
+                .after(RemovalCleanupSet),
+            ZoomSet
+                .run_if(resource_changed::<Zoom>),
         ),
     )
     .register_type::<FlowStartInterfaceConnection>()

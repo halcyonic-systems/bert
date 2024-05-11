@@ -25,7 +25,8 @@ impl Plugin for MouseInteractionPlugin {
                     handle_mouse_down
                         .run_if(input_just_pressed(MouseButton::Left))
                         .after(mouse_screen_to_world_position),
-                    handle_mouse_up.run_if(input_just_released(MouseButton::Left)),
+                    handle_mouse_up
+                        .run_if(input_just_released(MouseButton::Left)),
                     handle_mouse_drag
                         .run_if(input_pressed(MouseButton::Left))
                         .after(handle_mouse_down),
