@@ -53,7 +53,7 @@ pub fn import_file(
         next_state.set(state.get().next());
 }
 
-pub fn file_dialog_selection(
+pub fn open_import_dialog_selection(
     mut commands: Commands,
     state: Res<State<FileImportState>>,
     mut next_state: ResMut<NextState<FileImportState>>,
@@ -62,7 +62,9 @@ pub fn file_dialog_selection(
     info!("Start Polling");
 
     let task = thread_pool.spawn(async move {
-        FileDialog::new().pick_file()
+        FileDialog::new()
+                .add_filter("valid_formats", &["json"])
+                .pick_file()
     });
     commands.spawn(SelectedFileTask(task));
     next_state.set(state.get().next());

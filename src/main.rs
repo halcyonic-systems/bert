@@ -23,7 +23,10 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
-use data_model::file_dialog::*;
+use data_model::{
+    export_file_dialog::*,
+    import_file_dialog::*
+};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct RemovalCleanupSet;
@@ -49,6 +52,7 @@ fn main() {
         MouseInteractionPlugin,
     ))
     .init_state::<FileImportState>()
+    .init_state::<FileExportState>()
     .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
@@ -111,11 +115,12 @@ fn main() {
             )
                 .in_set(CameraControlSet),
             (                
-                import_file.run_if(in_state(FileImportState::Inactive)
+                import_file
+                    .run_if(in_state(FileImportState::Inactive)
                     .and_then(input_pressed(KeyCode::SuperLeft))
                     .and_then(input_just_pressed(KeyCode::KeyL))
                 ),
-                file_dialog_selection
+                open_import_dialog_selection
                     .run_if(in_state(FileImportState::Select)),
                 poll_for_selected_file
                     .run_if(in_state(FileImportState::Poll)),
@@ -123,10 +128,19 @@ fn main() {
                     .run_if(in_state(FileImportState::Load)),
                 import_clean_up
                     .run_if(in_state(FileImportState::CleanUp)),
-                save_world.run_if(
-                    input_pressed(KeyCode::SuperLeft)
-                    .and_then(input_just_pressed(KeyCode::KeyS)),
+                export_file
+                    .run_if(in_state(FileExportState::Inactive)
+                    .and_then(input_pressed(KeyCode::SuperLeft))
+                    .and_then(input_just_pressed(KeyCode::KeyS))
                 ),
+                open_export_dialog
+                    .run_if(in_state(FileExportState::Select)),
+                poll_for_export_file
+                    .run_if(in_state(FileExportState::Poll)),
+                save_world
+                    .run_if(in_state(FileExportState::Save)),
+                export_clean_up
+                    .run_if(in_state(FileExportState::CleanUp)),
             ),
             (cleanup_external_entity_removal,).in_set(RemovalCleanupSet),
             (

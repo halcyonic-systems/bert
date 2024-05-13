@@ -4,6 +4,9 @@ use bevy::core::Name;
 use bevy::prelude::*;
 
 pub fn save_world(
+    state: Res<State<FileExportState>>,
+    mut next_state: ResMut<NextState<FileExportState>>,
+    save_file_query: Query<&SaveFile>,
     main_system_info_query: Query<
         (
             Entity,
@@ -145,7 +148,13 @@ pub fn save_world(
     };
 
     let model = WorldModel { system_of_interest };
-    save_to_json(&model, "world_model.json");
+
+    let save_file = save_file_query
+        .get_single()
+        .expect("there should only be 1 selected file");
+    
+    save_to_json(&model, save_file.path_buf.to_str().unwrap());
+    next_state.set(state.get().next());
 }
 
 macro_rules! process_external_flow {
