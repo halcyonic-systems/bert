@@ -28,5 +28,5 @@ pub fn pan_camera_with_mouse_wheel(
 pub fn reset_camera_position(
     mut camera_query: Query<&mut Transform, With<Camera>>
 ) {
-    camera_query.single_mut().translation = Vec3::new(0.0, 0.0, 1.000);   
+    camera_query.single_mut().translation = Vec3::new(0.0, 0.0, 1000.);   
 }

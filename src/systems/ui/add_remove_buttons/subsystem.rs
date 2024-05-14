@@ -80,7 +80,14 @@ pub fn add_interface_subsystem_create_buttons(
 
         let interface_button = interface_button_query.get(interface_entity);
 
-        if flow_usabilities.len() > 3 && !incomplete_flows_exist {
+        let usability_conditions = [
+            GeneralUsability::Inflow(InflowUsability::from_useful(true)),
+            GeneralUsability::Outflow(OutflowUsability::from_useful(true)),
+        ];
+        let usability_conditions_met = usability_conditions.iter().all(|condition| {
+            flow_usabilities.contains(condition)
+        });
+        if usability_conditions_met && !incomplete_flows_exist {
             if interface_button.is_err() && interface_subsystem_query.get(interface_entity).is_err()
             {
                 spawn_create_button(
