@@ -6,17 +6,65 @@ use bevy_egui::egui::{vec2, ComboBox, DragValue, Margin, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
 use rust_decimal::Decimal;
 
+
+
+macro_rules! h_wrap {
+    ($ui:expr, $body:expr) => {
+        $ui.horizontal( $body );
+    }
+}
+
+macro_rules! vc_wrap {
+    ($ui:expr, $body:expr) => {
+        $ui.vertical_centered( $body );
+    }
+}
+
+macro_rules! h_label {
+    ($ui:expr, $data:expr) => {
+        $ui.horizontal(|ui| {
+            ui.label($data);
+        });
+    }
+}
+
+macro_rules! vc_label {
+    ($ui:expr, $data:expr) => {
+        $ui.vertical_centered(|ui| {
+            ui.label($data);
+        });
+    }
+}
+
+macro_rules! vcj_label {
+    ($ui:expr, $data:expr) => {
+        $ui.vertical_centered_justified(|ui| {
+            ui.label($data);
+        });
+    }
+}
+
+macro_rules! vcj_text_edit {
+    ($ui:expr, $data:expr, $multi_line_flag:expr) => {
+        $ui.vertical_centered_justified(|ui| {
+            if $multi_line_flag {
+                ui.text_edit_multiline($data);
+            } else {
+                ui.text_edit_singleline($data);
+            }
+        });
+    }
+}
+
+
 fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
-    ui.horizontal(|ui| {
-        ui.label("Protocol: ");
-        ui.text_edit_multiline(&mut interface.protocol);
-    });
+    h_label!(ui, "Protocol");
+    vcj_text_edit!(ui, &mut interface.protocol, true);
 }
 
 fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
+    h_label!(ui, "Usability");
     ui.horizontal(|ui| {
-        ui.label("Usability");
-
         OutflowUsability::mutate(&mut flow.is_useful, |outflow_usability| {
             ComboBox::from_label("")
                 .selected_text(format!("{:?}", outflow_usability))
@@ -33,36 +81,32 @@ fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
 }
 
 fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
+    h_label!(ui, "Substance Type");
     ui.horizontal(|ui| {
-        ui.label("Substance Type");
         ComboBox::from_label(" ")
             .selected_text(format!("{:?}", flow.substance_type))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap = Some(false);
                 ui.set_min_width(60.0);
-                ui.selectable_value(&mut flow.substance_type, SubstanceType::Energy, "Energy");
-                ui.selectable_value(
-                    &mut flow.substance_type,
-                    SubstanceType::Material,
-                    "Material",
-                );
+                ui.selectable_value(&mut flow.substance_type, SubstanceType::Energy,  "Energy");
+                ui.selectable_value(&mut flow.substance_type, SubstanceType::Material,"Material");
                 ui.selectable_value(&mut flow.substance_type, SubstanceType::Message, "Message");
             });
     });
-    ui.horizontal(|ui| {
-        ui.label("Substance Unit: ");
-        ui.text_edit_singleline(&mut flow.unit);
-    });
+    h_label!(ui, "Substance Unit");
+    vcj_text_edit!(ui, &mut flow.unit, false);
+
     // TODO : allow empty strings
     let mut amount_string = flow.amount.to_string();
+    h_label!(ui, "Substance Amount");
     ui.horizontal(|ui| {
-        ui.label("Substance Amount: ");
         ui.text_edit_singleline(&mut amount_string);
         only_valid_positive_decimal(&mut amount_string, &mut flow.amount);
     });
     let mut time_unit_string = flow.time_unit.to_string();
+    h_label!(ui, "Time Unit");
+    
     ui.horizontal(|ui| {
-        ui.label("Time Unit: ");
         ui.text_edit_singleline(&mut time_unit_string);
         only_valid_positive_decimal(&mut time_unit_string, &mut flow.time_unit);
     });
@@ -77,9 +121,8 @@ pub fn only_valid_positive_decimal(s: &mut String, decimal: &mut Decimal) {
 }
 
 fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
+    h_label!(ui, "Usability");
     ui.horizontal(|ui| {
-        ui.label("Usability");
-
         InflowUsability::mutate(&mut flow.is_useful, |inflow_usability| {
             ComboBox::from_label("")
                 .selected_text(format!("{:?}", inflow_usability))
@@ -87,11 +130,7 @@ fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
                     ui.style_mut().wrap = Some(false);
                     ui.set_min_width(60.0);
                     ui.selectable_value(inflow_usability, InflowUsability::Resource, "Resource");
-                    ui.selectable_value(
-                        inflow_usability,
-                        InflowUsability::Disruption,
-                        "Disruption",
-                    );
+                    ui.selectable_value(inflow_usability, InflowUsability::Disruption,"Disruption");
                 });
         });
     });
@@ -111,22 +150,15 @@ fn system_of_interest_egui(
 }
 
 fn boundary_egui(ui: &mut Ui, system: &mut crate::components::System) {
-    ui.vertical_centered(|ui| {
-        ui.label("Boundary");
-    });
-    ui.horizontal(|ui| {
-        ui.label("Name");
-    });
-    ui.vertical_centered_justified(|ui| {
-        ui.text_edit_singleline(&mut system.boundary.name);
-    });
-    ui.horizontal(|ui| {
-        ui.label("Description");
-    });
-    ui.vertical_centered_justified(|ui| {
-        ui.text_edit_multiline(&mut system.boundary.description);
-    });
-    ui.horizontal(|ui| {
+    vc_label!(ui, "Boundary");
+
+    h_label!(ui, "Name");
+    vcj_text_edit!(ui, &mut system.boundary.name, false);
+
+    h_label!(ui, "Description");
+    vcj_text_edit!(ui, &mut system.boundary.description, true);
+
+    h_wrap!(ui, |ui| {
         ui.label("Porosity");
         ui.add(
             DragValue::new(&mut system.boundary.porosity)
@@ -134,7 +166,7 @@ fn boundary_egui(ui: &mut Ui, system: &mut crate::components::System) {
                 .clamp_range(0.0..=1.0),
         );
     });
-    ui.horizontal(|ui| {
+    h_wrap!(ui, |ui| {
         ui.label("Perceptive Fuzziness");
         ui.add(
             DragValue::new(&mut system.boundary.perceptive_fuzziness)
@@ -145,42 +177,27 @@ fn boundary_egui(ui: &mut Ui, system: &mut crate::components::System) {
 }
 
 fn mut_environment_egui(ui: &mut Ui, system_environment: &mut SystemEnvironment) {
-    ui.vertical_centered(|ui| {
-        ui.label("Environment");
-    });
-    ui.horizontal(|ui| {
-        ui.label("Name");
-    });
-    ui.vertical_centered_justified(|ui| {
-        ui.text_edit_singleline(&mut system_environment.name);
-    });
-    ui.horizontal(|ui| {
-        ui.label("Description");
-    });
-    ui.vertical_centered_justified(|ui| {
-        ui.text_edit_multiline(&mut system_environment.description);
-    });
+    vc_label!(ui, "Environment");
+
+    h_label!(ui, "Name");
+    vcj_text_edit!(ui, &mut system_environment.name, false);
+
+    h_label!(ui, "Description");
+    vcj_text_edit!(ui, &mut system_environment.description, true);
 }
 
 fn subsystem_egui(ui: &mut Ui, system: &mut crate::components::System, system_environment: &SystemEnvironment) {
     ui.separator();
     boundary_egui(ui, system);
+
     ui.separator();
-    ui.vertical_centered_justified(|ui| {
-        ui.label("Parent System");
-    });
-    ui.horizontal(|ui| {
-        ui.label("Name");
-    });
-    ui.vertical_centered_justified(|ui| {
-        ui.label(&system_environment.name);
-    });
-    ui.horizontal(|ui| {
-        ui.label("Description");
-    });
-    ui.vertical_centered_justified(|ui| {
-        ui.label(&system_environment.description);
-    });
+    vcj_label!(ui, "Parent System");
+
+    h_label!(ui, "Name");
+    vcj_label!(ui, &system_environment.name);
+
+    h_label!(ui, "Description");
+    vcj_label!(ui, &system_environment.description);
 }
 
 fn external_entity_egui(ui: &mut Ui, external_entity: &mut ExternalEntity) {
@@ -218,26 +235,20 @@ pub fn egui_selected_context(
             style.spacing.item_spacing = vec2(10.0, 10.0);
         });
         egui::SidePanel::right(system_element.to_string()).show(egui_contexts.ctx_mut(), |ui| {
-            ui.vertical_centered(|ui| {
+            vc_wrap!(ui, |ui| {
                 ui.heading("Element Details");
             });
             egui::ScrollArea::both()
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Name");
-                    });
+                    h_label!(ui, "Name");
                     ui.vertical_centered_justified(|ui| {
                         name.mutate(|name| {
                             ui.text_edit_singleline(name);
                         });
                     });
-                    ui.horizontal(|ui| {
-                        ui.label("Description");
-                    });
-                    ui.vertical_centered_justified(|ui| {
-                        ui.text_edit_multiline(&mut description.text);
-                    });
+                    h_label!(ui, "Description");
+                    vcj_text_edit!(ui, &mut description.text, true);
 
                     match system_element {
                         SystemElement::Interface => interface_egui(
@@ -247,8 +258,9 @@ pub fn egui_selected_context(
                                 .expect("Interface not found"),
                         ),
                         SystemElement::System => {
-                            let mut system =
-                                system_query.get_mut(entity).expect("System not found");
+                            let mut system = system_query
+                                .get_mut(entity)
+                                .expect("System not found");
 
                             if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
                                 system_of_interest_egui(ui, &mut system, &mut sys_env)
@@ -258,11 +270,15 @@ pub fn egui_selected_context(
                         }
                         SystemElement::Inflow => inflow_egui(
                             ui,
-                            &mut flow_query.get_mut(entity).expect("Inflow not found"),
+                            &mut flow_query
+                                .get_mut(entity)
+                                .expect("Inflow not found"),
                         ),
                         SystemElement::Outflow => outflow_egui(
                             ui,
-                            &mut flow_query.get_mut(entity).expect("Outflow not found"),
+                            &mut flow_query
+                                .get_mut(entity)
+                                .expect("Outflow not found"),
                         ),
                         SystemElement::ExternalEntity => external_entity_egui(
                             ui,
@@ -284,15 +300,16 @@ pub fn absorb_egui_inputs(
 ) {
     let ctx = contexts.ctx_mut();
     if ctx.wants_pointer_input() || ctx.is_pointer_over_area() {
+        type KC = KeyCode;
         let modifiers = [
-            KeyCode::SuperLeft,
-            KeyCode::SuperRight,
-            KeyCode::ControlLeft,
-            KeyCode::ControlRight,
-            KeyCode::AltLeft,
-            KeyCode::AltRight,
-            KeyCode::ShiftLeft,
-            KeyCode::ShiftRight,
+            KC::SuperLeft,
+            KC::SuperRight,
+            KC::ControlLeft,
+            KC::ControlRight,
+            KC::AltLeft,
+            KC::AltRight,
+            KC::ShiftLeft,
+            KC::ShiftRight,
         ];
 
         let pressed = modifiers.map(|key| keyboard.pressed(key).then_some(key));
