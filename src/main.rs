@@ -112,6 +112,9 @@ fn main() {
                 control_zoom_from_keyboard,
                 control_zoom_from_mouse_wheel
                     .run_if(wheel_zoom_condition),
+                reset_camera_position
+                    .run_if(input_pressed(KeyCode::SuperLeft)
+                    .and_then(input_just_pressed(KeyCode::KeyR))),
             )
                 .in_set(CameraControlSet),
             (                
