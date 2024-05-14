@@ -183,7 +183,7 @@ pub struct Interaction {
     external_entity: Id,
     amount: Decimal,
     unit: String,
-    time_unit: Decimal,
+    time_unit: String,
 }
 
 #[derive(Serialize, Deserialize)]

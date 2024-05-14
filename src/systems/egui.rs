@@ -103,13 +103,9 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
         ui.text_edit_singleline(&mut amount_string);
         only_valid_positive_decimal(&mut amount_string, &mut flow.amount);
     });
-    let mut time_unit_string = flow.time_unit.to_string();
+
     h_label!(ui, "Time Unit");
-    
-    ui.horizontal(|ui| {
-        ui.text_edit_singleline(&mut time_unit_string);
-        only_valid_positive_decimal(&mut time_unit_string, &mut flow.time_unit);
-    });
+    vcj_text_edit!(ui, &mut flow.time_unit, false);
 }
 
 pub fn only_valid_positive_decimal(s: &mut String, decimal: &mut Decimal) {

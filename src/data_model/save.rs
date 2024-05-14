@@ -221,7 +221,7 @@ macro_rules! process_external_flow {
                     external_entity: external_entity_id.clone(),
                     amount: flow.amount,
                     unit: flow.unit.clone(),
-                    time_unit: flow.time_unit,
+                    time_unit: flow.time_unit.clone(),
                 });
 
                 let (interface_name, interface_description, interface, interface_transform) =
