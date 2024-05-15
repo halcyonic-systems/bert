@@ -1,5 +1,5 @@
 use crate::components::{InitialPosition, SubstanceType};
-use crate::constants::{FLOW_END_LENGTH, FLOW_LENGTH};
+use crate::constants::FLOW_LENGTH;
 use bevy::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
@@ -20,19 +20,21 @@ pub enum CreateButtonType {
     Source,
     Sink,
     InterfaceSubsystem { is_child_of_interface: bool },
+    FlowTerminalStart,
+    FlowTerminalEnd,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct FlowInterfaceButton;
+pub struct HasFlowInterfaceButton;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct FlowOtherEndButton;
+pub struct HasFlowOtherEndButton;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct InterfaceSubsystemButton {
+pub struct HasInterfaceSubsystemButton {
     pub button_entity: Entity,
 }
 
@@ -58,9 +60,9 @@ impl FlowCurve {
     ) -> Self {
         Self {
             start: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
-            start_direction: direction * -FLOW_END_LENGTH * zoom,
+            start_direction: -direction,
             end: *initial_position * zoom,
-            end_direction: direction * FLOW_END_LENGTH * zoom,
+            end_direction: direction,
         }
     }
 
@@ -72,11 +74,28 @@ impl FlowCurve {
     ) -> Self {
         Self {
             start: *initial_position * zoom,
-            start_direction: direction * FLOW_END_LENGTH * zoom,
+            start_direction: direction,
             end: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
-            end_direction: direction * -FLOW_END_LENGTH * zoom,
+            end_direction: -direction,
         }
     }
+
+    #[inline]
+    pub fn compute_tangent_length(&self) -> f32 {
+        Self::compute_tangent_length_from_points(self.start, self.end)
+    }
+
+    #[inline]
+    pub fn compute_tangent_length_from_points(start: Vec2, end: Vec2) -> f32 {
+        (end - start).length() * 0.3333
+    }
+}
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub enum FlowTerminalSelecting {
+    Start,
+    End,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]

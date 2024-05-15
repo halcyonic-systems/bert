@@ -129,12 +129,14 @@ pub fn create_path_from_flow_curve(flow_curve: &FlowCurve, scale: f32) -> Path {
 
     curve_path_builder.move_to(start);
 
-    let end_direction = flow_curve.end_direction.normalize();
+    let end_direction = flow_curve.end_direction;
     let end = end + end_direction * (FLOW_ARROW_HEAD_LENGTH - 2.0) * scale;
 
+    let tangent_len = flow_curve.compute_tangent_length();
+
     curve_path_builder.cubic_bezier_to(
-        start + flow_curve.start_direction,
-        end + flow_curve.end_direction,
+        start + flow_curve.start_direction * tangent_len,
+        end + flow_curve.end_direction * tangent_len,
         end,
     );
 
@@ -142,10 +144,12 @@ pub fn create_path_from_flow_curve(flow_curve: &FlowCurve, scale: f32) -> Path {
 }
 
 pub fn create_aabb_from_flow_curve(flow_curve: &FlowCurve) -> Aabb {
+    let tangent_length = flow_curve.compute_tangent_length();
+
     let mut aabb = Aabb::enclosing([
         (flow_curve.start).extend(0.0),
-        (flow_curve.start + flow_curve.start_direction).extend(0.0),
-        (flow_curve.end + flow_curve.end_direction).extend(0.0),
+        (flow_curve.start + flow_curve.start_direction * tangent_length).extend(0.0),
+        (flow_curve.end + flow_curve.end_direction * tangent_length).extend(0.0),
         (flow_curve.end).extend(0.0),
     ])
     .expect("Iterator is not empty so there has to be an Aabb");

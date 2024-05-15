@@ -30,7 +30,7 @@ pub fn add_interface_subsystem_create_buttons(
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
     )>,
-    interface_button_query: Query<&InterfaceSubsystemButton>,
+    interface_button_query: Query<&HasInterfaceSubsystemButton>,
     interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
     button_query: Query<&CreateButton>,
     focused_system: Res<FocusedSystem>,

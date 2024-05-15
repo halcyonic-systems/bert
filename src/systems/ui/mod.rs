@@ -23,6 +23,7 @@ use crate::components::*;
 use crate::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom,
 };
+use crate::states::AppState;
 use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -73,6 +74,40 @@ pub fn remove_unfocused_system_buttons(
     }
 }
 
+pub fn on_flow_terminal_button_click(
+    mut commands: Commands,
+    mut event: ListenerMut<Pointer<Click>>,
+    only_button_query: Query<&CreateButton>,
+    mut pick_selection_query: Query<&mut PickSelection>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    event.stop_propagation();
+
+    deselect_all(&mut pick_selection_query);
+
+    let button = only_button_query
+        .get(event.target)
+        .expect("After on click this has to exist");
+
+    match button.ty {
+        CreateButtonType::FlowTerminalStart => {
+            commands
+                .entity(button.connection_source)
+                .insert(FlowTerminalSelecting::Start);
+            next_state.set(AppState::FlowTerminalSelection);
+        }
+        CreateButtonType::FlowTerminalEnd => {
+            commands
+                .entity(button.connection_source)
+                .insert(FlowTerminalSelecting::End);
+            next_state.set(AppState::FlowTerminalSelection);
+        }
+        _ => unreachable!("The other types are handled in other event listeners"),
+    }
+
+    despawn_create_button(&mut commands, event.target, &only_button_query);
+}
+
 pub fn on_create_button_click(
     mut commands: Commands,
     mut event: ListenerMut<Pointer<Click>>,
@@ -105,148 +140,163 @@ pub fn on_create_button_click(
         .expect("After on click this has to exist");
 
     match button.ty {
-        CreateButtonType::ImportInterface => spawn_interface(
-            &mut commands,
-            InterfaceType::Import,
-            button
-                .substance_type
-                .expect("Interface button must have a substance type"),
-            button.connection_source,
-            transform,
-            &nesting_query,
-            **focused_system,
-            &mut fixed_system_element_geometries,
-            **zoom,
-            true,
-            &mut meshes,
-            &mut stroke_tess,
-            "Interface",
-            "",
-        ),
-        CreateButtonType::ExportInterface => spawn_interface(
-            &mut commands,
-            InterfaceType::Export,
-            button
-                .substance_type
-                .expect("Interface button must have a substance type"),
-            button.connection_source,
-            transform,
-            &nesting_query,
-            **focused_system,
-            &mut fixed_system_element_geometries,
-            **zoom,
-            true,
-            &mut meshes,
-            &mut stroke_tess,
-            "Interface",
-            "",
-        ),
-        CreateButtonType::Inflow => spawn_inflow(
-            &mut commands,
-            &subsystem_query,
-            &nesting_query,
-            button.connection_source,
-            &combined_transform_of_entity_until_ancestor(
-                event.target,
-                subsystem_query
-                    .get(button.connection_source)
-                    .ok()
-                    .map(|s| s.parent_system),
-                &transform_query,
-                &parent_query,
-            ),
-            &mut stroke_tess,
-            &mut meshes,
-            **zoom,
-            true,
-            Default::default(),
-            Default::default(),
-            dec!(1),
-            "",
-            dec!(1),
-            "Inflow",
-            "",
-        ),
-        CreateButtonType::Outflow => spawn_outflow(
-            &mut commands,
-            &subsystem_query,
-            &nesting_query,
-            button.connection_source,
-            &combined_transform_of_entity_until_ancestor(
-                event.target,
-                subsystem_query
-                    .get(button.connection_source)
-                    .ok()
-                    .map(|s| s.parent_system),
-                &transform_query,
-                &parent_query,
-            ),
-            &mut stroke_tess,
-            &mut meshes,
-            **zoom,
-            true,
-            Default::default(),
-            Default::default(),
-            dec!(1),
-            "",
-            dec!(1),
-            "Outflow",
-            "",
-        ),
-        CreateButtonType::Source => spawn_external_entity(
-            &mut commands,
-            &subsystem_query,
-            &nesting_query,
-            **focused_system,
-            InterfaceType::Import,
-            button
-                .substance_type
-                .expect("Source button must have a substance type"),
-            button.connection_source,
-            transform,
-            &mut fixed_system_element_geometries,
-            **zoom,
-            true,
-            &mut meshes,
-            &mut stroke_tess,
-            "Source",
-            "",
-        ),
-        CreateButtonType::Sink => spawn_external_entity(
-            &mut commands,
-            &subsystem_query,
-            &nesting_query,
-            **focused_system,
-            InterfaceType::Export,
-            button
-                .substance_type
-                .expect("Sink button must have a substance type"),
-            button.connection_source,
-            transform,
-            &mut fixed_system_element_geometries,
-            **zoom,
-            true,
-            &mut meshes,
-            &mut stroke_tess,
-            "Sink",
-            "",
-        ),
+        CreateButtonType::ImportInterface => {
+            spawn_interface(
+                &mut commands,
+                InterfaceType::Import,
+                button
+                    .substance_type
+                    .expect("Interface button must have a substance type"),
+                button.connection_source,
+                transform,
+                &nesting_query,
+                **focused_system,
+                &mut fixed_system_element_geometries,
+                **zoom,
+                true,
+                &mut meshes,
+                &mut stroke_tess,
+                "Interface",
+                "",
+            );
+        }
+        CreateButtonType::ExportInterface => {
+            spawn_interface(
+                &mut commands,
+                InterfaceType::Export,
+                button
+                    .substance_type
+                    .expect("Interface button must have a substance type"),
+                button.connection_source,
+                transform,
+                &nesting_query,
+                **focused_system,
+                &mut fixed_system_element_geometries,
+                **zoom,
+                true,
+                &mut meshes,
+                &mut stroke_tess,
+                "Interface",
+                "",
+            );
+        }
+        CreateButtonType::Inflow => {
+            spawn_inflow(
+                &mut commands,
+                &subsystem_query,
+                &nesting_query,
+                button.connection_source,
+                &combined_transform_of_entity_until_ancestor(
+                    event.target,
+                    subsystem_query
+                        .get(button.connection_source)
+                        .ok()
+                        .map(|s| s.parent_system),
+                    &transform_query,
+                    &parent_query,
+                ),
+                &mut stroke_tess,
+                &mut meshes,
+                **zoom,
+                true,
+                Default::default(),
+                Default::default(),
+                dec!(1),
+                "",
+                dec!(1),
+                "Inflow",
+                "",
+            );
+        }
+        CreateButtonType::Outflow => {
+            spawn_outflow(
+                &mut commands,
+                &subsystem_query,
+                &nesting_query,
+                button.connection_source,
+                &combined_transform_of_entity_until_ancestor(
+                    event.target,
+                    subsystem_query
+                        .get(button.connection_source)
+                        .ok()
+                        .map(|s| s.parent_system),
+                    &transform_query,
+                    &parent_query,
+                ),
+                &mut stroke_tess,
+                &mut meshes,
+                **zoom,
+                true,
+                Default::default(),
+                Default::default(),
+                dec!(1),
+                "",
+                dec!(1),
+                "Outflow",
+                "",
+            );
+        }
+        CreateButtonType::Source => {
+            spawn_external_entity(
+                &mut commands,
+                &subsystem_query,
+                &nesting_query,
+                **focused_system,
+                InterfaceType::Import,
+                button
+                    .substance_type
+                    .expect("Source button must have a substance type"),
+                button.connection_source,
+                transform,
+                &mut fixed_system_element_geometries,
+                **zoom,
+                true,
+                &mut meshes,
+                &mut stroke_tess,
+                "Source",
+                "",
+            );
+        }
+        CreateButtonType::Sink => {
+            spawn_external_entity(
+                &mut commands,
+                &subsystem_query,
+                &nesting_query,
+                **focused_system,
+                InterfaceType::Export,
+                button
+                    .substance_type
+                    .expect("Sink button must have a substance type"),
+                button.connection_source,
+                transform,
+                &mut fixed_system_element_geometries,
+                **zoom,
+                true,
+                &mut meshes,
+                &mut stroke_tess,
+                "Sink",
+                "",
+            );
+        }
         CreateButtonType::InterfaceSubsystem {
             is_child_of_interface,
-        } => spawn_interface_subsystem(
-            &mut commands,
-            is_child_of_interface,
-            button.connection_source,
-            &flow_interface_query,
-            &system_query,
-            &nesting_query,
-            &focused_system,
-            &mut meshes,
-            **zoom,
-            "Subsystem",
-            "",
-        ),
-    };
+        } => {
+            spawn_interface_subsystem(
+                &mut commands,
+                is_child_of_interface,
+                button.connection_source,
+                &flow_interface_query,
+                &system_query,
+                &nesting_query,
+                &focused_system,
+                &mut meshes,
+                **zoom,
+                "Subsystem",
+                "",
+            );
+        }
+        _ => unreachable!("The other types are handled in other event listeners"),
+    }
 
     despawn_create_button(&mut commands, event.target, &only_button_query);
 }

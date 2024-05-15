@@ -5,6 +5,7 @@ mod data_model;
 mod events;
 mod plugins;
 mod resources;
+mod states;
 mod systems;
 mod utils;
 
@@ -14,8 +15,11 @@ use crate::data_model::load::load_world;
 use crate::data_model::save::save_world;
 use crate::events::*;
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
-use crate::plugins::mouse_interaction::MouseInteractionPlugin;
+use crate::plugins::mouse_interaction::{
+    disable_selection, enable_selection, MouseInteractionPlugin,
+};
 use crate::resources::*;
+use crate::states::*;
 use crate::systems::*;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
@@ -36,6 +40,9 @@ struct CameraControlSet;
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct CreateButtonSet;
 
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct FlowTerminalSelectingSet;
+
 fn main() {
     let mut app = App::new();
     app.add_plugins((
@@ -53,6 +60,7 @@ fn main() {
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
+    .init_state::<AppState>()
     .add_systems(Startup, setup);
 
     #[cfg(feature = "init_complete_system")]
@@ -79,6 +87,11 @@ fn main() {
                 draw_flow_curve,
                 update_initial_position_from_transform,
             ),
+            (
+                update_selecting_flow_from_mouse,
+                select_flow_terminal.after(update_selecting_flow_from_mouse),
+            )
+                .in_set(FlowTerminalSelectingSet),
             (drag_external_entity, drag_interface),
             (
                 add_outflow_interface_create_button,
@@ -152,12 +165,20 @@ fn main() {
             update_pin_rotation,
         ),
     )
+    .add_systems(
+        OnEnter(AppState::FlowTerminalSelection),
+        (disable_selection,),
+    )
+    .add_systems(OnEnter(AppState::Normal), (enable_selection,))
     .configure_sets(
         Update,
         (
             RemovalCleanupSet.after(remove_selected_elements),
-            CreateButtonSet.after(RemovalCleanupSet),
+            CreateButtonSet
+                .after(RemovalCleanupSet)
+                .run_if(in_state(AppState::Normal)),
             ZoomSet.run_if(resource_changed::<Zoom>),
+            FlowTerminalSelectingSet.run_if(in_state(AppState::FlowTerminalSelection)),
         ),
     )
     .register_type::<FlowStartInterfaceConnection>()
@@ -177,9 +198,9 @@ fn main() {
     .register_type::<Subsystem>()
     .register_type::<ElementDescription>()
     .register_type::<CreateButton>()
-    .register_type::<FlowInterfaceButton>()
-    .register_type::<FlowOtherEndButton>()
-    .register_type::<InterfaceSubsystemButton>()
+    .register_type::<HasFlowInterfaceButton>()
+    .register_type::<HasFlowOtherEndButton>()
+    .register_type::<HasInterfaceSubsystemButton>()
     .register_type::<FlowCurve>()
     .register_type::<InitialPosition>()
     .register_type::<SelectedHighlightHelperAdded>()

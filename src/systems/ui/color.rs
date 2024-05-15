@@ -1,5 +1,5 @@
 use crate::components::{
-    Connection, CreateButton, Flow, FlowOtherEndButton, InterfaceSubsystemConnection,
+    Connection, CreateButton, Flow, HasFlowOtherEndButton, InterfaceSubsystemConnection,
     TargetTypeConnection,
 };
 use crate::plugins::lyon_selection::HighlightBundles;
@@ -47,7 +47,7 @@ pub fn update_color_from_substance_type<C>(
 }
 
 pub fn update_button_substance_type_from_flow(
-    flow_query: Query<(Entity, &Flow), (Changed<Flow>, With<FlowOtherEndButton>)>,
+    flow_query: Query<(Entity, &Flow), (Changed<Flow>, With<HasFlowOtherEndButton>)>,
     mut button_query: Query<&mut CreateButton>,
 ) {
     for (flow_entity, flow) in &flow_query {

@@ -16,22 +16,34 @@ impl Plugin for MouseInteractionPlugin {
         app.init_resource::<Dragging>()
             .init_resource::<Selection>()
             .init_resource::<MouseWorldPosition>()
+            .init_resource::<SelectionEnabled>()
             .add_plugins(EventListenerPlugin::<DragPosition>::default())
             .register_type::<PickSelection>()
+            .add_systems(PreUpdate, mouse_screen_to_world_position)
             .add_systems(
                 Update,
                 (
-                    mouse_screen_to_world_position,
-                    handle_mouse_down
-                        .run_if(input_just_pressed(MouseButton::Left))
-                        .after(mouse_screen_to_world_position),
+                    handle_mouse_down.run_if(input_just_pressed(MouseButton::Left)),
                     handle_mouse_up.run_if(input_just_released(MouseButton::Left)),
                     handle_mouse_drag
                         .run_if(input_pressed(MouseButton::Left))
                         .after(handle_mouse_down),
-                ),
+                )
+                    .in_set(MouseInteractionSet),
             )
             .add_systems(First, update_settings);
+    }
+}
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MouseInteractionSet;
+
+#[derive(Resource, Clone, PartialEq, Eq, Reflect, Debug, Deref, DerefMut)]
+pub struct SelectionEnabled(bool);
+
+impl Default for SelectionEnabled {
+    fn default() -> Self {
+        Self(true)
     }
 }
 
@@ -120,6 +132,7 @@ fn handle_mouse_up(
     mut pick_selection_query: Query<&mut PickSelection>,
     mut dragging: ResMut<Dragging>,
     mut selection: ResMut<Selection>,
+    selection_enabled: Res<SelectionEnabled>,
 ) {
     if dragging.started {
         dragging.started = false;
@@ -127,29 +140,31 @@ fn handle_mouse_up(
         return;
     }
 
-    selection.clear();
-    let mut deselect = true;
+    if **selection_enabled {
+        selection.clear();
+        let mut deselect = true;
 
-    if let Some(hovered_entity) = dragging.hovered_entity {
-        if let Ok((entity, no_deselect)) = interaction_query.get(hovered_entity) {
-            if no_deselect.is_some() {
-                deselect = false;
+        if let Some(hovered_entity) = dragging.hovered_entity {
+            if let Ok((entity, no_deselect)) = interaction_query.get(hovered_entity) {
+                if no_deselect.is_some() {
+                    deselect = false;
+                } else {
+                    selection.insert(entity);
+                }
             } else {
-                selection.insert(entity);
+                deselect = false;
             }
-        } else {
-            deselect = false;
         }
-    }
 
-    if deselect {
-        deselect_all(&mut pick_selection_query);
-    }
+        if deselect {
+            deselect_all(&mut pick_selection_query);
+        }
 
-    if !selection.is_empty() {
-        for entity in &selection.0 {
-            if let Ok(mut pick_selection) = pick_selection_query.get_mut(*entity) {
-                pick_selection.is_selected = true;
+        if !selection.is_empty() {
+            for entity in &selection.0 {
+                if let Ok(mut pick_selection) = pick_selection_query.get_mut(*entity) {
+                    pick_selection.is_selected = true;
+                }
             }
         }
     }
@@ -216,4 +231,12 @@ pub fn deselect_all(pick_selection_query: &mut Query<&mut PickSelection>) {
     for mut pick_selection in pick_selection_query {
         pick_selection.is_selected = false;
     }
+}
+
+pub fn disable_selection(mut selection_enabled: ResMut<SelectionEnabled>) {
+    **selection_enabled = false;
+}
+
+pub fn enable_selection(mut selection_enabled: ResMut<SelectionEnabled>) {
+    **selection_enabled = true;
 }

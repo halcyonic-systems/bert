@@ -5,7 +5,16 @@ use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 
 macro_rules! external_entity_create_button {
-    ($fn_name:ident, $flow_conn_ty:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr, $side:tt, $side_dir:tt) => {
+    (
+        $fn_name:ident,
+        $flow_conn_ty:ty,
+        $interface_connection:ty,
+        $terminal_connection:ty,
+        $button_type:expr,
+        $target_button_type:expr,
+        $side:tt,
+        $side_dir:tt
+    ) => {
         pub fn $fn_name(
             mut commands: Commands,
             query: Query<
@@ -13,9 +22,10 @@ macro_rules! external_entity_create_button {
                 (
                     With<$interface_connection>,
                     Without<$terminal_connection>,
-                    Without<FlowOtherEndButton>,
+                    Without<HasFlowOtherEndButton>,
                 ),
             >,
+            subsystem_query: Query<&Subsystem>,
             focused_system: Res<FocusedSystem>,
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
@@ -25,12 +35,18 @@ macro_rules! external_entity_create_button {
                     continue;
                 }
 
-                let direction = -flow_curve.$side_dir.normalize();
+                let direction = -flow_curve.$side_dir;
+
+                let button_type = if subsystem_query.get(**focused_system).is_ok() {
+                    $target_button_type
+                } else {
+                    $button_type
+                };
 
                 spawn_create_button(
                     &mut commands,
                     CreateButton {
-                        ty: $button_type,
+                        ty: button_type,
                         connection_source: entity,
                         system: **focused_system,
                         substance_type: Some(flow.substance_type),
@@ -52,6 +68,7 @@ external_entity_create_button!(
     FlowEndInterfaceConnection,
     FlowStartConnection,
     CreateButtonType::Source,
+    CreateButtonType::FlowTerminalStart,
     start,
     start_direction
 );
@@ -61,6 +78,7 @@ external_entity_create_button!(
     FlowStartInterfaceConnection,
     FlowEndConnection,
     CreateButtonType::Sink,
+    CreateButtonType::FlowTerminalEnd,
     end,
     end_direction
 );

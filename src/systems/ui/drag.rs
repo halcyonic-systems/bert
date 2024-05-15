@@ -1,5 +1,5 @@
 use crate::components::*;
-use crate::constants::{EXTERNAL_ENTITY_WIDTH_HALF, FLOW_END_LENGTH};
+use crate::constants::EXTERNAL_ENTITY_WIDTH_HALF;
 use crate::events::*;
 use crate::resources::Zoom;
 use crate::utils::compute_end_and_direction_from_system_child;
@@ -28,6 +28,7 @@ pub fn drag_external_entity(
         let mut system = Entity::PLACEHOLDER;
         let mut other_end = Vec2::ZERO;
         let mut other_end_direction = Vec2::ZERO;
+        let mut tangent_len = 0.0;
 
         for (start_connection, end_connection, flow_curve) in &flow_query {
             if start_connection.target == event.target {
@@ -35,18 +36,24 @@ pub fn drag_external_entity(
                 system = end_connection.target;
                 other_end = flow_curve.end;
                 other_end_direction = flow_curve.end_direction;
+                tangent_len = flow_curve.compute_tangent_length();
                 break;
             } else if end_connection.target == event.target {
                 debug_assert!(start_connection.target_type == StartTargetType::System);
                 system = start_connection.target;
                 other_end = flow_curve.start;
                 other_end_direction = flow_curve.start_direction;
+                tangent_len = flow_curve.compute_tangent_length();
                 break;
             }
         }
 
-        transform.rotation =
-            compute_external_entity_rotation(event.position, other_end, other_end_direction);
+        transform.rotation = compute_external_entity_rotation(
+            event.position,
+            other_end,
+            other_end_direction,
+            tangent_len,
+        );
 
         if let Ok(subsystem) = subsystem_query.get(system) {
             let parent_system = system_query
@@ -75,12 +82,12 @@ pub fn update_flow_from_external_entity(
                 let right = transform.right().truncate();
                 flow_curve.start =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                flow_curve.start_direction = -right * FLOW_END_LENGTH * scale;
+                flow_curve.start_direction = -right;
             } else if flow_end_connection.target == target {
                 let right = transform.right().truncate();
                 flow_curve.end =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                flow_curve.end_direction = -right * FLOW_END_LENGTH * scale;
+                flow_curve.end_direction = -right;
             } else {
                 continue;
             }
@@ -115,7 +122,6 @@ pub fn update_flow_from_interface(
                         &transform_query,
                         &parent_query,
                         flow_parent,
-                        **zoom,
                         scale,
                     );
                     flow_curve.end = end;
@@ -129,7 +135,6 @@ pub fn update_flow_from_interface(
                         &transform_query,
                         &parent_query,
                         flow_parent,
-                        **zoom,
                         scale,
                     );
                     flow_curve.start = start;
@@ -187,6 +192,7 @@ pub fn drag_interface(
         let mut external_entity_pos = Vec2::ZERO;
         let mut other_end = Vec2::ZERO;
         let mut other_end_direction = Vec2::ZERO;
+        let mut tangent_len = 0.0;
 
         for (
             flow_curve,
@@ -204,6 +210,7 @@ pub fn drag_interface(
                     external_entity_pos = flow_curve.end;
                     other_end = flow_curve.start;
                     other_end_direction = flow_curve.start_direction;
+                    tangent_len = flow_curve.compute_tangent_length();
                     break; // TODO : multiconnection
                 }
             }
@@ -215,6 +222,7 @@ pub fn drag_interface(
                     external_entity_pos = flow_curve.start;
                     other_end = flow_curve.end;
                     other_end_direction = flow_curve.end_direction;
+                    tangent_len = flow_curve.compute_tangent_length();
                     break; // TODO : multiconnection
                 }
             }
@@ -224,8 +232,12 @@ pub fn drag_interface(
             .get_mut(external_entity)
             .expect("External entity should have a Transform");
 
-        transform.rotation =
-            compute_external_entity_rotation(external_entity_pos, other_end, other_end_direction);
+        transform.rotation = compute_external_entity_rotation(
+            external_entity_pos,
+            other_end,
+            other_end_direction,
+            tangent_len,
+        );
     }
 }
 
@@ -273,7 +285,22 @@ pub fn update_flow_from_interface_subsystem(
     }
 }
 
-fn compute_external_entity_rotation(pos: Vec2, other_end: Vec2, other_end_direction: Vec2) -> Quat {
-    let dir = pos - other_end - other_end_direction;
+fn compute_external_entity_rotation(
+    pos: Vec2,
+    other_end: Vec2,
+    other_end_direction: Vec2,
+    tangent_len: f32,
+) -> Quat {
+    let dir =
+        -compute_smooth_flow_terminal_direction(pos, other_end, other_end_direction, tangent_len);
     Quat::from_rotation_z(dir.to_angle())
+}
+
+pub fn compute_smooth_flow_terminal_direction(
+    pos: Vec2,
+    other_end: Vec2,
+    other_end_direction: Vec2,
+    tangent_len: f32,
+) -> Vec2 {
+    other_end + other_end_direction * tangent_len - pos
 }

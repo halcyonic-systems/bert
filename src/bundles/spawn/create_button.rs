@@ -1,6 +1,6 @@
 use crate::components::*;
 use crate::constants::BUTTON_WIDTH_HALF;
-use crate::systems::on_create_button_click;
+use crate::systems::{on_create_button_click, on_flow_terminal_button_click};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -22,6 +22,8 @@ pub fn spawn_create_button(
         CreateButtonType::Source => "create-button/source.png",
         CreateButtonType::Sink => "create-button/sink.png",
         CreateButtonType::InterfaceSubsystem { .. } => "create-button/interface-subsystem.png",
+        CreateButtonType::FlowTerminalStart => "create-button/source.png", // TODO
+        CreateButtonType::FlowTerminalEnd => "create-button/sink.png",     // TODO
     };
 
     let name = match create_button.ty {
@@ -32,10 +34,18 @@ pub fn spawn_create_button(
         CreateButtonType::Source => "Source Button",
         CreateButtonType::Sink => "Sink Button",
         CreateButtonType::InterfaceSubsystem { .. } => "Interface Subsystem Button",
+        CreateButtonType::FlowTerminalStart => "Flow Target Start Button",
+        CreateButtonType::FlowTerminalEnd => "Flow Target End Button",
     };
 
     let button_width = BUTTON_WIDTH_HALF * 2.0;
 
+    let on_click_handler = match create_button.ty {
+        CreateButtonType::FlowTerminalStart | CreateButtonType::FlowTerminalEnd => {
+            On::<Pointer<Click>>::run(on_flow_terminal_button_click)
+        }
+        _ => On::<Pointer<Click>>::run(on_create_button_click),
+    };
     let button_entity = commands
         .spawn((
             create_button,
@@ -50,7 +60,7 @@ pub fn spawn_create_button(
                 ..default()
             },
             PickableBundle::default(),
-            On::<Pointer<Click>>::run(on_create_button_click),
+            on_click_handler,
             InitialPosition::new(position),
             Name::new(name),
         ))
@@ -64,13 +74,16 @@ pub fn spawn_create_button(
 
     match create_button.ty {
         CreateButtonType::ImportInterface | CreateButtonType::ExportInterface => {
-            commands.insert(FlowInterfaceButton);
+            commands.insert(HasFlowInterfaceButton);
         }
-        CreateButtonType::Source | CreateButtonType::Sink => {
-            commands.insert(FlowOtherEndButton);
+        CreateButtonType::Source
+        | CreateButtonType::Sink
+        | CreateButtonType::FlowTerminalStart
+        | CreateButtonType::FlowTerminalEnd => {
+            commands.insert(HasFlowOtherEndButton);
         }
         CreateButtonType::InterfaceSubsystem { .. } => {
-            commands.insert(InterfaceSubsystemButton { button_entity });
+            commands.insert(HasInterfaceSubsystemButton { button_entity });
         }
         CreateButtonType::Inflow | CreateButtonType::Outflow => {
             // do nothing
@@ -99,13 +112,16 @@ pub fn despawn_create_button_with_component(
 
     match create_button.ty {
         CreateButtonType::ImportInterface | CreateButtonType::ExportInterface => {
-            entity_commands.remove::<FlowInterfaceButton>();
+            entity_commands.remove::<HasFlowInterfaceButton>();
         }
-        CreateButtonType::Source | CreateButtonType::Sink => {
-            entity_commands.remove::<FlowOtherEndButton>();
+        CreateButtonType::Source
+        | CreateButtonType::Sink
+        | CreateButtonType::FlowTerminalStart
+        | CreateButtonType::FlowTerminalEnd => {
+            entity_commands.remove::<HasFlowOtherEndButton>();
         }
         CreateButtonType::InterfaceSubsystem { .. } => {
-            entity_commands.remove::<InterfaceSubsystemButton>();
+            entity_commands.remove::<HasInterfaceSubsystemButton>();
         }
         CreateButtonType::Inflow | CreateButtonType::Outflow => {
             // do nothing

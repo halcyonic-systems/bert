@@ -13,7 +13,7 @@ macro_rules! interface_create_button {
                 (
                     Without<$interface_connection>,
                     Without<$terminal_connection>,
-                    Without<FlowInterfaceButton>,
+                    Without<HasFlowInterfaceButton>,
                 ),
             >,
             parent_query: Query<&Parent>,

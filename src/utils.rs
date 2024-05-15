@@ -2,7 +2,7 @@ use crate::components::{
     EndTargetType, FlowEndConnection, FlowEndInterfaceConnection, FlowStartConnection,
     FlowStartInterfaceConnection, InitialPosition, InterfaceSubsystem, StartTargetType,
 };
-use crate::constants::{FLOW_END_LENGTH, INTERFACE_WIDTH_HALF};
+use crate::constants::INTERFACE_WIDTH_HALF;
 use bevy::prelude::*;
 
 pub fn ui_transform_from_button(
@@ -27,7 +27,6 @@ pub fn compute_end_and_direction_from_system_child(
     transform_query: &Query<&Transform>,
     parent_query: &Query<&Parent>,
     flow_parent: Option<Entity>,
-    zoom: f32,
     scale: f32,
 ) -> (Vec2, Vec2) {
     let combined_transform = combined_transform_of_entity_until_ancestor(
@@ -41,7 +40,7 @@ pub fn compute_end_and_direction_from_system_child(
 
     (
         combined_transform.translation.truncate() + right * INTERFACE_WIDTH_HALF * scale,
-        right * FLOW_END_LENGTH * zoom,
+        right,
     )
 }
 
@@ -127,3 +126,8 @@ all_flow_connected_systems!(
     FlowStartInterfaceConnection,
     StartTargetType
 );
+
+pub fn transform_from_point2d_and_direction(point2d: Vec2, direction: Vec2) -> Transform {
+    Transform::from_translation(point2d.extend(0.0))
+        .with_rotation(Quat::from_rotation_z(direction.y.atan2(direction.x)))
+}
