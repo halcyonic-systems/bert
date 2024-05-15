@@ -268,23 +268,22 @@ pub fn on_create_button_click(
         ),
         CreateButtonType::InterfaceSubsystem {
             is_child_of_interface,
-        } => {
-            spawn_interface_subsystem(
-                &mut commands,
-                is_child_of_interface,
-                button.connection_source,
-                &flow_interface_query,
-                &system_query,
-                &nesting_query,
-                &focused_system,
-                &mut meshes,
-                **zoom,
-                "Subsystem",
-                "",
-            );
-        }
+        } => spawn_interface_subsystem(
+            &mut commands,
+            is_child_of_interface,
+            button.connection_source,
+            &flow_interface_query,
+            &system_query,
+            &nesting_query,
+            &focused_system,
+            &mut meshes,
+            **zoom,
+            "Subsystem",
+            "",
+        ),
+
         _ => unreachable!("The other types are handled in other event listeners"),
-    }
+    };
 
     despawn_create_button(&mut commands, event.target, &only_button_query);
 }
