@@ -27,6 +27,10 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
+use data_model::{
+    export_file_dialog::*,
+    import_file_dialog::*
+};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct RemovalCleanupSet;
@@ -54,6 +58,8 @@ fn main() {
         LyonSelectionPlugin,
         MouseInteractionPlugin,
     ))
+    .init_state::<FileImportState>()
+    .init_state::<FileExportState>()
     .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
@@ -67,8 +73,10 @@ fn main() {
     app.add_systems(Startup, init_complete_system.after(setup));
 
     let wheel_zoom_condition = input_pressed(KeyCode::ControlLeft)
-        .or_else(input_pressed(KeyCode::ControlRight).or_else(
-            input_pressed(KeyCode::SuperLeft).or_else(input_pressed(KeyCode::SuperRight)),
+        .or_else(
+            input_pressed(KeyCode::ControlRight)
+                .or_else(input_pressed(KeyCode::SuperLeft)
+                .or_else(input_pressed(KeyCode::SuperRight)),
         ));
 
     app.add_systems(
@@ -98,31 +106,54 @@ fn main() {
                 add_inflow_interface_create_button,
                 add_source_create_button,
                 add_sink_create_button,
-                add_inflow_create_button.run_if(inflow_create_button_needs_update),
+                add_inflow_create_button
+                    .run_if(inflow_create_button_needs_update),
                 add_interface_subsystem_create_buttons,
                 add_outflow_create_button,
                 remove_unfocused_system_buttons,
-                update_unpinned_pinnables,
+                // update_unpinned_pinnables,
             )
                 .in_set(CreateButtonSet),
             (
-                pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
-                pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition.clone())),
+                pan_camera_with_mouse
+                    .run_if(input_pressed(MouseButton::Right)),
+                pan_camera_with_mouse_wheel
+                    .run_if(not(wheel_zoom_condition.clone())),
                 control_zoom_from_keyboard,
-                control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition),
+                control_zoom_from_mouse_wheel
+                    .run_if(wheel_zoom_condition),
+                reset_camera_position
+                    .run_if(input_pressed(KeyCode::SuperLeft)
+                    .and_then(input_just_pressed(KeyCode::KeyR))),
             )
                 .in_set(CameraControlSet),
             (
-                save_world.run_if(
-                    input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyS)),
+                import_file
+                    .run_if(in_state(FileImportState::Inactive)
+                    .and_then(input_pressed(KeyCode::SuperLeft))
+                    .and_then(input_just_pressed(KeyCode::KeyL))
                 ),
-                load_world.run_if(
-                    input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyL)),
+                open_import_dialog_selection
+                    .run_if(in_state(FileImportState::Select)),
+                poll_for_selected_file
+                    .run_if(in_state(FileImportState::Poll)),
+                load_world
+                    .run_if(in_state(FileImportState::Load)),
+                import_clean_up
+                    .run_if(in_state(FileImportState::CleanUp)),
+                export_file
+                    .run_if(in_state(FileExportState::Inactive)
+                    .and_then(input_pressed(KeyCode::SuperLeft))
+                    .and_then(input_just_pressed(KeyCode::KeyS))
                 ),
-                remove_selected_elements.run_if(
-                    input_just_pressed(KeyCode::Delete)
-                        .or_else(input_just_pressed(KeyCode::Backspace)),
-                ),
+                open_export_dialog
+                    .run_if(in_state(FileExportState::Select)),
+                poll_for_export_file
+                    .run_if(in_state(FileExportState::Poll)),
+                save_world
+                    .run_if(in_state(FileExportState::Save)),
+                export_clean_up
+                    .run_if(in_state(FileExportState::CleanUp)),
             ),
             (cleanup_external_entity_removal,).in_set(RemovalCleanupSet),
             (
@@ -157,12 +188,15 @@ fn main() {
     .add_systems(
         PostUpdate,
         (
-            update_flow_from_interface_subsystem.before(update_flow_from_system),
-            update_flow_from_system.before(update_flow_from_interface),
+            update_flow_from_interface_subsystem
+                .before(update_flow_from_system),
+            update_flow_from_system
+                .before(update_flow_from_interface),
             update_flow_from_interface,
             update_flow_from_external_entity,
-            update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
-            update_pin_rotation,
+            update_interface_subsystem_from_flows
+                .run_if(interface_subsystem_should_update),
+            //update_pin_rotation,
         ),
     )
     .add_systems(

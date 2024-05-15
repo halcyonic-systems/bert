@@ -41,7 +41,7 @@ macro_rules! spawn_flow {
             usability: $usability_ty,
             amount: Decimal,
             unit: &str,
-            time_unit: Decimal,
+            time_unit: &str,
             name: &str,
             description: &str,
         ) -> Entity {
@@ -68,7 +68,7 @@ macro_rules! spawn_flow {
                     substance_type,
                     amount,
                     unit: unit.to_string(),
-                    time_unit,
+                    time_unit: time_unit.to_string(),
                     is_useful: usability.is_useful(),
                 },
                 $flow_conn_ty {
@@ -205,7 +205,7 @@ macro_rules! spawn_complete_flow {
             usability: $usability_ty,
             amount: Decimal,
             unit: &str,
-            time_unit: Decimal,
+            time_unit: &str,
             interface_name: &str,
             interface_description: &str,
             flow_name: &str,

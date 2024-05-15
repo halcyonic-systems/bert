@@ -68,7 +68,7 @@ pub struct Flow {
     pub amount: Decimal,
     pub unit: String,
     #[reflect(ignore)]
-    pub time_unit: Decimal,
+    pub time_unit: String,
     pub is_useful: bool,
 }
 

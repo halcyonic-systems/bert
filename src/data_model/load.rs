@@ -12,7 +12,10 @@ fn load_from_json(file_name: &str) -> WorldModel {
 
 pub fn load_world(
     mut commands: Commands,
-    existing_elemens_query: Query<Entity, With<SystemElement>>,
+    state: Res<State<FileImportState>>,
+    mut next_state: ResMut<NextState<FileImportState>>,
+    selected_file_query: Query<&SelectedFile>,
+    existing_elements_query: Query<Entity, With<SystemElement>>,
     subsystem_query: Query<&Subsystem>,
     nesting_query: Query<&NestingLevel>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -20,11 +23,15 @@ pub fn load_world(
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
-    for entity in &existing_elemens_query {
+    for entity in &existing_elements_query {
         commands.entity(entity).despawn_recursive();
     }
 
-    let world_model = load_from_json("world_model.json");
+    let selected_file = selected_file_query
+        .get_single()
+        .expect("there should only be 1 selected file");
+
+    let world_model = load_from_json(selected_file.path_buf.to_str().unwrap());
 
     let system = world_model.system_of_interest;
 
@@ -137,7 +144,7 @@ pub fn load_world(
                     },
                     interaction.amount,
                     &interaction.unit,
-                    interaction.time_unit,
+                    &interaction.time_unit,
                     &interface.info.name,
                     &interface.info.description,
                     &interaction.info.name,
@@ -171,7 +178,7 @@ pub fn load_world(
                     },
                     interaction.amount,
                     &interaction.unit,
-                    interaction.time_unit,
+                    &interaction.time_unit,
                     &interface.info.name,
                     &interface.info.description,
                     &interaction.info.name,
@@ -184,4 +191,5 @@ pub fn load_world(
             InterfaceType::Hybrid => todo!(),
         };
     }
+    next_state.set(state.get().next());
 }
