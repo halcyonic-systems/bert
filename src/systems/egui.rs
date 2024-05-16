@@ -6,18 +6,16 @@ use bevy_egui::egui::{vec2, ComboBox, DragValue, Margin, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
 use rust_decimal::Decimal;
 
-
-
 macro_rules! h_wrap {
     ($ui:expr, $body:expr) => {
-        $ui.horizontal( $body );
-    }
+        $ui.horizontal($body);
+    };
 }
 
 macro_rules! vc_wrap {
     ($ui:expr, $body:expr) => {
-        $ui.vertical_centered( $body );
-    }
+        $ui.vertical_centered($body);
+    };
 }
 
 macro_rules! h_label {
@@ -25,7 +23,7 @@ macro_rules! h_label {
         $ui.horizontal(|ui| {
             ui.label($data);
         });
-    }
+    };
 }
 
 macro_rules! vc_label {
@@ -33,7 +31,7 @@ macro_rules! vc_label {
         $ui.vertical_centered(|ui| {
             ui.label($data);
         });
-    }
+    };
 }
 
 macro_rules! vcj_label {
@@ -41,7 +39,7 @@ macro_rules! vcj_label {
         $ui.vertical_centered_justified(|ui| {
             ui.label($data);
         });
-    }
+    };
 }
 
 macro_rules! vcj_text_edit {
@@ -53,9 +51,8 @@ macro_rules! vcj_text_edit {
                 ui.text_edit_singleline($data);
             }
         });
-    }
+    };
 }
-
 
 fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
     h_label!(ui, "Protocol");
@@ -88,8 +85,12 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap = Some(false);
                 ui.set_min_width(60.0);
-                ui.selectable_value(&mut flow.substance_type, SubstanceType::Energy,  "Energy");
-                ui.selectable_value(&mut flow.substance_type, SubstanceType::Material,"Material");
+                ui.selectable_value(&mut flow.substance_type, SubstanceType::Energy, "Energy");
+                ui.selectable_value(
+                    &mut flow.substance_type,
+                    SubstanceType::Material,
+                    "Material",
+                );
                 ui.selectable_value(&mut flow.substance_type, SubstanceType::Message, "Message");
             });
     });
@@ -126,7 +127,11 @@ fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
                     ui.style_mut().wrap = Some(false);
                     ui.set_min_width(60.0);
                     ui.selectable_value(inflow_usability, InflowUsability::Resource, "Resource");
-                    ui.selectable_value(inflow_usability, InflowUsability::Disruption,"Disruption");
+                    ui.selectable_value(
+                        inflow_usability,
+                        InflowUsability::Disruption,
+                        "Disruption",
+                    );
                 });
         });
     });
@@ -139,6 +144,8 @@ fn system_of_interest_egui(
     system: &mut crate::components::System,
     system_environment: &mut SystemEnvironment,
 ) {
+    h_label!(ui, "Time Unit");
+    vcj_text_edit!(ui, &mut system.time_unit, false);
     ui.separator();
     boundary_egui(ui, system);
     ui.separator();
@@ -182,7 +189,14 @@ fn mut_environment_egui(ui: &mut Ui, system_environment: &mut SystemEnvironment)
     vcj_text_edit!(ui, &mut system_environment.description, true);
 }
 
-fn subsystem_egui(ui: &mut Ui, system: &mut crate::components::System, system_environment: &SystemEnvironment) {
+fn subsystem_egui(
+    ui: &mut Ui,
+    system: &mut crate::components::System,
+    system_environment: &SystemEnvironment,
+) {
+    h_label!(ui, "Time Unit");
+    vcj_text_edit!(ui, &mut system.time_unit, false);
+
     ui.separator();
     boundary_egui(ui, system);
 
@@ -254,9 +268,8 @@ pub fn egui_selected_context(
                                 .expect("Interface not found"),
                         ),
                         SystemElement::System => {
-                            let mut system = system_query
-                                .get_mut(entity)
-                                .expect("System not found");
+                            let mut system =
+                                system_query.get_mut(entity).expect("System not found");
 
                             if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
                                 system_of_interest_egui(ui, &mut system, &mut sys_env)
@@ -266,15 +279,11 @@ pub fn egui_selected_context(
                         }
                         SystemElement::Inflow => inflow_egui(
                             ui,
-                            &mut flow_query
-                                .get_mut(entity)
-                                .expect("Inflow not found"),
+                            &mut flow_query.get_mut(entity).expect("Inflow not found"),
                         ),
                         SystemElement::Outflow => outflow_egui(
                             ui,
-                            &mut flow_query
-                                .get_mut(entity)
-                                .expect("Outflow not found"),
+                            &mut flow_query.get_mut(entity).expect("Outflow not found"),
                         ),
                         SystemElement::ExternalEntity => external_entity_egui(
                             ui,

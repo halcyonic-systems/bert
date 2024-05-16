@@ -1,10 +1,9 @@
-use std::path::PathBuf;
-use rfd::FileDialog;
-use bevy::{prelude::*,
-    tasks::{
-        futures_lite::future, AsyncComputeTaskPool, Task
-    },
+use bevy::{
+    prelude::*,
+    tasks::{futures_lite::future, AsyncComputeTaskPool, Task},
 };
+use rfd::FileDialog;
+use std::path::PathBuf;
 
 #[derive(States, Default, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum FileExportState {
@@ -16,20 +15,22 @@ pub enum FileExportState {
     CleanUp,
 }
 
-impl FileExportState  {
+impl FileExportState {
     pub fn next(&self) -> Self {
         type S = FileExportState;
         match *self {
             S::Inactive => S::Select,
-            S::Select   => S::Poll,
-            S::Poll     => S::Save,
-            S::Save     => S::CleanUp,
-            S::CleanUp  => S::Inactive,
+            S::Select => S::Poll,
+            S::Poll => S::Save,
+            S::Save => S::CleanUp,
+            S::CleanUp => S::Inactive,
         }
     }
     pub fn reset(&self) -> Self {
         type S = FileExportState;
-        match *self { _ => S::Inactive }
+        match *self {
+            _ => S::Inactive,
+        }
     }
 }
 
@@ -45,8 +46,8 @@ pub fn export_file(
     state: Res<State<FileExportState>>,
     mut next_state: ResMut<NextState<FileExportState>>,
 ) {
-        info!("state: {:?}", state.get());
-        next_state.set(state.get().next());
+    info!("state: {:?}", state.get());
+    next_state.set(state.get().next());
 }
 
 pub fn open_export_dialog(
@@ -59,13 +60,13 @@ pub fn open_export_dialog(
 
     let task = thread_pool.spawn(async move {
         FileDialog::new()
-                .add_filter("valid_formats", &["json"])
-                .save_file()
+            .add_filter("valid_formats", &["json"])
+            .save_file()
     });
     commands.spawn(ExportFileTask(task));
     next_state.set(state.get().next());
 }
-    /* Polls the async task for its completion to get the resulting file */
+/* Polls the async task for its completion to get the resulting file */
 pub fn poll_for_export_file(
     mut commands: Commands,
     mut tasks: Query<(Entity, &mut ExportFileTask)>,
@@ -74,9 +75,7 @@ pub fn poll_for_export_file(
 ) {
     println!("Export Polling");
     for (entity, mut selected_file) in tasks.iter_mut() {
-        if let Some(result) = future::block_on(
-            future::poll_once(&mut selected_file.0)
-        ) {
+        if let Some(result) = future::block_on(future::poll_once(&mut selected_file.0)) {
             info!("{:?}", result);
             if let Some(path_buf) = result {
                 commands.spawn(SaveFile { path_buf });

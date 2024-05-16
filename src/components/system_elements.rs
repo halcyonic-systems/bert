@@ -31,6 +31,7 @@ pub struct System {
     pub adaptable: bool,
     pub evolveable: bool,
     pub boundary: SystemBoundary,
+    pub time_unit: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Reflect, Default)]

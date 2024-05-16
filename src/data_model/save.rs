@@ -152,7 +152,7 @@ pub fn save_world(
     let save_file = save_file_query
         .get_single()
         .expect("there should only be 1 selected file");
-    
+
     save_to_json(&model, save_file.path_buf.to_str().unwrap());
     next_state.set(state.get().next());
 }

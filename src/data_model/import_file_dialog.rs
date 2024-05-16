@@ -1,10 +1,9 @@
-use std::path::PathBuf;
-use rfd::FileDialog;
-use bevy::{prelude::*,
-    tasks::{
-        futures_lite::future, AsyncComputeTaskPool, Task
-    },
+use bevy::{
+    prelude::*,
+    tasks::{futures_lite::future, AsyncComputeTaskPool, Task},
 };
+use rfd::FileDialog;
+use std::path::PathBuf;
 
 #[derive(States, Default, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum FileImportState {
@@ -16,20 +15,22 @@ pub enum FileImportState {
     CleanUp,
 }
 
-impl FileImportState  {
+impl FileImportState {
     pub fn next(&self) -> Self {
         type S = FileImportState;
         match *self {
             S::Inactive => S::Select,
-            S::Select   => S::Poll,
-            S::Poll     => S::Load,
-            S::Load     => S::CleanUp,
-            S::CleanUp  => S::Inactive,
+            S::Select => S::Poll,
+            S::Poll => S::Load,
+            S::Load => S::CleanUp,
+            S::CleanUp => S::Inactive,
         }
     }
     pub fn reset(&self) -> Self {
         type S = FileImportState;
-        match *self { _ => S::Inactive }
+        match *self {
+            _ => S::Inactive,
+        }
     }
 }
 
@@ -41,7 +42,7 @@ pub struct SelectedFile {
     pub path_buf: PathBuf,
 }
 
-/* 
+/*
     This will open the native operating system file dialog,
     schedule an async task, and store the file path in a component
 */
@@ -49,8 +50,8 @@ pub fn import_file(
     state: Res<State<FileImportState>>,
     mut next_state: ResMut<NextState<FileImportState>>,
 ) {
-        info!("state: {:?}", state.get());
-        next_state.set(state.get().next());
+    info!("state: {:?}", state.get());
+    next_state.set(state.get().next());
 }
 
 pub fn open_import_dialog_selection(
@@ -63,8 +64,8 @@ pub fn open_import_dialog_selection(
 
     let task = thread_pool.spawn(async move {
         FileDialog::new()
-                .add_filter("valid_formats", &["json"])
-                .pick_file()
+            .add_filter("valid_formats", &["json"])
+            .pick_file()
     });
     commands.spawn(SelectedFileTask(task));
     next_state.set(state.get().next());
@@ -79,9 +80,7 @@ pub fn poll_for_selected_file(
 ) {
     println!("Polling");
     for (entity, mut selected_file) in tasks.iter_mut() {
-        if let Some(result) = future::block_on(
-            future::poll_once(&mut selected_file.0)
-        ) {
+        if let Some(result) = future::block_on(future::poll_once(&mut selected_file.0)) {
             info!("{:?}", result);
             if let Some(path_buf) = result {
                 commands.spawn(SelectedFile { path_buf });
