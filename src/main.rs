@@ -165,6 +165,7 @@ fn main() {
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
                 update_interface_subsystem_color_from_interface,
                 update_system_color_from_subsystem,
+                update_external_entity_label,
             ),
         ),
     )
@@ -219,7 +220,8 @@ fn main() {
     .register_type::<InitialPosition>()
     .register_type::<SelectedHighlightHelperAdded>()
     .register_type::<Pinnable>()
-    .register_type::<Pin>();
+    .register_type::<Pin>()
+    .register_type::<NestingLevel>();
 
     app.world.resource_mut::<Assets<ColorMaterial>>().insert(
         WHITE_COLOR_MATERIAL_HANDLE,
