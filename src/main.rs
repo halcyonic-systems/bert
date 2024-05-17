@@ -50,7 +50,6 @@ fn main() {
         DefaultPlugins,
         WorldInspectorPlugin::new(),
         DefaultPickingPlugins,
-        // EguiPlugin,
         ShapePlugin,
         LyonSelectionPlugin,
         MouseInteractionPlugin,
@@ -64,7 +63,7 @@ fn main() {
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .init_state::<AppState>()
-    .add_systems(Startup, setup);
+    .add_systems(Startup, (window_setup, setup).chain());
 
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));

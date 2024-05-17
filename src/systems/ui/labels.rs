@@ -47,11 +47,11 @@ pub fn spawn_text_label(
 ) {
     let font = asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf");
     let font_size = 16.;
-    let text_color = Color::WHITE;
+    let text_color = Color::BLACK;
     let justify = JustifyText::Left;
     let text_2d_bundle_transform = Transform::from_translation(Vec3::Z); // z_index should be surface z + 1
 
-    let surface_color = Color::rgb(0.25, 0.25, 0.75);
+    let surface_color = Color::SILVER; // Color::ANTIQUE_WHITE
     let mut surface_size = Vec2::new(150.0, 50.0);
     let mut surface_custom_size = Vec2::new(surface_size.x, surface_size.y);
     let surface_position = Vec2::ZERO;
