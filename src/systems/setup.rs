@@ -12,7 +12,7 @@ pub fn window_setup(mut primary_window_query: Query<&mut Window, With<PrimaryWin
 
     w.title = "Deep System Analysis".to_string();
     w.position = WindowPosition::Centered(MonitorSelection::Current);
-    w.set_maximized(true);    
+    w.set_maximized(true);
 }
 
 const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;

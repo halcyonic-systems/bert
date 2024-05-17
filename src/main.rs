@@ -24,6 +24,7 @@ use crate::systems::*;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
+use bevy::transform::TransformSystem;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
@@ -104,7 +105,7 @@ fn main() {
                 add_interface_subsystem_create_buttons,
                 add_outflow_create_button,
                 remove_unfocused_system_buttons,
-                // update_unpinned_pinnables,
+                add_external_entity_labels, // update_unpinned_pinnables,
             )
                 .in_set(CreateButtonSet),
             (
@@ -164,7 +165,7 @@ fn main() {
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
                 update_interface_subsystem_color_from_interface,
                 update_system_color_from_subsystem,
-                update_external_entity_label,
+                update_label_text,
             ),
         ),
     )
@@ -176,6 +177,7 @@ fn main() {
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
+            update_label_rotations.before(TransformSystem::TransformPropagate),
             update_flow_from_subsystem_without_interface,
             //update_pin_rotation,
         ),
