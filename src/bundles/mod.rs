@@ -64,13 +64,14 @@ impl SystemBundle {
 
         let (simplified_mesh, path) = get_system_geometry_from_radius(zoomed_radius);
         let scale = NestingLevel::compute_scale(nesting_level, zoom);
-
+        let time_unit = "Second".to_string();
         Self {
             system: System {
                 radius,
                 adaptable,
                 evolveable,
                 boundary,
+                time_unit,
             },
             name: Name::new(name.to_string()),
             description: ElementDescription::new(description),
