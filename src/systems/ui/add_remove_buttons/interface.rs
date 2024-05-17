@@ -5,14 +5,13 @@ use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 
 macro_rules! interface_create_button {
-    ($fn_name:ident, $flow_conn_ty:ty, $interface_connection:ty, $terminal_connection:ty, $button_type:expr, $side:tt, $side_dir:tt) => {
+    ($fn_name:ident, $flow_conn_ty:ty, $interface_connection:ty, $button_type:expr, $side:tt, $side_dir:tt) => {
         pub fn $fn_name(
             mut commands: Commands,
             query: Query<
                 (Entity, &FlowCurve, &Flow, &$flow_conn_ty, Option<&Parent>),
                 (
                     Without<$interface_connection>,
-                    Without<$terminal_connection>,
                     Without<HasFlowInterfaceButton>,
                 ),
             >,
@@ -73,7 +72,6 @@ interface_create_button!(
     add_outflow_interface_create_button,
     FlowStartConnection,
     FlowStartInterfaceConnection,
-    FlowEndConnection,
     CreateButtonType::ExportInterface,
     start,
     start_direction
@@ -82,7 +80,6 @@ interface_create_button!(
     add_inflow_interface_create_button,
     FlowEndConnection,
     FlowEndInterfaceConnection,
-    FlowStartConnection,
     CreateButtonType::ImportInterface,
     end,
     end_direction
