@@ -228,16 +228,14 @@ pub fn drag_interface(
             }
         }
 
-        let mut transform = transform_query
-            .get_mut(external_entity)
-            .expect("External entity should have a Transform");
-
-        transform.rotation = compute_external_entity_rotation(
-            external_entity_pos,
-            other_end,
-            other_end_direction,
-            tangent_len,
-        );
+        if let Ok(mut transform) = transform_query.get_mut(external_entity) {
+            transform.rotation = compute_external_entity_rotation(
+                external_entity_pos,
+                other_end,
+                other_end_direction,
+                tangent_len,
+            );
+        }
     }
 }
 
