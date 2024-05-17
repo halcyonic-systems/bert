@@ -1,5 +1,4 @@
 use bevy::{
-    ecs::component,
     prelude::*,
     text::{BreakLineOn, Text2dBounds},
 };
