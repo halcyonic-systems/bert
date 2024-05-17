@@ -2,7 +2,9 @@ use crate::components::*;
 use crate::constants::EXTERNAL_ENTITY_WIDTH_HALF;
 use crate::events::*;
 use crate::resources::Zoom;
-use crate::utils::compute_end_and_direction_from_system_child;
+use crate::utils::{
+    compute_end_and_direction_from_subsystem, compute_end_and_direction_from_system_child,
+};
 use bevy::prelude::*;
 use std::ops::DerefMut;
 
@@ -139,6 +141,75 @@ pub fn update_flow_from_interface(
                     );
                     flow_curve.start = start;
                     flow_curve.start_direction = dir;
+                }
+            }
+        }
+    }
+}
+
+pub fn update_flow_from_subsystem_without_interface(
+    subsystem_query: Query<
+        (Entity, &GlobalTransform, &crate::components::System),
+        (With<Subsystem>, Changed<Transform>),
+    >,
+    mut flow_query: Query<(
+        &mut FlowCurve,
+        &GlobalTransform,
+        Option<&FlowStartConnection>,
+        Option<&FlowEndConnection>,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
+    )>,
+    zoom: Res<Zoom>,
+) {
+    for (target, system_transform, system) in &subsystem_query {
+        for (
+            mut flow_curve,
+            flow_transform,
+            flow_start_connection,
+            flow_end_connection,
+            flow_start_interface_connection,
+            flow_end_interface_connection,
+        ) in &mut flow_query
+        {
+            let flow_transform_inverse = flow_transform.affine().inverse();
+            let system_pos = flow_transform_inverse
+                .transform_point3(system_transform.translation())
+                .truncate();
+
+            if let Some(flow_end_connection) = flow_end_connection {
+                if flow_end_connection.target == target {
+                    if flow_end_interface_connection.is_some() {
+                        continue;
+                    }
+
+                    let (end, end_direction) = compute_end_and_direction_from_subsystem(
+                        system_pos,
+                        system.radius * **zoom,
+                        flow_curve.start,
+                        flow_curve.start_direction,
+                    );
+
+                    flow_curve.end = end;
+                    flow_curve.end_direction = end_direction;
+                }
+            }
+
+            if let Some(flow_start_connection) = flow_start_connection {
+                if flow_start_connection.target == target {
+                    if flow_start_interface_connection.is_some() {
+                        continue;
+                    }
+
+                    let (start, start_direction) = compute_end_and_direction_from_subsystem(
+                        system_pos,
+                        system.radius * **zoom,
+                        flow_curve.end,
+                        flow_curve.end_direction,
+                    );
+
+                    flow_curve.start = start;
+                    flow_curve.start_direction = start_direction;
                 }
             }
         }
