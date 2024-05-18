@@ -99,19 +99,20 @@ pub fn spawn_create_button(
 pub fn despawn_create_button(
     commands: &mut Commands,
     entity: Entity,
-    query: &Query<&CreateButton>,
+    query: &Query<(&CreateButton, Option<&Parent>)>,
 ) {
-    let create_button = query
+    let (create_button, parent) = query
         .get(entity)
         .expect("Button doesn't have CreateButton component");
 
-    despawn_create_button_with_component(commands, entity, create_button);
+    despawn_create_button_with_component(commands, entity, create_button, parent);
 }
 
 pub fn despawn_create_button_with_component(
     commands: &mut Commands,
     entity: Entity,
     create_button: &CreateButton,
+    parent: Option<&Parent>,
 ) {
     let mut entity_commands = commands.entity(create_button.connection_source);
 
@@ -131,6 +132,10 @@ pub fn despawn_create_button_with_component(
         CreateButtonType::Inflow | CreateButtonType::Outflow => {
             // do nothing
         }
+    }
+
+    if let Some(parent) = parent {
+        commands.entity(parent.get()).remove_children(&[entity]);
     }
 
     commands.entity(entity).despawn();

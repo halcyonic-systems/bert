@@ -8,7 +8,7 @@ pub fn add_outflow_create_button(
     mut commands: Commands,
     focused_system: Res<FocusedSystem>,
     outflow_finished_query: Query<&FlowStartConnection, Added<FlowEndConnection>>,
-    button_query: Query<(Entity, &CreateButton)>,
+    button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
     flow_system_query: Query<
         &FlowStartConnection,
         Or<(
@@ -38,16 +38,16 @@ pub fn add_outflow_create_button(
     }
 
     let mut button_entities = vec![];
-    for (button_entity, button) in &button_query {
+    for (button_entity, button, parent) in &button_query {
         if button.system == focused_system && matches!(button.ty, CreateButtonType::Outflow) {
-            button_entities.push((button_entity, button));
+            button_entities.push((button_entity, button, parent));
         }
     }
 
     for outflow_connection in &flow_system_query {
         if outflow_connection.target == focused_system {
-            for (entity, button) in button_entities {
-                despawn_create_button_with_component(&mut commands, entity, button)
+            for (entity, button, parent) in button_entities {
+                despawn_create_button_with_component(&mut commands, entity, button, parent)
             }
             return;
         }

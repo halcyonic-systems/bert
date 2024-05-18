@@ -58,18 +58,19 @@ pub fn change_focused_system(
 pub fn remove_unfocused_system_buttons(
     mut commands: Commands,
     focused_system: Res<FocusedSystem>,
-    previous_focused_system: Local<Option<Entity>>,
-    button_query: Query<(Entity, &CreateButton)>,
+    mut previous_focused_system: Local<Option<Entity>>,
+    button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
 ) {
     if !focused_system.is_changed() || Some(**focused_system) == *previous_focused_system {
         return;
     }
 
     let focused_system = **focused_system;
+    *previous_focused_system = Some(focused_system);
 
-    for (entity, button) in &button_query {
+    for (entity, button, parent) in &button_query {
         if button.system != focused_system {
-            despawn_create_button_with_component(&mut commands, entity, button);
+            despawn_create_button_with_component(&mut commands, entity, button, parent);
         }
     }
 }
@@ -77,7 +78,7 @@ pub fn remove_unfocused_system_buttons(
 pub fn on_flow_terminal_button_click(
     mut commands: Commands,
     mut event: ListenerMut<Pointer<Click>>,
-    only_button_query: Query<&CreateButton>,
+    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
     mut pick_selection_query: Query<&mut PickSelection>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
@@ -85,7 +86,7 @@ pub fn on_flow_terminal_button_click(
 
     deselect_all(&mut pick_selection_query);
 
-    let button = only_button_query
+    let (button, _) = only_button_query
         .get(event.target)
         .expect("After on click this has to exist");
 
@@ -112,7 +113,7 @@ pub fn on_external_entity_create_button_click(
     mut commands: Commands,
     mut event: ListenerMut<Pointer<Click>>,
     button_query: Query<(&CreateButton, &Transform)>,
-    only_button_query: Query<&CreateButton>,
+    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
     mut pick_selection_query: Query<&mut PickSelection>,
     subsystem_query: Query<&Subsystem>,
     nesting_query: Query<&NestingLevel>,
@@ -179,7 +180,7 @@ pub fn on_create_button_click(
     mut commands: Commands,
     mut event: ListenerMut<Pointer<Click>>,
     button_query: Query<(&CreateButton, &Transform)>,
-    only_button_query: Query<&CreateButton>,
+    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
     flow_interface_query: Query<(
         Entity,
         &Flow,

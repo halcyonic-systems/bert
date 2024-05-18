@@ -191,10 +191,11 @@ pub fn despawn_selected_helper(
 ) {
     for (deselected_entity, helper, selection) in &selected_query {
         if !selection.is_selected {
-            commands.entity(helper.helper_entity).despawn_recursive();
             commands
                 .entity(deselected_entity)
-                .remove::<SelectedHighlightHelperAdded>();
+                .remove::<SelectedHighlightHelperAdded>()
+                .remove_children(&[helper.helper_entity]);
+            commands.entity(helper.helper_entity).despawn_recursive();
         }
     }
 }

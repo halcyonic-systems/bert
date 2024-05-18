@@ -32,7 +32,7 @@ pub fn add_interface_subsystem_create_buttons(
     )>,
     interface_button_query: Query<&HasInterfaceSubsystemButton>,
     interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
-    button_query: Query<&CreateButton>,
+    button_query: Query<(&CreateButton, Option<&Parent>)>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
