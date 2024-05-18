@@ -2,7 +2,6 @@ mod add_remove_buttons;
 mod color;
 mod drag;
 mod flow;
-mod labels;
 mod pin;
 mod selected_helper;
 mod zoom;
@@ -13,7 +12,6 @@ pub use color::*;
 pub use drag::*;
 pub use flow::*;
 // pub use pin::*;
-pub use labels::*;
 pub use selected_helper::*;
 pub use zoom::*;
 
@@ -106,6 +104,73 @@ pub fn on_flow_terminal_button_click(
         }
         _ => unreachable!("The other types are handled in other event listeners"),
     }
+
+    despawn_create_button(&mut commands, event.target, &only_button_query);
+}
+
+pub fn on_external_entity_create_button_click(
+    mut commands: Commands,
+    mut event: ListenerMut<Pointer<Click>>,
+    button_query: Query<(&CreateButton, &Transform)>,
+    only_button_query: Query<&CreateButton>,
+    mut pick_selection_query: Query<&mut PickSelection>,
+    subsystem_query: Query<&Subsystem>,
+    nesting_query: Query<&NestingLevel>,
+    focused_system: Res<FocusedSystem>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut stroke_tess: ResMut<StrokeTessellator>,
+    mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
+    zoom: Res<Zoom>,
+) {
+    event.stop_propagation();
+
+    deselect_all(&mut pick_selection_query);
+
+    let (button, transform) = button_query
+        .get(event.target)
+        .expect("After on click this has to exist");
+
+    match button.ty {
+        CreateButtonType::Source => spawn_external_entity(
+            &mut commands,
+            &subsystem_query,
+            &nesting_query,
+            **focused_system,
+            InterfaceType::Import,
+            button
+                .substance_type
+                .expect("Source button must have a substance type"),
+            button.connection_source,
+            transform,
+            &mut fixed_system_element_geometries,
+            **zoom,
+            true,
+            &mut meshes,
+            &mut stroke_tess,
+            "Source",
+            "",
+        ),
+        CreateButtonType::Sink => spawn_external_entity(
+            &mut commands,
+            &subsystem_query,
+            &nesting_query,
+            **focused_system,
+            InterfaceType::Export,
+            button
+                .substance_type
+                .expect("Sink button must have a substance type"),
+            button.connection_source,
+            transform,
+            &mut fixed_system_element_geometries,
+            **zoom,
+            true,
+            &mut meshes,
+            &mut stroke_tess,
+            "Sink",
+            "",
+        ),
+        _ => unreachable!("The other types are handled in other event listeners"),
+    };
 
     despawn_create_button(&mut commands, event.target, &only_button_query);
 }
@@ -228,44 +293,6 @@ pub fn on_create_button_click(
             "",
             "Second",
             "Outflow",
-            "",
-        ),
-        CreateButtonType::Source => spawn_external_entity(
-            &mut commands,
-            &subsystem_query,
-            &nesting_query,
-            **focused_system,
-            InterfaceType::Import,
-            button
-                .substance_type
-                .expect("Source button must have a substance type"),
-            button.connection_source,
-            transform,
-            &mut fixed_system_element_geometries,
-            **zoom,
-            true,
-            &mut meshes,
-            &mut stroke_tess,
-            "Source",
-            "",
-        ),
-        CreateButtonType::Sink => spawn_external_entity(
-            &mut commands,
-            &subsystem_query,
-            &nesting_query,
-            **focused_system,
-            InterfaceType::Export,
-            button
-                .substance_type
-                .expect("Sink button must have a substance type"),
-            button.connection_source,
-            transform,
-            &mut fixed_system_element_geometries,
-            **zoom,
-            true,
-            &mut meshes,
-            &mut stroke_tess,
-            "Sink",
             "",
         ),
         CreateButtonType::InterfaceSubsystem {

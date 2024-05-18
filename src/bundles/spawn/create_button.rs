@@ -1,6 +1,8 @@
 use crate::components::*;
 use crate::constants::BUTTON_WIDTH_HALF;
-use crate::systems::{on_create_button_click, on_flow_terminal_button_click};
+use crate::systems::{
+    on_create_button_click, on_external_entity_create_button_click, on_flow_terminal_button_click,
+};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -43,6 +45,9 @@ pub fn spawn_create_button(
     let on_click_handler = match create_button.ty {
         CreateButtonType::FlowTerminalStart | CreateButtonType::FlowTerminalEnd => {
             On::<Pointer<Click>>::run(on_flow_terminal_button_click)
+        }
+        CreateButtonType::Source | CreateButtonType::Sink => {
+            On::<Pointer<Click>>::run(on_external_entity_create_button_click)
         }
         _ => On::<Pointer<Click>>::run(on_create_button_click),
     };

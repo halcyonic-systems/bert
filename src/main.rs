@@ -9,11 +9,13 @@ mod states;
 mod systems;
 mod utils;
 
+use crate::bundles::auto_spawn_external_entity_label;
 use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
 use crate::data_model::load::load_world;
 use crate::data_model::save::save_world;
 use crate::events::*;
+use crate::plugins::label::LabelPlugin;
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
 use crate::plugins::mouse_interaction::{
     disable_selection, enable_selection, MouseInteractionPlugin,
@@ -24,7 +26,6 @@ use crate::systems::*;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
-use bevy::transform::TransformSystem;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
@@ -54,6 +55,7 @@ fn main() {
         ShapePlugin,
         LyonSelectionPlugin,
         MouseInteractionPlugin,
+        LabelPlugin,
     ))
     .init_state::<FileImportState>()
     .init_state::<FileExportState>()
@@ -105,7 +107,7 @@ fn main() {
                 add_interface_subsystem_create_buttons,
                 add_outflow_create_button,
                 remove_unfocused_system_buttons,
-                add_external_entity_labels, // update_unpinned_pinnables,
+                // update_unpinned_pinnables,
             )
                 .in_set(CreateButtonSet),
             (
@@ -165,7 +167,6 @@ fn main() {
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
                 update_interface_subsystem_color_from_interface,
                 update_system_color_from_subsystem,
-                update_label_text,
             ),
         ),
     )
@@ -177,8 +178,8 @@ fn main() {
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
-            update_label_rotations.before(TransformSystem::TransformPropagate),
             update_flow_from_subsystem_without_interface,
+            auto_spawn_external_entity_label,
             //update_pin_rotation,
         ),
     )

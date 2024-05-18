@@ -4,11 +4,13 @@ use crate::constants::{
     EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
 };
 use crate::events::ExternalEntityDrag;
+use crate::plugins::label::add_name_label;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
 use crate::utils::ui_transform_from_button;
+use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -96,4 +98,41 @@ pub fn spawn_external_entity(
     }
 
     external_entity
+}
+
+// TODO : do the entire external entity like this autospawn?
+pub fn auto_spawn_external_entity_label(
+    mut commands: Commands,
+    external_entity_query: Query<Entity, Added<ExternalEntity>>,
+    flow_query: Query<(Option<&FlowEndConnection>, Option<&FlowStartConnection>), With<Flow>>,
+    name_query: Query<&Name>,
+    asset_server: Res<AssetServer>,
+) {
+    for external_entity in external_entity_query.iter() {
+        let mut offset_x = 0.0;
+
+        for (flow_end_connection, flow_start_connection) in &flow_query {
+            if let Some(flow_end_connection) = flow_end_connection {
+                if flow_end_connection.target == external_entity {
+                    offset_x = EXTERNAL_ENTITY_WIDTH_HALF;
+                    break;
+                }
+            }
+            if let Some(flow_start_connection) = flow_start_connection {
+                if flow_start_connection.target == external_entity {
+                    offset_x = -EXTERNAL_ENTITY_WIDTH_HALF;
+                    break;
+                }
+            }
+        }
+
+        add_name_label(
+            &mut commands,
+            external_entity,
+            vec2(70.0, 100.0),
+            vec3(offset_x, 0.0, 0.0),
+            &name_query,
+            &asset_server,
+        );
+    }
 }
