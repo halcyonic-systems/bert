@@ -8,6 +8,40 @@ use crate::utils::{
 use bevy::prelude::*;
 use std::ops::DerefMut;
 
+pub fn drag_subsystem(
+    mut events: EventReader<SubsystemDrag>,
+    mut subsystem_query: Query<(&mut Transform, &Subsystem, Option<&InterfaceSubsystem>)>,
+    system_query: Query<&crate::components::System>,
+    zoom: Res<Zoom>,
+) {
+    for event in events.read() {
+        if event.has_bubbled() {
+            continue;
+        }
+
+        let (mut transform, subsystem, interface_subsystem) = subsystem_query
+            .get_mut(event.target)
+            .expect("Subsystem should exist");
+
+        // TODO : drag interface subsystems
+        if interface_subsystem.is_some() {
+            continue;
+        }
+
+        transform.translation.x = event.position.x;
+        transform.translation.y = event.position.y;
+
+        let parent_system = system_query
+            .get(subsystem.parent_system)
+            .expect("Parent system has to exist");
+        transform.translation = transform
+            .translation
+            .truncate()
+            .clamp_length_max(parent_system.radius * **zoom)
+            .extend(transform.translation.z);
+    }
+}
+
 pub fn drag_external_entity(
     mut events: EventReader<ExternalEntityDrag>,
     mut transform_query: Query<&mut Transform>,
@@ -63,7 +97,9 @@ pub fn drag_external_entity(
                 .expect("Parent system has to exist");
             transform.translation = transform
                 .translation
-                .clamp_length_max(parent_system.radius * **zoom);
+                .truncate()
+                .clamp_length_max(parent_system.radius * **zoom)
+                .extend(transform.translation.z);
         }
     }
 }

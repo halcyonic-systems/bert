@@ -1,7 +1,9 @@
 use crate::bundles::{spawn_interface, SystemBundle};
 use crate::components::*;
 use crate::constants::*;
+use crate::events::SubsystemDrag;
 use crate::plugins::label::add_name_label;
+use crate::plugins::mouse_interaction::DragPosition;
 use crate::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
 };
@@ -10,6 +12,7 @@ use crate::utils::{
 };
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
+use bevy_eventlistener::event_listener::On;
 
 pub fn spawn_interface_subsystem(
     commands: &mut Commands,
@@ -163,6 +166,7 @@ fn spawn_subsystem_common(
                     description,
                 ),
                 Pinnable { has_pins: false },
+                On::<DragPosition>::send_event::<SubsystemDrag>(),
             ))
             .id(),
         radius,
@@ -200,6 +204,8 @@ pub fn spawn_subsystem(
         SubsystemPosition::Position(position),
     );
 
+    let zoomed_radius = radius * zoom;
+
     commands.entity(parent_system).add_child(subsystem_entity);
 
     for inflow in inflows {
@@ -207,11 +213,11 @@ pub fn spawn_subsystem(
 
         let (_, dir) = compute_end_and_direction_from_subsystem(
             position,
-            radius,
+            zoomed_radius,
             flow_curve.start,
             flow_curve.start_direction,
         );
-        let transform = transform_from_point2d_and_direction(dir * radius, dir);
+        let transform = transform_from_point2d_and_direction(dir * zoomed_radius, dir);
 
         spawn_interface(
             commands,
@@ -236,11 +242,11 @@ pub fn spawn_subsystem(
 
         let (_, dir) = compute_end_and_direction_from_subsystem(
             position,
-            radius,
+            zoomed_radius,
             flow_curve.end,
             flow_curve.end_direction,
         );
-        let transform = transform_from_point2d_and_direction(dir * radius, dir);
+        let transform = transform_from_point2d_and_direction(dir * zoomed_radius, dir);
 
         spawn_interface(
             commands,

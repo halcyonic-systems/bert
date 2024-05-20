@@ -66,6 +66,7 @@ fn main() {
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
+    .add_event::<SubsystemDrag>()
     .init_state::<AppState>()
     .add_systems(Startup, (window_setup, setup).chain());
 
@@ -98,7 +99,7 @@ fn main() {
                 select_flow_terminal.after(update_selecting_flow_from_mouse),
             )
                 .in_set(FlowTerminalSelectingSet),
-            (drag_external_entity, drag_interface),
+            (drag_external_entity, drag_interface, drag_subsystem),
             (
                 add_outflow_interface_create_button,
                 add_inflow_interface_create_button,
