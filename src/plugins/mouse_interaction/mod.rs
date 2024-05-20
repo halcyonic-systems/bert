@@ -81,9 +81,15 @@ pub struct PickSelection {
 #[reflect(Component)]
 pub struct NoDeselect;
 
-#[derive(Component, Copy, Clone, PartialEq, Reflect, Debug, Default)]
+#[derive(Component, Copy, Clone, Eq, PartialEq, Reflect, Debug, Default)]
 #[reflect(Component)]
 pub struct PickParent;
+
+#[derive(Component, Copy, Clone, Eq, PartialEq, Reflect, Debug)]
+#[reflect(Component)]
+pub struct PickTarget {
+    pub target: Entity,
+}
 
 pub fn update_settings(
     mut commands: Commands,
@@ -101,7 +107,12 @@ pub fn update_settings(
 }
 
 fn handle_mouse_down(
-    interaction_query: Query<(Entity, &PickingInteraction, Option<&PickParent>)>,
+    interaction_query: Query<(
+        Entity,
+        &PickingInteraction,
+        Option<&PickParent>,
+        Option<&PickTarget>,
+    )>,
     parent_query: Query<&Parent>,
     mouse_position: Res<MouseWorldPosition>,
     mut dragging: ResMut<Dragging>,
@@ -110,7 +121,7 @@ fn handle_mouse_down(
     dragging.started = false;
     dragging.start_pos = **mouse_position;
 
-    for (entity, interaction, pick_parent) in &interaction_query {
+    for (entity, interaction, pick_parent, pick_target) in &interaction_query {
         if !matches!(interaction, PickingInteraction::None) {
             if pick_parent.is_some() {
                 dragging.hovered_entity = Some(
@@ -119,6 +130,8 @@ fn handle_mouse_down(
                         .expect("Parent should exist for components that have PickParent")
                         .get(),
                 );
+            } else if let Some(target) = pick_target {
+                dragging.hovered_entity = Some(target.target);
             } else {
                 dragging.hovered_entity = Some(entity);
             }
