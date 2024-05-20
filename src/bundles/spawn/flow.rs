@@ -220,6 +220,8 @@ macro_rules! spawn_complete_flow {
             translation = transform.transform_point(translation);
             transform.translation = translation;
 
+            let nesting_level = NestingLevel::current(*focused_system, nesting_query);
+
             let product_flow = $spawn_name(
                 &mut commands,
                 subsystem_query,
@@ -245,7 +247,7 @@ macro_rules! spawn_complete_flow {
                 substance_type,
                 product_flow,
                 &transform,
-                nesting_query,
+                nesting_level,
                 *focused_system,
                 fixed_system_element_geometries,
                 zoom,

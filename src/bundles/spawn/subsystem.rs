@@ -65,7 +65,7 @@ pub fn spawn_interface_subsystem(
         SUBSYSTEM_Z
     };
 
-    let (subsystem_entity, _) = spawn_subsystem_common(
+    let (subsystem_entity, _, _) = spawn_subsystem_common(
         commands,
         system_query,
         nesting_level_query,
@@ -128,7 +128,7 @@ fn spawn_subsystem_common(
     parent_system: Entity,
     z: f32,
     position: SubsystemPosition,
-) -> (Entity, f32) {
+) -> (Entity, f32, u16) {
     let radius = system_query
         .get(parent_system)
         .expect("focused system not found")
@@ -166,6 +166,7 @@ fn spawn_subsystem_common(
             ))
             .id(),
         radius,
+        nesting_level,
     )
 }
 
@@ -185,7 +186,7 @@ pub fn spawn_subsystem(
     description: &str,
     position: Vec2,
 ) {
-    let (subsystem_entity, radius) = spawn_subsystem_common(
+    let (subsystem_entity, radius, nesting_level) = spawn_subsystem_common(
         commands,
         system_query,
         nesting_level_query,
@@ -218,7 +219,7 @@ pub fn spawn_subsystem(
             flow.substance_type,
             *inflow,
             &transform,
-            nesting_level_query,
+            nesting_level,
             subsystem_entity,
             fixed_system_element_geometries,
             zoom,
@@ -247,7 +248,7 @@ pub fn spawn_subsystem(
             flow.substance_type,
             *outflow,
             &transform,
-            nesting_level_query,
+            nesting_level,
             subsystem_entity,
             fixed_system_element_geometries,
             zoom,

@@ -20,7 +20,7 @@ pub fn spawn_interface(
     substance_type: SubstanceType,
     flow_entity: Entity,
     transform: &Transform,
-    nesting_level_query: &Query<&NestingLevel>,
+    nesting_level: u16,
     focused_system: Entity,
     fixed_system_element_geometries: &mut ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: f32,
@@ -36,7 +36,6 @@ pub fn spawn_interface(
     // Normalize the rotation
     transform.rotation = Quat::from_rotation_z(transform.translation.truncate().to_angle());
 
-    let nesting_level = NestingLevel::current(focused_system, nesting_level_query);
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let interface_entity = commands

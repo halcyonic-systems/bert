@@ -272,6 +272,8 @@ pub fn on_create_button_click(
         .get(event.target)
         .expect("After on click this has to exist");
 
+    let nesting_level = NestingLevel::current(**focused_system, &nesting_query);
+
     match button.ty {
         CreateButtonType::ImportInterface => spawn_interface(
             &mut commands,
@@ -281,7 +283,7 @@ pub fn on_create_button_click(
                 .expect("Interface button must have a substance type"),
             button.connection_source,
             transform,
-            &nesting_query,
+            nesting_level,
             **focused_system,
             &mut fixed_system_element_geometries,
             **zoom,
@@ -299,7 +301,7 @@ pub fn on_create_button_click(
                 .expect("Interface button must have a substance type"),
             button.connection_source,
             transform,
-            &nesting_query,
+            nesting_level,
             **focused_system,
             &mut fixed_system_element_geometries,
             **zoom,
