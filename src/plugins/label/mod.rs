@@ -6,6 +6,7 @@ use text::copy_name_to_label;
 mod copy_position;
 mod text;
 
+use crate::plugins::mouse_interaction::PickTarget;
 pub use copy_position::CopyPosition;
 pub use text::NameLabel;
 
@@ -78,6 +79,7 @@ pub fn add_name_label(
                 ..default()
             },
             Name::new("Label Sprite"),
+            PickTarget { target: entity },
         ))
         .push_children(&[text_entity])
         .id();

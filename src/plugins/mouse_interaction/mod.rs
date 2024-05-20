@@ -81,9 +81,15 @@ pub struct PickSelection {
 #[reflect(Component)]
 pub struct NoDeselect;
 
-#[derive(Component, Copy, Clone, PartialEq, Reflect, Debug, Default)]
+#[derive(Component, Copy, Clone, Eq, PartialEq, Reflect, Debug, Default)]
 #[reflect(Component)]
 pub struct PickParent;
+
+#[derive(Component, Copy, Clone, Eq, PartialEq, Reflect, Debug)]
+#[reflect(Component)]
+pub struct PickTarget {
+    pub target: Entity,
+}
 
 pub fn update_settings(
     mut commands: Commands,
@@ -101,7 +107,12 @@ pub fn update_settings(
 }
 
 fn handle_mouse_down(
-    interaction_query: Query<(Entity, &PickingInteraction, Option<&PickParent>)>,
+    interaction_query: Query<(
+        Entity,
+        &PickingInteraction,
+        Option<&PickParent>,
+        Option<&PickTarget>,
+    )>,
     parent_query: Query<&Parent>,
     mouse_position: Res<MouseWorldPosition>,
     mut dragging: ResMut<Dragging>,
@@ -110,7 +121,7 @@ fn handle_mouse_down(
     dragging.started = false;
     dragging.start_pos = **mouse_position;
 
-    for (entity, interaction, pick_parent) in &interaction_query {
+    for (entity, interaction, pick_parent, pick_target) in &interaction_query {
         if !matches!(interaction, PickingInteraction::None) {
             if pick_parent.is_some() {
                 dragging.hovered_entity = Some(
@@ -119,6 +130,8 @@ fn handle_mouse_down(
                         .expect("Parent should exist for components that have PickParent")
                         .get(),
                 );
+            } else if let Some(target) = pick_target {
+                dragging.hovered_entity = Some(target.target);
             } else {
                 dragging.hovered_entity = Some(entity);
             }
@@ -133,6 +146,7 @@ fn handle_mouse_up(
     mut dragging: ResMut<Dragging>,
     mut selection: ResMut<Selection>,
     selection_enabled: Res<SelectionEnabled>,
+    keys: Res<ButtonInput<KeyCode>>,
 ) {
     if dragging.started {
         dragging.started = false;
@@ -140,8 +154,11 @@ fn handle_mouse_up(
         return;
     }
 
+    let multi_select = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
+
     if **selection_enabled {
         selection.clear();
+
         let mut deselect = true;
 
         if let Some(hovered_entity) = dragging.hovered_entity {
@@ -156,14 +173,18 @@ fn handle_mouse_up(
             }
         }
 
-        if deselect {
+        if deselect && !multi_select {
             deselect_all(&mut pick_selection_query);
         }
 
         if !selection.is_empty() {
             for entity in &selection.0 {
                 if let Ok(mut pick_selection) = pick_selection_query.get_mut(*entity) {
-                    pick_selection.is_selected = true;
+                    if multi_select {
+                        pick_selection.is_selected = !pick_selection.is_selected;
+                    } else {
+                        pick_selection.is_selected = true;
+                    }
                 }
             }
         }

@@ -230,8 +230,19 @@ pub fn egui_selected_context(
     mut system_query: Query<&mut crate::components::System>,
     mut external_entity_query: Query<&mut ExternalEntity>,
 ) {
-    for (entity, selectable, system_element, mut name, mut description) in &mut selectable_query {
-        if !selectable.is_selected {
+    let mut count = 0;
+    for (_, selection, _, _, _) in &mut selectable_query {
+        if selection.is_selected {
+            count += 1;
+        }
+    }
+
+    if count > 1 {
+        return;
+    }
+
+    for (entity, selection, system_element, mut name, mut description) in &mut selectable_query {
+        if !selection.is_selected {
             continue;
         }
         egui_contexts.ctx_mut().set_visuals(Visuals::light());
