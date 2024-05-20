@@ -146,6 +146,7 @@ fn handle_mouse_up(
     mut dragging: ResMut<Dragging>,
     mut selection: ResMut<Selection>,
     selection_enabled: Res<SelectionEnabled>,
+    keys: Res<ButtonInput<KeyCode>>,
 ) {
     if dragging.started {
         dragging.started = false;
@@ -153,8 +154,11 @@ fn handle_mouse_up(
         return;
     }
 
+    let multi_select = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
+
     if **selection_enabled {
         selection.clear();
+
         let mut deselect = true;
 
         if let Some(hovered_entity) = dragging.hovered_entity {
@@ -169,14 +173,18 @@ fn handle_mouse_up(
             }
         }
 
-        if deselect {
+        if deselect && !multi_select {
             deselect_all(&mut pick_selection_query);
         }
 
         if !selection.is_empty() {
             for entity in &selection.0 {
                 if let Ok(mut pick_selection) = pick_selection_query.get_mut(*entity) {
-                    pick_selection.is_selected = true;
+                    if multi_select {
+                        pick_selection.is_selected = !pick_selection.is_selected;
+                    } else {
+                        pick_selection.is_selected = true;
+                    }
                 }
             }
         }
