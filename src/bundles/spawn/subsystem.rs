@@ -205,13 +205,13 @@ pub fn spawn_subsystem(
     for inflow in inflows {
         let (flow_curve, flow) = flow_query.get(*inflow).expect("Inflow not found");
 
-        let (pos, dir) = compute_end_and_direction_from_subsystem(
+        let (_, dir) = compute_end_and_direction_from_subsystem(
             position,
             radius,
             flow_curve.start,
             flow_curve.start_direction,
         );
-        let transform = transform_from_point2d_and_direction(pos, dir);
+        let transform = transform_from_point2d_and_direction(dir * radius, dir);
 
         spawn_interface(
             commands,
@@ -234,13 +234,13 @@ pub fn spawn_subsystem(
     for outflow in outflows {
         let (flow_curve, flow) = flow_query.get(*outflow).expect("Outflow not found");
 
-        let (pos, dir) = compute_end_and_direction_from_subsystem(
+        let (_, dir) = compute_end_and_direction_from_subsystem(
             position,
             radius,
             flow_curve.end,
             flow_curve.end_direction,
         );
-        let transform = transform_from_point2d_and_direction(pos, dir);
+        let transform = transform_from_point2d_and_direction(dir * radius, dir);
 
         spawn_interface(
             commands,

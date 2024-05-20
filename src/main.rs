@@ -142,7 +142,7 @@ fn main() {
                 save_world.run_if(in_state(FileExportState::Save)),
                 export_clean_up.run_if(in_state(FileExportState::CleanUp)),
             ),
-            (cleanup_external_entity_removal,).in_set(RemovalCleanupSet),
+            (cleanup_external_entity_removal, cleanup_labelled_removal).in_set(RemovalCleanupSet),
             (
                 apply_zoom,
                 apply_zoom_to_system_radii,
@@ -160,6 +160,10 @@ fn main() {
                 spawn_selected_external_entity,
                 update_selected_flow_curve,
                 despawn_selected_helper,
+                remove_selected_elements.run_if(
+                    input_just_pressed(KeyCode::Backspace)
+                        .or_else(input_just_pressed(KeyCode::Delete)),
+                ),
             ),
             (
                 update_color_from_substance_type::<FlowStartConnection>,
