@@ -2,6 +2,7 @@ use crate::components::*;
 use crate::constants::BUTTON_WIDTH_HALF;
 use crate::systems::{
     on_create_button_click, on_external_entity_create_button_click, on_flow_terminal_button_click,
+    on_subsystem_button_click,
 };
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -26,6 +27,7 @@ pub fn spawn_create_button(
         CreateButtonType::InterfaceSubsystem { .. } => "create-button/interface-subsystem.png",
         CreateButtonType::FlowTerminalStart => "create-button/source.png", // TODO
         CreateButtonType::FlowTerminalEnd => "create-button/sink.png",     // TODO
+        CreateButtonType::Subsystem => "create-button/interface-subsystem.png", // TODO
     };
 
     let name = match create_button.ty {
@@ -38,11 +40,13 @@ pub fn spawn_create_button(
         CreateButtonType::InterfaceSubsystem { .. } => "Interface Subsystem Button",
         CreateButtonType::FlowTerminalStart => "Flow Target Start Button",
         CreateButtonType::FlowTerminalEnd => "Flow Target End Button",
+        CreateButtonType::Subsystem => "Subsystem Button",
     };
 
     let button_width = BUTTON_WIDTH_HALF * 2.0;
 
     let on_click_handler = match create_button.ty {
+        CreateButtonType::Subsystem => On::<Pointer<Click>>::run(on_subsystem_button_click),
         CreateButtonType::FlowTerminalStart | CreateButtonType::FlowTerminalEnd => {
             On::<Pointer<Click>>::run(on_flow_terminal_button_click)
         }
@@ -90,7 +94,7 @@ pub fn spawn_create_button(
         CreateButtonType::InterfaceSubsystem { .. } => {
             commands.insert(HasInterfaceSubsystemButton { button_entity });
         }
-        CreateButtonType::Inflow | CreateButtonType::Outflow => {
+        CreateButtonType::Inflow | CreateButtonType::Outflow | CreateButtonType::Subsystem => {
             // do nothing
         }
     }
@@ -129,7 +133,7 @@ pub fn despawn_create_button_with_component(
         CreateButtonType::InterfaceSubsystem { .. } => {
             entity_commands.remove::<HasInterfaceSubsystemButton>();
         }
-        CreateButtonType::Inflow | CreateButtonType::Outflow => {
+        CreateButtonType::Inflow | CreateButtonType::Outflow | CreateButtonType::Subsystem => {
             // do nothing
         }
     }

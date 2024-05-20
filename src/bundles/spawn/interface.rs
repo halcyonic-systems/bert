@@ -64,16 +64,16 @@ pub fn spawn_interface(
 
     commands.entity(focused_system).add_child(interface_entity);
 
-    let mut entity_commands = commands.entity(flow_entity);
+    let mut flow_commands = commands.entity(flow_entity);
 
     match interface_type {
         InterfaceType::Import => {
-            entity_commands.insert(FlowEndInterfaceConnection {
+            flow_commands.insert(FlowEndInterfaceConnection {
                 target: interface_entity,
             });
         }
         InterfaceType::Export => {
-            entity_commands.insert(FlowStartInterfaceConnection {
+            flow_commands.insert(FlowStartInterfaceConnection {
                 target: interface_entity,
             });
         }

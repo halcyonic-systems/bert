@@ -22,6 +22,7 @@ pub enum CreateButtonType {
     InterfaceSubsystem { is_child_of_interface: bool },
     FlowTerminalStart,
     FlowTerminalEnd,
+    Subsystem,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]

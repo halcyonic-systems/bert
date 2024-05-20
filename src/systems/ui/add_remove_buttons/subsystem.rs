@@ -115,3 +115,61 @@ pub fn add_interface_subsystem_create_buttons(
         }
     }
 }
+
+pub fn add_subsystem_from_external_entities_create_button(
+    mut commands: Commands,
+    external_entity_query: Query<(&PickSelection, &Transform, &Parent), With<ExternalEntity>>,
+    selection_changed_query: Query<(), (With<ExternalEntity>, Changed<PickSelection>)>,
+    button_query: Query<(Entity, &CreateButton, &Parent)>,
+    zoom: Res<Zoom>,
+    asset_server: Res<AssetServer>,
+) {
+    if selection_changed_query.is_empty() {
+        return;
+    }
+
+    for (entity, button, parent) in &button_query {
+        if matches!(button.ty, CreateButtonType::Subsystem) {
+            despawn_create_button_with_component(&mut commands, entity, button, Some(parent));
+            break;
+        }
+    }
+
+    let mut selected_count = 0;
+    let mut center = Vec3::ZERO;
+    let mut current_parent = None;
+
+    for (pick_selection, transform, parent) in &external_entity_query {
+        if pick_selection.is_selected {
+            if let Some(current_parent) = current_parent {
+                if parent.get() != current_parent {
+                    return;
+                }
+            }
+            selected_count += 1;
+            center += transform.translation;
+            current_parent = Some(parent.get());
+        }
+    }
+
+    if selected_count > 1 {
+        center /= selected_count as f32;
+
+        let parent_system_entity = current_parent.expect("No parent");
+
+        spawn_create_button(
+            &mut commands,
+            CreateButton {
+                ty: CreateButtonType::Subsystem,
+                connection_source: parent_system_entity,
+                system: parent_system_entity,
+                substance_type: None,
+            },
+            center.truncate(),
+            0.0,
+            **zoom,
+            current_parent,
+            &asset_server,
+        );
+    }
+}

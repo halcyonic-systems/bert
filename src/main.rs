@@ -106,6 +106,7 @@ fn main() {
                 add_sink_create_button,
                 add_inflow_create_button.run_if(inflow_create_button_needs_update),
                 add_interface_subsystem_create_buttons,
+                add_subsystem_from_external_entities_create_button,
                 add_outflow_create_button,
                 remove_unfocused_system_buttons,
                 // update_unpinned_pinnables,

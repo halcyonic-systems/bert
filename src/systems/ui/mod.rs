@@ -17,7 +17,7 @@ pub use zoom::*;
 
 use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_external_entity,
-    spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow,
+    spawn_inflow, spawn_interface, spawn_interface_subsystem, spawn_outflow, spawn_subsystem,
 };
 use crate::components::*;
 use crate::resources::{
@@ -73,6 +73,71 @@ pub fn remove_unfocused_system_buttons(
             despawn_create_button_with_component(&mut commands, entity, button, parent);
         }
     }
+}
+
+pub fn on_subsystem_button_click(
+    mut commands: Commands,
+    mut event: ListenerMut<Pointer<Click>>,
+    transform_query: Query<&Transform>,
+    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
+    external_entity_query: Query<(Entity, &PickSelection, &Parent), With<ExternalEntity>>,
+    flow_connection_query: Query<(Entity, &FlowStartConnection, &FlowEndConnection)>,
+    flow_query: Query<(&FlowCurve, &Flow)>,
+    system_query: Query<(&Transform, &crate::components::System)>,
+    nesting_level_query: Query<&NestingLevel>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut stroke_tess: ResMut<StrokeTessellator>,
+    mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
+    zoom: Res<Zoom>,
+) {
+    event.stop_propagation();
+
+    let mut inflows = vec![];
+    let mut outflows = vec![];
+
+    let mut parent_system = Entity::PLACEHOLDER;
+
+    for (external_entity, selection, parent) in &external_entity_query {
+        if selection.is_selected {
+            parent_system = parent.get();
+
+            for (flow_entity, start_connection, end_connection) in &flow_connection_query {
+                if start_connection.target == external_entity {
+                    outflows.push(flow_entity);
+                } else if end_connection.target == external_entity {
+                    inflows.push(flow_entity);
+                }
+            }
+
+            commands.entity(external_entity).despawn_recursive();
+            commands
+                .entity(parent_system)
+                .remove_children(&[external_entity]);
+        }
+    }
+
+    let transform = transform_query
+        .get(event.target)
+        .expect("After on click this has to exist");
+
+    spawn_subsystem(
+        &mut commands,
+        parent_system,
+        &system_query,
+        &nesting_level_query,
+        &flow_query,
+        &inflows,
+        &outflows,
+        &mut fixed_system_element_geometries,
+        &mut meshes,
+        &mut stroke_tess,
+        **zoom,
+        "Subsystem",
+        "",
+        transform.translation.truncate(),
+    );
+
+    despawn_create_button(&mut commands, event.target, &only_button_query);
 }
 
 pub fn on_flow_terminal_button_click(

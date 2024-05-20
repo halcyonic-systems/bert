@@ -1,8 +1,13 @@
-use crate::bundles::SystemBundle;
+use crate::bundles::{spawn_interface, SystemBundle};
 use crate::components::*;
 use crate::constants::*;
 use crate::plugins::label::add_name_label;
-use crate::resources::FocusedSystem;
+use crate::resources::{
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
+};
+use crate::utils::{
+    compute_end_and_direction_from_subsystem, transform_from_point2d_and_direction,
+};
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 
@@ -54,43 +59,33 @@ pub fn spawn_interface_subsystem(
 
     let parent_system = ***focused_system;
 
-    let radius = system_query
-        .get(parent_system)
-        .expect("focused system not found")
-        .1
-        .radius
-        * SUBSYSTEM_RADIUS_FRACTION;
-
     let z = if is_child_of_interface {
         SUBSYSTEM_Z - INTERFACE_Z
     } else {
         SUBSYSTEM_Z
     };
 
-    let nesting_level = NestingLevel::current(parent_system, nesting_level_query) + 1;
+    let (subsystem_entity, _) = spawn_subsystem_common(
+        commands,
+        system_query,
+        nesting_level_query,
+        meshes,
+        zoom,
+        name,
+        description,
+        angle,
+        parent_system,
+        z,
+        SubsystemPosition::XFromRadius,
+    );
 
-    let mut subsystem_commands = commands.spawn((
+    let mut subsystem_commands = commands.entity(subsystem_entity);
+
+    subsystem_commands.insert((
+        interface_subsystem,
         SubsystemParentFlowConnection {
             target: interface_flow_entity,
         },
-        Subsystem { parent_system },
-        NestingLevel::new(nesting_level),
-        SystemBundle::new(
-            vec2(-radius * zoom, 0.0),
-            z,
-            radius,
-            angle,
-            false,
-            false,
-            Default::default(),
-            meshes,
-            zoom,
-            nesting_level,
-            name,
-            description,
-        ),
-        interface_subsystem,
-        Pinnable { has_pins: false },
     ));
 
     if is_import_subsystem {
@@ -114,6 +109,155 @@ pub fn spawn_interface_subsystem(
     }
 
     subsystem_entity
+}
+
+enum SubsystemPosition {
+    XFromRadius,
+    Position(Vec2),
+}
+
+fn spawn_subsystem_common(
+    commands: &mut Commands,
+    system_query: &Query<(&Transform, &crate::components::System)>,
+    nesting_level_query: &Query<&NestingLevel>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    zoom: f32,
+    name: &str,
+    description: &str,
+    angle: f32,
+    parent_system: Entity,
+    z: f32,
+    position: SubsystemPosition,
+) -> (Entity, f32) {
+    let radius = system_query
+        .get(parent_system)
+        .expect("focused system not found")
+        .1
+        .radius
+        * SUBSYSTEM_RADIUS_FRACTION;
+
+    let nesting_level = NestingLevel::current(parent_system, nesting_level_query) + 1;
+
+    let position = match position {
+        SubsystemPosition::XFromRadius => vec2(-radius * zoom, 0.0),
+        SubsystemPosition::Position(position) => position,
+    };
+
+    (
+        commands
+            .spawn((
+                Subsystem { parent_system },
+                NestingLevel::new(nesting_level),
+                SystemBundle::new(
+                    position,
+                    z,
+                    radius,
+                    angle,
+                    false,
+                    false,
+                    Default::default(),
+                    meshes,
+                    zoom,
+                    nesting_level,
+                    name,
+                    description,
+                ),
+                Pinnable { has_pins: false },
+            ))
+            .id(),
+        radius,
+    )
+}
+
+pub fn spawn_subsystem(
+    commands: &mut Commands,
+    parent_system: Entity,
+    system_query: &Query<(&Transform, &crate::components::System)>,
+    nesting_level_query: &Query<&NestingLevel>,
+    flow_query: &Query<(&FlowCurve, &Flow)>,
+    inflows: &[Entity],
+    outflows: &[Entity],
+    fixed_system_element_geometries: &mut ResMut<FixedSystemElementGeometriesByNestingLevel>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    tess: &mut ResMut<StrokeTessellator>,
+    zoom: f32,
+    name: &str,
+    description: &str,
+    position: Vec2,
+) {
+    let (subsystem_entity, radius) = spawn_subsystem_common(
+        commands,
+        system_query,
+        nesting_level_query,
+        meshes,
+        zoom,
+        name,
+        description,
+        0.0,
+        parent_system,
+        SUBSYSTEM_Z,
+        SubsystemPosition::Position(position),
+    );
+
+    commands.entity(parent_system).add_child(subsystem_entity);
+
+    for inflow in inflows {
+        let (flow_curve, flow) = flow_query.get(*inflow).expect("Inflow not found");
+
+        let (pos, dir) = compute_end_and_direction_from_subsystem(
+            position,
+            radius,
+            flow_curve.start,
+            flow_curve.start_direction,
+        );
+        let transform = transform_from_point2d_and_direction(pos, dir);
+
+        spawn_interface(
+            commands,
+            InterfaceType::Import,
+            flow.substance_type,
+            *inflow,
+            &transform,
+            nesting_level_query,
+            subsystem_entity,
+            fixed_system_element_geometries,
+            zoom,
+            true,
+            meshes,
+            tess,
+            "Interface",
+            "",
+        );
+    }
+
+    for outflow in outflows {
+        let (flow_curve, flow) = flow_query.get(*outflow).expect("Outflow not found");
+
+        let (pos, dir) = compute_end_and_direction_from_subsystem(
+            position,
+            radius,
+            flow_curve.end,
+            flow_curve.end_direction,
+        );
+        let transform = transform_from_point2d_and_direction(pos, dir);
+
+        spawn_interface(
+            commands,
+            InterfaceType::Export,
+            flow.substance_type,
+            *outflow,
+            &transform,
+            nesting_level_query,
+            subsystem_entity,
+            fixed_system_element_geometries,
+            zoom,
+            true,
+            meshes,
+            tess,
+            "Interface",
+            "",
+        );
+    }
 }
 
 pub fn auto_spawn_interface_subsystem_label(
