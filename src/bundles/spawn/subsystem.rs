@@ -1,8 +1,8 @@
 use crate::bundles::SystemBundle;
 use crate::components::*;
 use crate::constants::*;
-use crate::resources::FocusedSystem;
 use crate::plugins::label::add_name_label;
+use crate::resources::FocusedSystem;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 

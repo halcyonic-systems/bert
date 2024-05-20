@@ -181,8 +181,7 @@ fn main() {
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
             update_flow_from_subsystem_without_interface,
             auto_spawn_external_entity_label,
-            auto_spawn_interface_subsystem_label
-            //update_pin_rotation,
+            auto_spawn_interface_subsystem_label, //update_pin_rotation,
         ),
     )
     .add_systems(
