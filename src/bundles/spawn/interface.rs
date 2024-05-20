@@ -1,11 +1,15 @@
 use crate::components::*;
-use crate::constants::{INTERFACE_LINE_WIDTH, INTERFACE_SELECTED_LINE_WIDTH, INTERFACE_Z};
+use crate::constants::{
+    INTERFACE_HEIGHT_HALF, INTERFACE_LINE_WIDTH, INTERFACE_SELECTED_LINE_WIDTH, INTERFACE_Z,
+};
 use crate::events::InterfaceDrag;
+use crate::plugins::label::add_name_label;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
 use crate::utils::ui_transform_from_button;
+use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -80,4 +84,22 @@ pub fn spawn_interface(
     }
 
     interface_entity
+}
+
+pub fn auto_spawn_interface_label(
+    mut commands: Commands,
+    interface_query: Query<Entity, Added<Interface>>,
+    name_query: Query<&Name>,
+    asset_server: Res<AssetServer>,
+) {
+    for interface in interface_query.iter() {
+        add_name_label(
+            &mut commands,
+            interface,
+            vec2(50.0, 45.0),
+            vec3(INTERFACE_HEIGHT_HALF * 1.7, -INTERFACE_HEIGHT_HALF, 0.0), //
+            &name_query,
+            &asset_server,
+        );
+    }
 }
