@@ -2,7 +2,8 @@ use crate::bundles::SystemBundle;
 use crate::components::*;
 use crate::constants::*;
 use crate::resources::FocusedSystem;
-use bevy::math::vec2;
+use crate::plugins::label::add_name_label;
+use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 
 pub fn spawn_interface_subsystem(
@@ -113,4 +114,22 @@ pub fn spawn_interface_subsystem(
     }
 
     subsystem_entity
+}
+
+pub fn auto_spawn_interface_subsystem_label(
+    mut commands: Commands,
+    interface_subsystem_query: Query<Entity, Added<InterfaceSubsystem>>,
+    name_query: Query<&Name>,
+    asset_server: Res<AssetServer>,
+) {
+    for interface_subsystem in interface_subsystem_query.iter() {
+        add_name_label(
+            &mut commands,
+            interface_subsystem,
+            vec2(100.0, 100.0),
+            vec3(0.0, 0.0, 0.0),
+            &name_query,
+            &asset_server,
+        );
+    }
 }
