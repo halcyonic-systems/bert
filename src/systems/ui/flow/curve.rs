@@ -56,11 +56,15 @@ pub fn update_flow_curve(
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) {
-    let curve_path =
-        create_path_from_flow_curve(flow_curve, NestingLevel::compute_scale(nesting_level, zoom));
+    let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
-    simplified_mesh.mesh = tessellate_simplified_mesh(&curve_path, meshes, stroke_tess);
-    *aabb = create_aabb_from_flow_curve(flow_curve);
+    let curve_path = create_path_from_flow_curve(flow_curve, scale);
+
+    let simplified_curve = flow_curve.skip_start();
+    let simplified_curve_path = create_path_from_flow_curve(&simplified_curve, scale);
+
+    simplified_mesh.mesh = tessellate_simplified_mesh(&simplified_curve_path, meshes, stroke_tess);
+    *aabb = create_aabb_from_flow_curve(&simplified_curve);
 
     *path = curve_path;
 

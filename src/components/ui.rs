@@ -90,6 +90,13 @@ impl FlowCurve {
     pub fn compute_tangent_length_from_points(start: Vec2, end: Vec2) -> f32 {
         (end - start).length() * 0.3333
     }
+
+    pub fn skip_start(&self) -> Self {
+        Self {
+            start: self.start + self.start_direction,
+            ..*self
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
