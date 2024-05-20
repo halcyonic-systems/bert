@@ -86,6 +86,7 @@ pub fn add_name_label(
         CopyPosition {
             target: sprite_entity,
             offset,
+            local_offset: true,
         },
         NameLabel { label: text_entity },
     ));
