@@ -235,6 +235,11 @@ pub fn spawn_subsystem(
             "Interface",
             "",
         );
+
+        commands.entity(*inflow).insert(FlowEndConnection {
+            target: subsystem_entity,
+            target_type: EndTargetType::System,
+        });
     }
 
     for outflow in outflows {
@@ -264,6 +269,11 @@ pub fn spawn_subsystem(
             "Interface",
             "",
         );
+
+        commands.entity(*outflow).insert(FlowStartConnection {
+            target: subsystem_entity,
+            target_type: StartTargetType::System,
+        });
     }
 }
 
