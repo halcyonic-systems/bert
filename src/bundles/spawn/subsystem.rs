@@ -297,7 +297,7 @@ pub fn auto_spawn_interface_subsystem_label(
 
 pub fn auto_spawn_subsystem_label(
     mut commands: Commands,
-    subsystem_query: Query<Entity, Added<Subsystem>>,
+    subsystem_query: Query<Entity, (Added<Subsystem>, Without<InterfaceSubsystem>)>,
     name_query: Query<&Name>,
     asset_server: Res<AssetServer>,
 ) {
