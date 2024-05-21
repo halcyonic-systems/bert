@@ -29,7 +29,9 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
-use bundles::{auto_spawn_interface_label, auto_spawn_interface_subsystem_label};
+use bundles::{
+    auto_spawn_interface_label, auto_spawn_interface_subsystem_label, auto_spawn_subsystem_label,
+};
 use data_model::{export_file_dialog::*, import_file_dialog::*};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -197,6 +199,7 @@ fn main() {
             update_flow_from_subsystem_without_interface,
             auto_spawn_external_entity_label,
             auto_spawn_interface_subsystem_label,
+            auto_spawn_subsystem_label,
             auto_spawn_interface_label, //update_pin_rotation,
         ),
     )
