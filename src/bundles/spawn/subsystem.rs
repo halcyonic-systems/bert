@@ -294,3 +294,21 @@ pub fn auto_spawn_interface_subsystem_label(
         );
     }
 }
+
+pub fn auto_spawn_subsystem_label(
+    mut commands: Commands,
+    subsystem_query: Query<Entity, Added<Subsystem>>,
+    name_query: Query<&Name>,
+    asset_server: Res<AssetServer>,
+) {
+    for subsystem in subsystem_query.iter() {
+        add_name_label(
+            &mut commands,
+            subsystem,
+            vec2(100.0, 100.0),
+            vec3(0.0, 0.0, 0.0),
+            &name_query,
+            &asset_server,
+        );
+    }
+}
