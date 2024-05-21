@@ -258,6 +258,12 @@ pub fn disable_selection(mut selection_enabled: ResMut<SelectionEnabled>) {
     **selection_enabled = false;
 }
 
-pub fn enable_selection(mut selection_enabled: ResMut<SelectionEnabled>) {
+pub fn enable_selection(
+    mut selection_enabled: ResMut<SelectionEnabled>,
+    mut dragging: ResMut<Dragging>,
+) {
     **selection_enabled = true;
+
+    dragging.hovered_entity = None;
+    dragging.started = false;
 }

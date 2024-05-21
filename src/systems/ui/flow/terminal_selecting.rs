@@ -1,6 +1,6 @@
 use crate::bundles::spawn_external_entity;
 use crate::components::*;
-use crate::plugins::mouse_interaction::MouseWorldPosition;
+use crate::plugins::mouse_interaction::{MouseWorldPosition, PickTarget};
 use crate::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom,
 };
@@ -54,9 +54,9 @@ pub fn select_flow_terminal(
         (
             Entity,
             &PickingInteraction,
-            Option<&crate::components::System>,
+            Option<&SystemElement>,
             // TODO : Option<&Interface>,
-            Option<&NestingLevel>,
+            Option<&PickTarget>,
         ),
         Changed<PickingInteraction>,
     >,
@@ -69,6 +69,7 @@ pub fn select_flow_terminal(
     )>,
     subsystem_query: Query<&Subsystem>,
     nesting_level_query: Query<&NestingLevel>,
+    element_query: Query<&SystemElement>,
     mut transform_query: Query<&mut Transform>,
     mut next_state: ResMut<NextState<AppState>>,
     focused_system: Res<FocusedSystem>,
@@ -78,93 +79,111 @@ pub fn select_flow_terminal(
     mut tess: ResMut<StrokeTessellator>,
 ) {
     let (flow_entity, flow, flow_curve, selecting, flow_nesting_level) = flow_query.single();
+    let flow_nesting_level = **flow_nesting_level;
 
-    for (target_entity, interaction, system, target_nesting_level) in &interaction_query {
+    let mut target_entity = Entity::PLACEHOLDER;
+
+    for (entity, interaction, element, pick_target) in &interaction_query {
         if matches!(*interaction, PickingInteraction::Pressed) {
-            if system.is_some() {
-                let target_nesting_level = target_nesting_level.map(|n| **n).unwrap_or(0);
+            if let Some(pick_target) = pick_target {
+                target_entity = pick_target.target;
+                break;
+            } else if element.is_some() {
+                target_entity = entity;
+                break;
+            }
+        }
+    }
 
-                if **flow_nesting_level == target_nesting_level {
-                    let mut flow_commands = commands.entity(flow_entity);
-                    flow_commands.remove::<FlowTerminalSelecting>();
+    let target_nesting_level = nesting_level_query
+        .get(target_entity)
+        .map(|n| **n)
+        .unwrap_or(0);
 
-                    match selecting {
-                        FlowTerminalSelecting::Start => {
-                            flow_commands.insert(FlowStartConnection {
-                                target: target_entity,
-                                target_type: StartTargetType::System,
-                            });
-                        }
-                        FlowTerminalSelecting::End => {
-                            flow_commands.insert(FlowEndConnection {
-                                target: target_entity,
-                                target_type: EndTargetType::System,
-                            });
-                        }
-                    }
+    if let Ok(element) = element_query.get(target_entity) {
+        if flow_nesting_level == target_nesting_level && matches!(element, SystemElement::System) {
+            let mut flow_commands = commands.entity(flow_entity);
+            flow_commands.remove::<FlowTerminalSelecting>();
 
-                    // touch to trigger curve update
-                    let _ = transform_query
-                        .get_mut(target_entity)
-                        .expect("Target should have a Transform")
-                        .deref_mut();
-
-                    next_state.set(AppState::Normal);
-                } else if **flow_nesting_level - 1 == target_nesting_level {
-                    commands
-                        .entity(flow_entity)
-                        .remove::<FlowTerminalSelecting>();
-
-                    match selecting {
-                        FlowTerminalSelecting::Start => {
-                            spawn_external_entity(
-                                &mut commands,
-                                &subsystem_query,
-                                &nesting_level_query,
-                                **focused_system,
-                                InterfaceType::Import,
-                                flow.substance_type,
-                                flow_entity,
-                                &transform_from_point2d_and_direction(
-                                    flow_curve.start,
-                                    -flow_curve.start_direction,
-                                ),
-                                &mut fixed_system_element_geometries,
-                                **zoom,
-                                true,
-                                &mut meshes,
-                                &mut tess,
-                                "Source",
-                                "",
-                            );
-                        }
-                        FlowTerminalSelecting::End => {
-                            spawn_external_entity(
-                                &mut commands,
-                                &subsystem_query,
-                                &nesting_level_query,
-                                **focused_system,
-                                InterfaceType::Export,
-                                flow.substance_type,
-                                flow_entity,
-                                &transform_from_point2d_and_direction(
-                                    flow_curve.end,
-                                    -flow_curve.end_direction,
-                                ),
-                                &mut fixed_system_element_geometries,
-                                **zoom,
-                                true,
-                                &mut meshes,
-                                &mut tess,
-                                "Sink",
-                                "",
-                            );
-                        }
-                    }
-
-                    next_state.set(AppState::Normal);
+            match selecting {
+                FlowTerminalSelecting::Start => {
+                    flow_commands.insert(FlowStartConnection {
+                        target: target_entity,
+                        target_type: StartTargetType::System,
+                    });
+                }
+                FlowTerminalSelecting::End => {
+                    flow_commands.insert(FlowEndConnection {
+                        target: target_entity,
+                        target_type: EndTargetType::System,
+                    });
                 }
             }
+
+            // touch to trigger curve update
+            let _ = transform_query
+                .get_mut(target_entity)
+                .expect("Target should have a Transform")
+                .deref_mut();
+
+            next_state.set(AppState::Normal);
+        } else if flow_nesting_level - 1 == target_nesting_level
+            && matches!(element, SystemElement::System)
+            || flow_nesting_level == target_nesting_level
+                && !matches!(element, SystemElement::System)
+        {
+            commands
+                .entity(flow_entity)
+                .remove::<FlowTerminalSelecting>();
+
+            match selecting {
+                FlowTerminalSelecting::Start => {
+                    spawn_external_entity(
+                        &mut commands,
+                        &subsystem_query,
+                        &nesting_level_query,
+                        **focused_system,
+                        InterfaceType::Import,
+                        flow.substance_type,
+                        flow_entity,
+                        &transform_from_point2d_and_direction(
+                            flow_curve.start,
+                            -flow_curve.start_direction,
+                        ),
+                        &mut fixed_system_element_geometries,
+                        **zoom,
+                        true,
+                        &mut meshes,
+                        &mut tess,
+                        "Source",
+                        "",
+                    );
+                }
+                FlowTerminalSelecting::End => {
+                    spawn_external_entity(
+                        &mut commands,
+                        &subsystem_query,
+                        &nesting_level_query,
+                        **focused_system,
+                        InterfaceType::Export,
+                        flow.substance_type,
+                        flow_entity,
+                        &transform_from_point2d_and_direction(
+                            flow_curve.end,
+                            -flow_curve.end_direction,
+                        ),
+                        &mut fixed_system_element_geometries,
+                        **zoom,
+                        true,
+                        &mut meshes,
+                        &mut tess,
+                        "Sink",
+                        "",
+                    );
+                }
+            }
+
+            next_state.set(AppState::Normal);
         }
     }
 }
