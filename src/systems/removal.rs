@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::plugins::label::NameLabel;
 use crate::plugins::mouse_interaction::{PickSelection, PickTarget};
 use bevy::prelude::*;
@@ -51,6 +52,74 @@ pub fn cleanup_labelled_removal(
                 }
 
                 commands.entity(label_entity).despawn_recursive();
+            }
+        }
+    }
+}
+
+pub fn cleanup_interface_removal(
+    mut commands: Commands,
+    mut removed_interfaces: RemovedComponents<Interface>,
+    mut flow_query: Query<(
+        Entity,
+        &mut FlowCurve,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
+    )>,
+) {
+    for removed_interface in removed_interfaces.read() {
+        for (flow_entity, mut flow_curve, flow_start_connection, flow_end_connection) in
+            &mut flow_query
+        {
+            if flow_start_connection
+                .map(|connection| connection.target == removed_interface)
+                .unwrap_or(false)
+            {
+                commands
+                    .entity(flow_entity)
+                    .remove::<FlowStartInterfaceConnection>();
+
+                let offset = flow_curve.start_direction * INTERFACE_WIDTH_HALF;
+                flow_curve.start -= offset;
+            }
+
+            if flow_end_connection
+                .map(|connection| connection.target == removed_interface)
+                .unwrap_or(false)
+            {
+                commands
+                    .entity(flow_entity)
+                    .remove::<FlowEndInterfaceConnection>();
+
+                let offset = flow_curve.end_direction * INTERFACE_WIDTH_HALF;
+                flow_curve.end -= offset;
+            }
+        }
+    }
+}
+
+pub fn cleanup_subsystem_removal(
+    mut commands: Commands,
+    mut removed_subsystems: RemovedComponents<Subsystem>,
+    flow_query: Query<(
+        Entity,
+        Option<&FlowStartConnection>,
+        Option<&FlowEndConnection>,
+    )>,
+) {
+    for removed_subsystem in removed_subsystems.read() {
+        for (flow_entity, flow_start_connection, flow_end_connection) in &flow_query {
+            if flow_start_connection
+                .map(|connection| connection.target == removed_subsystem)
+                .unwrap_or(false)
+            {
+                commands.entity(flow_entity).remove::<FlowStartConnection>();
+            }
+            if flow_end_connection
+                .map(|connection| connection.target == removed_subsystem)
+                .unwrap_or(false)
+            {
+                commands.entity(flow_entity).remove::<FlowEndConnection>();
             }
         }
     }

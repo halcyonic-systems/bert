@@ -143,12 +143,19 @@ fn main() {
                 save_world.run_if(in_state(FileExportState::Save)),
                 export_clean_up.run_if(in_state(FileExportState::CleanUp)),
             ),
-            (cleanup_external_entity_removal, cleanup_labelled_removal).in_set(RemovalCleanupSet),
+            (
+                cleanup_external_entity_removal,
+                cleanup_labelled_removal,
+                cleanup_interface_removal,
+                cleanup_subsystem_removal,
+            )
+                .in_set(RemovalCleanupSet),
             (
                 apply_zoom,
                 apply_zoom_to_system_radii,
                 apply_zoom_to_camera_position,
                 apply_zoom_to_incomplete_flows,
+                apply_zoom_to_flow_without_interface,
                 apply_zoom_to_system_geometries,
                 apply_zoom_to_strokes,
                 apply_zoom_to_scale,
@@ -162,8 +169,10 @@ fn main() {
                 update_selected_flow_curve,
                 despawn_selected_helper,
                 remove_selected_elements.run_if(
-                    input_just_pressed(KeyCode::Backspace)
-                        .or_else(input_just_pressed(KeyCode::Delete)),
+                    in_state(AppState::Normal).and_then(
+                        input_just_pressed(KeyCode::Backspace)
+                            .or_else(input_just_pressed(KeyCode::Delete)),
+                    ),
                 ),
             ),
             (

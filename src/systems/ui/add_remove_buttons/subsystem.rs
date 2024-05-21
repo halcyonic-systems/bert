@@ -16,6 +16,8 @@ pub fn add_interface_subsystem_create_buttons(
         Or<(
             Added<FlowStartConnection>,
             Added<FlowEndConnection>,
+            Added<FlowStartInterfaceConnection>,
+            Added<FlowEndInterfaceConnection>,
             Changed<Flow>,
         )>,
     >,

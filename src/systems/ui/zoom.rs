@@ -92,6 +92,30 @@ pub fn apply_zoom_to_incomplete_flows(
     **prev_zoom = **zoom;
 }
 
+pub fn apply_zoom_to_flow_without_interface(
+    mut no_interface_flow_query: Query<
+        (&mut FlowCurve, &FlowStartConnection, &FlowEndConnection),
+        (
+            Without<FlowStartInterfaceConnection>,
+            Without<FlowEndInterfaceConnection>,
+        ),
+    >,
+    zoom: Res<Zoom>,
+    mut prev_zoom: Local<Zoom>,
+) {
+    for (mut flow_curve, start_connection, end_connection) in &mut no_interface_flow_query {
+        if matches!(start_connection.target_type, StartTargetType::System) {
+            flow_curve.start *= **zoom / **prev_zoom;
+        }
+
+        if matches!(end_connection.target_type, EndTargetType::System) {
+            flow_curve.end *= **zoom / **prev_zoom;
+        }
+    }
+
+    **prev_zoom = **zoom;
+}
+
 pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
     if input.just_pressed(KeyCode::Minus) {
         zoom.mul(1.2);
