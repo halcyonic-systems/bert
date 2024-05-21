@@ -3,7 +3,7 @@ use crate::data_model::Complexity;
 use crate::plugins::mouse_interaction::PickSelection;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
-use bevy_egui::egui::{vec2, Checkbox, ComboBox, DragValue, Margin, Ui, Visuals};
+use bevy_egui::egui::{vec2, Checkbox, ComboBox, DragValue, Margin, Slider, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
 use rust_decimal::Decimal;
 
@@ -183,18 +183,12 @@ fn boundary_egui(ui: &mut Ui, system: &mut crate::components::System) {
 
     h_wrap!(ui, |ui| {
         ui.label("Porosity");
-        ui.add(
-            DragValue::new(&mut system.boundary.porosity)
-                .speed(0.01)
-                .clamp_range(0.0..=1.0),
-        );
+        ui.add(Slider::new(&mut system.boundary.porosity, 0.0..=1.0).drag_value_speed(1.0));
     });
     h_wrap!(ui, |ui| {
         ui.label("Perceptive Fuzziness");
         ui.add(
-            DragValue::new(&mut system.boundary.perceptive_fuzziness)
-                .speed(0.01)
-                .clamp_range(0.0..=1.0),
+            Slider::new(&mut system.boundary.perceptive_fuzziness, 0.0..=1.0).drag_value_speed(1.0),
         );
     });
 }
@@ -220,7 +214,7 @@ fn subsystem_egui(
     complexity_egui(ui, system);
 
     h_label!(ui, "Member Autonomy");
-    ui.add(egui::Slider::new(&mut system.membership, 0.0..=1.0).drag_value_speed(1.0));
+    ui.add(Slider::new(&mut system.membership, 0.0..=1.0).drag_value_speed(1.0));
 
     ui.separator();
     boundary_egui(ui, system);
