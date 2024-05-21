@@ -70,48 +70,47 @@ pub fn add_interface_subsystem_create_buttons(
     ) in &flow_interface_query
     {
         let interface_entity = if flow_end_connection.target == **focused_system {
-            flow_end_interface_connection
-                .expect("Should be there because we have an Inflow")
-                .target
+            flow_end_interface_connection.map(|c| c.target)
         } else if flow_start_connection.target == **focused_system {
-            flow_start_interface_connection
-                .expect("Should be there because we have an Outflow")
-                .target
+            flow_start_interface_connection.map(|c| c.target)
         } else {
-            continue;
+            None
         };
 
-        let interface_button = interface_button_query.get(interface_entity);
+        if let Some(interface_entity) = interface_entity {
+            let interface_button = interface_button_query.get(interface_entity);
 
-        let usability_conditions = [
-            GeneralUsability::Inflow(InflowUsability::from_useful(true)),
-            GeneralUsability::Outflow(OutflowUsability::from_useful(true)),
-        ];
-        let usability_conditions_met = usability_conditions
-            .iter()
-            .all(|condition| flow_usabilities.contains(condition));
-        if usability_conditions_met && !incomplete_flows_exist {
-            if interface_button.is_err() && interface_subsystem_query.get(interface_entity).is_err()
-            {
-                spawn_create_button(
-                    &mut commands,
-                    CreateButton {
-                        ty: CreateButtonType::InterfaceSubsystem {
-                            is_child_of_interface: true, // TODO : compute this
+            let usability_conditions = [
+                GeneralUsability::Inflow(InflowUsability::from_useful(true)),
+                GeneralUsability::Outflow(OutflowUsability::from_useful(true)),
+            ];
+            let usability_conditions_met = usability_conditions
+                .iter()
+                .all(|condition| flow_usabilities.contains(condition));
+            if usability_conditions_met && !incomplete_flows_exist {
+                if interface_button.is_err()
+                    && interface_subsystem_query.get(interface_entity).is_err()
+                {
+                    spawn_create_button(
+                        &mut commands,
+                        CreateButton {
+                            ty: CreateButtonType::InterfaceSubsystem {
+                                is_child_of_interface: true, // TODO : compute this
+                            },
+                            connection_source: interface_entity,
+                            system: **focused_system,
+                            substance_type: None,
                         },
-                        connection_source: interface_entity,
-                        system: **focused_system,
-                        substance_type: None,
-                    },
-                    vec2(-INTERFACE_WIDTH_HALF, 0.0),
-                    0.0,
-                    **zoom,
-                    Some(interface_entity),
-                    &asset_server,
-                );
+                        vec2(-INTERFACE_WIDTH_HALF, 0.0),
+                        0.0,
+                        **zoom,
+                        Some(interface_entity),
+                        &asset_server,
+                    );
+                }
+            } else if let Ok(interface_button) = interface_button {
+                despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
             }
-        } else if let Ok(interface_button) = interface_button {
-            despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
         }
     }
 }

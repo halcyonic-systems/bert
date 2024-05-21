@@ -23,9 +23,9 @@ pub fn apply_highlight_bundles<IdleB, SelB>(
 {
     for (entity, bundles, selection) in &query {
         if selection.is_selected {
-            commands.entity(entity).insert(bundles.selected.clone());
+            commands.entity(entity).try_insert(bundles.selected.clone());
         } else {
-            commands.entity(entity).insert(bundles.idle.clone());
+            commands.entity(entity).try_insert(bundles.idle.clone());
         }
     }
 }

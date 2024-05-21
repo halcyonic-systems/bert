@@ -3,20 +3,59 @@ use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::plugins::label::NameLabel;
 use crate::plugins::mouse_interaction::{PickSelection, PickTarget};
 use bevy::prelude::*;
-use std::ops::DerefMut;
 
 pub fn remove_selected_elements(
     mut commands: Commands,
     selected_query: Query<(Entity, &PickSelection, Option<&Parent>)>,
-    flow_query: Query<(
-        Option<&FlowStartConnection>,
-        Option<&FlowEndConnection>,
-        Option<&FlowStartInterfaceConnection>,
-        Option<&FlowEndInterfaceConnection>,
-    )>,
+    flow_query: Query<
+        (
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+            Option<&FlowStartInterfaceConnection>,
+            Option<&FlowEndInterfaceConnection>,
+        ),
+        With<Flow>,
+    >,
+    parent_query: Query<&Parent>,
 ) {
     for (entity_to_remove, selection, parent) in &selected_query {
         if selection.is_selected {
+            if let Ok((
+                start_connection,
+                end_connection,
+                start_interface_connection,
+                end_interface_connection,
+            )) = flow_query.get(entity_to_remove)
+            {
+                if let Some(start_connection) = start_connection {
+                    if matches!(start_connection.target_type, StartTargetType::Source) {
+                        remove_entity(&mut commands, start_connection.target, &parent_query);
+                    }
+                }
+
+                if let Some(end_connection) = end_connection {
+                    if matches!(end_connection.target_type, EndTargetType::Sink) {
+                        remove_entity(&mut commands, end_connection.target, &parent_query);
+                    }
+                }
+
+                if let Some(start_interface_connection) = start_interface_connection {
+                    remove_entity(
+                        &mut commands,
+                        start_interface_connection.target,
+                        &parent_query,
+                    );
+                }
+
+                if let Some(end_interface_connection) = end_interface_connection {
+                    remove_entity(
+                        &mut commands,
+                        end_interface_connection.target,
+                        &parent_query,
+                    );
+                }
+            }
+
             if let Some(parent) = parent {
                 commands
                     .entity(parent.get())
@@ -25,6 +64,16 @@ pub fn remove_selected_elements(
             commands.entity(entity_to_remove).despawn_recursive();
         }
     }
+}
+
+fn remove_entity(commands: &mut Commands, entity_to_remove: Entity, parent_query: &Query<&Parent>) {
+    if let Ok(parent) = parent_query.get(entity_to_remove) {
+        commands
+            .entity(parent.get())
+            .remove_children(&[entity_to_remove]);
+    }
+
+    commands.entity(entity_to_remove).despawn_recursive();
 }
 
 pub fn cleanup_external_entity_removal(
