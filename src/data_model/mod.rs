@@ -208,6 +208,17 @@ pub enum Complexity {
     Multiset(u64),
 }
 
+impl std::fmt::Display for Complexity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        type T = Complexity;
+        match self {
+            T::Complex { .. } => write!(f, "Complex"),
+            T::Atomic => write!(f, "Atomic"),
+            T::Multiset(_) => write!(f, "Multiset")
+        }
+    }
+}
+
 impl Default for Complexity {
     fn default() -> Self {
         Complexity::Complex {

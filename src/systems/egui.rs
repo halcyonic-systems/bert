@@ -56,15 +56,6 @@ macro_rules! vcj_text_edit {
 }
 
 
-
-#[derive(Clone, Debug, PartialEq, Default)]
-enum ComplexitySelection {
-    #[default]
-    Complex,
-    Atomic,
-    Multiset
-}
-
 fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
     h_label!(ui, "Protocol");
     vcj_text_edit!(ui, &mut interface.protocol, true);
@@ -209,30 +200,48 @@ fn subsystem_egui(
     vcj_text_edit!(ui, &mut system.time_unit, false);
 
     h_label!(ui, "Complexity Type");
+    ComboBox::from_label("   ")
+        .selected_text(system.complexity.to_string())
+        .show_ui(ui, |ui| {
+            ui.style_mut().wrap = Some(false);
+            ui.set_min_width(60.0);
+            let complexity = system.complexity.clone();
+            if matches!(complexity, Complexity::Complex { .. }) {
+                ui.selectable_value(
+                    &mut system.complexity,
+                    complexity.clone(),
+                    "Complex"
+                );
+            } else {
+                ui.selectable_value(
+                    &mut system.complexity,
+                    Complexity::Complex { adaptable: false, evolveable: false },
+                    "Complex"
+                );
+            }
+
+            if matches!(complexity, Complexity::Multiset(_)) {
+                ui.selectable_value(
+                    &mut system.complexity,
+                    complexity.clone(),
+                    "Multiset"
+                );
+            } else {
+                ui.selectable_value(
+                    &mut system.complexity,
+                    Complexity::Multiset(1),
+                    "Multiset"
+                );
+            }
+           
+            ui.selectable_value(
+                &mut system.complexity,
+                Complexity::Atomic,
+                "Atomic"
+            );
+        });
     match &mut system.complexity {
         Complexity::Complex { ref mut adaptable, ref mut evolveable } => {
-            let mut current_selection = ComplexitySelection::Complex;
-            ComboBox::from_label("   ")
-                .selected_text(format!("{:?}", current_selection))
-                .show_ui(ui, |ui| {
-                    ui.style_mut().wrap = Some(false);
-                    ui.set_min_width(60.0);
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Complex,
-                        "Complex"
-                    );
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Multiset,
-                        "Multiset"
-                    );
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Atomic,
-                        "Atomic"
-                    );
-                });
             h_wrap!(ui, |ui|{
                 h_label!(ui, "Adaptable");
                 ui.add(Checkbox::without_text(adaptable));
@@ -240,31 +249,8 @@ fn subsystem_egui(
                 h_label!(ui, "Evolveable");
                 ui.add(Checkbox::without_text(evolveable));
             });
-
         },
         Complexity::Multiset(ref mut count) => {
-            let mut current_selection = ComplexitySelection::Multiset;
-            ComboBox::from_label("   ")
-                .selected_text(format!("{:?}", current_selection))
-                .show_ui(ui, |ui| {
-                    ui.style_mut().wrap = Some(false);
-                    ui.set_min_width(60.0);
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Complex,
-                        "Complex"
-                    );
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Multiset,
-                        "Multiset"
-                    );
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Atomic,
-                        "Atomic"
-                    );
-                });
             h_wrap!(ui, |ui|{
                 h_label!(ui, "System Instances");
                 ui.add(
@@ -273,31 +259,9 @@ fn subsystem_egui(
                 );
             });
         },
-        Complexity::Atomic => {
-            let mut current_selection = ComplexitySelection::Atomic;
-            ComboBox::from_label("   ")
-                .selected_text(format!("{:?}", current_selection))
-                .show_ui(ui, |ui| {
-                    ui.style_mut().wrap = Some(false);
-                    ui.set_min_width(60.0);
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Complex,
-                        "Complex"
-                    );
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Multiset,
-                        "Multiset"
-                    );
-                    ui.selectable_value(
-                        &mut current_selection,
-                        ComplexitySelection::Atomic,
-                        "Atomic"
-                    );
-                });
-        }
-    };
+        Complexity::Atomic => {}
+    }
+
     ui.separator();
     boundary_egui(ui, system);
 
