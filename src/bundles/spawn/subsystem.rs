@@ -1,6 +1,7 @@
 use crate::bundles::{spawn_interface, SystemBundle};
 use crate::components::*;
 use crate::constants::*;
+use crate::data_model::Complexity;
 use crate::events::SubsystemDrag;
 use crate::plugins::label::add_name_label;
 use crate::plugins::mouse_interaction::DragPosition;
@@ -156,8 +157,7 @@ fn spawn_subsystem_common(
                     z,
                     radius,
                     angle,
-                    false,
-                    false,
+                    Complexity::default(),
                     Default::default(),
                     meshes,
                     zoom,

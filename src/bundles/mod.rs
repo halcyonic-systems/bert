@@ -14,6 +14,7 @@ use bevy::sprite::Mesh2dHandle;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use crate::data_model::Complexity;
 
 pub fn get_system_geometry_from_radius(radius: f32) -> (Mesh, Path) {
     (
@@ -51,8 +52,7 @@ impl SystemBundle {
         z: f32,
         radius: f32,
         angle: f32,
-        adaptable: bool,
-        evolveable: bool,
+        complexity: Complexity,
         boundary: SystemBoundary,
         meshes: &mut ResMut<Assets<Mesh>>,
         zoom: f32,
@@ -68,8 +68,7 @@ impl SystemBundle {
         Self {
             system: System {
                 radius,
-                adaptable,
-                evolveable,
+                complexity,
                 boundary,
                 time_unit,
             },

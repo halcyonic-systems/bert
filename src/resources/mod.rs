@@ -4,7 +4,8 @@ pub use system_element_geometry::*;
 
 use bevy::prelude::*;
 
-#[derive(Debug, Resource, Deref, DerefMut, Copy, Clone)]
+#[derive(Debug, Resource, Deref, DerefMut, Copy, Clone, Reflect)]
+#[reflect(Resource)]
 pub struct FocusedSystem(Entity);
 
 impl FocusedSystem {
@@ -13,7 +14,14 @@ impl FocusedSystem {
     }
 }
 
-#[derive(Debug, Resource, Deref, DerefMut)]
+impl Default for FocusedSystem {
+    fn default() -> Self {
+        Self(Entity::PLACEHOLDER)
+    }
+}
+
+#[derive(Debug, Resource, Deref, DerefMut, Reflect)]
+#[reflect(Resource)]
 pub struct Zoom(f32);
 
 impl Zoom {

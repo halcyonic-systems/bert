@@ -245,7 +245,9 @@ fn main() {
     .register_type::<SelectedHighlightHelperAdded>()
     .register_type::<Pinnable>()
     .register_type::<Pin>()
-    .register_type::<NestingLevel>();
+    .register_type::<NestingLevel>()
+    .register_type::<FocusedSystem>()
+    .register_type::<Zoom>();
 
     app.world.resource_mut::<Assets<ColorMaterial>>().insert(
         WHITE_COLOR_MATERIAL_HANDLE,

@@ -1,3 +1,4 @@
+use crate::data_model::Complexity;
 use bevy::prelude::*;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -28,8 +29,7 @@ impl std::fmt::Display for SystemElement {
 #[reflect(Component)]
 pub struct System {
     pub radius: f32,
-    pub adaptable: bool,
-    pub evolveable: bool,
+    pub complexity: Complexity,
     pub boundary: SystemBoundary,
     pub time_unit: String,
 }

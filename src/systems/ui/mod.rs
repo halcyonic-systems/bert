@@ -32,24 +32,12 @@ use rust_decimal_macros::dec;
 pub fn change_focused_system(
     selected_query: Query<
         (Entity, &PickSelection),
-        (
-            Changed<PickSelection>,
-            Or<(With<crate::components::System>, With<Subsystem>)>,
-        ),
+        (Changed<PickSelection>, With<crate::components::System>),
     >,
-    button_query: Query<&CreateButton>,
     mut focused_system: ResMut<FocusedSystem>,
 ) {
     for (entity, selection) in &selected_query {
         if selection.is_selected {
-            for button in &button_query {
-                if button.system == **focused_system
-                    && matches!(button.ty, CreateButtonType::InterfaceSubsystem { .. })
-                {
-                    return;
-                }
-            }
-
             **focused_system = entity;
         }
     }

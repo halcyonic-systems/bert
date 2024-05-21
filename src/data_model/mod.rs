@@ -114,7 +114,6 @@ pub struct Info {
 
 #[derive(Serialize, Deserialize)]
 pub struct System {
-    // #[serde(rename = "type")]
     pub info: Info,
     pub parent: Option<i32>,
     pub complexity: Complexity,
@@ -199,14 +198,23 @@ pub struct Substance {
     ty: SubstanceType,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize, Reflect, PartialEq, Eq, Hash, Debug)]
 pub enum Complexity {
-    /* contains components */
+    /// contains components
     Complex { adaptable: bool, evolveable: bool },
-    /*  contains no subsystems */
+    /// contains no subsystems
     Atomic,
-    /*  bounded to hold many instances of that same type of component */
-    Multiset,
+    /// bounded to hold many instances of that same type of component
+    Multiset(u64),
+}
+
+impl Default for Complexity {
+    fn default() -> Self {
+        Complexity::Complex {
+            adaptable: false,
+            evolveable: false,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

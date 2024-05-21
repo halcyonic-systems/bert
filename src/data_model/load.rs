@@ -40,22 +40,11 @@ pub fn load_world(
         .map(|t| (t.translation, t.rotation))
         .unwrap_or((Vec2::ZERO, 0.0));
 
-    let (adaptable, evolveable) = if let Complexity::Complex {
-        adaptable,
-        evolveable,
-    } = system.complexity
-    {
-        (adaptable, evolveable)
-    } else {
-        unreachable!("Main system has to be complex");
-    };
-
     let system_entity = spawn_main_system(
         &mut commands,
         center,
         angle,
-        adaptable,
-        evolveable,
+        system.complexity,
         SystemBoundary {
             porosity: system.boundary.porosity,
             perceptive_fuzziness: system.boundary.perceptive_fuzziness,

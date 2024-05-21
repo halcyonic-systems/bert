@@ -135,10 +135,7 @@ pub fn save_world(
             description: description.text.clone(),
         },
         parent: None,
-        complexity: Complexity::Complex {
-            adaptable: system.adaptable,
-            evolveable: system.evolveable,
-        },
+        complexity: system.complexity,
         environment,
         boundary,
         internal_interactions: vec![], // TODO

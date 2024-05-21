@@ -4,13 +4,13 @@ use crate::constants::MAIN_SYSTEM_RADIUS;
 use crate::Pinnable;
 use bevy::math::Vec2;
 use bevy::prelude::*;
+use crate::data_model::Complexity;
 
 pub fn spawn_main_system(
     commands: &mut Commands,
     center: Vec2,
     angle: f32,
-    adaptable: bool,
-    evolveable: bool,
+    complexity: Complexity,
     boundary: SystemBoundary,
     zoom: f32,
     name: &str,
@@ -24,8 +24,7 @@ pub fn spawn_main_system(
                 0.0,
                 MAIN_SYSTEM_RADIUS,
                 angle,
-                adaptable,
-                evolveable,
+                complexity,
                 boundary,
                 meshes,
                 zoom,

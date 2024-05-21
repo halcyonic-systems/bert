@@ -4,6 +4,7 @@ use crate::resources::*;
 use bevy::prelude::*;
 use bevy::render::deterministic::DeterministicRenderingConfig;
 use bevy::window::PrimaryWindow;
+use crate::data_model::Complexity;
 
 pub fn window_setup(mut primary_window_query: Query<&mut Window, With<PrimaryWindow>>) {
     let mut w = primary_window_query
@@ -36,8 +37,7 @@ pub fn setup(
         &mut commands,
         Vec2::ZERO,
         0.0,
-        false,
-        false,
+        Complexity::default(),
         Default::default(),
         **zoom,
         "System",
