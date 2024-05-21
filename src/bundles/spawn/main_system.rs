@@ -1,10 +1,10 @@
 use crate::bundles::SystemBundle;
 use crate::components::{SystemBoundary, SystemEnvironment};
 use crate::constants::MAIN_SYSTEM_RADIUS;
+use crate::data_model::Complexity;
 use crate::Pinnable;
 use bevy::math::Vec2;
 use bevy::prelude::*;
-use crate::data_model::Complexity;
 
 pub fn spawn_main_system(
     commands: &mut Commands,

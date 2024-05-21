@@ -5,6 +5,7 @@ pub use spawn::*;
 
 use crate::components::{System, *};
 use crate::constants::{SYSTEM_LINE_WIDTH, SYSTEM_SELECTED_LINE_WIDTH};
+use crate::data_model::Complexity;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::PickSelection;
 use bevy::prelude::*;
@@ -14,7 +15,6 @@ use bevy::sprite::Mesh2dHandle;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-use crate::data_model::Complexity;
 
 pub fn get_system_geometry_from_radius(radius: f32) -> (Mesh, Path) {
     (

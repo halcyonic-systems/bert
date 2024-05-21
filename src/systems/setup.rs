@@ -1,10 +1,10 @@
 use crate::bundles::spawn_main_system;
 use crate::constants::*;
+use crate::data_model::Complexity;
 use crate::resources::*;
 use bevy::prelude::*;
 use bevy::render::deterministic::DeterministicRenderingConfig;
 use bevy::window::PrimaryWindow;
-use crate::data_model::Complexity;
 
 pub fn window_setup(mut primary_window_query: Query<&mut Window, With<PrimaryWindow>>) {
     let mut w = primary_window_query

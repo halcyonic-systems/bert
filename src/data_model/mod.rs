@@ -214,7 +214,7 @@ impl std::fmt::Display for Complexity {
         match self {
             T::Complex { .. } => write!(f, "Complex"),
             T::Atomic => write!(f, "Atomic"),
-            T::Multiset(_) => write!(f, "Multiset")
+            T::Multiset(_) => write!(f, "Multiset"),
         }
     }
 }
