@@ -216,7 +216,11 @@ fn subsystem_egui(
 ) {
     h_label!(ui, "Time Unit");
     vcj_text_edit!(ui, &mut system.time_unit, false);
+
     complexity_egui(ui, system);
+
+    h_label!(ui, "Member Autonomy");
+    ui.add(egui::Slider::new(&mut system.membership, 0.0..=1.0).drag_value_speed(1.0));
 
     ui.separator();
     boundary_egui(ui, system);

@@ -69,6 +69,7 @@ impl SystemBundle {
             system: System {
                 radius,
                 complexity,
+                membership: 1.0,
                 boundary,
                 time_unit,
             },

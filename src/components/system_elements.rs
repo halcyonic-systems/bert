@@ -30,6 +30,7 @@ impl std::fmt::Display for SystemElement {
 pub struct System {
     pub radius: f32,
     pub complexity: Complexity,
+    pub membership: f32,
     pub boundary: SystemBoundary,
     pub time_unit: String,
 }
