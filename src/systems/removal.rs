@@ -203,3 +203,22 @@ pub fn cleanup_subsystem_removal(
         }
     }
 }
+
+pub fn cleanup_flow_removal(
+    mut commands: Commands,
+    mut removed_flows: RemovedComponents<Flow>,
+    button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
+) {
+    for removed_flow in removed_flows.read() {
+        for (button_entity, create_button, parent) in &button_query {
+            if create_button.connection_source == removed_flow {
+                if let Some(parent) = parent {
+                    commands
+                        .entity(parent.get())
+                        .remove_children(&[button_entity]);
+                }
+                commands.entity(button_entity).despawn_recursive();
+            }
+        }
+    }
+}

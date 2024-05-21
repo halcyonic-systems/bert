@@ -150,6 +150,7 @@ fn main() {
                 cleanup_labelled_removal,
                 cleanup_interface_removal,
                 cleanup_subsystem_removal,
+                cleanup_flow_removal,
             )
                 .in_set(RemovalCleanupSet),
             (
