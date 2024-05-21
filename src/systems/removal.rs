@@ -3,10 +3,17 @@ use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::plugins::label::NameLabel;
 use crate::plugins::mouse_interaction::{PickSelection, PickTarget};
 use bevy::prelude::*;
+use std::ops::DerefMut;
 
 pub fn remove_selected_elements(
     mut commands: Commands,
     selected_query: Query<(Entity, &PickSelection, Option<&Parent>)>,
+    flow_query: Query<(
+        Option<&FlowStartConnection>,
+        Option<&FlowEndConnection>,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
+    )>,
 ) {
     for (entity_to_remove, selection, parent) in &selected_query {
         if selection.is_selected {
@@ -106,6 +113,7 @@ pub fn cleanup_subsystem_removal(
         Option<&FlowStartConnection>,
         Option<&FlowEndConnection>,
     )>,
+    interface_query: Query<(Entity, &InterfaceSubsystemConnection)>,
 ) {
     for removed_subsystem in removed_subsystems.read() {
         for (flow_entity, flow_start_connection, flow_end_connection) in &flow_query {
@@ -114,12 +122,34 @@ pub fn cleanup_subsystem_removal(
                 .unwrap_or(false)
             {
                 commands.entity(flow_entity).remove::<FlowStartConnection>();
+
+                if let Some(connection) = flow_end_connection {
+                    if matches!(connection.target_type, EndTargetType::Sink) {
+                        commands.entity(connection.target).despawn_recursive();
+                        commands.entity(flow_entity).despawn_recursive();
+                    }
+                }
             }
             if flow_end_connection
                 .map(|connection| connection.target == removed_subsystem)
                 .unwrap_or(false)
             {
                 commands.entity(flow_entity).remove::<FlowEndConnection>();
+
+                if let Some(connection) = flow_start_connection {
+                    if matches!(connection.target_type, StartTargetType::Source) {
+                        commands.entity(connection.target).despawn_recursive();
+                        commands.entity(flow_entity).despawn_recursive();
+                    }
+                }
+            }
+        }
+
+        for (interface_entity, interface_subsystem_connection) in &interface_query {
+            if interface_subsystem_connection.target == removed_subsystem {
+                commands
+                    .entity(interface_entity)
+                    .remove::<InterfaceSubsystemConnection>();
             }
         }
     }

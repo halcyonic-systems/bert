@@ -42,9 +42,7 @@ pub fn add_interface_subsystem_create_buttons(
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    // TODO : also detect removal
-
-    if changed_query.is_empty() {
+    if changed_query.is_empty() && !focused_system.is_changed() {
         return;
     }
 
