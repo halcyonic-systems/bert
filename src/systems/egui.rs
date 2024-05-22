@@ -300,6 +300,8 @@ fn complexity_egui(ui: &mut Ui, system: &mut crate::components::System) {
 }
 
 fn external_entity_egui(ui: &mut Ui, external_entity: &mut ExternalEntity) {
+    h_label!(ui, "Equivalence Type");
+    vcj_text_edit!(ui, &mut external_entity.equivalence, false);
     h_label!(ui, "Model");
     vcj_text_edit!(ui, &mut external_entity.model, false);
 }

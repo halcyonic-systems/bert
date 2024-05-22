@@ -80,6 +80,7 @@ pub struct Flow {
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct ExternalEntity {
+    pub equivalence: String,
     pub model: String,
 }
 
