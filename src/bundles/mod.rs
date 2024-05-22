@@ -70,6 +70,7 @@ impl SystemBundle {
                 radius,
                 complexity,
                 membership: 1.0,
+                equivalence: "".to_string(),
                 transformation: "".to_string(),
                 history: "".to_string(),
                 boundary,

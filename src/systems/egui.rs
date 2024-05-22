@@ -161,6 +161,10 @@ fn system_of_interest_egui(
         }
         _ => panic!("System of Intest can only be complex"),
     }
+
+    h_label!(ui, "Equivalence Type");
+    vcj_text_edit!(ui, &mut system.equivalence, false);
+
     h_label!(ui, "Time Unit");
     vcj_text_edit!(ui, &mut system.time_unit, false);
 
@@ -217,6 +221,9 @@ fn subsystem_egui(
 
     h_label!(ui, "Member Autonomy");
     ui.add(Slider::new(&mut system.membership, 0.0..=1.0).drag_value_speed(1.0));
+
+    h_label!(ui, "Equivalence Type");
+    vcj_text_edit!(ui, &mut system.equivalence, false);
 
     h_label!(ui, "Time Unit");
     vcj_text_edit!(ui, &mut system.time_unit, false);
