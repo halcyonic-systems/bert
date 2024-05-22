@@ -67,7 +67,7 @@ macro_rules! spawn_flow {
                 Flow {
                     interaction_type: InteractionType::default(),
                     substance_type,
-                    substance_equivalence: "".to_string(),
+                    substance_sub_type: "".to_string(),
                     amount,
                     unit: unit.to_string(),
                     time_unit: time_unit.to_string(),

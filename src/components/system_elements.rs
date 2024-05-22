@@ -70,7 +70,7 @@ pub enum InterfaceType {
 pub struct Flow {
     pub interaction_type: InteractionType,
     pub substance_type: SubstanceType,
-    pub substance_equivalence: String,
+    pub substance_sub_type: String,
     #[reflect(ignore)]
     pub amount: Decimal,
     pub unit: String,

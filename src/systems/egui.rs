@@ -108,8 +108,8 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
             });
     });
 
-    h_label!(ui, "Substance Equivalence");
-    vcj_text_edit!(ui, &mut flow.substance_equivalence, false);
+    h_label!(ui, "Substance Sub Type");
+    vcj_text_edit!(ui, &mut flow.substance_sub_type, false);
 
     h_label!(ui, "Substance Unit");
     vcj_text_edit!(ui, &mut flow.unit, false);
