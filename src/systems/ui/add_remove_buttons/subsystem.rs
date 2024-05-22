@@ -7,7 +7,7 @@ use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::math::vec2;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
+use bevy::utils::{HashMap, HashSet};
 
 pub fn add_interface_subsystem_create_buttons(
     mut commands: Commands,
@@ -38,6 +38,8 @@ pub fn add_interface_subsystem_create_buttons(
     interface_button_query: Query<&HasInterfaceSubsystemButton>,
     interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
     button_query: Query<(&CreateButton, Option<&Parent>)>,
+    subsystem_query: Query<(Entity, &Subsystem, Option<&SubsystemParentFlowConnection>)>,
+    parent_query: Query<&Parent>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
@@ -48,19 +50,141 @@ pub fn add_interface_subsystem_create_buttons(
 
     let incomplete_flows_exist = !incomplete_flow_query.is_empty();
 
-    let mut flow_usabilities = HashSet::new();
+    let mut flow_usabilities = HashMap::new();
+
+    let mut systems_at_the_same_nesting_level = vec![];
+
+    if let Ok((_, subsystem, _)) = subsystem_query.get(**focused_system) {
+        systems_at_the_same_nesting_level = subsystem_query
+            .iter()
+            .filter(|(_, subsys, _)| subsys.parent_system == subsystem.parent_system)
+            .map(|(entity, _, conn)| (entity, conn))
+            .collect();
+    } else {
+        systems_at_the_same_nesting_level.push((**focused_system, None));
+    }
+
+    for (system, _) in &systems_at_the_same_nesting_level {
+        flow_usabilities.insert(*system, HashSet::new());
+    }
 
     for (flow, flow_start_connection, flow_end_connection) in &complete_flow_query {
-        if flow_end_connection.target == **focused_system {
-            flow_usabilities.insert(GeneralUsability::Inflow(InflowUsability::from_useful(
-                flow.is_useful,
-            )));
-        } else if flow_start_connection.target == **focused_system {
-            flow_usabilities.insert(GeneralUsability::Outflow(OutflowUsability::from_useful(
-                flow.is_useful,
-            )));
+        if systems_at_the_same_nesting_level
+            .iter()
+            .any(|(entity, _)| *entity == flow_end_connection.target)
+        {
+            flow_usabilities
+                .get_mut(&flow_end_connection.target)
+                .map(|set| {
+                    set.insert(GeneralUsability::Inflow(InflowUsability::from_useful(
+                        flow.is_useful,
+                    )))
+                });
+        }
+        if systems_at_the_same_nesting_level
+            .iter()
+            .any(|(entity, _)| *entity == flow_start_connection.target)
+        {
+            flow_usabilities
+                .get_mut(&flow_start_connection.target)
+                .map(|set| {
+                    set.insert(GeneralUsability::Outflow(OutflowUsability::from_useful(
+                        flow.is_useful,
+                    )))
+                });
         }
     }
+
+    let mut system_interfaces = vec![];
+
+    for (system_entity, parent_flow_connection) in &systems_at_the_same_nesting_level {
+        if let Some(parent_flow_connection) = parent_flow_connection {
+            let (_, _, flow_start_interface_connection, flow_end_interface_connection) =
+                flow_interface_query
+                    .get(parent_flow_connection.target)
+                    .expect("Flow should exist");
+            let (flow, _, _) = complete_flow_query
+                .get(parent_flow_connection.target)
+                .expect("Flow should exist");
+
+            let mut interface_entity = Entity::PLACEHOLDER;
+            let mut interface_type = InterfaceType::Export;
+
+            let mut parent_entity = *system_entity;
+            while let Ok(parent) = parent_query.get(parent_entity) {
+                parent_entity = parent.get();
+
+                if let Some(connection) = flow_start_interface_connection {
+                    if connection.target == parent_entity {
+                        interface_entity = parent_entity;
+                        flow_usabilities.get_mut(system_entity).map(|set| {
+                            set.insert(GeneralUsability::Outflow(OutflowUsability::from_useful(
+                                flow.is_useful,
+                            )))
+                        });
+                        interface_type = InterfaceType::Export;
+                        break;
+                    }
+                } else if let Some(connection) = flow_end_interface_connection {
+                    if connection.target == parent_entity {
+                        interface_entity = parent_entity;
+                        flow_usabilities.get_mut(system_entity).map(|set| {
+                            set.insert(GeneralUsability::Inflow(InflowUsability::from_useful(
+                                flow.is_useful,
+                            )))
+                        });
+                        interface_type = InterfaceType::Import;
+                        break;
+                    }
+                }
+            }
+
+            if *system_entity == **focused_system {
+                let mut has_subsystem = false;
+
+                for (_, subsystem, flow_connection) in &subsystem_query {
+                    if subsystem.parent_system == *system_entity {
+                        if let Some(flow_connection) = flow_connection {
+                            if flow_connection.target == parent_flow_connection.target {
+                                has_subsystem = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if !has_subsystem {
+                    system_interfaces.push((interface_entity, false, interface_type));
+                }
+            }
+        }
+    }
+
+    let show_interface_buttons = if incomplete_flows_exist {
+        false
+    } else {
+        let mut show_interface_buttons = true;
+
+        for flow_usabilities in flow_usabilities.values() {
+            let mut inflow_present = false;
+            let mut outflow_present = false;
+
+            for usability in flow_usabilities {
+                if matches!(usability, GeneralUsability::Inflow(_)) {
+                    inflow_present = true;
+                } else if matches!(usability, GeneralUsability::Outflow(_)) {
+                    outflow_present = true;
+                }
+            }
+
+            if !inflow_present || !outflow_present {
+                show_interface_buttons = false;
+                break;
+            }
+        }
+
+        show_interface_buttons
+    };
 
     for (
         flow_start_connection,
@@ -70,47 +194,45 @@ pub fn add_interface_subsystem_create_buttons(
     ) in &flow_interface_query
     {
         let interface_entity = if flow_end_connection.target == **focused_system {
-            flow_end_interface_connection.map(|c| c.target)
+            flow_end_interface_connection.map(|c| (c.target, InterfaceType::Import))
         } else if flow_start_connection.target == **focused_system {
-            flow_start_interface_connection.map(|c| c.target)
+            flow_start_interface_connection.map(|c| (c.target, InterfaceType::Export))
         } else {
             None
         };
 
-        if let Some(interface_entity) = interface_entity {
-            let interface_button = interface_button_query.get(interface_entity);
-
-            let usability_conditions = [
-                GeneralUsability::Inflow(InflowUsability::from_useful(true)),
-                GeneralUsability::Outflow(OutflowUsability::from_useful(true)),
-            ];
-            let usability_conditions_met = usability_conditions
-                .iter()
-                .all(|condition| flow_usabilities.contains(condition));
-            if usability_conditions_met && !incomplete_flows_exist {
-                if interface_button.is_err()
-                    && interface_subsystem_query.get(interface_entity).is_err()
-                {
-                    spawn_create_button(
-                        &mut commands,
-                        CreateButton {
-                            ty: CreateButtonType::InterfaceSubsystem {
-                                is_child_of_interface: true, // TODO : compute this
-                            },
-                            connection_source: interface_entity,
-                            system: **focused_system,
-                            substance_type: None,
-                        },
-                        vec2(-INTERFACE_WIDTH_HALF, 0.0),
-                        0.0,
-                        **zoom,
-                        Some(interface_entity),
-                        &asset_server,
-                    );
-                }
-            } else if let Ok(interface_button) = interface_button {
-                despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
+        if let Some((interface_entity, interface_type)) = interface_entity {
+            if interface_subsystem_query.get(interface_entity).is_err() {
+                system_interfaces.push((interface_entity, true, interface_type));
             }
+        }
+    }
+
+    for (interface_entity, is_child_of_interface, interface_type) in system_interfaces {
+        let interface_button = interface_button_query.get(interface_entity);
+
+        if show_interface_buttons {
+            if interface_button.is_err() {
+                spawn_create_button(
+                    &mut commands,
+                    CreateButton {
+                        ty: CreateButtonType::InterfaceSubsystem {
+                            is_child_of_interface,
+                            interface_type,
+                        },
+                        connection_source: interface_entity,
+                        system: **focused_system,
+                        substance_type: None,
+                    },
+                    vec2(-INTERFACE_WIDTH_HALF, 0.0),
+                    0.0,
+                    **zoom,
+                    Some(interface_entity),
+                    &asset_server,
+                );
+            }
+        } else if let Ok(interface_button) = interface_button {
+            despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
         }
     }
 }

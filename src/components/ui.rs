@@ -1,4 +1,4 @@
-use crate::components::{InitialPosition, SubstanceType};
+use crate::components::{InitialPosition, InterfaceType, SubstanceType};
 use crate::constants::FLOW_LENGTH;
 use bevy::prelude::*;
 
@@ -19,7 +19,10 @@ pub enum CreateButtonType {
     Outflow,
     Source,
     Sink,
-    InterfaceSubsystem { is_child_of_interface: bool },
+    InterfaceSubsystem {
+        is_child_of_interface: bool,
+        interface_type: InterfaceType,
+    },
     FlowTerminalStart,
     FlowTerminalEnd,
     Subsystem,

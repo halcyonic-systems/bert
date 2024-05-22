@@ -89,10 +89,10 @@ pub fn update_interface_subsystem_color_from_interface(
 
 pub fn update_system_color_from_subsystem(
     subsystem_query: Query<&Subsystem, Added<Subsystem>>,
-    mut system_query: Query<&mut Fill, Without<Subsystem>>,
+    mut fill_query: Query<&mut Fill>,
 ) {
     for subsystem in &subsystem_query {
-        let mut system_fill = system_query
+        let mut system_fill = fill_query
             .get_mut(subsystem.parent_system)
             .expect("System should exist");
         system_fill.color = Color::rgb(235.0, 231.0, 231.0);

@@ -192,8 +192,6 @@ fn main() {
     .add_systems(
         PostUpdate,
         (
-            update_flow_from_interface_subsystem.before(update_flow_from_system),
-            update_flow_from_system.before(update_flow_from_interface),
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),

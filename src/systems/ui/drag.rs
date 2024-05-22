@@ -6,7 +6,6 @@ use crate::utils::{
     compute_end_and_direction_from_subsystem, compute_end_and_direction_from_system_child,
 };
 use bevy::prelude::*;
-use std::ops::DerefMut;
 
 pub fn drag_subsystem(
     mut events: EventReader<SubsystemDrag>,
@@ -134,7 +133,7 @@ pub fn update_flow_from_external_entity(
 }
 
 pub fn update_flow_from_interface(
-    interface_query: Query<(Entity, &NestingLevel), (With<Interface>, Changed<Transform>)>,
+    interface_query: Query<(Entity, &NestingLevel), (With<Interface>, Changed<GlobalTransform>)>,
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>,
     mut flow_query: Query<(
@@ -352,41 +351,6 @@ pub fn update_initial_position_from_transform(
 ) {
     for (mut initial_position, transform) in &mut query {
         **initial_position = transform.translation.truncate() / **zoom;
-    }
-}
-
-pub fn update_flow_from_system(
-    system_query: Query<&Children, (With<crate::components::System>, Changed<Transform>)>,
-    mut interface_query: Query<
-        &mut Transform,
-        (With<Interface>, Without<crate::components::System>),
-    >,
-) {
-    for children in &system_query {
-        for child in children.iter() {
-            if let Ok(mut transform) = interface_query.get_mut(*child) {
-                // touch to trigger flow updates
-                let _ = transform.deref_mut();
-            }
-        }
-    }
-}
-
-pub fn update_flow_from_interface_subsystem(
-    interface_query: Query<&InterfaceSubsystemConnection, Changed<Transform>>,
-    mut system_query: Query<
-        &mut Transform,
-        (
-            With<crate::components::System>,
-            Without<InterfaceSubsystemConnection>,
-        ),
-    >,
-) {
-    for interface_subsystem_connection in &interface_query {
-        if let Ok(mut transform) = system_query.get_mut(interface_subsystem_connection.target) {
-            // touch to trigger flow updates
-            let _ = transform.deref_mut();
-        }
     }
 }
 
