@@ -76,9 +76,11 @@ pub struct Flow {
     pub is_useful: bool,
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
-pub struct ExternalEntity;
+pub struct ExternalEntity {
+    pub model: String,
+}
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]

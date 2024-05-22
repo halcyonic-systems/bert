@@ -293,8 +293,8 @@ fn complexity_egui(ui: &mut Ui, system: &mut crate::components::System) {
 }
 
 fn external_entity_egui(ui: &mut Ui, external_entity: &mut ExternalEntity) {
-    let _ = ui;
-    let _ = external_entity;
+    h_label!(ui, "Model");
+    vcj_text_edit!(ui, &mut external_entity.model, false);
 }
 
 pub fn egui_selected_context(

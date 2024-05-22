@@ -46,7 +46,9 @@ pub fn spawn_external_entity(
 
     let external_entity = commands
         .spawn((
-            ExternalEntity,
+            ExternalEntity {
+                model: "".to_string(),
+            },
             SpatialBundle {
                 transform,
                 ..default()
