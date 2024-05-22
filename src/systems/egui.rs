@@ -145,9 +145,6 @@ fn system_of_interest_egui(
     system: &mut crate::components::System,
     system_environment: &mut SystemEnvironment,
 ) {
-    h_label!(ui, "Time Unit");
-    vcj_text_edit!(ui, &mut system.time_unit, false);
-
     h_label!(ui, "Complexity");
     match &mut system.complexity {
         Complexity::Complex {
@@ -164,6 +161,14 @@ fn system_of_interest_egui(
         }
         _ => panic!("System of Intest can only be complex"),
     }
+    h_label!(ui, "Time Unit");
+    vcj_text_edit!(ui, &mut system.time_unit, false);
+
+    h_label!(ui, "Transformation");
+    vcj_text_edit!(ui, &mut system.transformation, false);
+
+    h_label!(ui, "History");
+    vcj_text_edit!(ui, &mut system.history, false);
 
     ui.separator();
     boundary_egui(ui, system);
@@ -208,13 +213,19 @@ fn subsystem_egui(
     system: &mut crate::components::System,
     system_environment: &SystemEnvironment,
 ) {
-    h_label!(ui, "Time Unit");
-    vcj_text_edit!(ui, &mut system.time_unit, false);
-
     complexity_egui(ui, system);
 
     h_label!(ui, "Member Autonomy");
     ui.add(Slider::new(&mut system.membership, 0.0..=1.0).drag_value_speed(1.0));
+
+    h_label!(ui, "Time Unit");
+    vcj_text_edit!(ui, &mut system.time_unit, false);
+
+    h_label!(ui, "Transformation");
+    vcj_text_edit!(ui, &mut system.transformation, false);
+
+    h_label!(ui, "History");
+    vcj_text_edit!(ui, &mut system.history, false);
 
     ui.separator();
     boundary_egui(ui, system);

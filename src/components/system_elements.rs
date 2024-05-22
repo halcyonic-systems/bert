@@ -31,6 +31,8 @@ pub struct System {
     pub radius: f32,
     pub complexity: Complexity,
     pub membership: f32,
+    pub transformation: String,
+    pub history: String,
     pub boundary: SystemBoundary,
     pub time_unit: String,
 }
