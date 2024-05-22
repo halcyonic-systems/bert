@@ -18,6 +18,7 @@ use bevy_eventlistener::event_listener::On;
 pub fn spawn_interface_subsystem(
     commands: &mut Commands,
     is_child_of_interface: bool,
+    interface_type: InterfaceType,
     interface_entity: Entity,
     flow_interface_query: &Query<(
         Entity,
@@ -63,10 +64,19 @@ pub fn spawn_interface_subsystem(
 
     let parent_system = ***focused_system;
 
-    let z = if is_child_of_interface {
-        SUBSYSTEM_Z - INTERFACE_Z
+    let (z, pos) = if is_child_of_interface {
+        (SUBSYSTEM_Z - INTERFACE_Z, SubsystemPosition::XFromRadius)
     } else {
-        SUBSYSTEM_Z
+        (
+            SUBSYSTEM_Z,
+            if matches!(interface_type, InterfaceType::Export) {
+                SubsystemPosition::Right
+            } else {
+                angle += std::f32::consts::PI;
+                angle %= 2.0 * std::f32::consts::PI;
+                SubsystemPosition::Left
+            },
+        )
     };
 
     let (subsystem_entity, _, _) = spawn_subsystem_common(
@@ -80,7 +90,7 @@ pub fn spawn_interface_subsystem(
         angle,
         parent_system,
         z,
-        SubsystemPosition::XFromRadius,
+        pos,
     );
 
     let mut subsystem_commands = commands.entity(subsystem_entity);
@@ -117,6 +127,8 @@ pub fn spawn_interface_subsystem(
 
 enum SubsystemPosition {
     XFromRadius,
+    Right,
+    Left,
     Position(Vec2),
 }
 
@@ -133,17 +145,20 @@ fn spawn_subsystem_common(
     z: f32,
     position: SubsystemPosition,
 ) -> (Entity, f32, u16) {
-    let radius = system_query
+    let parent_radius = system_query
         .get(parent_system)
         .expect("focused system not found")
         .1
-        .radius
-        * SUBSYSTEM_RADIUS_FRACTION;
+        .radius;
+
+    let radius = parent_radius * SUBSYSTEM_RADIUS_FRACTION;
 
     let nesting_level = NestingLevel::current(parent_system, nesting_level_query) + 1;
 
     let position = match position {
         SubsystemPosition::XFromRadius => vec2(-radius * zoom, 0.0),
+        SubsystemPosition::Left => vec2((radius - parent_radius) * zoom, 0.0),
+        SubsystemPosition::Right => vec2((parent_radius - radius) * zoom, 0.0),
         SubsystemPosition::Position(position) => position,
     };
 

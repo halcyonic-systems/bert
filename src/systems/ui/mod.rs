@@ -353,9 +353,11 @@ pub fn on_create_button_click(
         ),
         CreateButtonType::InterfaceSubsystem {
             is_child_of_interface,
+            interface_type,
         } => spawn_interface_subsystem(
             &mut commands,
             is_child_of_interface,
+            interface_type,
             button.connection_source,
             &flow_interface_query,
             &system_query,
