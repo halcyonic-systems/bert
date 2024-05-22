@@ -337,56 +337,58 @@ pub fn egui_selected_context(
             };
             style.spacing.item_spacing = vec2(10.0, 10.0);
         });
-        egui::SidePanel::right(system_element.to_string()).show(egui_contexts.ctx_mut(), |ui| {
-            vc_wrap!(ui, |ui| {
-                ui.heading("Element Details");
-            });
-            egui::ScrollArea::both()
-                .auto_shrink([false; 2])
-                .show(ui, |ui| {
-                    h_label!(ui, "Name");
-                    ui.vertical_centered_justified(|ui| {
-                        name.mutate(|name| {
-                            ui.text_edit_singleline(name);
-                        });
-                    });
-                    h_label!(ui, "Description");
-                    vcj_text_edit!(ui, &mut description.text, true);
-
-                    match system_element {
-                        SystemElement::Interface => interface_egui(
-                            ui,
-                            &mut interface_query
-                                .get_mut(entity)
-                                .expect("Interface not found"),
-                        ),
-                        SystemElement::System => {
-                            let mut system =
-                                system_query.get_mut(entity).expect("System not found");
-
-                            if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
-                                system_of_interest_egui(ui, &mut system, &mut sys_env)
-                            } else {
-                                subsystem_egui(ui, &mut system, &SystemEnvironment::default())
-                            }
-                        }
-                        SystemElement::Inflow => inflow_egui(
-                            ui,
-                            &mut flow_query.get_mut(entity).expect("Inflow not found"),
-                        ),
-                        SystemElement::Outflow => outflow_egui(
-                            ui,
-                            &mut flow_query.get_mut(entity).expect("Outflow not found"),
-                        ),
-                        SystemElement::ExternalEntity => external_entity_egui(
-                            ui,
-                            &mut external_entity_query
-                                .get_mut(entity)
-                                .expect("External Entity not found"),
-                        ),
-                    };
+        egui::SidePanel::right(system_element.to_string())
+            .default_width(300.0)
+            .show(egui_contexts.ctx_mut(), |ui| {
+                vc_wrap!(ui, |ui| {
+                    ui.heading("Element Details");
                 });
-        });
+                egui::ScrollArea::both()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        h_label!(ui, "Name");
+                        ui.vertical_centered_justified(|ui| {
+                            name.mutate(|name| {
+                                ui.text_edit_singleline(name);
+                            });
+                        });
+                        h_label!(ui, "Description");
+                        vcj_text_edit!(ui, &mut description.text, true);
+
+                        match system_element {
+                            SystemElement::Interface => interface_egui(
+                                ui,
+                                &mut interface_query
+                                    .get_mut(entity)
+                                    .expect("Interface not found"),
+                            ),
+                            SystemElement::System => {
+                                let mut system =
+                                    system_query.get_mut(entity).expect("System not found");
+
+                                if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
+                                    system_of_interest_egui(ui, &mut system, &mut sys_env)
+                                } else {
+                                    subsystem_egui(ui, &mut system, &SystemEnvironment::default())
+                                }
+                            }
+                            SystemElement::Inflow => inflow_egui(
+                                ui,
+                                &mut flow_query.get_mut(entity).expect("Inflow not found"),
+                            ),
+                            SystemElement::Outflow => outflow_egui(
+                                ui,
+                                &mut flow_query.get_mut(entity).expect("Outflow not found"),
+                            ),
+                            SystemElement::ExternalEntity => external_entity_egui(
+                                ui,
+                                &mut external_entity_query
+                                    .get_mut(entity)
+                                    .expect("External Entity not found"),
+                            ),
+                        };
+                    });
+            });
     }
 }
 
