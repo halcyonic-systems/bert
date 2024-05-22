@@ -65,11 +65,14 @@ macro_rules! spawn_flow {
                 name,
                 description,
                 Flow {
+                    interaction_type: InteractionType::default(),
                     substance_type,
+                    substance_equivalence: "".to_string(),
                     amount,
                     unit: unit.to_string(),
                     time_unit: time_unit.to_string(),
                     is_useful: usability.is_useful(),
+                    parameters: vec![],
                 },
                 $flow_conn_ty {
                     target: system_entity,

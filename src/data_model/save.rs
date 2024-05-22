@@ -212,7 +212,7 @@ macro_rules! process_external_flow {
                         sub_type: None, // TODO
                         ty: flow.substance_type,
                     },
-                    ty: InteractionType::$interaction_ty {
+                    ty: crate::data_model::InteractionType::$interaction_ty {
                         usability: $usability_ty::from_useful(flow.is_useful),
                     },
                     external_entity: external_entity_id.clone(),

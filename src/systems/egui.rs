@@ -61,7 +61,7 @@ fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
 }
 
 fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
-    h_label!(ui, "Usability");
+    h_label!(ui, "Interaction Usability");
     ui.horizontal(|ui| {
         OutflowUsability::mutate(&mut flow.is_useful, |outflow_usability| {
             ComboBox::from_label("")
@@ -79,6 +79,18 @@ fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
 }
 
 fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
+    h_label!(ui, "Interaction Type");
+    h_wrap!(ui, |ui| {
+        ComboBox::from_label("       ")
+            .selected_text(format!("{:?}", flow.interaction_type))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                ui.selectable_value(&mut flow.interaction_type, InteractionType::Flow, "Flow");
+                ui.selectable_value(&mut flow.interaction_type, InteractionType::Force, "Force");
+            });
+    });
+
     h_label!(ui, "Substance Type");
     ui.horizontal(|ui| {
         ComboBox::from_label(" ")
@@ -95,6 +107,10 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
                 ui.selectable_value(&mut flow.substance_type, SubstanceType::Message, "Message");
             });
     });
+
+    h_label!(ui, "Substance Equivalence");
+    vcj_text_edit!(ui, &mut flow.substance_equivalence, false);
+
     h_label!(ui, "Substance Unit");
     vcj_text_edit!(ui, &mut flow.unit, false);
 
@@ -119,7 +135,7 @@ pub fn only_valid_positive_decimal(s: &mut String, decimal: &mut Decimal) {
 }
 
 fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
-    h_label!(ui, "Usability");
+    h_label!(ui, "Interaction Usability");
     ui.horizontal(|ui| {
         InflowUsability::mutate(&mut flow.is_useful, |inflow_usability| {
             ComboBox::from_label("")
@@ -162,7 +178,7 @@ fn system_of_interest_egui(
         _ => panic!("System of Intest can only be complex"),
     }
 
-    h_label!(ui, "Equivalence Type");
+    h_label!(ui, "Equivalence");
     vcj_text_edit!(ui, &mut system.equivalence, false);
 
     h_label!(ui, "Time Unit");
@@ -300,7 +316,7 @@ fn complexity_egui(ui: &mut Ui, system: &mut crate::components::System) {
 }
 
 fn external_entity_egui(ui: &mut Ui, external_entity: &mut ExternalEntity) {
-    h_label!(ui, "Equivalence Type");
+    h_label!(ui, "Equivalence");
     vcj_text_edit!(ui, &mut external_entity.equivalence, false);
     h_label!(ui, "Model");
     vcj_text_edit!(ui, &mut external_entity.model, false);

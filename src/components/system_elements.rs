@@ -68,13 +68,30 @@ pub enum InterfaceType {
 #[derive(Component, Clone, Debug, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct Flow {
+    pub interaction_type: InteractionType,
     pub substance_type: SubstanceType,
+    pub substance_equivalence: String,
     #[reflect(ignore)]
     pub amount: Decimal,
     pub unit: String,
     #[reflect(ignore)]
     pub time_unit: String,
     pub is_useful: bool,
+    pub parameters: Vec<Parameter>,
+}
+
+#[derive(Clone, Debug, Reflect, PartialEq, Eq)]
+pub struct Parameter {
+    pub name: String,
+    pub description: String,
+    pub value: String,
+}
+
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+pub enum InteractionType {
+    #[default]
+    Flow,
+    Force,
 }
 
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
