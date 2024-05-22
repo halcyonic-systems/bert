@@ -56,7 +56,7 @@ macro_rules! vcj_text_edit {
 }
 
 fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
-    h_label!(ui, "Protocol");
+    h_label!(ui, "Protocol φ");
     vcj_text_edit!(ui, &mut interface.protocol, true);
 }
 
@@ -164,11 +164,11 @@ fn system_of_interest_egui(
     h_label!(ui, "Time Unit");
     vcj_text_edit!(ui, &mut system.time_unit, false);
 
-    h_label!(ui, "Transformation");
-    vcj_text_edit!(ui, &mut system.transformation, false);
-
     h_label!(ui, "History");
     vcj_text_edit!(ui, &mut system.history, false);
+
+    h_label!(ui, "Transformation");
+    vcj_text_edit!(ui, &mut system.transformation, false);
 
     ui.separator();
     boundary_egui(ui, system);
@@ -221,11 +221,11 @@ fn subsystem_egui(
     h_label!(ui, "Time Unit");
     vcj_text_edit!(ui, &mut system.time_unit, false);
 
-    h_label!(ui, "Transformation");
-    vcj_text_edit!(ui, &mut system.transformation, false);
-
     h_label!(ui, "History");
     vcj_text_edit!(ui, &mut system.history, false);
+
+    h_label!(ui, "Transformation");
+    vcj_text_edit!(ui, &mut system.transformation, false);
 
     ui.separator();
     boundary_egui(ui, system);
