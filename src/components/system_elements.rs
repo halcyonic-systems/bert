@@ -80,10 +80,9 @@ pub struct Flow {
     pub parameters: Vec<Parameter>,
 }
 
-#[derive(Clone, Debug, Reflect, PartialEq, Eq)]
+#[derive(Clone, Debug, Reflect, PartialEq, Eq, Default)]
 pub struct Parameter {
     pub name: String,
-    pub description: String,
     pub value: String,
 }
 

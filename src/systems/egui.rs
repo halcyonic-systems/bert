@@ -3,7 +3,7 @@ use crate::data_model::Complexity;
 use crate::plugins::mouse_interaction::PickSelection;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
-use bevy_egui::egui::{vec2, Checkbox, ComboBox, DragValue, Margin, Slider, Ui, Visuals};
+use bevy_egui::egui::{Checkbox, ComboBox, DragValue, Margin, Slider, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
 use rust_decimal::Decimal;
 
@@ -124,6 +124,47 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
 
     h_label!(ui, "Time Unit");
     vcj_text_edit!(ui, &mut flow.time_unit, false);
+
+    ui.separator();
+    vcj_label!(ui, "Parameters");
+    parameters_list_egui(ui, flow);
+}
+
+fn parameters_list_egui(ui: &mut Ui, flow: &mut Flow) {
+    egui::Grid::new("Parameters List")
+        .striped(true)
+        .show(ui, |ui| {
+            if flow.parameters.is_empty() {
+                if ui.button("Add Parameter").clicked() {
+                    flow.parameters.push(Parameter::default());
+                }
+                return;
+            }
+            if ui.button("Add").clicked() {
+                flow.parameters.push(Parameter::default());
+            }
+            let min_size = egui::Vec2::new(100.0, 20.0);
+            ui.label("Name");
+            ui.label("Value");
+            ui.end_row();
+            for idx in 0..flow.parameters.len() {
+                if ui.button("Delete").clicked() {
+                    flow.parameters.remove(idx);
+                    return;
+                }
+                ui.add(
+                    egui::TextEdit::singleline(&mut flow.parameters[idx].name)
+                        .hint_text("Name...")
+                        .min_size(min_size),
+                );
+                ui.add(
+                    egui::TextEdit::singleline(&mut flow.parameters[idx].value)
+                        .hint_text("Value..")
+                        .min_size(min_size),
+                );
+                ui.end_row();
+            }
+        });
 }
 
 pub fn only_valid_positive_decimal(s: &mut String, decimal: &mut Decimal) {
@@ -360,7 +401,7 @@ pub fn egui_selected_context(
                 top: 10.0,
                 bottom: 10.0,
             };
-            style.spacing.item_spacing = vec2(10.0, 10.0);
+            style.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
         });
         egui::SidePanel::right(system_element.to_string())
             .default_width(300.0)
