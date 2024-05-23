@@ -48,7 +48,7 @@ pub fn spawn_interface_subsystem(
                 is_import_subsystem = true;
                 interface_subsystem.total_inflow += flow.amount;
                 interface_subsystem.substance_type = flow.substance_type;
-                interface_subsystem.is_useful = flow.is_useful;
+                interface_subsystem.is_useful = flow.usability.is_useful();
             }
         }
         if let Some(connection) = outflow_connection {
@@ -57,7 +57,7 @@ pub fn spawn_interface_subsystem(
                 is_export_subsystem = true;
                 interface_subsystem.total_outflow += flow.amount;
                 interface_subsystem.substance_type = flow.substance_type;
-                interface_subsystem.is_useful = flow.is_useful;
+                interface_subsystem.is_useful = flow.usability.is_useful();
             }
         }
     }
@@ -151,7 +151,7 @@ fn spawn_subsystem_common(
         .1
         .radius;
 
-    let radius = parent_radius * SUBSYSTEM_RADIUS_FRACTION;
+    let radius = parent_radius * SUBSYSTEM_SCALING_FACTOR * 0.5;
 
     let nesting_level = NestingLevel::current(parent_system, nesting_level_query) + 1;
 

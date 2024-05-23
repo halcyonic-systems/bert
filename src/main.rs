@@ -91,7 +91,7 @@ fn main() {
         Update,
         (
             (
-                egui_selected_context,
+                egui_selected_context.after(bevy_egui::EguiSet::InitContexts),
                 change_focused_system,
                 draw_flow_curve,
                 update_initial_position_from_transform,

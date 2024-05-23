@@ -12,10 +12,14 @@ use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 
+pub const CURRENT_FILE_VERSION: u32 = 1;
+
 #[derive(Serialize, Deserialize)]
 pub struct WorldModel {
-    pub system_of_interest: System,
-    //pub subsystems: Vec<System>
+    pub version: u32,
+    pub environment: Environment,
+    pub systems: Vec<System>,
+    pub interactions: Vec<Interaction>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -104,7 +108,7 @@ pub enum IdType {
     Boundary,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Info {
     pub id: Id,
     pub level: i32,
@@ -112,20 +116,23 @@ pub struct Info {
     pub description: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct System {
     pub info: Info,
-    pub parent: Option<i32>,
+    pub sources: Vec<ExternalEntity>,
+    pub sinks: Vec<ExternalEntity>,
+    pub parent: Id,
     pub complexity: Complexity,
-    pub environment: Environment,
     pub boundary: Boundary,
-    pub internal_interactions: Vec<Interaction>,
-    pub external_interactions: Vec<Interaction>,
-    pub components: Vec<Id>,
     pub transform: Option<Transform2d>,
+    pub equivalence: String,
+    pub history: String,
+    pub transformation: String,
+    pub member_autonomy: f32,
+    pub time_constant: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Boundary {
     pub info: Info,
     pub porosity: f32,
@@ -133,69 +140,75 @@ pub struct Boundary {
     pub interfaces: Vec<Interface>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Interface {
-    info: Info,
-    protocol: String,
+    pub info: Info,
+    pub protocol: String,
     #[serde(rename = "type")]
-    ty: InterfaceType,
-    exports_to: Vec<Id>,
-    receives_from: Vec<Id>,
-    angle: Option<f32>,
+    pub ty: InterfaceType,
+    pub exports_to: Vec<Id>,
+    pub receives_from: Vec<Id>,
+    pub angle: Option<f32>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub enum InterfaceType {
     Export,
     Import,
     Hybrid,
 }
 
-#[derive(Serialize, Deserialize)]
+impl From<crate::components::InterfaceType> for InterfaceType {
+    fn from(ty: crate::components::InterfaceType) -> Self {
+        match ty {
+            crate::components::InterfaceType::Export => Self::Export,
+            crate::components::InterfaceType::Import => Self::Import,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Environment {
     pub info: Info,
     pub sources: Vec<ExternalEntity>,
     pub sinks: Vec<ExternalEntity>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ExternalEntity {
-    info: Info,
+    pub info: Info,
     #[serde(rename = "type")]
-    ty: ExternalEntityType,
-    interactions: Vec<Id>,
-    transform: Option<Transform2d>,
+    pub ty: ExternalEntityType,
+    pub transform: Option<Transform2d>,
+    pub equivalence: String,
+    pub model: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum ExternalEntityType {
     Source,
     Sink,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Interaction {
-    info: Info,
-    substance: Substance,
+    pub info: Info,
+    pub substance: Substance,
     #[serde(rename = "type")]
-    ty: InteractionType,
-    external_entity: Id,
-    amount: Decimal,
-    unit: String,
-    time_unit: String,
+    pub ty: InteractionType,
+    pub usability: InteractionUsability,
+    pub source: Id,
+    pub sink: Id,
+    pub amount: Decimal,
+    pub unit: String,
+    pub parameters: Vec<Parameter>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub enum InteractionType {
-    Inflow { usability: InflowUsability },
-    Outflow { usability: OutflowUsability },
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Substance {
-    sub_type: Option<String>,
+    pub sub_type: String,
     #[serde(rename = "type")]
-    ty: SubstanceType,
+    pub ty: SubstanceType,
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize, Reflect, PartialEq, Eq, Hash, Debug)]
@@ -242,3 +255,62 @@ impl From<(&Transform, &InitialPosition)> for Transform2d {
         }
     }
 }
+
+pub trait HasInfo {
+    fn info(&self) -> &Info;
+    fn info_mut(&mut self) -> &mut Info;
+}
+
+macro_rules! impl_has_info {
+    ($($ty:ty),*) => {
+        $(
+            impl HasInfo for $ty {
+                #[inline(always)]
+                fn info(&self) -> &Info {
+                    &self.info
+                }
+                #[inline(always)]
+                fn info_mut(&mut self) -> &mut Info {
+                    &mut self.info
+                }
+            }
+        )*
+    }
+}
+
+impl_has_info!(System, Boundary, Environment, ExternalEntity, Interaction);
+
+pub trait HasSourcesAndSinks {
+    fn sources(&self) -> &[ExternalEntity];
+    fn sources_mut(&mut self) -> &mut Vec<ExternalEntity>;
+
+    fn sinks(&self) -> &[ExternalEntity];
+    fn sinks_mut(&mut self) -> &mut Vec<ExternalEntity>;
+}
+
+macro_rules! impl_has_sources_and_sinks {
+    ($($ty:ty),*) => {
+        $(
+            impl HasSourcesAndSinks for $ty {
+                #[inline(always)]
+                fn sources(&self) -> &[ExternalEntity] {
+                    &self.sources
+                }
+                #[inline(always)]
+                fn sources_mut(&mut self) -> &mut Vec<ExternalEntity> {
+                    &mut self.sources
+                }
+                #[inline(always)]
+                fn sinks(&self) -> &[ExternalEntity] {
+                    &self.sinks
+                }
+                #[inline(always)]
+                fn sinks_mut(&mut self) -> &mut Vec<ExternalEntity> {
+                    &mut self.sinks
+                }
+            }
+        )*
+    }
+}
+
+impl_has_sources_and_sinks!(System, Environment);

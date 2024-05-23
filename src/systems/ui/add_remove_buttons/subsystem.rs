@@ -2,10 +2,8 @@ use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_create_button,
 };
 use crate::components::*;
-use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FocusedSystem, Zoom};
-use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 
@@ -75,11 +73,7 @@ pub fn add_interface_subsystem_create_buttons(
         {
             flow_usabilities
                 .get_mut(&flow_end_connection.target)
-                .map(|set| {
-                    set.insert(GeneralUsability::Inflow(InflowUsability::from_useful(
-                        flow.is_useful,
-                    )))
-                });
+                .map(|set| set.insert(flow.usability));
         }
         if systems_at_the_same_nesting_level
             .iter()
@@ -87,11 +81,7 @@ pub fn add_interface_subsystem_create_buttons(
         {
             flow_usabilities
                 .get_mut(&flow_start_connection.target)
-                .map(|set| {
-                    set.insert(GeneralUsability::Outflow(OutflowUsability::from_useful(
-                        flow.is_useful,
-                    )))
-                });
+                .map(|set| set.insert(flow.usability));
         }
     }
 
@@ -117,22 +107,18 @@ pub fn add_interface_subsystem_create_buttons(
                 if let Some(connection) = flow_start_interface_connection {
                     if connection.target == parent_entity {
                         interface_entity = parent_entity;
-                        flow_usabilities.get_mut(system_entity).map(|set| {
-                            set.insert(GeneralUsability::Outflow(OutflowUsability::from_useful(
-                                flow.is_useful,
-                            )))
-                        });
+                        flow_usabilities
+                            .get_mut(system_entity)
+                            .map(|set| set.insert(flow.usability));
                         interface_type = InterfaceType::Export;
                         break;
                     }
                 } else if let Some(connection) = flow_end_interface_connection {
                     if connection.target == parent_entity {
                         interface_entity = parent_entity;
-                        flow_usabilities.get_mut(system_entity).map(|set| {
-                            set.insert(GeneralUsability::Inflow(InflowUsability::from_useful(
-                                flow.is_useful,
-                            )))
-                        });
+                        flow_usabilities
+                            .get_mut(system_entity)
+                            .map(|set| set.insert(flow.usability));
                         interface_type = InterfaceType::Import;
                         break;
                     }
@@ -170,9 +156,15 @@ pub fn add_interface_subsystem_create_buttons(
             let mut outflow_present = false;
 
             for usability in flow_usabilities {
-                if matches!(usability, GeneralUsability::Inflow(_)) {
+                if matches!(
+                    usability,
+                    InteractionUsability::Resource | InteractionUsability::Disruption
+                ) {
                     inflow_present = true;
-                } else if matches!(usability, GeneralUsability::Outflow(_)) {
+                } else if matches!(
+                    usability,
+                    InteractionUsability::Product | InteractionUsability::Waste
+                ) {
                     outflow_present = true;
                 }
             }
@@ -224,7 +216,7 @@ pub fn add_interface_subsystem_create_buttons(
                         system: **focused_system,
                         substance_type: None,
                     },
-                    vec2(-INTERFACE_WIDTH_HALF, 0.0),
+                    Vec2::ZERO,
                     0.0,
                     **zoom,
                     Some(interface_entity),

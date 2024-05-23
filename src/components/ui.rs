@@ -62,10 +62,12 @@ impl FlowCurve {
         direction: Vec2,
         scale: f32,
     ) -> Self {
+        let zoomed_pos = *initial_position * zoom;
+
         Self {
-            start: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
+            start: zoomed_pos + direction * FLOW_LENGTH * scale,
             start_direction: -direction,
-            end: *initial_position * zoom,
+            end: zoomed_pos,
             end_direction: direction,
         }
     }
@@ -76,10 +78,12 @@ impl FlowCurve {
         direction: Vec2,
         scale: f32,
     ) -> Self {
+        let zoomed_pos = *initial_position * zoom;
+
         Self {
-            start: *initial_position * zoom,
+            start: zoomed_pos,
             start_direction: direction,
-            end: (*initial_position + direction * FLOW_LENGTH * scale) * zoom,
+            end: zoomed_pos + direction * FLOW_LENGTH * scale,
             end_direction: -direction,
         }
     }

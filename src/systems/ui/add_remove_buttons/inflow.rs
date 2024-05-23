@@ -37,8 +37,6 @@ pub fn add_inflow_create_button(
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    // TODO : also detect removal
-
     let focused_system = **focused_system;
     let is_export_subsystem = export_subsystem_query.get(focused_system).is_ok();
 
@@ -47,7 +45,7 @@ pub fn add_inflow_create_button(
     for (outflow, flow_start_connection) in &outflow_query {
         if matches!(flow_start_connection.target_type, StartTargetType::System) {
             if flow_start_connection.target == focused_system {
-                outflow_usabilities.insert(OutflowUsability::from_useful(outflow.is_useful));
+                outflow_usabilities.insert(outflow.usability);
             }
         }
     }

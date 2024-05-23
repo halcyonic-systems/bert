@@ -63,16 +63,18 @@ fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
 fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
     h_label!(ui, "Interaction Usability");
     ui.horizontal(|ui| {
-        OutflowUsability::mutate(&mut flow.is_useful, |outflow_usability| {
-            ComboBox::from_label("")
-                .selected_text(format!("{:?}", outflow_usability))
-                .show_ui(ui, |ui| {
-                    ui.style_mut().wrap = Some(false);
-                    ui.set_min_width(60.0);
-                    ui.selectable_value(outflow_usability, OutflowUsability::Product, "Product");
-                    ui.selectable_value(outflow_usability, OutflowUsability::Waste, "Waste");
-                });
-        });
+        ComboBox::from_label("")
+            .selected_text(format!("{:?}", flow.usability))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                ui.selectable_value(
+                    &mut flow.usability,
+                    InteractionUsability::Product,
+                    "Product",
+                );
+                ui.selectable_value(&mut flow.usability, InteractionUsability::Waste, "Waste");
+            });
     });
 
     flow_egui(ui, flow);
@@ -178,20 +180,22 @@ pub fn only_valid_positive_decimal(s: &mut String, decimal: &mut Decimal) {
 fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
     h_label!(ui, "Interaction Usability");
     ui.horizontal(|ui| {
-        InflowUsability::mutate(&mut flow.is_useful, |inflow_usability| {
-            ComboBox::from_label("")
-                .selected_text(format!("{:?}", inflow_usability))
-                .show_ui(ui, |ui| {
-                    ui.style_mut().wrap = Some(false);
-                    ui.set_min_width(60.0);
-                    ui.selectable_value(inflow_usability, InflowUsability::Resource, "Resource");
-                    ui.selectable_value(
-                        inflow_usability,
-                        InflowUsability::Disruption,
-                        "Disruption",
-                    );
-                });
-        });
+        ComboBox::from_label("")
+            .selected_text(format!("{:?}", flow.usability))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                ui.selectable_value(
+                    &mut flow.usability,
+                    InteractionUsability::Resource,
+                    "Resource",
+                );
+                ui.selectable_value(
+                    &mut flow.usability,
+                    InteractionUsability::Disruption,
+                    "Disruption",
+                );
+            });
     });
 
     flow_egui(ui, flow);

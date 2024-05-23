@@ -76,11 +76,11 @@ pub struct Flow {
     pub unit: String,
     #[reflect(ignore)]
     pub time_unit: String,
-    pub is_useful: bool,
+    pub usability: InteractionUsability,
     pub parameters: Vec<Parameter>,
 }
 
-#[derive(Clone, Debug, Reflect, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Parameter {
     pub name: String,
     pub value: String,
@@ -138,63 +138,18 @@ impl InterfaceSubsystem {
     }
 }
 
-pub trait Usability: Sized {
-    fn is_useful(&self) -> bool;
-
-    fn from_useful(is_useful: bool) -> Self;
-
-    #[inline(always)]
-    fn mutate<F: FnOnce(&mut Self)>(value: &mut bool, f: F) {
-        let mut usability = Self::from_useful(*value);
-        f(&mut usability);
-        *value = usability.is_useful();
-    }
-}
-
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-pub enum InflowUsability {
-    #[default]
+#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
+pub enum InteractionUsability {
     Resource,
     Disruption,
-}
-
-impl Usability for InflowUsability {
-    fn is_useful(&self) -> bool {
-        matches!(self, InflowUsability::Resource)
-    }
-
-    fn from_useful(is_useful: bool) -> Self {
-        match is_useful {
-            true => InflowUsability::Resource,
-            false => InflowUsability::Disruption,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-pub enum OutflowUsability {
-    #[default]
     Product,
     Waste,
 }
 
-impl Usability for OutflowUsability {
-    fn is_useful(&self) -> bool {
-        matches!(self, OutflowUsability::Product)
+impl InteractionUsability {
+    pub fn is_useful(&self) -> bool {
+        matches!(self, Self::Resource | Self::Product)
     }
-
-    fn from_useful(is_useful: bool) -> Self {
-        match is_useful {
-            true => OutflowUsability::Product,
-            false => OutflowUsability::Waste,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash)]
-pub enum GeneralUsability {
-    Inflow(InflowUsability),
-    Outflow(OutflowUsability),
 }
 
 #[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize)]

@@ -16,44 +16,39 @@ macro_rules! interface_create_button {
                 ),
             >,
             parent_query: Query<&Parent>,
-            transform_query: Query<&Transform>,
+            transform_query: Query<&GlobalTransform>,
             focused_system: Res<FocusedSystem>,
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            for (entity, flow_curve, flow, flow_system_connection, flow_parent) in &query {
+            for (flow_entity, flow_curve, flow, flow_system_connection, flow_parent) in &query {
                 if flow_system_connection.target != **focused_system {
                     continue;
                 }
 
-                let (direction, position) = if let Some(parent) = flow_parent {
-                    let transform = combined_transform_of_entity_until_ancestor(
-                        **focused_system,
-                        Some(parent.get()),
-                        &transform_query,
-                        &parent_query,
-                    );
+                let flow_transform = transform_query
+                    .get(flow_entity)
+                    .expect("Flow should have global transform");
 
-                    let inverse_transform = transform.compute_affine().inverse();
+                let system_transform = transform_query
+                    .get(**focused_system)
+                    .expect("Focused system should have global transform");
 
-                    (
-                        inverse_transform
-                            .transform_vector3(flow_curve.$side_dir.extend(0.0))
-                            .truncate(),
-                        inverse_transform
-                            .transform_point3(flow_curve.$side.extend(0.0))
-                            .truncate()
-                            / **zoom,
-                    )
-                } else {
-                    (flow_curve.$side_dir, flow_curve.$side)
-                };
+                let combined = system_transform.affine().inverse() * flow_transform.affine();
+
+                let direction = combined
+                    .transform_vector3(flow_curve.$side_dir.extend(0.0))
+                    .truncate();
+                let position = combined
+                    .transform_point3(flow_curve.$side.extend(0.0))
+                    .truncate()
+                    / **zoom;
 
                 spawn_create_button(
                     &mut commands,
                     CreateButton {
                         ty: $button_type,
-                        connection_source: entity,
+                        connection_source: flow_entity,
                         system: **focused_system,
                         substance_type: Some(flow.substance_type),
                     },

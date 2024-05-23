@@ -37,10 +37,10 @@ macro_rules! external_entity_create_button {
 
                 let direction = -flow_curve.$side_dir;
 
-                let button_type = if subsystem_query.get(**focused_system).is_ok() {
-                    $target_button_type
+                let (button_type, parent) = if let Ok(subsystem) = subsystem_query.get(**focused_system) {
+                    ($target_button_type, Some(subsystem.parent_system))
                 } else {
-                    $button_type
+                    ($button_type, None)
                 };
 
                 spawn_create_button(
@@ -51,10 +51,10 @@ macro_rules! external_entity_create_button {
                         system: **focused_system,
                         substance_type: Some(flow.substance_type),
                     },
-                    flow_curve.$side + direction * BUTTON_WIDTH_HALF,
+                    (flow_curve.$side + direction * BUTTON_WIDTH_HALF) / **zoom,
                     direction.to_angle(),
                     **zoom,
-                    None,
+                    parent,
                     &asset_server,
                 );
             }

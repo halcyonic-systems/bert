@@ -21,7 +21,6 @@ use rust_decimal::Decimal;
 macro_rules! spawn_flow {
     (
         $fn_name:ident,
-        $usability_ty:ty,
         $curve_method:tt,
         $system_el:expr,
         $flow_conn_ty:tt,
@@ -38,7 +37,7 @@ macro_rules! spawn_flow {
             zoom: f32,
             is_selected: bool,
             substance_type: SubstanceType,
-            usability: $usability_ty,
+            usability: InteractionUsability,
             amount: Decimal,
             unit: &str,
             time_unit: &str,
@@ -71,7 +70,7 @@ macro_rules! spawn_flow {
                     amount,
                     unit: unit.to_string(),
                     time_unit: time_unit.to_string(),
-                    is_useful: usability.is_useful(),
+                    usability,
                     parameters: vec![],
                 },
                 $flow_conn_ty {
@@ -88,7 +87,6 @@ macro_rules! spawn_flow {
 
 spawn_flow!(
     spawn_outflow,
-    OutflowUsability,
     outflow,
     SystemElement::Outflow,
     FlowStartConnection,
@@ -96,7 +94,6 @@ spawn_flow!(
 );
 spawn_flow!(
     spawn_inflow,
-    InflowUsability,
     inflow,
     SystemElement::Inflow,
     FlowEndConnection,
@@ -190,7 +187,7 @@ fn spawn_flow<C: Component>(
 }
 
 macro_rules! spawn_complete_flow {
-    ($fn_name:ident, $spawn_name:ident, $interface_ty:expr, $usability_ty:ty) => {
+    ($fn_name:ident, $spawn_name:ident, $interface_ty:expr) => {
         pub fn $fn_name(
             mut commands: &mut Commands,
             focused_system: FocusedSystem,
@@ -205,7 +202,7 @@ macro_rules! spawn_complete_flow {
             interface_angle: f32,
             system_radius: f32,
             substance_type: SubstanceType,
-            usability: $usability_ty,
+            usability: InteractionUsability,
             amount: Decimal,
             unit: &str,
             time_unit: &str,
@@ -298,12 +295,10 @@ macro_rules! spawn_complete_flow {
 spawn_complete_flow!(
     spawn_complete_outflow,
     spawn_outflow,
-    InterfaceType::Export,
-    OutflowUsability
+    InterfaceType::Export
 );
 spawn_complete_flow!(
     spawn_complete_inflow,
     spawn_inflow,
-    InterfaceType::Import,
-    InflowUsability
+    InterfaceType::Import
 );
