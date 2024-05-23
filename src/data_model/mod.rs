@@ -138,6 +138,7 @@ pub struct Boundary {
     pub porosity: f32,
     pub perceptive_fuzziness: f32,
     pub interfaces: Vec<Interface>,
+    pub parent_interface: Option<Id>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -97,6 +97,7 @@ pub fn save_world(
         },
         0,
         environment.info.id.clone(),
+        None,
         &name_and_description_query,
         &transform_query,
         &mut ctx,
@@ -119,78 +120,18 @@ pub fn save_world(
         &external_entity_query,
     );
 
-    let mut not_interface_subsystems = vec![];
-
-    for (subsystem_entity, system_component, subsystem) in &subsystem_query {
-        if subsystem.parent_system == system_entity {
-            let parent_entity = parent_query
-                .get(subsystem_entity)
-                .expect("Subsystem should have a parent")
-                .get();
-
-            if interface_query.get(parent_entity).is_ok() {
-                let indices = ctx.entity_to_id[&parent_entity].indices.clone();
-                let (last_index, parent_indices) = indices.split_last().expect("Should exist");
-
-                ctx.parent_id_to_count
-                    .entry(Id {
-                        ty: IdType::Subsystem,
-                        indices: parent_indices.to_vec(),
-                    })
-                    .and_modify(|count| *count = (*count).max(last_index + 1))
-                    .or_insert(last_index + 1);
-
-                let system = entity_to_system
-                    .get_mut(&system_entity)
-                    .expect("Should exist");
-
-                let level = system.info.level + 1;
-                let parent_id = system.info.id.clone();
-
-                build_system(
-                    subsystem_entity,
-                    system_component,
-                    Id {
-                        ty: IdType::Subsystem,
-                        indices,
-                    },
-                    level,
-                    parent_id,
-                    &name_and_description_query,
-                    &transform_query,
-                    &mut ctx,
-                    &mut entity_to_system,
-                );
-            } else {
-                not_interface_subsystems.push((subsystem_entity, system_component));
-            }
-        }
-    }
-
-    for (subsystem_entity, system_component) in not_interface_subsystems {
-        let system = entity_to_system
-            .get_mut(&system_entity)
-            .expect("Should exist");
-
-        let id = ctx.next_id(subsystem_entity, IdType::Subsystem, &system.info.id.indices);
-
-        let level = system.info.level + 1;
-        let parent_id = system.info.id.clone();
-
-        build_system(
-            subsystem_entity,
-            system_component,
-            id,
-            level,
-            parent_id,
-            &name_and_description_query,
-            &transform_query,
-            &mut ctx,
-            &mut entity_to_system,
-        );
-    }
-
-    // TODO : build the surroundings of all the subsystems
+    build_subsystems(
+        &mut ctx,
+        system_entity,
+        &name_and_description_query,
+        &transform_query,
+        &parent_query,
+        &subsystem_query,
+        &flow_query,
+        &interface_query,
+        &external_entity_query,
+        &mut entity_to_system,
+    );
 
     let model = WorldModel {
         version: CURRENT_FILE_VERSION,
@@ -205,6 +146,157 @@ pub fn save_world(
 
     save_to_json(&model, save_file.path_buf.to_str().unwrap());
     next_state.set(state.get().next());
+}
+
+fn build_subsystems(
+    mut ctx: &mut Context,
+    parent_system_entity: Entity,
+    name_and_description_query: &Query<(&Name, &ElementDescription)>,
+    transform_query: &Query<(&Transform, &InitialPosition)>,
+    parent_query: &Query<&Parent>,
+    subsystem_query: &Query<(Entity, &crate::components::System, &Subsystem)>,
+    flow_query: &Query<(
+        Entity,
+        &Flow,
+        &FlowStartConnection,
+        &FlowEndConnection,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
+    )>,
+    interface_query: &Query<(&Interface, &Transform)>,
+    external_entity_query: &Query<&ExternalEntity>,
+    mut entity_to_system: &mut HashMap<Entity, System>,
+) {
+    let mut not_interface_subsystems = vec![];
+    let mut system_entities = vec![];
+
+    for (subsystem_entity, system_component, subsystem) in subsystem_query {
+        if subsystem.parent_system == parent_system_entity {
+            system_entities.push(subsystem_entity);
+
+            let mut parent_entity = parent_query
+                .get(subsystem_entity)
+                .expect("Subsystem should have a parent")
+                .get();
+
+            if interface_query.get(parent_entity).is_ok() {
+                let interface_id = &ctx.entity_to_id[&parent_entity];
+                let indices = interface_id.indices.clone();
+                let (last_index, parent_indices) = indices.split_last().expect("Should exist");
+
+                ctx.parent_id_to_count
+                    .entry(Id {
+                        ty: IdType::Subsystem,
+                        indices: parent_indices.to_vec(),
+                    })
+                    .and_modify(|count| *count = (*count).max(last_index + 1))
+                    .or_insert(last_index + 1);
+
+                let system = entity_to_system
+                    .get_mut(&parent_system_entity)
+                    .expect("Should exist");
+
+                let level = system.info.level + 1;
+                let parent_id = system.info.id.clone();
+
+                build_system(
+                    subsystem_entity,
+                    system_component,
+                    Id {
+                        ty: IdType::Subsystem,
+                        indices,
+                    },
+                    level,
+                    parent_id,
+                    Some(interface_id.clone()),
+                    &name_and_description_query,
+                    &transform_query,
+                    &mut ctx,
+                    &mut entity_to_system,
+                );
+            } else {
+                let mut parent_interface_id = None;
+
+                while let Ok(parent) = parent_query.get(parent_entity) {
+                    parent_entity = parent.get();
+
+                    if interface_query.get(parent_entity).is_ok() {
+                        parent_interface_id = Some(ctx.entity_to_id[&parent_entity].clone());
+                        break;
+                    }
+                }
+
+                not_interface_subsystems.push((
+                    subsystem_entity,
+                    system_component,
+                    parent_interface_id,
+                ));
+            }
+        }
+    }
+
+    for (subsystem_entity, system_component, parent_interface_id) in not_interface_subsystems {
+        let system = entity_to_system
+            .get_mut(&parent_system_entity)
+            .expect("Should exist");
+
+        let id = ctx.next_id(subsystem_entity, IdType::Subsystem, &system.info.id.indices);
+
+        let level = system.info.level + 1;
+        let parent_id = system.info.id.clone();
+
+        build_system(
+            subsystem_entity,
+            system_component,
+            id,
+            level,
+            parent_id,
+            parent_interface_id,
+            &name_and_description_query,
+            &transform_query,
+            &mut ctx,
+            &mut entity_to_system,
+        );
+    }
+
+    let mut parent_system = entity_to_system
+        .remove(&parent_system_entity)
+        .expect("Should exist");
+
+    for system_entity in &system_entities {
+        let system = entity_to_system
+            .get_mut(system_entity)
+            .expect("Should exist");
+
+        build_interfaces_interaction_and_external_entities(
+            &mut ctx,
+            *system_entity,
+            system,
+            &mut parent_system,
+            &name_and_description_query,
+            &transform_query,
+            &flow_query,
+            &interface_query,
+            &external_entity_query,
+        );
+    }
+
+    entity_to_system.insert(parent_system_entity, parent_system);
+
+    for system_entity in system_entities {
+        build_subsystems(
+            &mut ctx,
+            system_entity,
+            name_and_description_query,
+            transform_query,
+            parent_query,
+            subsystem_query,
+            flow_query,
+            interface_query,
+            external_entity_query,
+            entity_to_system,
+        );
+    }
 }
 
 fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAndSinks>(
@@ -449,6 +541,7 @@ fn build_system(
     id: Id,
     level: i32,
     parent_id: Id,
+    parent_interface: Option<Id>,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
     ctx: &mut Context,
@@ -467,6 +560,7 @@ fn build_system(
         porosity: system.boundary.porosity,
         perceptive_fuzziness: system.boundary.perceptive_fuzziness,
         interfaces: vec![],
+        parent_interface,
     };
 
     let root_system = crate::data_model::System {
