@@ -283,7 +283,7 @@ fn subsystem_egui(
     h_label!(ui, "Member Autonomy");
     ui.add(Slider::new(&mut system.membership, 0.0..=1.0).drag_value_speed(1.0));
 
-    h_label!(ui, "Equivalence Type");
+    h_label!(ui, "Equivalence");
     vcj_text_edit!(ui, &mut system.equivalence, false);
 
     h_label!(ui, "Time Unit");
