@@ -164,15 +164,15 @@ impl SubstanceType {
     pub fn flow_color(&self) -> Color {
         match self {
             SubstanceType::Energy => Color::rgb_u8(181, 27, 27),
-            SubstanceType::Material => Color::BLACK,
-            SubstanceType::Message => Color::GRAY,
+            SubstanceType::Material => Color::GRAY,
+            SubstanceType::Message => Color::SILVER,
         }
     }
     pub fn interface_color(&self) -> Color {
         match self {
             SubstanceType::Energy => Color::rgb_u8(233, 182, 178),
-            SubstanceType::Material => Color::DARK_GRAY,
-            SubstanceType::Message => Color::GRAY,
+            SubstanceType::Material => Color::GRAY,
+            SubstanceType::Message => Color::SILVER,
         }
     }
 }
