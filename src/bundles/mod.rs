@@ -95,7 +95,7 @@ impl SystemBundle {
                 },
                 ..default()
             },
-            fill: Fill::color(Color::GRAY),
+            fill: Fill::color(Color::rgb_u8(41, 51, 64)),
             highlight: HighlightBundles {
                 idle: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH * scale),
                 selected: Stroke::new(Color::BLACK, SYSTEM_SELECTED_LINE_WIDTH),
