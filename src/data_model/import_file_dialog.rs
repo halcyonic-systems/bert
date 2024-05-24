@@ -50,7 +50,6 @@ pub fn import_file(
     state: Res<State<FileImportState>>,
     mut next_state: ResMut<NextState<FileImportState>>,
 ) {
-    info!("state: {:?}", state.get());
     next_state.set(state.get().next());
 }
 
@@ -60,8 +59,6 @@ pub fn open_import_dialog_selection(
     mut next_state: ResMut<NextState<FileImportState>>,
 ) {
     let thread_pool = AsyncComputeTaskPool::get();
-    info!("Start Polling");
-
     let task = thread_pool.spawn(async move {
         FileDialog::new()
             .add_filter("valid_formats", &["json"])
@@ -78,10 +75,8 @@ pub fn poll_for_selected_file(
     state: Res<State<FileImportState>>,
     mut next_state: ResMut<NextState<FileImportState>>,
 ) {
-    println!("Polling");
     for (entity, mut selected_file) in tasks.iter_mut() {
         if let Some(result) = future::block_on(future::poll_once(&mut selected_file.0)) {
-            info!("{:?}", result);
             if let Some(path_buf) = result {
                 commands.spawn(SelectedFile { path_buf });
                 next_state.set(state.get().next());
