@@ -1,5 +1,6 @@
 use crate::components::*;
 use crate::constants::INTERFACE_WIDTH_HALF;
+use crate::events::RemoveEvent;
 use crate::plugins::label::NameLabel;
 use crate::plugins::mouse_interaction::{PickSelection, PickTarget};
 use bevy::prelude::*;
@@ -17,6 +18,7 @@ pub fn remove_selected_elements(
         With<Flow>,
     >,
     parent_query: Query<&Parent>,
+    mut remove_event_writer: EventWriter<RemoveEvent>,
 ) {
     for (entity_to_remove, selection, parent) in &selected_query {
         if selection.is_selected {
@@ -62,6 +64,8 @@ pub fn remove_selected_elements(
                     .remove_children(&[entity_to_remove]);
             }
             commands.entity(entity_to_remove).despawn_recursive();
+
+            remove_event_writer.send(RemoveEvent);
         }
     }
 }

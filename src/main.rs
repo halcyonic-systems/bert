@@ -69,6 +69,7 @@ fn main() {
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
+    .add_event::<RemoveEvent>()
     .init_state::<AppState>()
     .add_systems(Startup, (window_setup, setup));
 

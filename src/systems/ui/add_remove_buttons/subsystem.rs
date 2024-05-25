@@ -2,6 +2,7 @@ use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_create_button,
 };
 use crate::components::*;
+use crate::events::RemoveEvent;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
@@ -19,6 +20,7 @@ pub fn add_interface_subsystem_create_buttons(
             Changed<Flow>,
         )>,
     >,
+    mut remove_event_reader: EventReader<RemoveEvent>,
     incomplete_flow_query: Query<
         (),
         (
@@ -41,9 +43,11 @@ pub fn add_interface_subsystem_create_buttons(
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    if changed_query.is_empty() && !focused_system.is_changed() {
+    if changed_query.is_empty() && !focused_system.is_changed() && remove_event_reader.is_empty() {
         return;
     }
+
+    remove_event_reader.clear();
 
     let incomplete_flows_exist = !incomplete_flow_query.is_empty();
 
@@ -212,7 +216,11 @@ pub fn add_interface_subsystem_create_buttons(
                     &asset_server,
                 );
             }
-        } else if let Ok(interface_button) = interface_button {
+        }
+    }
+
+    if !show_interface_buttons {
+        for interface_button in &interface_button_query {
             despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
         }
     }
