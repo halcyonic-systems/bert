@@ -1,5 +1,6 @@
 use crate::bundles::{despawn_create_button_with_component, spawn_create_button};
 use crate::components::{System, *};
+use crate::events::RemoveEvent;
 use crate::resources::{FocusedSystem, Zoom};
 use crate::systems::next_outflow_button_transform;
 use bevy::prelude::*;
@@ -20,16 +21,18 @@ pub fn add_outflow_create_button(
     import_subsystem_query: Query<(), Or<(With<ImportSubsystem>, Without<Subsystem>)>>,
     transform_query: Query<&Transform>,
     system_query: Query<&System>,
-    removed_end_connections: RemovedComponents<FlowEndConnection>,
+    mut remove_event_reader: EventReader<RemoveEvent>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
     if !focused_system.is_changed()
         && outflow_finished_query.get_single().is_err()
-        && removed_end_connections.is_empty()
+        && remove_event_reader.is_empty()
     {
         return;
     }
+
+    remove_event_reader.clear();
 
     let focused_system = **focused_system;
 

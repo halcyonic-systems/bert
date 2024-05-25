@@ -1,5 +1,6 @@
 use crate::bundles::{despawn_create_button_with_component, spawn_create_button};
 use crate::components::*;
+use crate::events::RemoveEvent;
 use crate::resources::{FocusedSystem, Zoom};
 use crate::systems::next_inflow_button_transform;
 use bevy::prelude::*;
@@ -10,11 +11,17 @@ pub fn inflow_create_button_needs_update(
     focused_system: Res<FocusedSystem>,
     inflow_finished_query: Query<&FlowEndConnection, Added<FlowStartConnection>>,
     interface_subsystem_changed_query: Query<(), Changed<InterfaceSubsystem>>,
+    mut remove_event_reader: EventReader<RemoveEvent>,
 ) -> bool {
-    !flow_changed_query.is_empty()
+    let needs_update = !flow_changed_query.is_empty()
         || focused_system.is_changed()
         || inflow_finished_query.get_single().is_ok()
         || !interface_subsystem_changed_query.is_empty()
+        || !remove_event_reader.is_empty();
+
+    remove_event_reader.clear();
+
+    needs_update
 }
 
 pub fn add_inflow_create_button(
