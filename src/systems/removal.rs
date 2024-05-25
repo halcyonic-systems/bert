@@ -18,10 +18,15 @@ pub fn remove_selected_elements(
         With<Flow>,
     >,
     parent_query: Query<&Parent>,
+    root_system_query: Query<&crate::components::System, Without<Subsystem>>,
     mut remove_event_writer: EventWriter<RemoveEvent>,
 ) {
     for (entity_to_remove, selection, parent) in &selected_query {
         if selection.is_selected {
+            if root_system_query.get(entity_to_remove).is_ok() {
+                continue;
+            }
+
             if let Ok((
                 start_connection,
                 end_connection,
