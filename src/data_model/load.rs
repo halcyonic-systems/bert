@@ -21,6 +21,7 @@ struct Context {
     id_to_entity: HashMap<Id, Entity>,
     id_to_interface_subsystem: HashMap<Id, bool>,
     external_entity_id_to_substance: HashMap<Id, SubstanceType>,
+    entity_to_interface_interactions: HashMap<Entity, (bool, bool)>,
 }
 
 impl Context {
@@ -29,6 +30,7 @@ impl Context {
             id_to_entity: HashMap::new(),
             id_to_interface_subsystem: HashMap::new(),
             external_entity_id_to_substance: HashMap::new(),
+            entity_to_interface_interactions: HashMap::new(),
         }
     }
 }
@@ -198,8 +200,8 @@ fn spawn_interactions(
 }
 
 fn spawn_systems_interfaces_and_external_entities(
-    mut commands: &mut Commands,
-    mut ctx: &mut Context,
+    commands: &mut Commands,
+    ctx: &mut Context,
     world_model: &WorldModel,
     zoom: f32,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -216,7 +218,7 @@ fn spawn_systems_interfaces_and_external_entities(
 
         let system_entity = if nesting_level == 0 {
             let system_entity = spawn_main_system(
-                &mut commands,
+                commands,
                 position,
                 angle,
                 system.complexity,
@@ -238,8 +240,8 @@ fn spawn_systems_interfaces_and_external_entities(
             system_entity
         } else {
             spawn_loaded_subsystem(
-                &mut ctx,
-                &mut commands,
+                ctx,
+                commands,
                 &system,
                 nesting_level,
                 position,
@@ -251,8 +253,9 @@ fn spawn_systems_interfaces_and_external_entities(
 
         for interface in &system.boundary.interfaces {
             let interface_entity = spawn_loaded_interface(
+                ctx,
                 commands,
-                &interface,
+                interface,
                 system,
                 nesting_level,
                 system_entity,
@@ -362,15 +365,22 @@ fn make_systems_parent_child_hierarchy(
             .as_ref()
             .and_then(|id| ctx.id_to_entity.get(id))
         {
-            commands
-                .entity(system_entity)
-                .insert(InterfaceSubsystem {
-                    interface_entity: parent_interface,
-                    total_inflow: dec!(0),
-                    total_outflow: dec!(0),
-                    substance_type: Default::default(),
-                    is_useful: Default::default(),
-                });
+            let mut system_commands = commands.entity(system_entity);
+            system_commands.insert(InterfaceSubsystem {
+                interface_entity: parent_interface,
+                total_inflow: dec!(0),
+                total_outflow: dec!(0),
+                substance_type: Default::default(),
+                is_useful: Default::default(),
+            });
+
+            let (import, export) = ctx.entity_to_interface_interactions[&parent_interface];
+            if import {
+                system_commands.insert(ImportSubsystem);
+            }
+            if export {
+                system_commands.insert(ExportSubsystem);
+            }
         }
 
         commands.entity(parent_entity).add_child(system_entity);
@@ -382,8 +392,9 @@ fn make_systems_parent_child_hierarchy(
 }
 
 fn spawn_loaded_interface(
+    ctx: &mut Context,
     commands: &mut Commands,
-    interface: &&Interface,
+    interface: &Interface,
     system: &System,
     nesting_level: u16,
     system_entity: Entity,
@@ -413,6 +424,15 @@ fn spawn_loaded_interface(
         meshes,
         fixed_system_element_geometries,
     );
+
+    ctx.entity_to_interface_interactions.insert(
+        interface_entity,
+        (
+            !interface.receives_from.is_empty(),
+            !interface.exports_to.is_empty(),
+        ),
+    );
+
     interface_entity
 }
 

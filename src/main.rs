@@ -70,7 +70,7 @@ fn main() {
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
     .init_state::<AppState>()
-    .add_systems(Startup, (window_setup, setup).chain());
+    .add_systems(Startup, (window_setup, setup));
 
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
