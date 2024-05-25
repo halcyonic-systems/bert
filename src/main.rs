@@ -191,7 +191,7 @@ fn main() {
                 update_button_substance_type_from_flow,
                 update_interface_color_from_flow::<FlowStartInterfaceConnection>,
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
-                update_interface_subsystem_color_from_interface,
+                update_interface_subsystem_color,
                 update_system_color_from_subsystem,
             ),
         ),

@@ -1,6 +1,5 @@
 use crate::components::{
-    Connection, CreateButton, Flow, HasFlowOtherEndButton, InterfaceSubsystemConnection,
-    TargetTypeConnection,
+    Connection, CreateButton, Flow, HasFlowOtherEndButton, InterfaceSubsystem, TargetTypeConnection,
 };
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::{Interface, Subsystem};
@@ -72,18 +71,22 @@ pub fn update_interface_color_from_flow<C>(
     }
 }
 
-pub fn update_interface_subsystem_color_from_interface(
-    interface_query: Query<
-        (&Fill, &InterfaceSubsystemConnection),
-        Or<(Changed<Fill>, Added<InterfaceSubsystemConnection>)>,
+pub fn update_interface_subsystem_color(
+    mut interface_subsystem_query: Query<
+        (Entity, &mut Fill, &InterfaceSubsystem),
+        Changed<InterfaceSubsystem>,
     >,
-    mut subsystem_query: Query<&mut Fill, Without<InterfaceSubsystemConnection>>,
+    subsystem_query: Query<&Subsystem>,
 ) {
-    for (interface_fill, subsystem_connection) in &interface_query {
-        let mut subsystem_fill = subsystem_query
-            .get_mut(subsystem_connection.target())
-            .expect("Subsystem should exist");
-        subsystem_fill.color = interface_fill.color;
+    'outer: for (system_entity, mut subsystem_fill, interface_subsystem) in
+        &mut interface_subsystem_query
+    {
+        for subsystem in &subsystem_query {
+            if subsystem.parent_system == system_entity {
+                continue 'outer;
+            }
+        }
+        subsystem_fill.color = interface_subsystem.substance_type.interface_color();
     }
 }
 
