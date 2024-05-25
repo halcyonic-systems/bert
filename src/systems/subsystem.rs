@@ -24,6 +24,7 @@ pub fn interface_subsystem_should_update(
         || !removed_start_connections.is_empty()
 }
 
+// TODO : with change detection?
 pub fn update_interface_subsystem_from_flows(
     flow_query: Query<(
         &Flow,
@@ -65,6 +66,8 @@ pub fn update_interface_subsystem_from_flows(
                 interface_subsystem_query.get_mut(system_entity)
             {
                 interface_subsystem.total_inflow += flow.amount;
+                interface_subsystem.is_useful = flow.usability.is_useful();
+                interface_subsystem.substance_type = flow.substance_type;
             }
         }
 
@@ -73,6 +76,8 @@ pub fn update_interface_subsystem_from_flows(
                 interface_subsystem_query.get_mut(system_entity)
             {
                 interface_subsystem.total_outflow += flow.amount;
+                interface_subsystem.is_useful = flow.usability.is_useful();
+                interface_subsystem.substance_type = flow.substance_type;
             }
         }
     }

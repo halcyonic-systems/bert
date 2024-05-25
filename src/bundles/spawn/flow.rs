@@ -22,7 +22,6 @@ macro_rules! spawn_flow {
     (
         $fn_name:ident,
         $curve_method:tt,
-        $system_el:expr,
         $flow_conn_ty:tt,
         $target_ty:tt
     ) => {
@@ -40,11 +39,10 @@ macro_rules! spawn_flow {
             usability: InteractionUsability,
             amount: Decimal,
             unit: &str,
-            time_unit: &str,
             name: &str,
             description: &str,
         ) -> Entity {
-            let (transform, initial_position) = ui_transform_from_button(transform, 6.0, 0.0, zoom);
+            let (transform, initial_position) = ui_transform_from_button(transform, 0.0, 0.0, zoom);
 
             let direction = transform.right().truncate();
 
@@ -53,13 +51,12 @@ macro_rules! spawn_flow {
 
             let flow_curve = FlowCurve::$curve_method(zoom, initial_position, direction, scale);
 
-            spawn_flow(
+            spawn_interaction(
                 commands,
                 subsystem_query,
                 stroke_tess,
                 meshes,
                 flow_curve,
-                $system_el,
                 system_entity,
                 name,
                 description,
@@ -69,7 +66,6 @@ macro_rules! spawn_flow {
                     substance_sub_type: "".to_string(),
                     amount,
                     unit: unit.to_string(),
-                    time_unit: time_unit.to_string(),
                     usability,
                     parameters: vec![],
                 },
@@ -85,28 +81,15 @@ macro_rules! spawn_flow {
     };
 }
 
-spawn_flow!(
-    spawn_outflow,
-    outflow,
-    SystemElement::Outflow,
-    FlowStartConnection,
-    StartTargetType
-);
-spawn_flow!(
-    spawn_inflow,
-    inflow,
-    SystemElement::Inflow,
-    FlowEndConnection,
-    EndTargetType
-);
+spawn_flow!(spawn_outflow, outflow, FlowStartConnection, StartTargetType);
+spawn_flow!(spawn_inflow, inflow, FlowEndConnection, EndTargetType);
 
-fn spawn_flow<C: Component>(
+fn spawn_interaction<C: Component>(
     commands: &mut Commands,
     subsystem_query: &Query<&Subsystem>,
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
     flow_curve: FlowCurve,
-    system_element: SystemElement,
     system_entity: Entity,
     name: &str,
     description: &str,
@@ -115,6 +98,42 @@ fn spawn_flow<C: Component>(
     is_selected: bool,
     nesting_level: u16,
     scale: f32,
+) -> Entity {
+    let interaction_entity = spawn_interaction_only(
+        commands,
+        flow,
+        flow_curve,
+        name,
+        description,
+        is_selected,
+        nesting_level,
+        scale,
+        stroke_tess,
+        meshes,
+    );
+
+    commands.entity(interaction_entity).insert(flow_connection);
+
+    if let Ok(subsystem) = subsystem_query.get(system_entity) {
+        commands
+            .entity(subsystem.parent_system)
+            .add_child(interaction_entity);
+    }
+
+    interaction_entity
+}
+
+pub fn spawn_interaction_only(
+    commands: &mut Commands,
+    flow: Flow,
+    flow_curve: FlowCurve,
+    name: &str,
+    description: &str,
+    is_selected: bool,
+    nesting_level: u16,
+    scale: f32,
+    stroke_tess: &mut ResMut<StrokeTessellator>,
+    meshes: &mut ResMut<Assets<Mesh>>,
 ) -> Entity {
     let curve_path = create_path_from_flow_curve(&flow_curve, scale);
 
@@ -133,7 +152,6 @@ fn spawn_flow<C: Component>(
     let flow_entity = commands
         .spawn((
             flow,
-            flow_connection,
             flow_curve,
             SimplifiedMesh {
                 mesh: tessellate_simplified_mesh(&curve_path, meshes, stroke_tess),
@@ -153,7 +171,7 @@ fn spawn_flow<C: Component>(
                 idle: Stroke::new(color, FLOW_LINE_WIDTH * scale),
                 selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH),
             },
-            system_element,
+            SystemElement::Interaction,
             Name::new(name.to_string()),
             ElementDescription::new(description),
             NestingLevel::new(nesting_level),
@@ -176,13 +194,6 @@ fn spawn_flow<C: Component>(
             ));
         })
         .id();
-
-    if let Ok(subsystem) = subsystem_query.get(system_entity) {
-        commands
-            .entity(subsystem.parent_system)
-            .add_child(flow_entity);
-    }
-
     flow_entity
 }
 
@@ -205,7 +216,6 @@ macro_rules! spawn_complete_flow {
             usability: InteractionUsability,
             amount: Decimal,
             unit: &str,
-            time_unit: &str,
             interface_name: &str,
             interface_description: &str,
             flow_name: &str,
@@ -213,7 +223,7 @@ macro_rules! spawn_complete_flow {
             external_entity_name: &str,
             external_entity_description: &str,
             external_entity_transform: Option<&Transform2d>,
-        ) -> Entity {
+        ) -> (Entity, Entity, Entity) {
             let mut translation = vec3(system_radius * zoom, 0.0, 0.0);
 
             let mut transform = Transform::from_rotation(Quat::from_rotation_z(interface_angle));
@@ -222,7 +232,7 @@ macro_rules! spawn_complete_flow {
 
             let nesting_level = NestingLevel::current(*focused_system, nesting_query);
 
-            let product_flow = $spawn_name(
+            let product_flow_entity = $spawn_name(
                 &mut commands,
                 subsystem_query,
                 nesting_query,
@@ -236,16 +246,15 @@ macro_rules! spawn_complete_flow {
                 usability,
                 amount,
                 unit,
-                time_unit,
                 flow_name,
                 flow_description,
             );
 
-            let product_flow_interface = spawn_interface(
+            let interface_entity = spawn_interface(
                 &mut commands,
                 $interface_ty,
                 substance_type,
-                product_flow,
+                product_flow_entity,
                 &transform,
                 nesting_level,
                 *focused_system,
@@ -269,14 +278,14 @@ macro_rules! spawn_complete_flow {
                 transform
             };
 
-            spawn_external_entity(
+            let external_entity = spawn_external_entity(
                 &mut commands,
                 subsystem_query,
                 nesting_query,
                 *focused_system,
                 $interface_ty,
                 substance_type,
-                product_flow,
+                product_flow_entity,
                 &transform,
                 fixed_system_element_geometries,
                 zoom,
@@ -287,18 +296,10 @@ macro_rules! spawn_complete_flow {
                 external_entity_description,
             );
 
-            product_flow_interface
+            (interface_entity, interface_entity, external_entity)
         }
     };
 }
 
-spawn_complete_flow!(
-    spawn_complete_outflow,
-    spawn_outflow,
-    InterfaceType::Export
-);
-spawn_complete_flow!(
-    spawn_complete_inflow,
-    spawn_inflow,
-    InterfaceType::Import
-);
+spawn_complete_flow!(spawn_complete_outflow, spawn_outflow, InterfaceType::Export);
+spawn_complete_flow!(spawn_complete_inflow, spawn_inflow, InterfaceType::Import);

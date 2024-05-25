@@ -26,8 +26,8 @@ pub fn add_interface_subsystem_create_buttons(
             Or<(Without<FlowStartConnection>, Without<FlowEndConnection>)>,
         ),
     >,
-    complete_flow_query: Query<(&Flow, &FlowStartConnection, &FlowEndConnection)>,
-    flow_interface_query: Query<(
+    complete_flow_query: Query<(
+        &Flow,
         &FlowStartConnection,
         &FlowEndConnection,
         Option<&FlowStartInterfaceConnection>,
@@ -36,8 +36,7 @@ pub fn add_interface_subsystem_create_buttons(
     interface_button_query: Query<&HasInterfaceSubsystemButton>,
     interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
     button_query: Query<(&CreateButton, Option<&Parent>)>,
-    subsystem_query: Query<(Entity, &Subsystem, Option<&SubsystemParentFlowConnection>)>,
-    parent_query: Query<&Parent>,
+    subsystem_query: Query<(Entity, &Subsystem, Option<&InterfaceSubsystem>)>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
@@ -66,7 +65,7 @@ pub fn add_interface_subsystem_create_buttons(
         flow_usabilities.insert(*system, HashSet::new());
     }
 
-    for (flow, flow_start_connection, flow_end_connection) in &complete_flow_query {
+    for (flow, flow_start_connection, flow_end_connection, _, _) in &complete_flow_query {
         if systems_at_the_same_nesting_level
             .iter()
             .any(|(entity, _)| *entity == flow_end_connection.target)
@@ -87,40 +86,29 @@ pub fn add_interface_subsystem_create_buttons(
 
     let mut system_interfaces = vec![];
 
-    for (system_entity, parent_flow_connection) in &systems_at_the_same_nesting_level {
-        if let Some(parent_flow_connection) = parent_flow_connection {
-            let (_, _, flow_start_interface_connection, flow_end_interface_connection) =
-                flow_interface_query
-                    .get(parent_flow_connection.target)
-                    .expect("Flow should exist");
-            let (flow, _, _) = complete_flow_query
-                .get(parent_flow_connection.target)
-                .expect("Flow should exist");
-
-            let mut interface_entity = Entity::PLACEHOLDER;
+    for (system_entity, interface_subsystem) in &systems_at_the_same_nesting_level {
+        if let Some(interface_subsystem) = interface_subsystem {
+            let interface_entity = interface_subsystem.interface_entity;
             let mut interface_type = InterfaceType::Export;
 
-            let mut parent_entity = *system_entity;
-            while let Ok(parent) = parent_query.get(parent_entity) {
-                parent_entity = parent.get();
-
+            for (flow, _, _, flow_start_interface_connection, flow_end_interface_connection) in
+                &complete_flow_query
+            {
                 if let Some(connection) = flow_start_interface_connection {
-                    if connection.target == parent_entity {
-                        interface_entity = parent_entity;
+                    if connection.target == interface_entity {
                         flow_usabilities
                             .get_mut(system_entity)
                             .map(|set| set.insert(flow.usability));
                         interface_type = InterfaceType::Export;
-                        break;
+                        // TODO : hybrid
                     }
                 } else if let Some(connection) = flow_end_interface_connection {
-                    if connection.target == parent_entity {
-                        interface_entity = parent_entity;
+                    if connection.target == interface_entity {
                         flow_usabilities
                             .get_mut(system_entity)
                             .map(|set| set.insert(flow.usability));
                         interface_type = InterfaceType::Import;
-                        break;
+                        // TODO : hybrid
                     }
                 }
             }
@@ -128,10 +116,10 @@ pub fn add_interface_subsystem_create_buttons(
             if *system_entity == **focused_system {
                 let mut has_subsystem = false;
 
-                for (_, subsystem, flow_connection) in &subsystem_query {
+                for (_, subsystem, interface_subsystem) in &subsystem_query {
                     if subsystem.parent_system == *system_entity {
-                        if let Some(flow_connection) = flow_connection {
-                            if flow_connection.target == parent_flow_connection.target {
+                        if let Some(interface_subsystem) = interface_subsystem {
+                            if interface_subsystem.interface_entity == interface_entity {
                                 has_subsystem = true;
                                 break;
                             }
@@ -179,11 +167,12 @@ pub fn add_interface_subsystem_create_buttons(
     };
 
     for (
+        _,
         flow_start_connection,
         flow_end_connection,
         flow_start_interface_connection,
         flow_end_interface_connection,
-    ) in &flow_interface_query
+    ) in &complete_flow_query
     {
         let interface_entity = if flow_end_connection.target == **focused_system {
             flow_end_interface_connection.map(|c| (c.target, InterfaceType::Import))

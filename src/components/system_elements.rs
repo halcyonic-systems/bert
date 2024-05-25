@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 pub enum SystemElement {
     System,
     Interface,
-    Inflow,
-    Outflow,
+    Interaction,
     ExternalEntity,
 }
 
@@ -18,8 +17,7 @@ impl std::fmt::Display for SystemElement {
         match self {
             SystemElement::System => write!(f, "System"),
             SystemElement::Interface => write!(f, "Interface"),
-            SystemElement::Inflow => write!(f, "Inflow"),
-            SystemElement::Outflow => write!(f, "Outflow"),
+            SystemElement::Interaction => write!(f, "Interaction"),
             SystemElement::ExternalEntity => write!(f, "External Entity"),
         }
     }
@@ -74,8 +72,6 @@ pub struct Flow {
     #[reflect(ignore)]
     pub amount: Decimal,
     pub unit: String,
-    #[reflect(ignore)]
-    pub time_unit: String,
     pub usability: InteractionUsability,
     pub parameters: Vec<Parameter>,
 }

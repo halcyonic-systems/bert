@@ -51,6 +51,17 @@ pub struct FlowCurve {
     pub end_direction: Vec2,
 }
 
+impl Default for FlowCurve {
+    fn default() -> Self {
+        Self {
+            start: Vec2::ZERO,
+            end: Vec2::X,
+            start_direction: Vec2::X,
+            end_direction: -Vec2::X,
+        }
+    }
+}
+
 impl FlowCurve {
     pub fn head_rotation(&self) -> Quat {
         Quat::from_rotation_z(self.end_direction.to_angle())

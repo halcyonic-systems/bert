@@ -36,6 +36,55 @@ pub fn spawn_interface(
     // Normalize the rotation
     transform.rotation = Quat::from_rotation_z(transform.translation.truncate().to_angle());
 
+    let interface_entity = spawn_interface_only(
+        commands,
+        substance_type,
+        nesting_level,
+        focused_system,
+        zoom,
+        is_selected,
+        name,
+        description,
+        transform,
+        initial_position,
+        tess,
+        meshes,
+        fixed_system_element_geometries,
+    );
+
+    let mut flow_commands = commands.entity(flow_entity);
+
+    match interface_type {
+        InterfaceType::Import => {
+            flow_commands.insert(FlowEndInterfaceConnection {
+                target: interface_entity,
+            });
+        }
+        InterfaceType::Export => {
+            flow_commands.insert(FlowStartInterfaceConnection {
+                target: interface_entity,
+            });
+        }
+    }
+
+    interface_entity
+}
+
+pub fn spawn_interface_only(
+    commands: &mut Commands,
+    substance_type: SubstanceType,
+    nesting_level: u16,
+    parent_system: Entity,
+    zoom: f32,
+    is_selected: bool,
+    name: &str,
+    description: &str,
+    transform: Transform,
+    initial_position: InitialPosition,
+    tess: &mut ResMut<StrokeTessellator>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    fixed_system_element_geometries: &mut ResMut<FixedSystemElementGeometriesByNestingLevel>,
+) -> Entity {
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
     let interface_entity = commands
@@ -65,23 +114,7 @@ pub fn spawn_interface(
         ))
         .id();
 
-    commands.entity(focused_system).add_child(interface_entity);
-
-    let mut flow_commands = commands.entity(flow_entity);
-
-    match interface_type {
-        InterfaceType::Import => {
-            flow_commands.insert(FlowEndInterfaceConnection {
-                target: interface_entity,
-            });
-        }
-        InterfaceType::Export => {
-            flow_commands.insert(FlowStartInterfaceConnection {
-                target: interface_entity,
-            });
-        }
-    }
-
+    commands.entity(parent_system).add_child(interface_entity);
     interface_entity
 }
 

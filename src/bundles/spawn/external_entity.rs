@@ -39,12 +39,68 @@ pub fn spawn_external_entity(
         zoom,
     );
 
+    let nesting_level = NestingLevel::current(focused_system, nesting_level_query);
+
+    let external_entity = spawn_external_entity_only(
+        commands,
+        substance_type,
+        is_selected,
+        name,
+        description,
+        transform,
+        initial_position,
+        nesting_level,
+        zoom,
+        fixed_system_element_geometries,
+        meshes,
+        tess,
+    );
+
+    if let Ok(subsystem) = subsystem_query.get(focused_system) {
+        commands
+            .entity(subsystem.parent_system)
+            .add_child(external_entity);
+    }
+
+    let mut entity_commands = commands.entity(flow_entity);
+
+    match interface_type {
+        InterfaceType::Import => {
+            entity_commands.insert(FlowStartConnection {
+                target: external_entity,
+                target_type: StartTargetType::Source,
+            });
+        }
+        InterfaceType::Export => {
+            entity_commands.insert(FlowEndConnection {
+                target: external_entity,
+                target_type: EndTargetType::Sink,
+            });
+        }
+    }
+
+    external_entity
+}
+
+pub fn spawn_external_entity_only(
+    commands: &mut Commands,
+    substance_type: SubstanceType,
+    is_selected: bool,
+    name: &str,
+    description: &str,
+    transform: Transform,
+    initial_position: InitialPosition,
+    nesting_level: u16,
+    zoom: f32,
+    fixed_system_element_geometries: &mut ResMut<FixedSystemElementGeometriesByNestingLevel>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    tess: &mut ResMut<StrokeTessellator>,
+) -> Entity {
     let color = substance_type.flow_color();
 
-    let nesting_level = NestingLevel::current(focused_system, nesting_level_query);
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
-    let external_entity = commands
+    commands
         .spawn((
             ExternalEntity {
                 equivalence: "".to_string(),
@@ -75,32 +131,7 @@ pub fn spawn_external_entity(
             NestingLevel::new(nesting_level),
             On::<DragPosition>::send_event::<ExternalEntityDrag>(),
         ))
-        .id();
-
-    if let Ok(subsystem) = subsystem_query.get(focused_system) {
-        commands
-            .entity(subsystem.parent_system)
-            .add_child(external_entity);
-    }
-
-    let mut entity_commands = commands.entity(flow_entity);
-
-    match interface_type {
-        InterfaceType::Import => {
-            entity_commands.insert(FlowStartConnection {
-                target: external_entity,
-                target_type: StartTargetType::Source,
-            });
-        }
-        InterfaceType::Export => {
-            entity_commands.insert(FlowEndConnection {
-                target: external_entity,
-                target_type: EndTargetType::Sink,
-            });
-        }
-    }
-
-    external_entity
+        .id()
 }
 
 // TODO : do the entire external entity like this autospawn?

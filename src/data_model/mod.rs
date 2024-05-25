@@ -124,6 +124,7 @@ pub struct System {
     pub parent: Id,
     pub complexity: Complexity,
     pub boundary: Boundary,
+    pub radius: f32,
     pub transform: Option<Transform2d>,
     pub equivalence: String,
     pub history: String,
@@ -199,7 +200,9 @@ pub struct Interaction {
     pub ty: InteractionType,
     pub usability: InteractionUsability,
     pub source: Id,
+    pub source_interface: Option<Id>,
     pub sink: Id,
+    pub sink_interface: Option<Id>,
     pub amount: Decimal,
     pub unit: String,
     pub parameters: Vec<Parameter>,
@@ -242,7 +245,7 @@ impl Default for Complexity {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Copy, Default, PartialEq, Debug)]
 pub struct Transform2d {
     pub translation: Vec2,
     pub rotation: f32,
@@ -257,9 +260,18 @@ impl From<(&Transform, &InitialPosition)> for Transform2d {
     }
 }
 
+impl Transform2d {
+    pub fn as_components(&self, z: f32, zoom: f32) -> (Transform, InitialPosition) {
+        (
+            Transform::from_translation((self.translation * zoom).extend(z))
+                .with_rotation(Quat::from_rotation_z(self.rotation)),
+            InitialPosition::new(self.translation),
+        )
+    }
+}
+
 pub trait HasInfo {
     fn info(&self) -> &Info;
-    fn info_mut(&mut self) -> &mut Info;
 }
 
 macro_rules! impl_has_info {
@@ -269,10 +281,6 @@ macro_rules! impl_has_info {
                 #[inline(always)]
                 fn info(&self) -> &Info {
                     &self.info
-                }
-                #[inline(always)]
-                fn info_mut(&mut self) -> &mut Info {
-                    &mut self.info
                 }
             }
         )*

@@ -60,12 +60,6 @@ pub struct InterfaceSubsystemConnection {
     pub target: Entity,
 }
 
-#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
-#[reflect(Component)]
-pub struct SubsystemParentFlowConnection {
-    pub target: Entity,
-}
-
 pub trait Connection {
     fn target(&self) -> Entity;
 }
@@ -86,4 +80,3 @@ impl_connection!(FlowEndConnection);
 impl_connection!(FlowStartInterfaceConnection);
 impl_connection!(FlowEndInterfaceConnection);
 impl_connection!(InterfaceSubsystemConnection);
-impl_connection!(SubsystemParentFlowConnection);

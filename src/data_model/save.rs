@@ -9,6 +9,7 @@ struct Context {
     parent_id_to_count: HashMap<Id, i64>,
     entity_to_id: HashMap<Entity, Id>,
     interactions: Vec<Interaction>,
+    entity_to_interaction_idx: HashMap<Entity, usize>,
 }
 
 impl Context {
@@ -17,6 +18,7 @@ impl Context {
             parent_id_to_count: HashMap::new(),
             entity_to_id: HashMap::new(),
             interactions: vec![],
+            entity_to_interaction_idx: HashMap::new(),
         }
     }
 
@@ -38,6 +40,11 @@ impl Context {
         self.entity_to_id.insert(entity, id.clone());
         id
     }
+
+    fn interaction_mut_by_entity(&mut self, entity: Entity) -> &mut Interaction {
+        let idx = self.entity_to_interaction_idx[&entity];
+        &mut self.interactions[idx]
+    }
 }
 
 pub fn save_world(
@@ -46,7 +53,6 @@ pub fn save_world(
     save_file_query: Query<&SaveFile>,
     name_and_description_query: Query<(&Name, &ElementDescription)>,
     transform_query: Query<(&Transform, &InitialPosition)>,
-    children_query: Query<&Children>,
     parent_query: Query<&Parent>,
     main_system_info_query: Query<
         (Entity, &crate::components::System, &SystemEnvironment),
@@ -68,9 +74,6 @@ pub fn save_world(
         .get_single()
         .expect("System of interest should exist");
 
-    let mut sources = vec![];
-    let mut sinks = vec![];
-
     let mut ctx = Context::new();
     let mut entity_to_system = HashMap::<Entity, crate::data_model::System>::new();
 
@@ -84,8 +87,8 @@ pub fn save_world(
             description: environment.description.clone(),
             level: -1,
         },
-        sources,
-        sinks,
+        sources: vec![],
+        sinks: vec![],
     };
 
     build_system(
@@ -120,6 +123,8 @@ pub fn save_world(
         &external_entity_query,
     );
 
+    // TODO : connect interaction interface links
+
     build_subsystems(
         &mut ctx,
         system_entity,
@@ -132,6 +137,19 @@ pub fn save_world(
         &external_entity_query,
         &mut entity_to_system,
     );
+
+    for (flow_entity, _, _, _, flow_start_interface_connection, flow_end_interface_connection) in
+        &flow_query
+    {
+        let source_interface =
+            flow_start_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
+        let sink_interface =
+            flow_end_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
+
+        let interaction = ctx.interaction_mut_by_entity(flow_entity);
+        interaction.source_interface = source_interface;
+        interaction.sink_interface = sink_interface;
+    }
 
     let model = WorldModel {
         version: CURRENT_FILE_VERSION,
@@ -163,8 +181,8 @@ fn build_subsystems(
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
     )>,
-    interface_query: &Query<(&Interface, &Transform)>,
-    external_entity_query: &Query<&ExternalEntity>,
+    interface_query: &Query<(&crate::components::Interface, &Transform)>,
+    external_entity_query: &Query<&crate::components::ExternalEntity>,
     mut entity_to_system: &mut HashMap<Entity, System>,
 ) {
     let mut not_interface_subsystems = vec![];
@@ -252,9 +270,9 @@ fn build_subsystems(
             level,
             parent_id,
             parent_interface_id,
-            &name_and_description_query,
-            &transform_query,
-            &mut ctx,
+            name_and_description_query,
+            transform_query,
+            ctx,
             &mut entity_to_system,
         );
     }
@@ -269,15 +287,15 @@ fn build_subsystems(
             .expect("Should exist");
 
         build_interfaces_interaction_and_external_entities(
-            &mut ctx,
+            ctx,
             *system_entity,
             system,
             &mut parent_system,
-            &name_and_description_query,
-            &transform_query,
-            &flow_query,
-            &interface_query,
-            &external_entity_query,
+            name_and_description_query,
+            transform_query,
+            flow_query,
+            interface_query,
+            external_entity_query,
         );
     }
 
@@ -285,7 +303,7 @@ fn build_subsystems(
 
     for system_entity in system_entities {
         build_subsystems(
-            &mut ctx,
+            ctx,
             system_entity,
             name_and_description_query,
             transform_query,
@@ -300,10 +318,10 @@ fn build_subsystems(
 }
 
 fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAndSinks>(
-    mut ctx: &mut Context,
+    ctx: &mut Context,
     system_entity: Entity,
     system: &mut System,
-    mut parent: &mut P,
+    parent: &mut P,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
     flow_query: &Query<(
@@ -314,8 +332,8 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
     )>,
-    interface_query: &Query<(&Interface, &Transform)>,
-    external_entity_query: &Query<&ExternalEntity>,
+    interface_query: &Query<(&crate::components::Interface, &Transform)>,
+    external_entity_query: &Query<&crate::components::ExternalEntity>,
 ) {
     for (
         flow_entity,
@@ -330,12 +348,12 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
             let interface_index =
                 if let Some(interface_connection) = flow_start_interface_connection {
                     build_interface(
-                        &mut ctx,
+                        ctx,
                         crate::data_model::InterfaceType::Export,
                         system,
                         interface_connection,
-                        &name_and_description_query,
-                        &interface_query,
+                        name_and_description_query,
+                        interface_query,
                     )
                 } else {
                     continue;
@@ -349,14 +367,14 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                         id.clone()
                     } else {
                         let sink = build_external_entity(
-                            &mut ctx,
+                            ctx,
                             sink_entity,
                             ExternalEntityType::Sink,
                             IdType::Sink,
                             &*parent,
-                            &name_and_description_query,
-                            &transform_query,
-                            &external_entity_query,
+                            name_and_description_query,
+                            transform_query,
+                            external_entity_query,
                         );
 
                         let id = sink.info.id.clone();
@@ -373,25 +391,25 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
 
             if !ctx.entity_to_id.contains_key(&flow_entity) {
                 build_interaction(
-                    &mut ctx,
+                    ctx,
                     flow_entity,
                     flow,
                     parent,
                     system.info.id.clone(),
                     sink_id.clone(),
-                    &name_and_description_query,
+                    name_and_description_query,
                 );
             }
         } else if flow_end_connection.target == system_entity {
             let interface_index = if let Some(interface_connection) = flow_end_interface_connection
             {
                 build_interface(
-                    &mut ctx,
+                    ctx,
                     crate::data_model::InterfaceType::Import,
                     system,
                     interface_connection,
-                    &name_and_description_query,
-                    &interface_query,
+                    name_and_description_query,
+                    interface_query,
                 )
             } else {
                 continue;
@@ -405,14 +423,14 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                         id.clone()
                     } else {
                         let source = build_external_entity(
-                            &mut ctx,
+                            ctx,
                             source_entity,
                             ExternalEntityType::Source,
                             IdType::Source,
                             &*parent,
-                            &name_and_description_query,
-                            &transform_query,
-                            &external_entity_query,
+                            name_and_description_query,
+                            transform_query,
+                            external_entity_query,
                         );
 
                         let id = source.info.id.clone();
@@ -429,13 +447,13 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
 
             if !ctx.entity_to_id.contains_key(&flow_entity) {
                 build_interaction(
-                    &mut ctx,
+                    ctx,
                     flow_entity,
                     flow,
                     parent,
                     source_id.clone(),
                     system.info.id.clone(),
-                    &name_and_description_query,
+                    name_and_description_query,
                 );
             }
         }
@@ -443,12 +461,12 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
 }
 
 fn build_interface<C: Connection>(
-    mut ctx: &mut Context,
+    ctx: &mut Context,
     ty: crate::data_model::InterfaceType,
     system: &mut System,
     interface_connection: &C,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
-    interface_query: &Query<(&Interface, &Transform)>,
+    interface_query: &Query<(&crate::components::Interface, &Transform)>,
 ) -> usize {
     let interface_entity = interface_connection.target();
 
@@ -499,12 +517,16 @@ fn build_interaction<P: HasInfo>(
         usability: flow.usability,
         source: source_id,
         sink: sink_id,
+        source_interface: None,
+        sink_interface: None,
         amount: flow.amount,
         unit: flow.unit.clone(),
         parameters: flow.parameters.clone(),
     };
 
-    ctx.interactions.push(interaction)
+    ctx.interactions.push(interaction);
+    ctx.entity_to_interaction_idx
+        .insert(flow_entity, ctx.interactions.len() - 1);
 }
 
 fn build_external_entity<P: HasInfo>(
@@ -515,7 +537,7 @@ fn build_external_entity<P: HasInfo>(
     parent: &P,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
-    external_entity_query: &Query<&ExternalEntity>,
+    external_entity_query: &Query<&crate::components::ExternalEntity>,
 ) -> crate::data_model::ExternalEntity {
     let id = ctx.next_id(entity, id_type, &parent.info().id.indices);
 
@@ -570,6 +592,7 @@ fn build_system(
         boundary,
         sources: vec![], // TODO
         sinks: vec![],   // TODO
+        radius: system.radius,
         transform: transform2d_from_entity(system_entity, transform_query),
         equivalence: system.equivalence.clone(),
         history: system.history.clone(),

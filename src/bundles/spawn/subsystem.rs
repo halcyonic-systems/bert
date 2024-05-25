@@ -34,16 +34,14 @@ pub fn spawn_interface_subsystem(
     name: &str,
     description: &str,
 ) -> Entity {
-    let mut interface_flow_entity = Entity::PLACEHOLDER;
     let mut angle = 0.0;
     let mut is_import_subsystem = false;
     let mut is_export_subsystem = false;
     let mut interface_subsystem = InterfaceSubsystem::new(interface_entity);
 
-    for (entity, flow, inflow_connection, outflow_connection) in flow_interface_query {
+    for (_, flow, inflow_connection, outflow_connection) in flow_interface_query {
         if let Some(connection) = inflow_connection {
             if connection.target == interface_entity {
-                interface_flow_entity = entity;
                 angle = std::f32::consts::PI;
                 is_import_subsystem = true;
                 interface_subsystem.total_inflow += flow.amount;
@@ -53,7 +51,6 @@ pub fn spawn_interface_subsystem(
         }
         if let Some(connection) = outflow_connection {
             if connection.target == interface_entity {
-                interface_flow_entity = entity;
                 is_export_subsystem = true;
                 interface_subsystem.total_outflow += flow.amount;
                 interface_subsystem.substance_type = flow.substance_type;
@@ -95,12 +92,7 @@ pub fn spawn_interface_subsystem(
 
     let mut subsystem_commands = commands.entity(subsystem_entity);
 
-    subsystem_commands.insert((
-        interface_subsystem,
-        SubsystemParentFlowConnection {
-            target: interface_flow_entity,
-        },
-    ));
+    subsystem_commands.insert(interface_subsystem);
 
     if is_import_subsystem {
         subsystem_commands.insert(ImportSubsystem);

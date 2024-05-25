@@ -60,7 +60,7 @@ fn interface_egui(ui: &mut Ui, interface: &mut Interface) {
     vcj_text_edit!(ui, &mut interface.protocol, true);
 }
 
-fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
+fn interaction_egui(ui: &mut Ui, flow: &mut Flow) {
     h_label!(ui, "Interaction Usability");
     ui.horizontal(|ui| {
         ComboBox::from_label("")
@@ -74,6 +74,16 @@ fn outflow_egui(ui: &mut Ui, flow: &mut Flow) {
                     "Product",
                 );
                 ui.selectable_value(&mut flow.usability, InteractionUsability::Waste, "Waste");
+                ui.selectable_value(
+                    &mut flow.usability,
+                    InteractionUsability::Resource,
+                    "Resource",
+                );
+                ui.selectable_value(
+                    &mut flow.usability,
+                    InteractionUsability::Disruption,
+                    "Disruption",
+                );
             });
     });
 
@@ -124,9 +134,6 @@ fn flow_egui(ui: &mut Ui, flow: &mut Flow) {
         only_valid_positive_decimal(&mut amount_string, &mut flow.amount);
     });
 
-    h_label!(ui, "Time Unit");
-    vcj_text_edit!(ui, &mut flow.time_unit, false);
-
     ui.separator();
     vcj_label!(ui, "Parameters");
     parameters_list_egui(ui, flow);
@@ -175,30 +182,6 @@ pub fn only_valid_positive_decimal(s: &mut String, decimal: &mut Decimal) {
     } else {
         *s = decimal.to_string();
     }
-}
-
-fn inflow_egui(ui: &mut Ui, flow: &mut Flow) {
-    h_label!(ui, "Interaction Usability");
-    ui.horizontal(|ui| {
-        ComboBox::from_label("")
-            .selected_text(format!("{:?}", flow.usability))
-            .show_ui(ui, |ui| {
-                ui.style_mut().wrap = Some(false);
-                ui.set_min_width(60.0);
-                ui.selectable_value(
-                    &mut flow.usability,
-                    InteractionUsability::Resource,
-                    "Resource",
-                );
-                ui.selectable_value(
-                    &mut flow.usability,
-                    InteractionUsability::Disruption,
-                    "Disruption",
-                );
-            });
-    });
-
-    flow_egui(ui, flow);
 }
 
 fn system_of_interest_egui(
@@ -442,13 +425,9 @@ pub fn egui_selected_context(
                                     subsystem_egui(ui, &mut system, &SystemEnvironment::default())
                                 }
                             }
-                            SystemElement::Inflow => inflow_egui(
+                            SystemElement::Interaction => interaction_egui(
                                 ui,
-                                &mut flow_query.get_mut(entity).expect("Inflow not found"),
-                            ),
-                            SystemElement::Outflow => outflow_egui(
-                                ui,
-                                &mut flow_query.get_mut(entity).expect("Outflow not found"),
+                                &mut flow_query.get_mut(entity).expect("Interaction not found"),
                             ),
                             SystemElement::ExternalEntity => external_entity_egui(
                                 ui,

@@ -223,7 +223,6 @@ fn main() {
     .register_type::<FlowStartConnection>()
     .register_type::<FlowEndConnection>()
     .register_type::<InterfaceSubsystemConnection>()
-    .register_type::<SubsystemParentFlowConnection>()
     .register_type::<SystemElement>()
     .register_type::<crate::components::System>()
     .register_type::<ImportSubsystem>()

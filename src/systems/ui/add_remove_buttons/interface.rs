@@ -1,7 +1,6 @@
 use crate::bundles::spawn_create_button;
 use crate::components::*;
 use crate::resources::{FocusedSystem, Zoom};
-use crate::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 
 macro_rules! interface_create_button {
@@ -9,19 +8,18 @@ macro_rules! interface_create_button {
         pub fn $fn_name(
             mut commands: Commands,
             query: Query<
-                (Entity, &FlowCurve, &Flow, &$flow_conn_ty, Option<&Parent>),
+                (Entity, &FlowCurve, &Flow, &$flow_conn_ty),
                 (
                     Without<$interface_connection>,
                     Without<HasFlowInterfaceButton>,
                 ),
             >,
-            parent_query: Query<&Parent>,
             transform_query: Query<&GlobalTransform>,
             focused_system: Res<FocusedSystem>,
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            for (flow_entity, flow_curve, flow, flow_system_connection, flow_parent) in &query {
+            for (flow_entity, flow_curve, flow, flow_system_connection) in &query {
                 if flow_system_connection.target != **focused_system {
                     continue;
                 }
