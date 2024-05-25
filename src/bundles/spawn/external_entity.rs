@@ -137,11 +137,11 @@ pub fn spawn_external_entity_only(
 // TODO : do the entire external entity like this autospawn?
 pub fn auto_spawn_external_entity_label(
     mut commands: Commands,
-    external_entity_query: Query<Entity, Added<ExternalEntity>>,
+    external_entity_query: Query<(Entity, &NestingLevel), Added<ExternalEntity>>,
     name_query: Query<&Name>,
     asset_server: Res<AssetServer>,
 ) {
-    for external_entity in external_entity_query.iter() {
+    for (external_entity, nesting_level) in external_entity_query.iter() {
         add_name_label(
             &mut commands,
             external_entity,
@@ -149,6 +149,7 @@ pub fn auto_spawn_external_entity_label(
             vec3(EXTERNAL_ENTITY_WIDTH_HALF, 0.0, 0.0),
             &name_query,
             &asset_server,
+            *nesting_level,
         );
     }
 }

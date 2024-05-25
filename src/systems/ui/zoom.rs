@@ -1,6 +1,9 @@
 use crate::bundles::{aabb_from_radius, get_system_geometry_from_radius};
 use crate::components::*;
-use crate::constants::EXTERNAL_ENTITY_LINE_WIDTH;
+use crate::constants::{
+    EXTERNAL_ENTITY_LINE_WIDTH, LABEL_SCALE_VISIBILITY_THRESHOLD, SCALE_VISIBILITY_THRESHOLD,
+};
+use crate::plugins::label::LabelContainer;
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::resources::{
     build_external_entity_aabb_half_extents, build_external_entity_path,
@@ -197,33 +200,97 @@ pub fn apply_zoom_to_system_geometries(
 }
 
 pub fn apply_zoom_to_strokes(
-    mut highlight_query: Query<(&NestingLevel, &mut HighlightBundles<Stroke, Stroke>)>,
+    mut highlight_query: Query<(
+        &NestingLevel,
+        &mut HighlightBundles<Stroke, Stroke>,
+        &mut Visibility,
+    )>,
     mut stroke_query: Query<
-        (&NestingLevel, &mut Stroke),
+        (&NestingLevel, &mut Stroke, &mut Visibility),
         Without<HighlightBundles<Stroke, Stroke>>,
     >,
     zoom: Res<Zoom>,
 ) {
-    for (nesting_level, mut highlight) in &mut highlight_query {
+    for (nesting_level, mut highlight, mut visibility) in &mut highlight_query {
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
         highlight.idle.options.line_width = scale * EXTERNAL_ENTITY_LINE_WIDTH;
         // TODO : this assumes only one line width which is the case right now
         // highlight.selected.options.line_width = (scale * EXTERNAL_ENTITY_SELECTED_LINE_WIDTH);
+
+        apply_visibility(&mut visibility, scale, SCALE_VISIBILITY_THRESHOLD);
     }
 
-    for (nesting_level, mut stroke) in &mut stroke_query {
+    for (nesting_level, mut stroke, mut visibility) in &mut stroke_query {
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
         let line_width = scale * EXTERNAL_ENTITY_LINE_WIDTH;
         stroke.options.line_width = line_width;
+
+        apply_visibility(&mut visibility, scale, SCALE_VISIBILITY_THRESHOLD);
     }
 }
 
 pub fn apply_zoom_to_scale(
-    mut query: Query<(&mut Transform, &NestingLevel), With<ApplyZoomToScale>>,
+    mut query: Query<(&mut Transform, &mut Visibility, &NestingLevel), With<ApplyZoomToScale>>,
     zoom: Res<Zoom>,
 ) {
-    for (mut transform, nesting_level) in &mut query {
-        let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-        transform.scale = vec3(scale, scale, 1.0);
+    for (mut transform, mut visibility, nesting_level) in &mut query {
+        apply_scale_and_visibility(
+            nesting_level,
+            &mut transform,
+            &mut visibility,
+            **zoom,
+            SCALE_VISIBILITY_THRESHOLD,
+        );
+    }
+}
+
+pub fn apply_zoom_to_label(
+    mut query: Query<(&mut Transform, &mut Visibility, &NestingLevel), With<LabelContainer>>,
+    zoom: Res<Zoom>,
+) {
+    for (mut transform, mut visibility, nesting_level) in &mut query {
+        apply_scale_and_visibility(
+            nesting_level,
+            &mut transform,
+            &mut visibility,
+            **zoom,
+            LABEL_SCALE_VISIBILITY_THRESHOLD,
+        );
+    }
+}
+
+fn apply_scale_and_visibility(
+    nesting_level: &NestingLevel,
+    transform: &mut Mut<Transform>,
+    visibility: &mut Mut<Visibility>,
+    zoom: f32,
+    threshold: f32,
+) {
+    let scale = NestingLevel::compute_scale(**nesting_level, zoom);
+    transform.scale = vec3(scale, scale, 1.0);
+
+    apply_visibility(visibility, scale, threshold);
+}
+
+fn apply_visibility(visibility: &mut Mut<Visibility>, scale: f32, threshold: f32) {
+    **visibility = if scale > threshold {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    }
+}
+
+pub fn apply_zoom_to_added_label(
+    mut query: Query<(&mut Transform, &mut Visibility, &NestingLevel), Added<LabelContainer>>,
+    zoom: Res<Zoom>,
+) {
+    for (mut transform, mut visibility, nesting_level) in &mut query {
+        apply_scale_and_visibility(
+            nesting_level,
+            &mut transform,
+            &mut visibility,
+            **zoom,
+            LABEL_SCALE_VISIBILITY_THRESHOLD,
+        );
     }
 }

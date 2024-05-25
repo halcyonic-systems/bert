@@ -49,6 +49,9 @@ struct CreateButtonSet;
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct FlowTerminalSelectingSet;
 
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct AutoSpawnLabelSet;
+
 fn main() {
     let mut app = App::new();
     app.add_plugins((
@@ -83,9 +86,13 @@ fn main() {
 
     app.add_systems(
         PreUpdate,
-        (absorb_egui_inputs,)
-            .after(bevy_egui::systems::process_input_system)
-            .before(bevy_egui::EguiSet::BeginFrame),
+        (
+            absorb_egui_inputs
+                .after(bevy_egui::systems::process_input_system)
+                .before(bevy_egui::EguiSet::BeginFrame),
+            control_zoom_from_keyboard,
+            control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
+        ),
     );
 
     app.add_systems(
@@ -118,9 +125,7 @@ fn main() {
                 .in_set(CreateButtonSet),
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
-                pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition.clone())),
-                control_zoom_from_keyboard,
-                control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition),
+                pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),
                 reset_camera_position.run_if(
                     input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyR)),
                 ),
@@ -163,6 +168,7 @@ fn main() {
                 apply_zoom_to_system_geometries,
                 apply_zoom_to_strokes,
                 apply_zoom_to_scale,
+                apply_zoom_to_label,
             )
                 .in_set(ZoomSet),
             (
@@ -193,14 +199,19 @@ fn main() {
     .add_systems(
         PostUpdate,
         (
+            (
+                auto_spawn_external_entity_label,
+                auto_spawn_interface_subsystem_label,
+                auto_spawn_subsystem_label,
+                auto_spawn_interface_label,
+            )
+                .in_set(AutoSpawnLabelSet),
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
             update_flow_from_subsystem_without_interface,
-            auto_spawn_external_entity_label,
-            auto_spawn_interface_subsystem_label,
-            auto_spawn_subsystem_label,
-            auto_spawn_interface_label, //update_pin_rotation,
+            //update_pin_rotation,
+            apply_zoom_to_added_label.after(AutoSpawnLabelSet),
         ),
     )
     .add_systems(

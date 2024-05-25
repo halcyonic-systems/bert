@@ -1,6 +1,9 @@
 use bevy::asset::Handle;
 use bevy::prelude::ColorMaterial;
 
+pub const SCALE_VISIBILITY_THRESHOLD: f32 = 0.2;
+pub const LABEL_SCALE_VISIBILITY_THRESHOLD: f32 = 0.5;
+
 pub const DEFAULT_LINE_WIDTH: f32 = 3.0;
 
 pub const MAIN_SYSTEM_RADIUS: f32 = 300.0;

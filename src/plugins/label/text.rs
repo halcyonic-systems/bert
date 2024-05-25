@@ -6,6 +6,10 @@ pub struct NameLabel {
     pub label: Entity,
 }
 
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
+#[reflect(Component)]
+pub struct LabelContainer;
+
 pub fn copy_name_to_label(
     source_query: Query<(&Name, &NameLabel), Changed<Name>>,
     mut target_query: Query<&mut Text>,

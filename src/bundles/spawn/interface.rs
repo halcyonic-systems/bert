@@ -120,11 +120,11 @@ pub fn spawn_interface_only(
 
 pub fn auto_spawn_interface_label(
     mut commands: Commands,
-    interface_query: Query<Entity, Added<Interface>>,
+    interface_query: Query<(Entity, &NestingLevel), Added<Interface>>,
     name_query: Query<&Name>,
     asset_server: Res<AssetServer>,
 ) {
-    for interface in interface_query.iter() {
+    for (interface, nesting_level) in interface_query.iter() {
         add_name_label(
             &mut commands,
             interface,
@@ -132,6 +132,7 @@ pub fn auto_spawn_interface_label(
             vec3(INTERFACE_HEIGHT_HALF * 1.7, -INTERFACE_HEIGHT_HALF, 0.0), //
             &name_query,
             &asset_server,
+            *nesting_level,
         );
     }
 }

@@ -23,13 +23,16 @@ impl Plugin for MouseInteractionPlugin {
             .add_systems(
                 Update,
                 (
-                    handle_mouse_down.run_if(input_just_pressed(MouseButton::Left)),
-                    handle_mouse_up.run_if(input_just_released(MouseButton::Left)),
-                    handle_mouse_drag
-                        .run_if(input_pressed(MouseButton::Left))
-                        .after(handle_mouse_down),
-                )
-                    .in_set(MouseInteractionSet),
+                    (
+                        handle_mouse_down.run_if(input_just_pressed(MouseButton::Left)),
+                        handle_mouse_up.run_if(input_just_released(MouseButton::Left)),
+                        handle_mouse_drag
+                            .run_if(input_pressed(MouseButton::Left))
+                            .after(handle_mouse_down),
+                    )
+                        .in_set(MouseInteractionSet),
+                    deselect_when_invisible,
+                ),
             )
             .add_systems(First, update_settings);
     }
@@ -266,4 +269,14 @@ pub fn enable_selection(
 
     dragging.hovered_entity = None;
     dragging.started = false;
+}
+
+pub fn deselect_when_invisible(
+    mut selection_query: Query<(&mut PickSelection, &InheritedVisibility), Changed<InheritedVisibility>>,
+) {
+    for (mut pick_selection, visibility) in &mut selection_query {
+        if !visibility.get() {
+            pick_selection.is_selected = false;
+        }
+    }
 }

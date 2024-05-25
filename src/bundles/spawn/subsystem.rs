@@ -286,11 +286,11 @@ pub fn spawn_subsystem(
 
 pub fn auto_spawn_interface_subsystem_label(
     mut commands: Commands,
-    interface_subsystem_query: Query<Entity, Added<InterfaceSubsystem>>,
+    interface_subsystem_query: Query<(Entity, &NestingLevel), Added<InterfaceSubsystem>>,
     name_query: Query<&Name>,
     asset_server: Res<AssetServer>,
 ) {
-    for interface_subsystem in interface_subsystem_query.iter() {
+    for (interface_subsystem, nesting_level) in interface_subsystem_query.iter() {
         add_name_label(
             &mut commands,
             interface_subsystem,
@@ -298,17 +298,21 @@ pub fn auto_spawn_interface_subsystem_label(
             vec3(0.0, 0.0, 0.0),
             &name_query,
             &asset_server,
+            *nesting_level,
         );
     }
 }
 
 pub fn auto_spawn_subsystem_label(
     mut commands: Commands,
-    subsystem_query: Query<Entity, (Added<Subsystem>, Without<InterfaceSubsystem>)>,
+    subsystem_query: Query<
+        (Entity, &NestingLevel),
+        (Added<Subsystem>, Without<InterfaceSubsystem>),
+    >,
     name_query: Query<&Name>,
     asset_server: Res<AssetServer>,
 ) {
-    for subsystem in subsystem_query.iter() {
+    for (subsystem, nesting_level) in subsystem_query.iter() {
         add_name_label(
             &mut commands,
             subsystem,
@@ -316,6 +320,7 @@ pub fn auto_spawn_subsystem_label(
             vec3(0.0, 0.0, 0.0),
             &name_query,
             &asset_server,
+            *nesting_level,
         );
     }
 }

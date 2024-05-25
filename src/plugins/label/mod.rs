@@ -8,7 +8,7 @@ mod text;
 
 use crate::plugins::mouse_interaction::PickTarget;
 pub use copy_position::CopyPosition;
-pub use text::NameLabel;
+pub use text::{LabelContainer, NameLabel};
 
 pub struct LabelPlugin;
 
@@ -20,13 +20,14 @@ impl Plugin for LabelPlugin {
     }
 }
 
-pub fn add_name_label(
+pub fn add_name_label<B: Bundle>(
     commands: &mut Commands,
     entity: Entity,
     size: Vec2,
     offset: Vec3,
     name_query: &Query<&Name>,
     asset_server: &Res<AssetServer>,
+    additional_bundle: B,
 ) {
     // match element_ty {
     //     SE::ExternalEntity => {
@@ -80,6 +81,8 @@ pub fn add_name_label(
             },
             Name::new("Label Sprite"),
             PickTarget { target: entity },
+            additional_bundle,
+            LabelContainer,
         ))
         .push_children(&[text_entity])
         .id();
