@@ -3,7 +3,7 @@ use crate::components::*;
 use crate::constants::*;
 use crate::data_model::Complexity;
 use crate::events::SubsystemDrag;
-use crate::plugins::label::add_name_label;
+use crate::plugins::label::{add_name_label_with_auto_contrast, AutoContrastTextColor};
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
@@ -291,13 +291,14 @@ pub fn auto_spawn_interface_subsystem_label(
     asset_server: Res<AssetServer>,
 ) {
     for (interface_subsystem, nesting_level) in interface_subsystem_query.iter() {
-        add_name_label(
+        add_name_label_with_auto_contrast(
             &mut commands,
             interface_subsystem,
             vec2(100.0, 100.0),
             vec3(0.0, 0.0, 0.0),
             &name_query,
             &asset_server,
+            AutoContrastTextColor::default(),
             *nesting_level,
         );
     }
@@ -313,13 +314,14 @@ pub fn auto_spawn_subsystem_label(
     asset_server: Res<AssetServer>,
 ) {
     for (subsystem, nesting_level) in subsystem_query.iter() {
-        add_name_label(
+        add_name_label_with_auto_contrast(
             &mut commands,
             subsystem,
             vec2(100.0, 100.0),
             vec3(0.0, 0.0, 0.0),
             &name_query,
             &asset_server,
+            AutoContrastTextColor::default(),
             *nesting_level,
         );
     }

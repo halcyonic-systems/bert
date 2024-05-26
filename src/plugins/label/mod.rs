@@ -1,25 +1,29 @@
+use crate::plugins::mouse_interaction::PickTarget;
 use bevy::prelude::*;
 use bevy::text::{BreakLineOn, Text2dBounds};
 use copy_position::copy_position;
-use text::copy_name_to_label;
+use text::{apply_text_color_contrast, copy_name_to_label};
 
 mod copy_position;
 mod text;
 
-use crate::plugins::mouse_interaction::PickTarget;
 pub use copy_position::CopyPosition;
-pub use text::{LabelContainer, NameLabel};
+pub use text::{LabelContainer, NameLabel, AutoContrastTextColor};
 
 pub struct LabelPlugin;
 
 impl Plugin for LabelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, (copy_position, copy_name_to_label))
-            .register_type::<NameLabel>()
-            .register_type::<CopyPosition>();
+        app.add_systems(
+            PostUpdate,
+            (copy_position, copy_name_to_label, apply_text_color_contrast),
+        )
+        .register_type::<NameLabel>()
+        .register_type::<CopyPosition>();
     }
 }
 
+#[inline(always)]
 pub fn add_name_label<B: Bundle>(
     commands: &mut Commands,
     entity: Entity,
@@ -29,15 +33,51 @@ pub fn add_name_label<B: Bundle>(
     asset_server: &Res<AssetServer>,
     additional_bundle: B,
 ) {
-    // match element_ty {
-    //     SE::ExternalEntity => {
-    //         surface_size = Vec2::new(70.0, 100.0);
-    //         surface_custom_size = Vec2::new(surface_size.x, surface_size.y);
-    //         surface_transform.translation.x += EXTERNAL_ENTITY_WIDTH_HALF;
-    //     }
-    //     _ => {}
-    // };
+    add_name_label_common(
+        commands,
+        entity,
+        size,
+        offset,
+        name_query,
+        asset_server,
+        additional_bundle,
+        (),
+    );
+}
 
+#[inline(always)]
+pub fn add_name_label_with_auto_contrast<B: Bundle>(
+    commands: &mut Commands,
+    entity: Entity,
+    size: Vec2,
+    offset: Vec3,
+    name_query: &Query<&Name>,
+    asset_server: &Res<AssetServer>,
+    text_color: AutoContrastTextColor,
+    additional_bundle: B,
+) {
+    add_name_label_common(
+        commands,
+        entity,
+        size,
+        offset,
+        name_query,
+        asset_server,
+        additional_bundle,
+        text_color,
+    );
+}
+
+fn add_name_label_common<B1: Bundle, B2: Bundle>(
+    commands: &mut Commands,
+    entity: Entity,
+    size: Vec2,
+    offset: Vec3,
+    name_query: &Query<&Name>,
+    asset_server: &Res<AssetServer>,
+    additional_sprite_bundle: B1,
+    additional_text_bundle: B2,
+) {
     let text = Text {
         sections: vec![TextSection::new(
             &name_query
@@ -66,6 +106,7 @@ pub fn add_name_label<B: Bundle>(
                 ..default()
             },
             Name::new("Label Text"),
+            additional_text_bundle,
         ))
         .id();
 
@@ -81,7 +122,7 @@ pub fn add_name_label<B: Bundle>(
             },
             Name::new("Label Sprite"),
             PickTarget { target: entity },
-            additional_bundle,
+            additional_sprite_bundle,
             LabelContainer,
         ))
         .push_children(&[text_entity])
