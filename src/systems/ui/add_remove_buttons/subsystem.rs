@@ -2,6 +2,7 @@ use crate::bundles::{
     despawn_create_button, despawn_create_button_with_component, spawn_create_button,
 };
 use crate::components::*;
+use crate::data_model::Complexity;
 use crate::events::RemoveEvent;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FocusedSystem, Zoom};
@@ -11,13 +12,14 @@ use bevy::utils::{HashMap, HashSet};
 pub fn add_interface_subsystem_create_buttons(
     mut commands: Commands,
     changed_query: Query<
-        Entity,
+        (),
         Or<(
             Added<FlowStartConnection>,
             Added<FlowEndConnection>,
             Added<FlowStartInterfaceConnection>,
             Added<FlowEndInterfaceConnection>,
             Changed<Flow>,
+            Changed<crate::components::System>,
         )>,
     >,
     mut remove_event_reader: EventReader<RemoveEvent>,
@@ -39,6 +41,7 @@ pub fn add_interface_subsystem_create_buttons(
     interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
     button_query: Query<(&CreateButton, Option<&Parent>)>,
     subsystem_query: Query<(Entity, &Subsystem, Option<&InterfaceSubsystem>)>,
+    system_query: Query<&crate::components::System>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
@@ -50,6 +53,14 @@ pub fn add_interface_subsystem_create_buttons(
     remove_event_reader.clear();
 
     let incomplete_flows_exist = !incomplete_flow_query.is_empty();
+
+    let is_atomic = matches!(
+        system_query
+            .get(**focused_system)
+            .expect("System should exist")
+            .complexity,
+        Complexity::Atomic
+    );
 
     let mut flow_usabilities = HashMap::new();
 
@@ -138,7 +149,7 @@ pub fn add_interface_subsystem_create_buttons(
         }
     }
 
-    let show_interface_buttons = if incomplete_flows_exist {
+    let show_interface_buttons = if incomplete_flows_exist || is_atomic {
         false
     } else {
         let mut show_interface_buttons = true;
