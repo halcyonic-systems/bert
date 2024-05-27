@@ -1,4 +1,6 @@
-use crate::bundles::{aabb_from_radius, get_system_geometry_from_radius};
+use crate::bundles::{
+    aabb_from_radius, get_system_geometry_from_radius, FixedSystemElementGeometry,
+};
 use crate::components::*;
 use crate::constants::{
     EXTERNAL_ENTITY_LINE_WIDTH, LABEL_SCALE_VISIBILITY_THRESHOLD, SCALE_VISIBILITY_THRESHOLD,
@@ -146,14 +148,15 @@ pub fn control_zoom_from_mouse_wheel(
 }
 
 pub fn apply_zoom_to_system_geometries(
-    mut external_entity_query: Query<
-        (&NestingLevel, &mut Path, &mut SimplifiedMesh, &mut Aabb),
+    external_entity_query: Query<
+        (Entity, &NestingLevel, Option<&SelectedHighlightHelperAdded>),
         With<ExternalEntity>,
     >,
-    mut interface_query: Query<
-        (&NestingLevel, &mut Path, &mut SimplifiedMesh, &mut Aabb),
+    interface_query: Query<
+        (Entity, &NestingLevel, Option<&SelectedHighlightHelperAdded>),
         (With<Interface>, Without<ExternalEntity>),
     >,
+    mut geometry_query: Query<(&mut Path, &mut SimplifiedMesh, &mut Aabb)>,
     zoom: Res<Zoom>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -176,27 +179,46 @@ pub fn apply_zoom_to_system_geometries(
         geometries.interface.aabb.half_extents = build_interface_aabb_half_extends(scale);
     }
 
-    for (nesting_level, mut path, mut simplified_mesh, mut aabb) in &mut external_entity_query {
-        let geometries = fixed_system_element_geometries
-            .get(&**nesting_level)
-            .expect("Geometries have been added in spawn_external_entity");
+    macro_rules! apply_geometries {
+        ($query:ident, $field:ident) => {
+            for (entity, nesting_level, highlight_helper) in &$query {
+                let geometries = fixed_system_element_geometries
+                    .get(&**nesting_level)
+                    .expect("Geometries have been added in spawn_external_entity");
 
-        let geometry = geometries.external_entity.clone();
-        *path = geometry.path;
-        simplified_mesh.mesh = geometry.simplified.mesh;
-        aabb.half_extents = geometry.aabb.half_extents;
+                let geometry = &geometries.$field;
+
+                apply_geometry(entity, geometry, &mut geometry_query);
+
+                if let Some(highlight_helper) = highlight_helper {
+                    apply_geometry(
+                        highlight_helper.helper_entity,
+                        &geometry,
+                        &mut geometry_query,
+                    );
+                }
+            }
+        };
     }
 
-    for (nesting_level, mut path, mut simplified_mesh, mut aabb) in &mut interface_query {
-        let geometries = fixed_system_element_geometries
-            .get(&**nesting_level)
-            .expect("Geometries have been added in spawn_interface");
+    apply_geometries!(external_entity_query, external_entity);
+    apply_geometries!(interface_query, interface);
+}
 
-        let geometry = geometries.interface.clone();
-        *path = geometry.path;
-        simplified_mesh.mesh = geometry.simplified.mesh;
-        aabb.half_extents = geometry.aabb.half_extents;
-    }
+fn apply_geometry(
+    entity: Entity,
+    geometry: &FixedSystemElementGeometry,
+    geometry_query: &mut Query<(&mut Path, &mut SimplifiedMesh, &mut Aabb)>,
+) {
+    let (mut path, mut simplified_mesh, mut aabb) = geometry_query
+        .get_mut(entity)
+        .expect("Entity should have geometry");
+
+    let geometry = geometry.clone();
+
+    *path = geometry.path;
+    simplified_mesh.mesh = geometry.simplified.mesh;
+    aabb.half_extents = geometry.aabb.half_extents;
 }
 
 pub fn apply_zoom_to_strokes(
