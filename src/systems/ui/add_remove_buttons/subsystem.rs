@@ -276,21 +276,21 @@ pub fn add_subsystem_from_external_entities_create_button(
     if selected_count > 1 {
         center /= selected_count as f32;
 
-        let parent_system_entity = current_parent.expect("No parent");
-
-        spawn_create_button(
-            &mut commands,
-            CreateButton {
-                ty: CreateButtonType::Subsystem,
-                connection_source: parent_system_entity,
-                system: parent_system_entity,
-                substance_type: None,
-            },
-            center.truncate(),
-            0.0,
-            **zoom,
-            current_parent,
-            &asset_server,
-        );
+        if let Some(parent_system_entity) = current_parent {
+            spawn_create_button(
+                &mut commands,
+                CreateButton {
+                    ty: CreateButtonType::Subsystem,
+                    connection_source: parent_system_entity,
+                    system: parent_system_entity,
+                    substance_type: None,
+                },
+                center.truncate() / **zoom,
+                0.0,
+                **zoom,
+                current_parent,
+                &asset_server,
+            );
+        }
     }
 }
