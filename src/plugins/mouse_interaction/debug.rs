@@ -1,6 +1,5 @@
 use super::PickSelection;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
 
 #[derive(Resource, Clone, Deref, DerefMut, PartialEq, Eq, Reflect, Debug, Default)]
 #[reflect(Resource)]

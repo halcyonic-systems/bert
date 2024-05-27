@@ -1,14 +1,14 @@
 use crate::plugins::mouse_interaction::PickTarget;
 use bevy::prelude::*;
 use bevy::text::{BreakLineOn, Text2dBounds};
-use copy_position::copy_position;
+use copy_position::{compute_text_alignment, copy_position};
 use text::{apply_text_color_contrast, copy_name_to_label};
 
 mod copy_position;
 mod text;
 
-pub use copy_position::CopyPosition;
-pub use text::{LabelContainer, NameLabel, AutoContrastTextColor};
+pub use copy_position::{Alignment, CopyPosition};
+pub use text::{AutoContrastTextColor, LabelContainer, NameLabel};
 
 pub struct LabelPlugin;
 
@@ -16,7 +16,12 @@ impl Plugin for LabelPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             PostUpdate,
-            (copy_position, copy_name_to_label, apply_text_color_contrast),
+            (
+                copy_position,
+                compute_text_alignment,
+                copy_name_to_label,
+                apply_text_color_contrast,
+            ),
         )
         .register_type::<NameLabel>()
         .register_type::<CopyPosition>();
@@ -29,6 +34,8 @@ pub fn add_name_label<B: Bundle>(
     entity: Entity,
     size: Vec2,
     offset: Vec3,
+    horizontal_alignment: Alignment,
+    vertical_alignment: Alignment,
     name_query: &Query<&Name>,
     asset_server: &Res<AssetServer>,
     additional_bundle: B,
@@ -38,6 +45,8 @@ pub fn add_name_label<B: Bundle>(
         entity,
         size,
         offset,
+        horizontal_alignment,
+        vertical_alignment,
         name_query,
         asset_server,
         additional_bundle,
@@ -51,6 +60,8 @@ pub fn add_name_label_with_auto_contrast<B: Bundle>(
     entity: Entity,
     size: Vec2,
     offset: Vec3,
+    horizontal_alignment: Alignment,
+    vertical_alignment: Alignment,
     name_query: &Query<&Name>,
     asset_server: &Res<AssetServer>,
     text_color: AutoContrastTextColor,
@@ -61,6 +72,8 @@ pub fn add_name_label_with_auto_contrast<B: Bundle>(
         entity,
         size,
         offset,
+        horizontal_alignment,
+        vertical_alignment,
         name_query,
         asset_server,
         additional_bundle,
@@ -73,6 +86,8 @@ fn add_name_label_common<B1: Bundle, B2: Bundle>(
     entity: Entity,
     size: Vec2,
     offset: Vec3,
+    horizontal_alignment: Alignment,
+    vertical_alignment: Alignment,
     name_query: &Query<&Name>,
     asset_server: &Res<AssetServer>,
     additional_sprite_bundle: B1,
@@ -133,6 +148,8 @@ fn add_name_label_common<B1: Bundle, B2: Bundle>(
             target: sprite_entity,
             offset,
             local_offset: true,
+            horizontal_alignment,
+            vertical_alignment,
         },
         NameLabel { label: text_entity },
     ));

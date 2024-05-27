@@ -3,7 +3,7 @@ use crate::constants::{
     INTERFACE_HEIGHT_HALF, INTERFACE_LINE_WIDTH, INTERFACE_SELECTED_LINE_WIDTH, INTERFACE_Z,
 };
 use crate::events::InterfaceDrag;
-use crate::plugins::label::add_name_label;
+use crate::plugins::label::{add_name_label, Alignment};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
@@ -129,7 +129,9 @@ pub fn auto_spawn_interface_label(
             &mut commands,
             interface,
             vec2(50.0, 45.0),
-            vec3(INTERFACE_HEIGHT_HALF * 1.7, -INTERFACE_HEIGHT_HALF, 0.0), //
+            vec3(INTERFACE_HEIGHT_HALF * 1.7, -INTERFACE_HEIGHT_HALF, 0.0),
+            Alignment::Auto,
+            Alignment::Center,
             &name_query,
             &asset_server,
             *nesting_level,

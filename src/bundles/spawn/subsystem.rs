@@ -3,7 +3,7 @@ use crate::components::*;
 use crate::constants::*;
 use crate::data_model::Complexity;
 use crate::events::SubsystemDrag;
-use crate::plugins::label::{add_name_label_with_auto_contrast, AutoContrastTextColor};
+use crate::plugins::label::{add_name_label_with_auto_contrast, Alignment, AutoContrastTextColor};
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
@@ -296,6 +296,8 @@ pub fn auto_spawn_subsystem_label(
             subsystem,
             vec2(100.0, 100.0),
             vec3(0.0, 0.0, 0.0),
+            Alignment::Center,
+            Alignment::Center,
             &name_query,
             &asset_server,
             AutoContrastTextColor::default(),
