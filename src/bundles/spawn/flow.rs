@@ -29,6 +29,7 @@ macro_rules! spawn_flow {
             commands: &mut Commands,
             subsystem_query: &Query<&Subsystem>,
             nesting_query: &Query<&NestingLevel>,
+            system_query: &Query<(&Transform, &crate::components::System)>,
             system_entity: Entity,
             transform: &Transform,
             stroke_tess: &mut ResMut<StrokeTessellator>,
@@ -47,7 +48,16 @@ macro_rules! spawn_flow {
             let direction = transform.right().truncate();
 
             let nesting_level = NestingLevel::current(system_entity, nesting_query);
-            let scale = NestingLevel::compute_scale(nesting_level, zoom);
+
+            let scale = if let Ok(subsystem) = subsystem_query.get(system_entity) {
+                let (_, system) = system_query
+                    .get(subsystem.parent_system)
+                    .expect("Parent system has to exist");
+
+                SUBSYSTEM_SCALING_FACTOR * system.radius / MAIN_SYSTEM_RADIUS
+            } else {
+                1.0
+            };
 
             let flow_curve = FlowCurve::$curve_method(zoom, initial_position, direction, scale);
 
@@ -75,7 +85,7 @@ macro_rules! spawn_flow {
                 },
                 is_selected,
                 nesting_level,
-                scale,
+                NestingLevel::compute_scale(nesting_level, zoom),
             )
         }
     };
@@ -204,6 +214,7 @@ macro_rules! spawn_complete_flow {
             focused_system: FocusedSystem,
             subsystem_query: &Query<&Subsystem>,
             nesting_query: &Query<&NestingLevel>,
+            system_query: &Query<(&Transform, &crate::components::System)>,
             mut meshes: &mut ResMut<Assets<Mesh>>,
             mut stroke_tess: &mut ResMut<StrokeTessellator>,
             fixed_system_element_geometries: &mut ResMut<
@@ -236,6 +247,7 @@ macro_rules! spawn_complete_flow {
                 &mut commands,
                 subsystem_query,
                 nesting_query,
+                system_query,
                 *focused_system,
                 &transform,
                 &mut stroke_tess,

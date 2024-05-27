@@ -76,7 +76,7 @@ impl FlowCurve {
         let zoomed_pos = *initial_position * zoom;
 
         Self {
-            start: zoomed_pos + direction * FLOW_LENGTH * scale,
+            start: zoomed_pos + direction * FLOW_LENGTH * scale * zoom,
             start_direction: -direction,
             end: zoomed_pos,
             end_direction: direction,
@@ -94,7 +94,7 @@ impl FlowCurve {
         Self {
             start: zoomed_pos,
             start_direction: direction,
-            end: zoomed_pos + direction * FLOW_LENGTH * scale,
+            end: zoomed_pos + direction * FLOW_LENGTH * scale * zoom,
             end_direction: -direction,
         }
     }

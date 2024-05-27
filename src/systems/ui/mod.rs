@@ -303,6 +303,7 @@ pub fn on_create_button_click(
             &mut commands,
             &subsystem_query,
             &nesting_query,
+            &system_query,
             button.connection_source,
             &combined_transform_of_entity_until_ancestor(
                 event.target,
@@ -328,6 +329,7 @@ pub fn on_create_button_click(
             &mut commands,
             &subsystem_query,
             &nesting_query,
+            &system_query,
             button.connection_source,
             &combined_transform_of_entity_until_ancestor(
                 event.target,
