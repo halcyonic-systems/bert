@@ -29,9 +29,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
-use bundles::{
-    auto_spawn_interface_label, auto_spawn_interface_subsystem_label, auto_spawn_subsystem_label,
-};
+use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
 use data_model::{export_file_dialog::*, import_file_dialog::*};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -116,9 +114,9 @@ fn main() {
                 add_source_create_button,
                 add_sink_create_button,
                 add_inflow_create_button.run_if(inflow_create_button_needs_update),
+                add_outflow_create_button.run_if(outflow_create_button_needs_update),
                 add_interface_subsystem_create_buttons,
                 add_subsystem_from_external_entities_create_button,
-                add_outflow_create_button,
                 remove_unfocused_system_buttons,
                 // update_unpinned_pinnables,
             )
@@ -201,7 +199,6 @@ fn main() {
         (
             (
                 auto_spawn_external_entity_label,
-                auto_spawn_interface_subsystem_label,
                 auto_spawn_subsystem_label,
                 auto_spawn_interface_label,
             )

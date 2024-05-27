@@ -2,20 +2,27 @@ use crate::bundles::{despawn_create_button_with_component, spawn_create_button};
 use crate::components::*;
 use crate::events::RemoveEvent;
 use crate::resources::{FocusedSystem, Zoom};
-use crate::systems::next_inflow_button_transform;
+use crate::systems::{despawn_existing_buttons, next_inflow_button_transform};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 
 pub fn inflow_create_button_needs_update(
-    flow_changed_query: Query<Entity, Or<(Added<FlowEndConnection>, Changed<Flow>)>>,
     focused_system: Res<FocusedSystem>,
-    inflow_finished_query: Query<&FlowEndConnection, Added<FlowStartConnection>>,
+    flow_changed_query: Query<
+        (),
+        Or<(
+            Added<FlowEndConnection>,
+            Added<FlowStartConnection>,
+            Added<FlowStartInterfaceConnection>,
+            Added<FlowEndInterfaceConnection>,
+            Changed<Flow>,
+        )>,
+    >,
     interface_subsystem_changed_query: Query<(), Changed<InterfaceSubsystem>>,
     mut remove_event_reader: EventReader<RemoveEvent>,
 ) -> bool {
     let needs_update = !flow_changed_query.is_empty()
         || focused_system.is_changed()
-        || inflow_finished_query.get_single().is_ok()
         || !interface_subsystem_changed_query.is_empty()
         || !remove_event_reader.is_empty();
 
@@ -27,6 +34,13 @@ pub fn inflow_create_button_needs_update(
 pub fn add_inflow_create_button(
     mut commands: Commands,
     outflow_query: Query<(&Flow, &FlowStartConnection), With<FlowEndConnection>>,
+    incomplete_outflow_query: Query<
+        &FlowStartConnection,
+        Or<(
+            Without<FlowEndConnection>,
+            Without<FlowStartInterfaceConnection>,
+        )>,
+    >,
     incomplete_inflow_query: Query<
         &FlowEndConnection,
         Or<(
@@ -45,6 +59,18 @@ pub fn add_inflow_create_button(
     asset_server: Res<AssetServer>,
 ) {
     let focused_system = **focused_system;
+
+    if !despawn_existing_buttons(
+        &mut commands,
+        focused_system,
+        CreateButtonType::Inflow,
+        &button_query,
+        &incomplete_inflow_query.iter().collect::<Vec<_>>(),
+        &incomplete_outflow_query.iter().collect::<Vec<_>>(),
+    ) {
+        return;
+    }
+
     let is_export_subsystem = export_subsystem_query.get(focused_system).is_ok();
 
     let mut outflow_usabilities = HashSet::new();

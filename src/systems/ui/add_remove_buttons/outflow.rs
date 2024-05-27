@@ -5,58 +5,71 @@ use crate::resources::{FocusedSystem, Zoom};
 use crate::systems::next_outflow_button_transform;
 use bevy::prelude::*;
 
+pub fn outflow_create_button_needs_update(
+    flow_finished_query: Query<
+        (),
+        Or<(
+            Added<FlowEndConnection>,
+            Added<FlowStartConnection>,
+            Added<FlowStartInterfaceConnection>,
+            Added<FlowEndInterfaceConnection>,
+        )>,
+    >,
+    focused_system: Res<FocusedSystem>,
+    mut remove_event_reader: EventReader<RemoveEvent>,
+) -> bool {
+    let needs_update = if !focused_system.is_changed()
+        && flow_finished_query.get_single().is_err()
+        && remove_event_reader.is_empty()
+    {
+        false
+    } else {
+        true
+    };
+    remove_event_reader.clear();
+
+    needs_update
+}
+
 pub fn add_outflow_create_button(
     mut commands: Commands,
-    focused_system: Res<FocusedSystem>,
-    outflow_finished_query: Query<&FlowStartConnection, Added<FlowEndConnection>>,
     button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
-    flow_system_query: Query<
+    incomplete_outflow_query: Query<
         &FlowStartConnection,
         Or<(
             Without<FlowEndConnection>,
             Without<FlowStartInterfaceConnection>,
         )>,
     >,
+    incomplete_inflow_query: Query<
+        &FlowEndConnection,
+        Or<(
+            Without<FlowStartConnection>,
+            Without<FlowEndInterfaceConnection>,
+        )>,
+    >,
     flow_interface_query: Query<(&FlowStartConnection, &FlowStartInterfaceConnection)>,
     import_subsystem_query: Query<(), Or<(With<ImportSubsystem>, Without<Subsystem>)>>,
     transform_query: Query<&Transform>,
     system_query: Query<&System>,
-    mut remove_event_reader: EventReader<RemoveEvent>,
+    focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    if !focused_system.is_changed()
-        && outflow_finished_query.get_single().is_err()
-        && remove_event_reader.is_empty()
-    {
-        return;
-    }
-
-    remove_event_reader.clear();
-
     let focused_system = **focused_system;
 
     if import_subsystem_query.get(focused_system).is_err() {
         return;
     }
 
-    let mut button_entities = vec![];
-    for (button_entity, button, parent) in &button_query {
-        if button.system == focused_system && matches!(button.ty, CreateButtonType::Outflow) {
-            button_entities.push((button_entity, button, parent));
-        }
-    }
-
-    for outflow_connection in &flow_system_query {
-        if outflow_connection.target == focused_system {
-            for (entity, button, parent) in button_entities {
-                despawn_create_button_with_component(&mut commands, entity, button, parent)
-            }
-            return;
-        }
-    }
-
-    if !button_entities.is_empty() {
+    if !despawn_existing_buttons(
+        &mut commands,
+        focused_system,
+        CreateButtonType::Outflow,
+        &button_query,
+        &incomplete_inflow_query.iter().collect::<Vec<_>>(),
+        &incomplete_outflow_query.iter().collect::<Vec<_>>(),
+    ) {
         return;
     }
 
@@ -82,4 +95,37 @@ pub fn add_outflow_create_button(
         Some(focused_system),
         &asset_server,
     );
+}
+
+pub fn despawn_existing_buttons(
+    mut commands: &mut Commands,
+    focused_system: Entity,
+    button_type: CreateButtonType,
+    button_query: &Query<(Entity, &CreateButton, Option<&Parent>)>,
+    incomplete_inflow_connections: &[&FlowEndConnection],
+    incomplete_outflow_connections: &[&FlowStartConnection],
+) -> bool {
+    let mut button_entities = vec![];
+
+    for (button_entity, button, parent) in button_query {
+        if button.system == focused_system && button.ty == button_type {
+            button_entities.push((button_entity, button, parent));
+        }
+    }
+
+    for target in incomplete_inflow_connections
+        .into_iter()
+        .map(|c| c.target)
+        .chain(incomplete_outflow_connections.into_iter().map(|c| c.target))
+    {
+        if target == focused_system {
+            for (entity, button, parent) in button_entities {
+                despawn_create_button_with_component(&mut commands, entity, button, parent)
+            }
+
+            return false;
+        }
+    }
+
+    button_entities.is_empty()
 }
