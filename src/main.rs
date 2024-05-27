@@ -26,6 +26,7 @@ use crate::systems::*;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
+use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
@@ -109,19 +110,6 @@ fn main() {
                 .in_set(FlowTerminalSelectingSet),
             (drag_external_entity, drag_interface, drag_subsystem),
             (
-                add_outflow_interface_create_button,
-                add_inflow_interface_create_button,
-                add_source_create_button,
-                add_sink_create_button,
-                add_inflow_create_button.run_if(inflow_create_button_needs_update),
-                add_outflow_create_button.run_if(outflow_create_button_needs_update),
-                add_interface_subsystem_create_buttons,
-                add_subsystem_from_external_entities_create_button,
-                remove_unfocused_system_buttons,
-                // update_unpinned_pinnables,
-            )
-                .in_set(CreateButtonSet),
-            (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),
                 reset_camera_position.run_if(
@@ -203,6 +191,19 @@ fn main() {
                 auto_spawn_interface_label,
             )
                 .in_set(AutoSpawnLabelSet),
+            (
+                add_outflow_interface_create_button,
+                add_inflow_interface_create_button,
+                add_source_create_button,
+                add_sink_create_button,
+                add_inflow_create_button.run_if(inflow_create_button_needs_update),
+                add_outflow_create_button.run_if(outflow_create_button_needs_update),
+                add_interface_subsystem_create_buttons,
+                add_subsystem_from_external_entities_create_button,
+                remove_unfocused_system_buttons,
+                // update_unpinned_pinnables,
+            )
+                .in_set(CreateButtonSet),
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
@@ -220,12 +221,15 @@ fn main() {
         Update,
         (
             RemovalCleanupSet.after(remove_selected_elements),
-            CreateButtonSet
-                .after(RemovalCleanupSet)
-                .run_if(in_state(AppState::Normal)),
             ZoomSet.run_if(resource_changed::<Zoom>),
             FlowTerminalSelectingSet.run_if(in_state(AppState::FlowTerminalSelection)),
         ),
+    )
+    .configure_sets(
+        PostUpdate,
+        (CreateButtonSet
+            .after(TransformPropagate)
+            .run_if(in_state(AppState::Normal)),),
     )
     .register_type::<FlowStartInterfaceConnection>()
     .register_type::<FlowEndInterfaceConnection>()

@@ -1,3 +1,6 @@
+#[cfg(feature = "debug_selection")]
+pub mod debug;
+
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
@@ -35,6 +38,13 @@ impl Plugin for MouseInteractionPlugin {
                 ),
             )
             .add_systems(First, update_settings);
+
+        #[cfg(feature = "debug_selection")]
+        {
+            app.init_resource::<debug::SelectedEntities>()
+                .register_type::<debug::SelectedEntities>()
+                .add_systems(Update, debug::debug_selection);
+        }
     }
 }
 
@@ -42,6 +52,7 @@ impl Plugin for MouseInteractionPlugin {
 pub struct MouseInteractionSet;
 
 #[derive(Resource, Clone, PartialEq, Eq, Reflect, Debug, Deref, DerefMut)]
+#[reflect(Resource)]
 pub struct SelectionEnabled(bool);
 
 impl Default for SelectionEnabled {
@@ -272,7 +283,10 @@ pub fn enable_selection(
 }
 
 pub fn deselect_when_invisible(
-    mut selection_query: Query<(&mut PickSelection, &InheritedVisibility), Changed<InheritedVisibility>>,
+    mut selection_query: Query<
+        (&mut PickSelection, &InheritedVisibility),
+        Changed<InheritedVisibility>,
+    >,
 ) {
     for (mut pick_selection, visibility) in &mut selection_query {
         if !visibility.get() {

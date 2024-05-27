@@ -34,11 +34,8 @@ macro_rules! interface_create_button {
 
                 let combined = system_transform.affine().inverse() * flow_transform.affine();
 
-                let direction = combined
-                    .transform_vector3(flow_curve.$side_dir.extend(0.0))
-                    .truncate();
                 let position = combined
-                    .transform_point3(flow_curve.$side.extend(0.0))
+                    .transform_point3((flow_curve.$side).extend(0.0))
                     .truncate()
                     / **zoom;
 
@@ -51,7 +48,7 @@ macro_rules! interface_create_button {
                         substance_type: Some(flow.substance_type),
                     },
                     position,
-                    direction.to_angle(),
+                    position.to_angle(),
                     **zoom,
                     Some(**focused_system),
                     &asset_server,
