@@ -54,10 +54,13 @@ pub fn add_inflow_create_button(
     system_query: Query<&crate::components::System>,
     export_subsystem_query: Query<&ExportSubsystem>,
     import_subsystem_query: Query<&InterfaceSubsystem, With<ImportSubsystem>>,
+    not_interface_subsystem_query: Query<(), (With<Subsystem>, Without<InterfaceSubsystem>)>,
     focused_system: Res<FocusedSystem>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
+    info!("==== add_inflow_create_button");
+
     let focused_system = **focused_system;
 
     if !despawn_existing_buttons(
@@ -90,7 +93,13 @@ pub fn add_inflow_create_button(
             false
         };
 
-    if outflow_usabilities.len() > 1 || is_export_subsystem || is_completed_import_subsystem {
+    let is_not_interface_subsystem = not_interface_subsystem_query.get(focused_system).is_ok();
+
+    if outflow_usabilities.len() > 1
+        || is_export_subsystem
+        || is_completed_import_subsystem
+        || is_not_interface_subsystem
+    {
         for inflow_end_connection in incomplete_inflow_query.iter() {
             if inflow_end_connection.target == focused_system {
                 return;

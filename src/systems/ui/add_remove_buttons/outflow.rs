@@ -49,7 +49,7 @@ pub fn add_outflow_create_button(
         )>,
     >,
     flow_interface_query: Query<(&FlowStartConnection, &FlowStartInterfaceConnection)>,
-    import_subsystem_query: Query<(), Or<(With<ImportSubsystem>, Without<Subsystem>)>>,
+    export_subsystem_query: Query<(), With<ExportSubsystem>>,
     transform_query: Query<&Transform>,
     system_query: Query<&System>,
     focused_system: Res<FocusedSystem>,
@@ -58,7 +58,7 @@ pub fn add_outflow_create_button(
 ) {
     let focused_system = **focused_system;
 
-    if import_subsystem_query.get(focused_system).is_err() {
+    if export_subsystem_query.get(focused_system).is_ok() {
         return;
     }
 
