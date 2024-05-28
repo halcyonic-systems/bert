@@ -9,7 +9,7 @@ mod states;
 mod systems;
 mod utils;
 
-use crate::bundles::auto_spawn_external_entity_label;
+use crate::bundles::{auto_spawn_external_entity_label, auto_spawn_system_label};
 use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
 use crate::data_model::load::load_world;
@@ -188,6 +188,7 @@ fn main() {
             (
                 auto_spawn_external_entity_label,
                 auto_spawn_subsystem_label,
+                auto_spawn_system_label,
                 auto_spawn_interface_label,
             )
                 .in_set(AutoSpawnLabelSet),

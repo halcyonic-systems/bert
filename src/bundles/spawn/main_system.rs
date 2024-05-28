@@ -1,9 +1,10 @@
 use crate::bundles::SystemBundle;
-use crate::components::{SystemBoundary, SystemEnvironment};
+use crate::components::{NestingLevel, Subsystem, SystemBoundary, SystemEnvironment};
 use crate::constants::MAIN_SYSTEM_RADIUS;
 use crate::data_model::Complexity;
+use crate::plugins::label::{add_name_label_with_auto_contrast, Alignment, AutoContrastTextColor};
 use crate::Pinnable;
-use bevy::math::Vec2;
+use bevy::math::{vec2, vec3, Vec2};
 use bevy::prelude::*;
 
 pub fn spawn_main_system(
@@ -36,4 +37,26 @@ pub fn spawn_main_system(
             Pinnable { has_pins: false },
         ))
         .id()
+}
+
+pub fn auto_spawn_system_label(
+    mut commands: Commands,
+    system_query: Query<Entity, (Added<crate::components::System>, Without<Subsystem>)>,
+    name_query: Query<&Name>,
+    asset_server: Res<AssetServer>,
+) {
+    for entity in system_query.iter() {
+        add_name_label_with_auto_contrast(
+            &mut commands,
+            entity,
+            vec2(100.0, 100.0),
+            vec3(0.0, 0.0, 0.0),
+            Alignment::Center,
+            Alignment::Center,
+            &name_query,
+            &asset_server,
+            AutoContrastTextColor::default(),
+            NestingLevel::new(0),
+        );
+    }
 }
