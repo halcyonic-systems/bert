@@ -49,7 +49,10 @@ pub fn update_label_from_interaction(
                 transform.translation =
                     vec3(event.position.x, event.position.y, transform.translation.z);
 
-                let tangent = vec2(event.tangent.x, event.tangent.y);
+                let mut tangent = vec2(event.tangent.x, event.tangent.y);
+                if tangent.x < 0.0 {
+                    tangent = -tangent;
+                }
                 transform.rotation = Quat::from_rotation_z(tangent.to_angle());
 
                 false // Stop walking the path.
