@@ -324,11 +324,17 @@ pub fn auto_spawn_flow_label(
     asset_server: Res<AssetServer>,
 ) {
     for (flow_entity, nesting_level) in flow_query.iter() {
+        let color = if **nesting_level == 0 {
+            CLEAR_COLOR
+        } else {
+            Color::WHITE
+        };
+
         add_name_label(
             &mut commands,
             flow_entity,
             vec2(50.0, 45.0),
-            Some(BackgroundArgs::default()),
+            Some(BackgroundArgs { color, ..default() }),
             None,
             &name_query,
             &asset_server,

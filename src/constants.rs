@@ -1,5 +1,5 @@
 use bevy::asset::Handle;
-use bevy::prelude::ColorMaterial;
+use bevy::prelude::{Color, ColorMaterial};
 
 pub const SCALE_VISIBILITY_THRESHOLD: f32 = 0.2;
 pub const LABEL_SCALE_VISIBILITY_THRESHOLD: f32 = 0.5;
@@ -50,3 +50,5 @@ pub const EXTERNAL_ENTITY_Z: f32 = 1.0;
 
 pub const WHITE_COLOR_MATERIAL_HANDLE: Handle<ColorMaterial> =
     Handle::weak_from_u128(0xE4E775785EA288EEA9FB9EC95377D078);
+
+pub const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;

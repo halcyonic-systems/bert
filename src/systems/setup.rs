@@ -16,8 +16,6 @@ pub fn window_setup(mut primary_window_query: Query<&mut Window, With<PrimaryWin
     // w.set_maximized(true);
 }
 
-const CLEAR_COLOR: Color = Color::ANTIQUE_WHITE;
-
 #[allow(unused_variables)]
 pub fn setup(
     mut commands: Commands,
