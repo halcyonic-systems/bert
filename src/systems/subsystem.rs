@@ -3,6 +3,7 @@ use crate::constants::{
     SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT, SUBSYSTEM_MIN_SCALING_FACTOR, SUBSYSTEM_SCALING_FACTOR,
 };
 use crate::events::RemoveEvent;
+use crate::resources::Zoom;
 use crate::utils::{all_flow_end_connected_systems, all_flow_start_connected_systems};
 use bevy::prelude::*;
 use rust_decimal_macros::dec;
@@ -92,7 +93,8 @@ pub fn update_subsystem_radius_from_interface_count(
     subsystem_query: Query<(Entity, &Subsystem, &Children, Option<&InterfaceSubsystem>)>,
     interface_query: Query<&Interface>,
     mut system_query: Query<&mut crate::components::System>,
-    mut transform_query: Query<&mut Transform>,
+    mut transform_query: Query<(&mut Transform, &mut InitialPosition)>,
+    zoom: Res<Zoom>,
     mut remove_event_reader: EventReader<RemoveEvent>,
 ) {
     if changed_query.is_empty() && remove_event_reader.is_empty() {
@@ -133,11 +135,13 @@ pub fn update_subsystem_radius_from_interface_count(
             .radius = radius;
 
         if interface_subsystem.is_some() {
-            let mut transform = transform_query
+            let (mut transform, mut initial_position) = transform_query
                 .get_mut(subsystem_entity)
                 .expect("Subsystem should have a Transform");
 
-            transform.translation.x = radius * transform.translation.x.signum();
+            initial_position.x = radius * transform.translation.x.signum();
+
+            transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
         }
     }
 }
@@ -148,13 +152,14 @@ pub fn update_interface_positions_from_system_radius(
         Changed<crate::components::System>,
     >,
     mut interface_query: Query<&mut Transform, With<Interface>>,
+    zoom: Res<Zoom>,
 ) {
     for (system, children) in &system_query {
         for child in children {
             if let Ok(mut transform) = interface_query.get_mut(*child) {
-                transform.translation = (transform.translation.truncate().normalize()
-                    * system.radius)
-                    .extend(transform.translation.z);
+                transform.translation =
+                    (transform.translation.truncate().normalize() * system.radius * **zoom)
+                        .extend(transform.translation.z);
             }
         }
     }
