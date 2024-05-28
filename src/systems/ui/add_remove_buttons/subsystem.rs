@@ -59,7 +59,7 @@ pub fn add_interface_subsystem_create_buttons(
             .get(**focused_system)
             .expect("System should exist")
             .complexity,
-        Complexity::Atomic
+        Complexity::Atomic | Complexity::Multiset(_)
     );
 
     let mut flow_usabilities = HashMap::new();
