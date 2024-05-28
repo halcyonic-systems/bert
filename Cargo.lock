@@ -4176,6 +4176,7 @@ dependencies = [
  "bevy_eventlistener",
  "bevy_mod_picking",
  "bevy_prototype_lyon",
+ "lyon_algorithms",
  "num-traits",
  "regex",
  "rfd",

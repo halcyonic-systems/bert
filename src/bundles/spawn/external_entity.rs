@@ -4,7 +4,7 @@ use crate::constants::{
     EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
 };
 use crate::events::ExternalEntityDrag;
-use crate::plugins::label::{add_name_label, Alignment};
+use crate::plugins::label::{add_name_label, Alignment, CopyPositionArgs};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
@@ -146,11 +146,15 @@ pub fn auto_spawn_external_entity_label(
             &mut commands,
             external_entity,
             vec2(70.0, 100.0),
-            vec3(1.0, 0.0, 0.0),
-            Alignment::Auto,
-            Alignment::Center,
+            None,
+            Some(CopyPositionArgs {
+                offset: vec3(1.0, 0.0, 0.0),
+                horizontal_alignment: Alignment::Auto,
+                vertical_alignment: Alignment::Center,
+            }),
             &name_query,
             &asset_server,
+            None,
             *nesting_level,
         );
     }

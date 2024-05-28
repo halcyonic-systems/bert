@@ -1,14 +1,15 @@
 use crate::plugins::mouse_interaction::PickTarget;
 use bevy::prelude::*;
-use bevy::text::{BreakLineOn, Text2dBounds};
+use bevy::text::{update_text2d_layout, BreakLineOn, Text2dBounds};
 use copy_position::{compute_text_alignment, copy_position};
-use text::{apply_text_color_contrast, copy_name_to_label};
+use text::{apply_text_color_contrast, copy_name_to_label, update_background_size_from_label};
 
 mod copy_position;
 mod text;
 
+use crate::constants::LABEL_Z;
 pub use copy_position::{Alignment, CopyPosition};
-pub use text::{AutoContrastTextColor, LabelContainer, NameLabel};
+pub use text::{AutoContrastTextColor, Background, LabelContainer, NameLabel};
 
 pub struct LabelPlugin;
 
@@ -21,77 +22,49 @@ impl Plugin for LabelPlugin {
                 compute_text_alignment,
                 copy_name_to_label,
                 apply_text_color_contrast,
+                update_background_size_from_label.after(update_text2d_layout),
             ),
         )
         .register_type::<NameLabel>()
-        .register_type::<CopyPosition>();
+        .register_type::<CopyPosition>()
+        .register_type::<AutoContrastTextColor>()
+        .register_type::<LabelContainer>()
+        .register_type::<Background>();
     }
 }
 
-#[inline(always)]
+pub struct CopyPositionArgs {
+    pub offset: Vec3,
+    pub horizontal_alignment: Alignment,
+    pub vertical_alignment: Alignment,
+}
+
+pub struct BackgroundArgs {
+    pub color: Color,
+    pub padding_horizontal: f32,
+    pub padding_vertical: f32,
+}
+
+impl Default for BackgroundArgs {
+    fn default() -> Self {
+        Self {
+            color: Color::WHITE,
+            padding_horizontal: 7.0,
+            padding_vertical: 3.0,
+        }
+    }
+}
+
 pub fn add_name_label<B: Bundle>(
     commands: &mut Commands,
     entity: Entity,
-    size: Vec2,
-    offset: Vec3,
-    horizontal_alignment: Alignment,
-    vertical_alignment: Alignment,
+    text_bounds_size: Vec2,
+    background: Option<BackgroundArgs>,
+    copy_position: Option<CopyPositionArgs>,
     name_query: &Query<&Name>,
     asset_server: &Res<AssetServer>,
+    text_color: Option<AutoContrastTextColor>,
     additional_bundle: B,
-) {
-    add_name_label_common(
-        commands,
-        entity,
-        size,
-        offset,
-        horizontal_alignment,
-        vertical_alignment,
-        name_query,
-        asset_server,
-        additional_bundle,
-        (),
-    );
-}
-
-#[inline(always)]
-pub fn add_name_label_with_auto_contrast<B: Bundle>(
-    commands: &mut Commands,
-    entity: Entity,
-    size: Vec2,
-    offset: Vec3,
-    horizontal_alignment: Alignment,
-    vertical_alignment: Alignment,
-    name_query: &Query<&Name>,
-    asset_server: &Res<AssetServer>,
-    text_color: AutoContrastTextColor,
-    additional_bundle: B,
-) {
-    add_name_label_common(
-        commands,
-        entity,
-        size,
-        offset,
-        horizontal_alignment,
-        vertical_alignment,
-        name_query,
-        asset_server,
-        additional_bundle,
-        text_color,
-    );
-}
-
-fn add_name_label_common<B1: Bundle, B2: Bundle>(
-    commands: &mut Commands,
-    entity: Entity,
-    size: Vec2,
-    offset: Vec3,
-    horizontal_alignment: Alignment,
-    vertical_alignment: Alignment,
-    name_query: &Query<&Name>,
-    asset_server: &Res<AssetServer>,
-    additional_sprite_bundle: B1,
-    additional_text_bundle: B2,
 ) {
     let text = Text {
         sections: vec![TextSection::new(
@@ -112,45 +85,69 @@ fn add_name_label_common<B1: Bundle, B2: Bundle>(
         linebreak_behavior: BreakLineOn::WordBoundary,
     };
 
-    let text_entity = commands
-        .spawn((
-            Text2dBundle {
-                text,
-                text_2d_bounds: Text2dBounds { size },
-                transform: Transform::from_xyz(0.0, 0.0, 1.0),
-                ..default()
+    let mut text_commands = commands.spawn((
+        Text2dBundle {
+            text,
+            text_2d_bounds: Text2dBounds {
+                size: text_bounds_size,
             },
-            Name::new("Label Text"),
-            additional_text_bundle,
-        ))
-        .id();
+            transform: Transform::from_xyz(0.0, 0.0, 1.0),
+            ..default()
+        },
+        Name::new("Label Text"),
+    ));
+
+    if let Some(text_color) = text_color {
+        text_commands.insert(text_color);
+    }
+
+    let background_color = if let Some(background) = background {
+        text_commands.insert(Background {
+            padding_horizontal: background.padding_horizontal,
+            padding_vertical: background.padding_vertical,
+        });
+
+        background.color
+    } else {
+        Color::NONE
+    };
+
+    let text_entity = text_commands.id();
 
     let sprite_entity = commands
         .spawn((
             SpriteBundle {
                 sprite: Sprite {
-                    color: Color::rgba(0., 0., 0., 0.),
-                    custom_size: Some(size),
+                    color: background_color,
                     ..default()
                 },
+                transform: Transform::from_xyz(0.0, 0.0, LABEL_Z),
                 ..default()
             },
             Name::new("Label Sprite"),
             PickTarget { target: entity },
-            additional_sprite_bundle,
+            additional_bundle,
             LabelContainer,
         ))
         .push_children(&[text_entity])
         .id();
 
-    commands.entity(entity).insert((
-        CopyPosition {
+    let mut entity_commands = commands.entity(entity);
+
+    entity_commands.insert((NameLabel { label: text_entity },));
+
+    if let Some(CopyPositionArgs {
+        offset,
+        horizontal_alignment,
+        vertical_alignment,
+    }) = copy_position
+    {
+        entity_commands.insert(CopyPosition {
             target: sprite_entity,
             offset,
             local_offset: true,
             horizontal_alignment,
             vertical_alignment,
-        },
-        NameLabel { label: text_entity },
-    ));
+        });
+    }
 }

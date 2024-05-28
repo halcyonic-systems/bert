@@ -2,6 +2,7 @@ use crate::bundles::{spawn_external_entity, spawn_interface};
 use crate::components::*;
 use crate::constants::*;
 use crate::data_model::Transform2d;
+use crate::plugins::label::{add_name_label, BackgroundArgs};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{
@@ -315,3 +316,24 @@ macro_rules! spawn_complete_flow {
 
 spawn_complete_flow!(spawn_complete_outflow, spawn_outflow, InterfaceType::Export);
 spawn_complete_flow!(spawn_complete_inflow, spawn_inflow, InterfaceType::Import);
+
+pub fn auto_spawn_flow_label(
+    mut commands: Commands,
+    flow_query: Query<(Entity, &NestingLevel), Added<Flow>>,
+    name_query: Query<&Name>,
+    asset_server: Res<AssetServer>,
+) {
+    for (flow_entity, nesting_level) in flow_query.iter() {
+        add_name_label(
+            &mut commands,
+            flow_entity,
+            vec2(50.0, 45.0),
+            Some(BackgroundArgs::default()),
+            None,
+            &name_query,
+            &asset_server,
+            None,
+            *nesting_level,
+        );
+    }
+}

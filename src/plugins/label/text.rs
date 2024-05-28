@@ -1,4 +1,6 @@
+use bevy::math::vec2;
 use bevy::prelude::*;
+use bevy::text::TextLayoutInfo;
 use bevy_prototype_lyon::prelude::*;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
@@ -13,6 +15,13 @@ pub struct AutoContrastTextColor {
     pub light_color: Color,
     pub dark_color: Color,
     pub lightness_threshold: f32,
+}
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
+#[reflect(Component)]
+pub struct Background {
+    pub padding_horizontal: f32,
+    pub padding_vertical: f32,
 }
 
 impl Default for AutoContrastTextColor {
@@ -58,5 +67,19 @@ pub fn apply_text_color_contrast(
                 text.sections[0].style.color = target_color;
             }
         };
+    }
+}
+
+pub fn update_background_size_from_label(
+    text_query: Query<(&TextLayoutInfo, &Parent, &Background), Changed<TextLayoutInfo>>,
+    mut sprite_query: Query<&mut Sprite>,
+) {
+    for (text_layout, parent, background) in &text_query {
+        if let Ok(mut sprite) = sprite_query.get_mut(parent.get()) {
+            sprite.custom_size = Some(
+                text_layout.logical_size
+                    + vec2(background.padding_horizontal, background.padding_vertical) * 2.0,
+            );
+        }
     }
 }

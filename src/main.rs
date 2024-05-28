@@ -9,7 +9,7 @@ mod states;
 mod systems;
 mod utils;
 
-use crate::bundles::{auto_spawn_external_entity_label, auto_spawn_system_label};
+use crate::bundles::*;
 use crate::components::*;
 use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
 use crate::data_model::load::load_world;
@@ -190,6 +190,7 @@ fn main() {
                 auto_spawn_subsystem_label,
                 auto_spawn_system_label,
                 auto_spawn_interface_label,
+                auto_spawn_flow_label,
             )
                 .in_set(AutoSpawnLabelSet),
             (
@@ -208,6 +209,7 @@ fn main() {
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_label_offset_from_interface,
+            update_label_from_interaction,
             update_subsystem_radius_from_interface_count,
             update_interface_positions_from_system_radius
                 .after(update_subsystem_radius_from_interface_count),

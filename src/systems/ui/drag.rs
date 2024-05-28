@@ -1,12 +1,10 @@
 use crate::components::*;
-use crate::constants::{EXTERNAL_ENTITY_WIDTH_HALF, INTERFACE_HEIGHT_HALF, INTERFACE_WIDTH_HALF};
+use crate::constants::EXTERNAL_ENTITY_WIDTH_HALF;
 use crate::events::*;
-use crate::plugins::label::CopyPosition;
 use crate::resources::Zoom;
 use crate::utils::{
     compute_end_and_direction_from_subsystem, compute_end_and_direction_from_system_child,
 };
-use bevy::math::vec3;
 use bevy::prelude::*;
 
 pub fn drag_subsystem(
@@ -374,23 +372,4 @@ pub fn compute_smooth_flow_terminal_direction(
     tangent_len: f32,
 ) -> Vec2 {
     other_end + other_end_direction * tangent_len - pos
-}
-
-pub fn update_label_offset_from_interface(
-    mut query: Query<
-        (&mut CopyPosition, &GlobalTransform, &NestingLevel),
-        (Changed<GlobalTransform>, With<Interface>),
-    >,
-    zoom: Res<Zoom>,
-) {
-    for (mut copy_position, global_transform, nesting_level) in &mut query {
-        let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-
-        let right = global_transform.right();
-
-        let x = (INTERFACE_WIDTH_HALF + 20.0) * scale;
-        let y = -INTERFACE_HEIGHT_HALF * scale * right.y.signum() * right.x.signum();
-
-        copy_position.offset = vec3(x, y, 0.0);
-    }
 }
