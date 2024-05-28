@@ -30,6 +30,7 @@ pub fn apply_zoom(
 }
 
 pub fn apply_zoom_to_system_radii(
+    changed_query: Query<(), Changed<crate::components::System>>,
     mut query: Query<(
         &mut SimplifiedMesh,
         &mut Path,
@@ -41,6 +42,10 @@ pub fn apply_zoom_to_system_radii(
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
+    if changed_query.is_empty() && !zoom.is_changed() {
+        return;
+    }
+
     for (mut simplified_mesh, mut path, mut aabb, system, helper) in &mut query {
         let zoomed_radius = system.radius * **zoom;
 

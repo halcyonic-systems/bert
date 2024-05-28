@@ -3,6 +3,7 @@ use crate::constants::INTERFACE_WIDTH_HALF;
 use crate::events::RemoveEvent;
 use crate::plugins::label::NameLabel;
 use crate::plugins::mouse_interaction::{PickSelection, PickTarget};
+use crate::resources::FocusedSystem;
 use bevy::prelude::*;
 
 pub fn remove_selected_elements(
@@ -19,12 +20,20 @@ pub fn remove_selected_elements(
     >,
     parent_query: Query<&Parent>,
     root_system_query: Query<&crate::components::System, Without<Subsystem>>,
+    subsystem_query: Query<&Subsystem>,
+    mut focused_system: ResMut<FocusedSystem>,
     mut remove_event_writer: EventWriter<RemoveEvent>,
 ) {
     for (entity_to_remove, selection, parent) in &selected_query {
         if selection.is_selected {
             if root_system_query.get(entity_to_remove).is_ok() {
                 continue;
+            }
+
+            if let Ok(subsystem) = subsystem_query.get(entity_to_remove) {
+                if entity_to_remove == **focused_system {
+                    **focused_system = subsystem.parent_system;
+                }
             }
 
             if let Ok((

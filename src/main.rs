@@ -147,7 +147,6 @@ fn main() {
                 .in_set(RemovalCleanupSet),
             (
                 apply_zoom,
-                apply_zoom_to_system_radii,
                 apply_zoom_to_camera_position,
                 apply_zoom_to_incomplete_flows,
                 apply_zoom_to_flow_without_interface,
@@ -179,6 +178,7 @@ fn main() {
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
                 update_interface_subsystem_color,
                 update_system_color_from_subsystem,
+                apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
             ),
         ),
     )
@@ -207,6 +207,9 @@ fn main() {
             update_flow_from_interface,
             update_flow_from_external_entity,
             update_label_offset_from_interface,
+            update_subsystem_radius_from_interface_count,
+            update_interface_positions_from_system_radius
+                .after(update_subsystem_radius_from_interface_count),
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
             update_flow_from_subsystem_without_interface,
             //update_pin_rotation,
