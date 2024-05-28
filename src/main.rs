@@ -15,6 +15,7 @@ use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
 use crate::data_model::load::load_world;
 use crate::data_model::save::save_world;
 use crate::events::*;
+use crate::plugins::file_dialog::{FileDialogPlugin, FileState};
 use crate::plugins::label::LabelPlugin;
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
 use crate::plugins::mouse_interaction::{
@@ -31,10 +32,12 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
-use data_model::{export_file_dialog::*, import_file_dialog::*};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct RemovalCleanupSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct AllSet;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct ZoomSet;
@@ -61,9 +64,8 @@ fn main() {
         LyonSelectionPlugin,
         MouseInteractionPlugin,
         LabelPlugin,
+        FileDialogPlugin,
     ))
-    .init_state::<FileImportState>()
-    .init_state::<FileExportState>()
     .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
@@ -91,7 +93,8 @@ fn main() {
                 .before(bevy_egui::EguiSet::BeginFrame),
             control_zoom_from_keyboard,
             control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
-        ),
+        )
+            .in_set(AllSet),
     );
 
     app.add_systems(
@@ -117,26 +120,7 @@ fn main() {
                 ),
             )
                 .in_set(CameraControlSet),
-            (
-                import_file.run_if(
-                    in_state(FileImportState::Inactive)
-                        .and_then(input_pressed(KeyCode::SuperLeft))
-                        .and_then(input_just_pressed(KeyCode::KeyL)),
-                ),
-                open_import_dialog_selection.run_if(in_state(FileImportState::Select)),
-                poll_for_selected_file.run_if(in_state(FileImportState::Poll)),
-                load_world.run_if(in_state(FileImportState::Load)),
-                import_clean_up.run_if(in_state(FileImportState::CleanUp)),
-                export_file.run_if(
-                    in_state(FileExportState::Inactive)
-                        .and_then(input_pressed(KeyCode::SuperLeft))
-                        .and_then(input_just_pressed(KeyCode::KeyS)),
-                ),
-                open_export_dialog.run_if(in_state(FileExportState::Select)),
-                poll_for_export_file.run_if(in_state(FileExportState::Poll)),
-                save_world.run_if(in_state(FileExportState::Save)),
-                export_clean_up.run_if(in_state(FileExportState::CleanUp)),
-            ),
+            (load_world, save_world),
             (
                 cleanup_external_entity_removal,
                 cleanup_labelled_removal,
@@ -180,7 +164,8 @@ fn main() {
                 update_system_color_from_subsystem,
                 apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
             ),
-        ),
+        )
+            .in_set(AllSet),
     )
     .add_systems(
         PostUpdate,
@@ -217,26 +202,32 @@ fn main() {
             update_flow_from_subsystem_without_interface,
             //update_pin_rotation,
             apply_zoom_to_added_label.after(AutoSpawnLabelSet),
-        ),
+        )
+            .in_set(AllSet),
     )
     .add_systems(
         OnEnter(AppState::FlowTerminalSelection),
         (disable_selection,),
     )
     .add_systems(OnEnter(AppState::Normal), (enable_selection,))
+    .configure_sets(PreUpdate, (AllSet.run_if(in_state(FileState::Inactive)),))
     .configure_sets(
         Update,
         (
             RemovalCleanupSet.after(remove_selected_elements),
             ZoomSet.run_if(resource_changed::<Zoom>),
             FlowTerminalSelectingSet.run_if(in_state(AppState::FlowTerminalSelection)),
+            AllSet.run_if(in_state(FileState::Inactive)),
         ),
     )
     .configure_sets(
         PostUpdate,
-        (CreateButtonSet
-            .after(TransformPropagate)
-            .run_if(in_state(AppState::Normal)),),
+        (
+            CreateButtonSet
+                .after(TransformPropagate)
+                .run_if(in_state(AppState::Normal)),
+            AllSet.run_if(in_state(FileState::Inactive)),
+        ),
     )
     .register_type::<FlowStartInterfaceConnection>()
     .register_type::<FlowEndInterfaceConnection>()

@@ -59,8 +59,6 @@ pub fn add_inflow_create_button(
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    info!("==== add_inflow_create_button");
-
     let focused_system = **focused_system;
 
     if !despawn_existing_buttons(

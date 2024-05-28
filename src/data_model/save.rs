@@ -1,6 +1,7 @@
 use crate::components::*;
 use crate::data_model::Interaction;
 use crate::data_model::*;
+use crate::plugins::file_dialog::ExportFileEvent;
 use bevy::core::Name;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -48,9 +49,7 @@ impl Context {
 }
 
 pub fn save_world(
-    state: Res<State<FileExportState>>,
-    mut next_state: ResMut<NextState<FileExportState>>,
-    save_file_query: Query<&SaveFile>,
+    mut save_file_event_reader: EventReader<ExportFileEvent>,
     name_and_description_query: Query<(&Name, &ElementDescription)>,
     transform_query: Query<(&Transform, &InitialPosition)>,
     parent_query: Query<&Parent>,
@@ -70,100 +69,105 @@ pub fn save_world(
     interface_query: Query<(&crate::components::Interface, &Transform)>,
     external_entity_query: Query<&crate::components::ExternalEntity>,
 ) {
-    let (system_entity, system_component, environment) = main_system_info_query
-        .get_single()
-        .expect("System of interest should exist");
+    for event in save_file_event_reader.read() {
+        let (system_entity, system_component, environment) = main_system_info_query
+            .get_single()
+            .expect("System of interest should exist");
 
-    let mut ctx = Context::new();
-    let mut entity_to_system = HashMap::<Entity, crate::data_model::System>::new();
+        let mut ctx = Context::new();
+        let mut entity_to_system = HashMap::<Entity, crate::data_model::System>::new();
 
-    let mut environment = Environment {
-        info: Info {
-            id: Id {
-                ty: IdType::Environment,
-                indices: vec![-1],
+        let mut environment = Environment {
+            info: Info {
+                id: Id {
+                    ty: IdType::Environment,
+                    indices: vec![-1],
+                },
+                name: environment.name.clone(),
+                description: environment.description.clone(),
+                level: -1,
             },
-            name: environment.name.clone(),
-            description: environment.description.clone(),
-            level: -1,
-        },
-        sources: vec![],
-        sinks: vec![],
-    };
+            sources: vec![],
+            sinks: vec![],
+        };
 
-    build_system(
-        system_entity,
-        system_component,
-        Id {
-            ty: IdType::System,
-            indices: vec![0],
-        },
-        0,
-        environment.info.id.clone(),
-        None,
-        &name_and_description_query,
-        &transform_query,
-        &mut ctx,
-        &mut entity_to_system,
-    );
+        build_system(
+            system_entity,
+            system_component,
+            Id {
+                ty: IdType::System,
+                indices: vec![0],
+            },
+            0,
+            environment.info.id.clone(),
+            None,
+            &name_and_description_query,
+            &transform_query,
+            &mut ctx,
+            &mut entity_to_system,
+        );
 
-    let system = entity_to_system
-        .get_mut(&system_entity)
-        .expect("Should exist");
+        let system = entity_to_system
+            .get_mut(&system_entity)
+            .expect("Should exist");
 
-    build_interfaces_interaction_and_external_entities(
-        &mut ctx,
-        system_entity,
-        system,
-        &mut environment,
-        &name_and_description_query,
-        &transform_query,
-        &flow_query,
-        &interface_query,
-        &external_entity_query,
-    );
+        build_interfaces_interaction_and_external_entities(
+            &mut ctx,
+            system_entity,
+            system,
+            &mut environment,
+            &name_and_description_query,
+            &transform_query,
+            &flow_query,
+            &interface_query,
+            &external_entity_query,
+        );
 
-    // TODO : connect interaction interface links
+        // TODO : connect interaction interface links
 
-    build_subsystems(
-        &mut ctx,
-        system_entity,
-        &name_and_description_query,
-        &transform_query,
-        &parent_query,
-        &subsystem_query,
-        &flow_query,
-        &interface_query,
-        &external_entity_query,
-        &mut entity_to_system,
-    );
+        build_subsystems(
+            &mut ctx,
+            system_entity,
+            &name_and_description_query,
+            &transform_query,
+            &parent_query,
+            &subsystem_query,
+            &flow_query,
+            &interface_query,
+            &external_entity_query,
+            &mut entity_to_system,
+        );
 
-    for (flow_entity, _, _, _, flow_start_interface_connection, flow_end_interface_connection) in
-        &flow_query
-    {
-        let source_interface =
-            flow_start_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
-        let sink_interface =
-            flow_end_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
+        for (
+            flow_entity,
+            _,
+            _,
+            _,
+            flow_start_interface_connection,
+            flow_end_interface_connection,
+        ) in &flow_query
+        {
+            let source_interface =
+                flow_start_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
+            let sink_interface =
+                flow_end_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
 
-        let interaction = ctx.interaction_mut_by_entity(flow_entity);
-        interaction.source_interface = source_interface;
-        interaction.sink_interface = sink_interface;
+            let interaction = ctx.interaction_mut_by_entity(flow_entity);
+            interaction.source_interface = source_interface;
+            interaction.sink_interface = sink_interface;
+        }
+
+        let model = WorldModel {
+            version: CURRENT_FILE_VERSION,
+            systems: entity_to_system.into_values().collect(),
+            interactions: ctx.interactions,
+            environment,
+        };
+
+        let save_file = &**event;
+
+        save_to_json(&model, save_file.to_str().unwrap());
     }
-
-    let model = WorldModel {
-        version: CURRENT_FILE_VERSION,
-        systems: entity_to_system.into_values().collect(),
-        interactions: ctx.interactions,
-        environment,
-    };
-
-    let save_file = save_file_query
-        .get_single()
-        .expect("there should only be 1 selected file");
-
-    save_to_json(&model, save_file.path_buf.to_str().unwrap());
-    next_state.set(state.get().next());
 }
 
 fn build_subsystems(

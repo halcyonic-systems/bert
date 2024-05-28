@@ -5,6 +5,7 @@ use crate::bundles::{
 use crate::constants::{EXTERNAL_ENTITY_Z, INTERFACE_Z, SUBSYSTEM_Z};
 use crate::data_model::*;
 use crate::events::SubsystemDrag;
+use crate::plugins::file_dialog::ImportFileEvent;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::resources::*;
 use bevy::prelude::*;
@@ -37,72 +38,67 @@ impl Context {
 
 pub fn load_world(
     mut commands: Commands,
-    state: Res<State<FileImportState>>,
-    mut next_state: ResMut<NextState<FileImportState>>,
-    selected_file_query: Query<&SelectedFile>,
+    mut load_file_event_reader: EventReader<ImportFileEvent>,
     existing_elements_query: Query<Entity, With<SystemElement>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
-    for entity in &existing_elements_query {
-        commands.entity(entity).despawn_recursive();
-    }
-
-    let selected_file = selected_file_query
-        .get_single()
-        .expect("there should only be 1 selected file");
-
-    let mut ctx = Context::new();
-
-    let world_model = load_from_json(selected_file.path_buf.to_str().unwrap());
-
-    for interaction in &world_model.interactions {
-        if matches!(interaction.sink.ty, IdType::Sink) {
-            ctx.external_entity_id_to_substance
-                .insert(interaction.sink.clone(), interaction.substance.ty);
+    for event in load_file_event_reader.read() {
+        for entity in &existing_elements_query {
+            commands.entity(entity).despawn_recursive();
         }
 
-        if matches!(interaction.source.ty, IdType::Source) {
-            ctx.external_entity_id_to_substance
-                .insert(interaction.source.clone(), interaction.substance.ty);
+        let selected_file = &**event;
+        let world_model = load_from_json(selected_file.to_str().unwrap());
+
+        let mut ctx = Context::new();
+
+        for interaction in &world_model.interactions {
+            if matches!(interaction.sink.ty, IdType::Sink) {
+                ctx.external_entity_id_to_substance
+                    .insert(interaction.sink.clone(), interaction.substance.ty);
+            }
+
+            if matches!(interaction.source.ty, IdType::Source) {
+                ctx.external_entity_id_to_substance
+                    .insert(interaction.source.clone(), interaction.substance.ty);
+            }
         }
+
+        spawn_systems_interfaces_and_external_entities(
+            &mut commands,
+            &mut ctx,
+            &world_model,
+            **zoom,
+            &mut meshes,
+            &mut stroke_tess,
+            &mut fixed_system_element_geometries,
+        );
+
+        make_systems_parent_child_hierarchy(&mut commands, &mut ctx, &world_model);
+
+        spawn_external_entities(
+            &mut commands,
+            &mut ctx,
+            &world_model.environment,
+            None,
+            **zoom,
+            &mut meshes,
+            &mut stroke_tess,
+            &mut fixed_system_element_geometries,
+        );
+
+        spawn_interactions(
+            &mut commands,
+            &mut ctx,
+            &world_model,
+            **zoom,
+            &mut meshes,
+            &mut stroke_tess,
+        );
     }
-
-    spawn_systems_interfaces_and_external_entities(
-        &mut commands,
-        &mut ctx,
-        &world_model,
-        **zoom,
-        &mut meshes,
-        &mut stroke_tess,
-        &mut fixed_system_element_geometries,
-    );
-
-    make_systems_parent_child_hierarchy(&mut commands, &mut ctx, &world_model);
-
-    spawn_external_entities(
-        &mut commands,
-        &mut ctx,
-        &world_model.environment,
-        None,
-        **zoom,
-        &mut meshes,
-        &mut stroke_tess,
-        &mut fixed_system_element_geometries,
-    );
-
-    spawn_interactions(
-        &mut commands,
-        &mut ctx,
-        &world_model,
-        **zoom,
-        &mut meshes,
-        &mut stroke_tess,
-    );
-
-    next_state.set(state.get().next());
 }
 
 fn spawn_interactions(
