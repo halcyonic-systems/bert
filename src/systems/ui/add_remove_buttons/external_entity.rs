@@ -34,7 +34,7 @@ macro_rules! external_entity_create_button {
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            if changed_query.is_empty() && remove_event_reader.is_empty() {
+            if changed_query.is_empty() && remove_event_reader.is_empty() && !focused_system.is_changed() {
                 return;
             }
 

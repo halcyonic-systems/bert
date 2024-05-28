@@ -3,6 +3,7 @@ use crate::components::*;
 use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 
+// TODO : change detection?
 macro_rules! interface_create_button {
     ($fn_name:ident, $flow_conn_ty:ty, $interface_connection:ty, $button_type:expr, $side:tt, $side_dir:tt) => {
         pub fn $fn_name(
