@@ -149,7 +149,7 @@ pub fn add_interface_subsystem_create_buttons(
         }
     }
 
-    let show_interface_buttons = if incomplete_flows_exist || is_atomic {
+    let mut show_interface_buttons = if incomplete_flows_exist || is_atomic {
         false
     } else {
         let mut show_interface_buttons = true;
@@ -201,13 +201,17 @@ pub fn add_interface_subsystem_create_buttons(
             if interface_subsystem_query.get(interface_entity).is_err() {
                 system_interfaces.push((interface_entity, true, interface_type));
             }
+        } else {
+            // incomplete flow (missing interface)
+            show_interface_buttons = false;
+            break;
         }
     }
 
-    for (interface_entity, is_child_of_interface, interface_type) in system_interfaces {
-        let interface_button = interface_button_query.get(interface_entity);
+    if show_interface_buttons {
+        for (interface_entity, is_child_of_interface, interface_type) in system_interfaces {
+            let interface_button = interface_button_query.get(interface_entity);
 
-        if show_interface_buttons {
             if interface_button.is_err() {
                 spawn_create_button(
                     &mut commands,
@@ -228,9 +232,7 @@ pub fn add_interface_subsystem_create_buttons(
                 );
             }
         }
-    }
-
-    if !show_interface_buttons {
+    } else {
         for interface_button in &interface_button_query {
             despawn_create_button(&mut commands, interface_button.button_entity, &button_query);
         }
