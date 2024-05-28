@@ -324,7 +324,7 @@ pub fn on_create_button_click(
             InteractionUsability::Resource,
             dec!(1),
             "",
-            "Inflow",
+            "Flow",
             "",
         ),
         CreateButtonType::Outflow => spawn_outflow(
@@ -350,7 +350,7 @@ pub fn on_create_button_click(
             InteractionUsability::Product,
             dec!(1),
             "",
-            "Outflow",
+            "Flow",
             "",
         ),
         CreateButtonType::InterfaceSubsystem {

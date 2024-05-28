@@ -30,6 +30,7 @@ pub fn interface_subsystem_should_update(
 }
 
 // TODO : with change detection?
+//noinspection RsBorrowChecker
 pub fn update_interface_subsystem_from_flows(
     flow_query: Query<(
         &Flow,
