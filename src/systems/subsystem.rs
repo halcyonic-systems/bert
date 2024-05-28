@@ -137,7 +137,7 @@ pub fn update_subsystem_radius_from_interface_count(
                 .get_mut(subsystem_entity)
                 .expect("Subsystem should have a Transform");
 
-            transform.translation.x = -radius;
+            transform.translation.x = radius * transform.translation.x.signum();
         }
     }
 }
