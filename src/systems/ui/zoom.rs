@@ -13,7 +13,6 @@ use crate::resources::{
     FixedSystemElementGeometriesByNestingLevel, StrokeTessellator, Zoom,
 };
 use crate::systems::tessellate_simplified_mesh;
-use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::math::vec3;
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
@@ -136,21 +135,22 @@ pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: Re
     }
 }
 
-pub fn control_zoom_from_mouse_wheel(
-    mut scroll_events: EventReader<MouseWheel>,
-    mut zoom: ResMut<Zoom>,
-) {
-    for event in scroll_events.read() {
-        match event.unit {
-            MouseScrollUnit::Line => {
-                zoom.mul(1.0 + event.y * 0.01);
-            }
-            MouseScrollUnit::Pixel => {
-                zoom.mul(1.0 + event.y * 0.001);
-            }
-        }
-    }
-}
+// TODO
+// pub fn control_zoom_from_mouse_wheel(
+//     mut scroll_events: EventReader<MouseWheel>,
+//     mut zoom: ResMut<Zoom>,
+// ) {
+//     for event in scroll_events.read() {
+//         match event.unit {
+//             MouseScrollUnit::Line => {
+//                 zoom.mul(1.0 + event.y * 0.01);
+//             }
+//             MouseScrollUnit::Pixel => {
+//                 zoom.mul(1.0 + event.y * 0.001);
+//             }
+//         }
+//     }
+// }
 
 //noinspection ALL
 pub fn apply_zoom_to_system_geometries(

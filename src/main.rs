@@ -92,7 +92,7 @@ fn main() {
                 .after(bevy_egui::systems::process_input_system)
                 .before(bevy_egui::EguiSet::BeginFrame),
             control_zoom_from_keyboard,
-            control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
+            // TODO : for some reason this doesn't always work: control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
         )
             .in_set(AllSet),
     );

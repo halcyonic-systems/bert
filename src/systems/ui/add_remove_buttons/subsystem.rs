@@ -190,9 +190,21 @@ pub fn add_interface_subsystem_create_buttons(
     ) in &complete_flow_query
     {
         let interface_entity = if flow_end_connection.target == **focused_system {
-            flow_end_interface_connection.map(|c| (c.target, InterfaceType::Import))
+            if let Some(conn) = flow_end_interface_connection {
+                Some((conn.target, InterfaceType::Import))
+            } else {
+                // incomplete flow (missing interface)
+                show_interface_buttons = false;
+                break;
+            }
         } else if flow_start_connection.target == **focused_system {
-            flow_start_interface_connection.map(|c| (c.target, InterfaceType::Export))
+            if let Some(conn) = flow_start_interface_connection {
+                Some((conn.target, InterfaceType::Export))
+            } else {
+                // incomplete flow (missing interface)
+                show_interface_buttons = false;
+                break;
+            }
         } else {
             None
         };
@@ -201,10 +213,6 @@ pub fn add_interface_subsystem_create_buttons(
             if interface_subsystem_query.get(interface_entity).is_err() {
                 system_interfaces.push((interface_entity, true, interface_type));
             }
-        } else {
-            // incomplete flow (missing interface)
-            show_interface_buttons = false;
-            break;
         }
     }
 
