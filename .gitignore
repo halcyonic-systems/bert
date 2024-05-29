@@ -2,3 +2,7 @@
 .DS_Store
 .vscode/
 world_model.json
+*.icns
+*.iconset
+build
+*.dmg

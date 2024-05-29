@@ -28,6 +28,7 @@ use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
+use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
@@ -58,7 +59,8 @@ fn main() {
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins,
-        WorldInspectorPlugin::new(),
+        // WorldInspectorPlugin::new(),
+        EguiPlugin,
         DefaultPickingPlugins,
         ShapePlugin,
         LyonSelectionPlugin,
