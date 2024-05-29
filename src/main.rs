@@ -16,7 +16,7 @@ use crate::data_model::load::load_world;
 use crate::data_model::save::save_world;
 use crate::events::*;
 use crate::plugins::file_dialog::{FileDialogPlugin, FileState};
-use crate::plugins::label::LabelPlugin;
+use crate::plugins::label::{copy_position, LabelPlugin};
 use crate::plugins::lyon_selection::LyonSelectionPlugin;
 use crate::plugins::mouse_interaction::{
     disable_selection, enable_selection, MouseInteractionPlugin,
@@ -193,7 +193,7 @@ fn main() {
                 .in_set(CreateButtonSet),
             update_flow_from_interface,
             update_flow_from_external_entity,
-            update_label_offset_from_interface,
+            update_label_offset_from_interface.before(copy_position),
             update_label_from_interaction,
             update_subsystem_radius_from_interface_count,
             update_interface_positions_from_system_radius

@@ -1,15 +1,12 @@
 use crate::plugins::mouse_interaction::PickTarget;
 use bevy::prelude::*;
 use bevy::text::{update_text2d_layout, BreakLineOn, Text2dBounds};
-use copy_position::{compute_text_alignment, copy_position};
-use text::{apply_text_color_contrast, copy_name_to_label, update_background_size_from_label};
-
 mod copy_position;
 mod text;
 
 use crate::constants::LABEL_Z;
-pub use copy_position::{Alignment, CopyPosition};
-pub use text::{AutoContrastTextColor, Background, LabelContainer, NameLabel};
+pub use copy_position::*;
+pub use text::*;
 
 pub struct LabelPlugin;
 

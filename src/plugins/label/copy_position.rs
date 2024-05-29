@@ -30,6 +30,8 @@ pub fn copy_position(
             transform.translation() + copy_position.offset
         };
 
+        let pos = pos.round();
+
         target_query
             .get_mut(copy_position.target)
             .expect("Target should exist")
