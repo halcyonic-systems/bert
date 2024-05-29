@@ -506,11 +506,17 @@ fn build_interaction<P: HasInfo>(
     sink_id: Id,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
 ) {
+    let parent_level = parent.info().level;
+
     let interaction = Interaction {
         info: info_from_entity(
             flow_entity,
             ctx.next_id(flow_entity, IdType::Flow, &parent.info().id.indices),
-            parent.info().level + 1,
+            if parent_level == -1 {
+                -1
+            } else {
+                parent_level + 1
+            },
             &name_and_description_query,
         ),
         substance: Substance {
@@ -547,11 +553,17 @@ fn build_external_entity<P: HasInfo>(
 
     let external_entity_component = external_entity_query.get(entity).expect("Should exist");
 
+    let parent_level = parent.info().level;
+
     crate::data_model::ExternalEntity {
         info: info_from_entity(
             entity,
             id.clone(),
-            parent.info().level + 1,
+            if parent_level == -1 {
+                -1
+            } else {
+                parent_level + 1
+            },
             &name_and_description_query,
         ),
         ty,

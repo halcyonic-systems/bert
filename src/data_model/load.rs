@@ -110,7 +110,7 @@ fn spawn_interactions(
     stroke_tess: &mut ResMut<StrokeTessellator>,
 ) {
     for interaction in &world_model.interactions {
-        let nesting_level = interaction.info.level as u16;
+        let nesting_level = interaction.info.level.max(0) as u16;
         let interaction_entity = spawn_interaction_only(
             commands,
             Flow {
