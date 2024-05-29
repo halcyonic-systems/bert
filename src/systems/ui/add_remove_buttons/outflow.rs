@@ -49,7 +49,7 @@ pub fn add_outflow_create_button(
         )>,
     >,
     flow_interface_query: Query<(&FlowStartConnection, &FlowStartInterfaceConnection)>,
-    export_subsystem_query: Query<(), With<ExportSubsystem>>,
+    export_subsystem_query: Query<&InterfaceSubsystem, With<ExportSubsystem>>,
     transform_query: Query<&Transform>,
     system_query: Query<&System>,
     focused_system: Res<FocusedSystem>,
@@ -58,7 +58,17 @@ pub fn add_outflow_create_button(
 ) {
     let focused_system = **focused_system;
 
-    if export_subsystem_query.get(focused_system).is_ok() {
+    let mut is_export_subsystem = true;
+
+    let is_completed_export_subsystem =
+        if let Ok(interface_subsystem) = export_subsystem_query.get(focused_system) {
+            interface_subsystem.total_outflow <= interface_subsystem.total_inflow
+        } else {
+            is_export_subsystem = false;
+            false
+        };
+
+    if is_export_subsystem && !is_completed_export_subsystem {
         return;
     }
 
@@ -78,7 +88,7 @@ pub fn add_outflow_create_button(
         &transform_query,
         &system_query,
         focused_system,
-        false, // TODO
+        is_completed_export_subsystem,
     );
 
     spawn_create_button(
