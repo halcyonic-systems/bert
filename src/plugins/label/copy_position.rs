@@ -16,7 +16,10 @@ pub struct CopyPosition {
 pub enum Alignment {
     #[default]
     Center,
+    /// Switch between start, end and center automatically
     Auto,
+    /// Switch between start and end automatically
+    AutoStartEnd,
 }
 
 pub fn copy_position(
@@ -58,12 +61,26 @@ pub fn compute_text_alignment(
 
                 let x = match copy_position.horizontal_alignment {
                     Alignment::Center => 0.0,
-                    Alignment::Auto => -global_offset.x.signum() * 0.5,
+                    Alignment::AutoStartEnd => -global_offset.x.signum() * 0.5,
+                    Alignment::Auto => {
+                        if global_offset.y.abs() > global_offset.x.abs() {
+                            0.0
+                        } else {
+                            -global_offset.x.signum() * 0.5
+                        }
+                    }
                 };
 
                 let y = match copy_position.vertical_alignment {
                     Alignment::Center => 0.0,
-                    Alignment::Auto => -global_offset.y.signum() * 0.5,
+                    Alignment::AutoStartEnd => -global_offset.y.signum() * 0.5,
+                    Alignment::Auto => {
+                        if global_offset.x.abs() > global_offset.y.abs() {
+                            0.0
+                        } else {
+                            -global_offset.y.signum() * 0.5
+                        }
+                    }
                 };
 
                 *anchor = Anchor::Custom(vec2(x, y));

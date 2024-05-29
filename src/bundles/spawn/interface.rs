@@ -132,7 +132,7 @@ pub fn auto_spawn_interface_label(
             None,
             Some(CopyPositionArgs {
                 offset: vec3(INTERFACE_HEIGHT_HALF * 1.7, -INTERFACE_HEIGHT_HALF, 0.0),
-                horizontal_alignment: Alignment::Auto,
+                horizontal_alignment: Alignment::AutoStartEnd,
                 vertical_alignment: Alignment::Center,
             }),
             &name_query,
