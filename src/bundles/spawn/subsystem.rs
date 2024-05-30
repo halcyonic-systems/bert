@@ -143,7 +143,7 @@ fn spawn_subsystem_common(
         .1
         .radius;
 
-    let radius = parent_radius * SUBSYSTEM_MIN_SCALING_FACTOR * 0.5;
+    let radius = parent_radius * SUBSYSTEM_MIN_SCALING_FACTOR;
 
     let nesting_level = NestingLevel::current(parent_system, nesting_level_query) + 1;
 

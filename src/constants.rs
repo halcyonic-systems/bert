@@ -41,9 +41,9 @@ pub const FLOW_ARROW_HEAD_LENGTH: f32 = 20.0;
 pub const FLOW_ARROW_HEAD_WIDTH_HALF: f32 = 10.0;
 
 /// Default number that defines the scale factor used in the (re)sizing a subsystem.
-pub const SUBSYSTEM_SCALING_FACTOR: f32 = 0.4;
+pub const SUBSYSTEM_SCALING_FACTOR: f32 = 0.3;
 /// Default number that defines the lower bound of the scale factor used in the (re)sizing a subsystem.
-pub const SUBSYSTEM_MIN_SCALING_FACTOR: f32 = 0.2;
+pub const SUBSYSTEM_MIN_SCALING_FACTOR: f32 = 0.15;
 /// Default z-index of a subsystem.
 pub const SUBSYSTEM_Z: f32 = 10.0;
 /// Size of subsystems are scaled based on the number of interfaces it has until it reaches this limit.

@@ -134,7 +134,7 @@ pub fn update_subsystem_radius_from_interface_count(
             .expect("Parent system should exist")
             .radius;
 
-        let radius = parent_radius * scaling_factor * 0.5;
+        let radius = parent_radius * scaling_factor;
 
         system_query
             .get_mut(subsystem_entity)
