@@ -141,12 +141,16 @@ pub fn update_subsystem_radius_from_interface_count(
             .expect("System should exist")
             .radius = radius;
 
-        if interface_subsystem.is_some() && interface_query.get(parent.get()).is_ok() {
+        if interface_subsystem.is_some() {
             let (mut transform, mut initial_position) = transform_query
                 .get_mut(subsystem_entity)
                 .expect("Subsystem should have a Transform");
 
-            initial_position.x = radius * transform.translation.x.signum();
+            if interface_query.get(parent.get()).is_ok() {
+                initial_position.x = radius * transform.translation.x.signum();
+            } else {
+                initial_position.x = (parent_radius - radius) * transform.translation.x.signum();
+            }
 
             transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
         }
