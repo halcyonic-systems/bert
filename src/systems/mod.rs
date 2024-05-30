@@ -1,3 +1,5 @@
+//! All app systems
+
 mod camera;
 mod egui;
 mod removal;
