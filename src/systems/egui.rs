@@ -5,6 +5,7 @@ use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy_egui::egui::{Checkbox, ComboBox, DragValue, Margin, Slider, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
+use bevy::utils::HashMap;
 use rust_decimal::Decimal;
 
 macro_rules! h_wrap {
@@ -259,7 +260,7 @@ fn mut_environment_egui(ui: &mut Ui, system_environment: &mut SystemEnvironment)
 fn subsystem_egui(
     ui: &mut Ui,
     system: &mut crate::components::System,
-    system_environment: &SystemEnvironment,
+    parent_system_info: &(String, String)
 ) {
     complexity_egui(ui, system);
 
@@ -284,11 +285,14 @@ fn subsystem_egui(
     ui.separator();
     vcj_label!(ui, "Parent System");
 
-    h_label!(ui, "Name");
-    vcj_label!(ui, &system_environment.name);
-
-    h_label!(ui, "Description");
-    vcj_label!(ui, &system_environment.description);
+    h_wrap!(ui, |ui| {
+        ui.label("Name: ");
+        ui.label(&parent_system_info.0);
+    });
+    h_label!(ui, "Description:");
+    vc_wrap!(ui, |ui| {
+        ui.label(&parent_system_info.1);
+    });
 }
 
 fn complexity_egui(ui: &mut Ui, system: &mut crate::components::System) {
@@ -364,6 +368,7 @@ pub fn egui_selected_context(
     mut system_environment_query: Query<&mut SystemEnvironment>,
     mut system_query: Query<&mut crate::components::System>,
     mut external_entity_query: Query<&mut ExternalEntity>,
+    subsystem_query: Query<&crate::components::Subsystem>,
 ) {
     let mut count = 0;
     for (_, selection, _, _, _) in &mut selectable_query {
@@ -374,6 +379,11 @@ pub fn egui_selected_context(
 
     if count > 1 {
         return;
+    }
+    
+    let mut info_hm = HashMap::<Entity, (String, String)>::new();
+    for (entity, _, _, name, description) in &selectable_query {
+        info_hm.insert(entity, (name.to_string(), description.text.clone()));
     }
 
     for (entity, selection, system_element, mut name, mut description) in &mut selectable_query {
@@ -422,7 +432,13 @@ pub fn egui_selected_context(
                                 if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
                                     system_of_interest_egui(ui, &mut system, &mut sys_env)
                                 } else {
-                                    subsystem_egui(ui, &mut system, &SystemEnvironment::default())
+                                    let subsystem = subsystem_query
+                                        .get(entity)
+                                        .expect("Subsystem should exist");
+                                    
+                                    let parent_info = info_hm.get(&subsystem.parent_system).unwrap();
+
+                                    subsystem_egui(ui, &mut system, parent_info);
                                 }
                             }
                             SystemElement::Interaction => interaction_egui(
