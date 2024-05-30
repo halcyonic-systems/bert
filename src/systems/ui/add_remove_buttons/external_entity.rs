@@ -17,7 +17,10 @@ macro_rules! external_entity_create_button {
     ) => {
         pub fn $fn_name(
             mut commands: Commands,
-            changed_query: Query<(), Or<(Added<$interface_connection>, Added<HasFlowOtherEndButton>)>>,
+            changed_query: Query<
+                (),
+                Or<(Added<$interface_connection>, Added<HasFlowOtherEndButton>)>,
+            >,
             query: Query<
                 (Entity, &FlowCurve, &Flow, &$flow_conn_ty),
                 (
@@ -26,7 +29,10 @@ macro_rules! external_entity_create_button {
                     Without<HasFlowOtherEndButton>,
                 ),
             >,
-            no_interface_query: Query<Entity, (With<HasFlowOtherEndButton>, Without<$interface_connection>)>,
+            no_interface_query: Query<
+                Entity,
+                (With<HasFlowOtherEndButton>, Without<$interface_connection>),
+            >,
             button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
             subsystem_query: Query<&Subsystem>,
             mut remove_event_reader: EventReader<crate::RemoveEvent>,
@@ -34,7 +40,10 @@ macro_rules! external_entity_create_button {
             zoom: Res<Zoom>,
             asset_server: Res<AssetServer>,
         ) {
-            if changed_query.is_empty() && remove_event_reader.is_empty() && !focused_system.is_changed() {
+            if changed_query.is_empty()
+                && remove_event_reader.is_empty()
+                && !focused_system.is_changed()
+            {
                 return;
             }
 
@@ -43,7 +52,8 @@ macro_rules! external_entity_create_button {
             for flow_entity in no_interface_query.iter() {
                 for (button_entity, create_button, parent) in button_query.iter() {
                     if create_button.connection_source == flow_entity
-                        && (create_button.ty == $button_type || create_button.ty == $target_button_type)
+                        && (create_button.ty == $button_type
+                            || create_button.ty == $target_button_type)
                     {
                         despawn_create_button_with_component(
                             &mut commands,
@@ -52,7 +62,9 @@ macro_rules! external_entity_create_button {
                             parent,
                         );
 
-                        commands.entity(flow_entity).remove::<HasFlowOtherEndButton>();
+                        commands
+                            .entity(flow_entity)
+                            .remove::<HasFlowOtherEndButton>();
 
                         break;
                     }
@@ -66,11 +78,12 @@ macro_rules! external_entity_create_button {
 
                 let direction = -flow_curve.$side_dir;
 
-                let (button_type, parent) = if let Ok(subsystem) = subsystem_query.get(**focused_system) {
-                    ($target_button_type, Some(subsystem.parent_system))
-                } else {
-                    ($button_type, None)
-                };
+                let (button_type, parent) =
+                    if let Ok(subsystem) = subsystem_query.get(**focused_system) {
+                        ($target_button_type, Some(subsystem.parent_system))
+                    } else {
+                        ($button_type, None)
+                    };
 
                 spawn_create_button(
                     &mut commands,

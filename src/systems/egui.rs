@@ -8,9 +8,9 @@ use crate::data_model::Complexity;
 use crate::plugins::mouse_interaction::PickSelection;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use bevy_egui::egui::{Checkbox, ComboBox, DragValue, Margin, Slider, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
-use bevy::utils::HashMap;
 use rust_decimal::Decimal;
 
 macro_rules! h_wrap {
@@ -265,7 +265,7 @@ fn mut_environment_egui(ui: &mut Ui, system_environment: &mut SystemEnvironment)
 fn subsystem_egui(
     ui: &mut Ui,
     system: &mut crate::components::System,
-    parent_system_info: &(String, String)
+    parent_system_info: &(String, String),
 ) {
     complexity_egui(ui, system);
 
@@ -387,7 +387,7 @@ pub fn egui_selected_context(
     if count > 1 {
         return;
     }
-    
+
     // TODO: This is inefficient and needs to be refactored.
     let mut info_hm = HashMap::<Entity, (String, String)>::new();
     for (entity, _, _, name, description) in &selectable_query {
@@ -445,8 +445,9 @@ pub fn egui_selected_context(
                                     let subsystem = subsystem_query
                                         .get(entity)
                                         .expect("Subsystem should exist");
-                                    
-                                    let parent_info = info_hm.get(&subsystem.parent_system).unwrap();
+
+                                    let parent_info =
+                                        info_hm.get(&subsystem.parent_system).unwrap();
 
                                     subsystem_egui(ui, &mut system, parent_info);
                                 }

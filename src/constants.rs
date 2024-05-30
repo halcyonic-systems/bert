@@ -12,7 +12,7 @@ pub const LABEL_Z: f32 = 150.0;
 /// Default width of a line from which all other lines are defined.
 pub const DEFAULT_LINE_WIDTH: f32 = 3.0;
 
-/// Radius of the initial system circle created upon app startup. 
+/// Radius of the initial system circle created upon app startup.
 pub const MAIN_SYSTEM_RADIUS: f32 = 300.0;
 /// Default width of the curve outlining the circumference of a system circle.  
 pub const SYSTEM_LINE_WIDTH: f32 = DEFAULT_LINE_WIDTH + 1.0;
