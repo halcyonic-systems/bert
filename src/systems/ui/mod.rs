@@ -7,7 +7,7 @@ mod pin;
 mod selected_helper;
 mod zoom;
 
-use crate::plugins::mouse_interaction::{deselect_all, PickSelection};
+use crate::plugins::mouse_interaction::{do_deselect_all, PickSelection};
 pub use add_remove_buttons::*;
 pub use color::*;
 pub use drag::*;
@@ -151,7 +151,7 @@ pub fn on_flow_terminal_button_click(
 ) {
     event.stop_propagation();
 
-    deselect_all(&mut pick_selection_query);
+    do_deselect_all(&mut pick_selection_query);
 
     let (button, _) = only_button_query
         .get(event.target)
@@ -192,7 +192,7 @@ pub fn on_external_entity_create_button_click(
 ) {
     event.stop_propagation();
 
-    deselect_all(&mut pick_selection_query);
+    do_deselect_all(&mut pick_selection_query);
 
     let (button, transform) = button_query
         .get(event.target)
@@ -268,7 +268,7 @@ pub fn on_create_button_click(
 ) {
     event.stop_propagation();
 
-    deselect_all(&mut pick_selection_query);
+    do_deselect_all(&mut pick_selection_query);
 
     let (button, transform) = button_query
         .get(event.target)

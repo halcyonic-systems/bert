@@ -35,6 +35,7 @@ impl Plugin for MouseInteractionPlugin {
                     )
                         .in_set(MouseInteractionSet),
                     deselect_when_invisible,
+                    deselect_all.run_if(input_just_pressed(KeyCode::Escape)),
                 ),
             )
             .add_systems(First, update_settings);
@@ -188,7 +189,7 @@ fn handle_mouse_up(
         }
 
         if deselect && !multi_select {
-            deselect_all(&mut pick_selection_query);
+            do_deselect_all(&mut pick_selection_query);
         }
 
         if !selection.is_empty() {
@@ -262,7 +263,11 @@ fn mouse_screen_to_world_position(
     }
 }
 
-pub fn deselect_all(pick_selection_query: &mut Query<&mut PickSelection>) {
+pub fn deselect_all(mut query: Query<&mut PickSelection>) {
+    do_deselect_all(&mut query);
+}
+
+pub fn do_deselect_all(pick_selection_query: &mut Query<&mut PickSelection>) {
     for mut pick_selection in pick_selection_query {
         pick_selection.is_selected = false;
     }

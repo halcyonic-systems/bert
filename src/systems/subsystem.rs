@@ -91,7 +91,13 @@ pub fn update_interface_subsystem_from_flows(
 
 pub fn update_subsystem_radius_from_interface_count(
     changed_query: Query<(), Added<Interface>>,
-    subsystem_query: Query<(Entity, &Subsystem, &Children, Option<&InterfaceSubsystem>)>,
+    subsystem_query: Query<(
+        Entity,
+        &Subsystem,
+        &Children,
+        Option<&InterfaceSubsystem>,
+        &Parent,
+    )>,
     interface_query: Query<&Interface>,
     mut system_query: Query<&mut crate::components::System>,
     mut transform_query: Query<(&mut Transform, &mut InitialPosition)>,
@@ -104,7 +110,7 @@ pub fn update_subsystem_radius_from_interface_count(
 
     remove_event_reader.clear();
 
-    for (subsystem_entity, subsystem, children, interface_subsystem) in &subsystem_query {
+    for (subsystem_entity, subsystem, children, interface_subsystem, parent) in &subsystem_query {
         let mut interface_count = 0;
 
         if interface_subsystem.is_some() {
@@ -135,7 +141,7 @@ pub fn update_subsystem_radius_from_interface_count(
             .expect("System should exist")
             .radius = radius;
 
-        if interface_subsystem.is_some() {
+        if interface_subsystem.is_some() && interface_query.get(parent.get()).is_ok() {
             let (mut transform, mut initial_position) = transform_query
                 .get_mut(subsystem_entity)
                 .expect("Subsystem should have a Transform");
