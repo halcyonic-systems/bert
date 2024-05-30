@@ -1,3 +1,4 @@
+//! Components referenced across modules.
 mod connections;
 mod system_elements;
 mod ui;
