@@ -72,7 +72,7 @@ pub fn add_outflow_create_button(
         return;
     }
 
-    if !despawn_existing_buttons(
+    if !despawn_existing_buttons_due_to_incomplete_flow(
         &mut commands,
         focused_system,
         CreateButtonType::Outflow,
@@ -107,7 +107,7 @@ pub fn add_outflow_create_button(
     );
 }
 
-pub fn despawn_existing_buttons(
+pub fn despawn_existing_buttons_due_to_incomplete_flow(
     mut commands: &mut Commands,
     focused_system: Entity,
     button_type: CreateButtonType,
@@ -123,19 +123,37 @@ pub fn despawn_existing_buttons(
         }
     }
 
+    if has_incomplete_interactions(
+        focused_system,
+        incomplete_inflow_connections,
+        incomplete_outflow_connections,
+    ) {
+        for (entity, button, parent) in button_entities {
+            despawn_create_button_with_component(&mut commands, entity, button, parent)
+        }
+
+        false
+    } else {
+        button_entities.is_empty()
+    }
+}
+
+pub fn has_incomplete_interactions(
+    system: Entity,
+    incomplete_inflow_connections: &[&FlowEndConnection],
+    incomplete_outflow_connections: &[&FlowStartConnection],
+) -> bool {
+    let mut has_incomplete_interactions = false;
+
     for target in incomplete_inflow_connections
         .into_iter()
         .map(|c| c.target)
         .chain(incomplete_outflow_connections.into_iter().map(|c| c.target))
     {
-        if target == focused_system {
-            for (entity, button, parent) in button_entities {
-                despawn_create_button_with_component(&mut commands, entity, button, parent)
-            }
-
-            return false;
+        if target == system {
+            has_incomplete_interactions = true;
+            break;
         }
     }
-
-    button_entities.is_empty()
+    has_incomplete_interactions
 }
