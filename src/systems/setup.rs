@@ -1,3 +1,4 @@
+//! Systems used in the Application Startup Schedule.
 use crate::bundles::spawn_main_system;
 use crate::constants::*;
 use crate::data_model::Complexity;
@@ -6,6 +7,7 @@ use bevy::prelude::*;
 use bevy::render::deterministic::DeterministicRenderingConfig;
 use bevy::window::PrimaryWindow;
 
+/// Configures the primary window settings
 pub fn window_setup(mut primary_window_query: Query<&mut Window, With<PrimaryWindow>>) {
     let mut w = primary_window_query
         .get_single_mut()
@@ -16,6 +18,8 @@ pub fn window_setup(mut primary_window_query: Query<&mut Window, With<PrimaryWin
     w.set_maximized(true);
 }
 
+/// Create the initial scene for the user.
+/// This includes the primary camera, creating the default system of interest, and establishing app resources.
 #[allow(unused_variables)]
 pub fn setup(
     mut commands: Commands,
@@ -67,6 +71,7 @@ pub fn setup(
     }
 }
 
+/// Helpful flag for development that creates the state required before a user can deconstruct the system of interest.
 #[cfg(feature = "init_complete_system")]
 pub fn init_complete_system(
     mut commands: Commands,

@@ -1,4 +1,4 @@
-//! Components referenced across modules.
+//! All app components referenced across modules.
 mod connections;
 mod system_elements;
 mod ui;
