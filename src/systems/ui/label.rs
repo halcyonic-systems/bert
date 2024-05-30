@@ -2,7 +2,7 @@ use crate::components::*;
 use crate::constants::{INTERFACE_HEIGHT_HALF, INTERFACE_WIDTH_HALF};
 use crate::plugins::label::{CopyPosition, NameLabel};
 use crate::resources::Zoom;
-use bevy::math::{vec2, vec3};
+use bevy::math::vec3;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use lyon_algorithms::length::approximate_length;
@@ -28,11 +28,17 @@ pub fn update_label_offset_from_interface(
 }
 
 pub fn update_label_from_interaction(
-    flow_query: Query<(&Path, &NameLabel), (With<Flow>, Or<(Changed<Path>, Added<NameLabel>)>)>,
+    interaction_query: Query<
+        (&Path, &NameLabel, &GlobalTransform),
+        (
+            With<Flow>,
+            Or<(Changed<Path>, Changed<GlobalTransform>, Added<NameLabel>)>,
+        ),
+    >,
     parent_query: Query<&Parent>,
     mut transform_query: Query<&mut Transform>,
 ) {
-    for (path, name_label) in &flow_query {
+    for (path, name_label, global_transform) in &interaction_query {
         let sprite_entity = parent_query
             .get(name_label.label)
             .expect("Label should have a Parent")
@@ -46,13 +52,19 @@ pub fn update_label_from_interaction(
 
         let mut pattern = RegularPattern {
             callback: &mut |event: WalkerEvent| {
-                transform.translation =
-                    vec3(event.position.x, event.position.y, transform.translation.z);
+                let interaction_transform = global_transform.affine();
 
-                let mut tangent = vec2(event.tangent.x, event.tangent.y);
+                let pos = interaction_transform
+                    .transform_point3(vec3(event.position.x, event.position.y, 0.0))
+                    .truncate();
+
+                transform.translation = pos.extend(transform.translation.z);
+
+                let mut tangent = vec3(event.tangent.x, event.tangent.y, 0.0);
                 if tangent.x < 0.0 {
                     tangent = -tangent;
                 }
+                let tangent = interaction_transform.transform_vector3(tangent).truncate();
                 transform.rotation = Quat::from_rotation_z(tangent.to_angle());
 
                 false // Stop walking the path.
