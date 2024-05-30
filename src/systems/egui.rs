@@ -1,3 +1,4 @@
+//! Holds all Egui systems that define the app UI.
 //! The user can edit data that is associated with different selectable System Elements.
 //! The forms are built using Egui, an immediate mode rust UI library.
 //! This file contains systems that query component data associated with different elements, defines the form UI, & processes input.
