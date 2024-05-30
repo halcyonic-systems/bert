@@ -74,7 +74,7 @@ pub fn update_interface_color_from_flow<C>(
     }
 }
 
-/// Update the color of an interface subsystem
+/// Update the color of an interface subsystem based on the substance type of the parent interface.
 pub fn update_interface_subsystem_color(
     mut interface_subsystem_query: Query<
         (Entity, &mut Fill, &InterfaceSubsystem),
@@ -94,6 +94,7 @@ pub fn update_interface_subsystem_color(
     }
 }
 
+/// Update the color of a subsystem based on the color of the parent system.
 pub fn update_system_color_from_subsystem(
     subsystem_query: Query<&Subsystem, Added<Subsystem>>,
     mut fill_query: Query<&mut Fill>,
