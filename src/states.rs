@@ -1,3 +1,6 @@
+//! Custom defined states
+//! Primarily used to determine system ordering and run conditions.
+
 use bevy::prelude::*;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
