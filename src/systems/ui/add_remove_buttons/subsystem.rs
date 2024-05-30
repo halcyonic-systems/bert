@@ -9,6 +9,13 @@ use crate::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+struct FlowUsabilities {
+    usabilities: HashSet<InteractionUsability>,
+    has_inflow: bool,
+    has_outflow: bool,
+}
+
 pub fn add_interface_subsystem_create_buttons(
     mut commands: Commands,
     changed_query: Query<
@@ -66,18 +73,20 @@ pub fn add_interface_subsystem_create_buttons(
 
     let mut systems_at_the_same_nesting_level = vec![];
 
-    if let Ok((_, subsystem, _)) = subsystem_query.get(**focused_system) {
+    let is_root_system = if let Ok((_, subsystem, _)) = subsystem_query.get(**focused_system) {
         systems_at_the_same_nesting_level = subsystem_query
             .iter()
             .filter(|(_, subsys, _)| subsys.parent_system == subsystem.parent_system)
             .map(|(entity, _, conn)| (entity, conn))
             .collect();
+        false
     } else {
         systems_at_the_same_nesting_level.push((**focused_system, None));
-    }
+        true
+    };
 
     for (system, _) in &systems_at_the_same_nesting_level {
-        flow_usabilities.insert(*system, HashSet::new());
+        flow_usabilities.insert(*system, FlowUsabilities::default());
     }
 
     for (flow, flow_start_connection, flow_end_connection, _, _) in &complete_flow_query {
@@ -87,7 +96,10 @@ pub fn add_interface_subsystem_create_buttons(
         {
             flow_usabilities
                 .get_mut(&flow_end_connection.target)
-                .map(|set| set.insert(flow.usability));
+                .map(|u| {
+                    u.usabilities.insert(flow.usability);
+                    u.has_inflow = true;
+                });
         }
         if systems_at_the_same_nesting_level
             .iter()
@@ -95,7 +107,10 @@ pub fn add_interface_subsystem_create_buttons(
         {
             flow_usabilities
                 .get_mut(&flow_start_connection.target)
-                .map(|set| set.insert(flow.usability));
+                .map(|u| {
+                    u.usabilities.insert(flow.usability);
+                    u.has_outflow = true;
+                });
         }
     }
 
@@ -111,17 +126,21 @@ pub fn add_interface_subsystem_create_buttons(
             {
                 if let Some(connection) = flow_start_interface_connection {
                     if connection.target == interface_entity {
-                        flow_usabilities
-                            .get_mut(system_entity)
-                            .map(|set| set.insert(flow.usability));
+                        flow_usabilities.get_mut(system_entity).map(|u| {
+                            u.usabilities.insert(flow.usability);
+                            u.has_outflow = true;
+                        });
+
                         interface_type = InterfaceType::Export;
                         // TODO : hybrid
                     }
-                } else if let Some(connection) = flow_end_interface_connection {
+                }
+                if let Some(connection) = flow_end_interface_connection {
                     if connection.target == interface_entity {
-                        flow_usabilities
-                            .get_mut(system_entity)
-                            .map(|set| set.insert(flow.usability));
+                        flow_usabilities.get_mut(system_entity).map(|u| {
+                            u.usabilities.insert(flow.usability);
+                            u.has_inflow = true;
+                        });
                         interface_type = InterfaceType::Import;
                         // TODO : hybrid
                     }
@@ -158,18 +177,23 @@ pub fn add_interface_subsystem_create_buttons(
             let mut inflow_present = false;
             let mut outflow_present = false;
 
-            for usability in flow_usabilities {
-                if matches!(
-                    usability,
-                    InteractionUsability::Resource | InteractionUsability::Disruption
-                ) {
-                    inflow_present = true;
-                } else if matches!(
-                    usability,
-                    InteractionUsability::Product | InteractionUsability::Waste
-                ) {
-                    outflow_present = true;
+            if is_root_system {
+                for usability in &flow_usabilities.usabilities {
+                    if matches!(
+                        usability,
+                        InteractionUsability::Resource | InteractionUsability::Disruption
+                    ) {
+                        inflow_present = true;
+                    } else if matches!(
+                        usability,
+                        InteractionUsability::Product | InteractionUsability::Waste
+                    ) {
+                        outflow_present = true;
+                    }
                 }
+            } else {
+                inflow_present = flow_usabilities.has_inflow;
+                outflow_present = flow_usabilities.has_outflow;
             }
 
             if !inflow_present || !outflow_present {
