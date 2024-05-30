@@ -1,4 +1,4 @@
-//! The application relies on several constant values which are aggregated into this file
+//! Constants referenced across modules.
 use bevy::asset::Handle;
 use bevy::prelude::{Color, ColorMaterial};
 

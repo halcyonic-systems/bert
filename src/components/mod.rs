@@ -1,4 +1,4 @@
-//! This Module contains all the Bevy components used in the application.
+//! Components referenced across modules.
 mod connections;
 mod system_elements;
 mod ui;
