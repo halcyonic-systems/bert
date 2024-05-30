@@ -210,6 +210,10 @@ fn main() {
         OnEnter(AppState::FlowTerminalSelection),
         (disable_selection,),
     )
+    .add_systems(
+        OnExit(AppState::FlowTerminalSelection),
+        (add_inflow_create_button, add_outflow_create_button),
+    )
     .add_systems(OnEnter(AppState::Normal), (enable_selection,))
     .configure_sets(PreUpdate, (AllSet.run_if(in_state(FileState::Inactive)),))
     .configure_sets(
