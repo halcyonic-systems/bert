@@ -1,4 +1,4 @@
-//! This file contains all the Bevy components related to System Elements.
+//! This file contains all the Bevy components and data structures related to System Elements and their associated helper methods.
 use crate::data_model::Complexity;
 use bevy::prelude::*;
 use rust_decimal::Decimal;
