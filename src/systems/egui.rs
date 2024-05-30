@@ -1,3 +1,8 @@
+//! The user can edit data that is associated with different selectable System Elements.
+//! The forms are built using Egui, an immediate mode rust UI library.
+//! This file contains systems that query component data associated with different elements, defines the form UI, & processes input.
+//! The macros defined in this file are used to improve the code's readability by reducing the verbosity of egui's api.
+//! This feature heavily uses "system piping".
 use crate::components::*;
 use crate::data_model::Complexity;
 use crate::plugins::mouse_interaction::PickSelection;
@@ -5,6 +10,7 @@ use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy_egui::egui::{Checkbox, ComboBox, DragValue, Margin, Slider, Ui, Visuals};
 use bevy_egui::{egui, EguiContexts};
+use bevy::utils::HashMap;
 use rust_decimal::Decimal;
 
 macro_rules! h_wrap {
@@ -259,7 +265,7 @@ fn mut_environment_egui(ui: &mut Ui, system_environment: &mut SystemEnvironment)
 fn subsystem_egui(
     ui: &mut Ui,
     system: &mut crate::components::System,
-    system_environment: &SystemEnvironment,
+    parent_system_info: &(String, String)
 ) {
     complexity_egui(ui, system);
 
@@ -284,11 +290,14 @@ fn subsystem_egui(
     ui.separator();
     vcj_label!(ui, "Parent System");
 
-    h_label!(ui, "Name");
-    vcj_label!(ui, &system_environment.name);
-
-    h_label!(ui, "Description");
-    vcj_label!(ui, &system_environment.description);
+    h_wrap!(ui, |ui| {
+        ui.label("Name: ");
+        ui.label(&parent_system_info.0);
+    });
+    h_label!(ui, "Description:");
+    vc_wrap!(ui, |ui| {
+        ui.label(&parent_system_info.1);
+    });
 }
 
 fn complexity_egui(ui: &mut Ui, system: &mut crate::components::System) {
@@ -350,6 +359,8 @@ fn external_entity_egui(ui: &mut Ui, external_entity: &mut ExternalEntity) {
     vcj_text_edit!(ui, &mut external_entity.model, false);
 }
 
+/// Gets all the data associated with selectable system elements.
+/// Based on the System Element, it pipes relevant component data to different functions that control the UI for that System Element Type.
 pub fn egui_selected_context(
     mut egui_contexts: EguiContexts,
     mut selectable_query: Query<(
@@ -364,6 +375,7 @@ pub fn egui_selected_context(
     mut system_environment_query: Query<&mut SystemEnvironment>,
     mut system_query: Query<&mut crate::components::System>,
     mut external_entity_query: Query<&mut ExternalEntity>,
+    subsystem_query: Query<&crate::components::Subsystem>,
 ) {
     let mut count = 0;
     for (_, selection, _, _, _) in &mut selectable_query {
@@ -371,11 +383,19 @@ pub fn egui_selected_context(
             count += 1;
         }
     }
-
+    // Prevents showing the side panel if more than 1 elements are selected.
     if count > 1 {
         return;
     }
+    
+    // TODO: This is inefficient and needs to be refactored.
+    let mut info_hm = HashMap::<Entity, (String, String)>::new();
+    for (entity, _, _, name, description) in &selectable_query {
+        info_hm.insert(entity, (name.to_string(), description.text.clone()));
+    }
 
+    // Finds the currently selected System Element, defines the side panel layout, &
+    // pipes the component data to an element type specific function that further defines the UI.
     for (entity, selection, system_element, mut name, mut description) in &mut selectable_query {
         if !selection.is_selected {
             continue;
@@ -422,7 +442,13 @@ pub fn egui_selected_context(
                                 if let Ok(mut sys_env) = system_environment_query.get_mut(entity) {
                                     system_of_interest_egui(ui, &mut system, &mut sys_env)
                                 } else {
-                                    subsystem_egui(ui, &mut system, &SystemEnvironment::default())
+                                    let subsystem = subsystem_query
+                                        .get(entity)
+                                        .expect("Subsystem should exist");
+                                    
+                                    let parent_info = info_hm.get(&subsystem.parent_system).unwrap();
+
+                                    subsystem_egui(ui, &mut system, parent_info);
                                 }
                             }
                             SystemElement::Interaction => interaction_egui(
@@ -441,6 +467,7 @@ pub fn egui_selected_context(
     }
 }
 
+/// When the user is interacting with EGUI, prevent the user input from effecting the diagram.
 pub fn absorb_egui_inputs(
     mut contexts: EguiContexts,
     mut mouse: ResMut<ButtonInput<MouseButton>>,
