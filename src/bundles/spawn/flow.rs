@@ -307,6 +307,7 @@ macro_rules! spawn_complete_flow {
                 stroke_tess,
                 external_entity_name,
                 external_entity_description,
+                false,
             );
 
             (interface_entity, interface_entity, external_entity)

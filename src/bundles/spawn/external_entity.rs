@@ -31,11 +31,16 @@ pub fn spawn_external_entity(
     tess: &mut ResMut<StrokeTessellator>,
     name: &str,
     description: &str,
+    consider_button: bool,
 ) -> Entity {
     let (transform, initial_position) = ui_transform_from_button(
         transform,
         EXTERNAL_ENTITY_Z,
-        EXTERNAL_ENTITY_WIDTH_HALF - BUTTON_WIDTH_HALF,
+        if consider_button {
+            EXTERNAL_ENTITY_WIDTH_HALF - BUTTON_WIDTH_HALF
+        } else {
+            EXTERNAL_ENTITY_WIDTH_HALF / zoom
+        },
         zoom,
     );
 

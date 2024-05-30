@@ -217,6 +217,7 @@ pub fn on_external_entity_create_button_click(
             &mut stroke_tess,
             "Source",
             "",
+            true,
         ),
         CreateButtonType::Sink => spawn_external_entity(
             &mut commands,
@@ -236,6 +237,7 @@ pub fn on_external_entity_create_button_click(
             &mut stroke_tess,
             "Sink",
             "",
+            true,
         ),
         _ => unreachable!("The other types are handled in other event listeners"),
     };
