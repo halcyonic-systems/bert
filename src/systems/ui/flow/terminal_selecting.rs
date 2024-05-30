@@ -157,6 +157,7 @@ pub fn select_flow_terminal(
                         &mut tess,
                         "Source",
                         "",
+                        false,
                     );
                 }
                 FlowTerminalSelecting::End => {
@@ -179,6 +180,7 @@ pub fn select_flow_terminal(
                         &mut tess,
                         "Sink",
                         "",
+                        false,
                     );
                 }
             }
