@@ -1,3 +1,4 @@
+//! This file holds the systems that control the color of system elements.
 use crate::components::{
     Connection, CreateButton, Flow, HasFlowOtherEndButton, InterfaceSubsystem, TargetTypeConnection,
 };
@@ -6,6 +7,7 @@ use crate::{Interface, Subsystem};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
+/// Update the color of a flow and it's connected external entities based on the flow substance type.
 pub fn update_color_from_substance_type<C>(
     mut query: Query<
         (
@@ -58,6 +60,7 @@ pub fn update_button_substance_type_from_flow(
     }
 }
 
+/// Update the color of an interface based the flow substance type.
 pub fn update_interface_color_from_flow<C>(
     mut query: Query<(&Flow, &C), Or<(Added<Flow>, Changed<Flow>)>>,
     mut interface_query: Query<&mut Fill, (Without<Flow>, With<Interface>)>,
@@ -71,6 +74,7 @@ pub fn update_interface_color_from_flow<C>(
     }
 }
 
+/// Update the color of an interface subsystem
 pub fn update_interface_subsystem_color(
     mut interface_subsystem_query: Query<
         (Entity, &mut Fill, &InterfaceSubsystem),
