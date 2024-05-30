@@ -1,3 +1,8 @@
+//! The user can edit data that is associated with different selectable System Elements.
+//! The forms are built using Egui, an immediate mode rust UI library.
+//! This file contains systems that query component data associated with different elements, defines the form UI, & processes input.
+//! The macros defined in this file are used to improve the code's readability by reducing the verbosity of egui's api.
+//! This feature heavily uses "system piping".
 use crate::components::*;
 use crate::data_model::Complexity;
 use crate::plugins::mouse_interaction::PickSelection;
@@ -354,6 +359,8 @@ fn external_entity_egui(ui: &mut Ui, external_entity: &mut ExternalEntity) {
     vcj_text_edit!(ui, &mut external_entity.model, false);
 }
 
+/// Gets all the data associated with selectable system elements.
+/// Based on the System Element, it pipes relevant component data to different functions that control the UI for that System Element Type.
 pub fn egui_selected_context(
     mut egui_contexts: EguiContexts,
     mut selectable_query: Query<(
@@ -376,16 +383,19 @@ pub fn egui_selected_context(
             count += 1;
         }
     }
-
+    // Prevents showing the side panel if more than 1 elements are selected.
     if count > 1 {
         return;
     }
     
+    // TODO: This is inefficient and needs to be refactored.
     let mut info_hm = HashMap::<Entity, (String, String)>::new();
     for (entity, _, _, name, description) in &selectable_query {
         info_hm.insert(entity, (name.to_string(), description.text.clone()));
     }
 
+    // Finds the currently selected System Element, defines the side panel layout, &
+    // pipes the component data to an element type specific function that further defines the UI.
     for (entity, selection, system_element, mut name, mut description) in &mut selectable_query {
         if !selection.is_selected {
             continue;
@@ -457,6 +467,7 @@ pub fn egui_selected_context(
     }
 }
 
+/// When the user is interacting with EGUI, prevent the user input from effecting the diagram.
 pub fn absorb_egui_inputs(
     mut contexts: EguiContexts,
     mut mouse: ResMut<ButtonInput<MouseButton>>,
