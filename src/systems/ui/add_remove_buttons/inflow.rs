@@ -74,7 +74,7 @@ pub fn add_inflow_create_button(
 
         for (outflow, flow_start_connection) in &outflow_query {
             if matches!(flow_start_connection.target_type, StartTargetType::System) {
-                if flow_start_connection.target == focused_system {
+                if flow_start_connection.target == focused_system && outflow.usability.is_export() {
                     outflow_usabilities.insert(outflow.usability);
                 }
             }
@@ -94,12 +94,6 @@ pub fn add_inflow_create_button(
             || is_completed_import_subsystem
             || is_not_interface_subsystem
         {
-            for inflow_end_connection in incomplete_inflow_query.iter() {
-                if inflow_end_connection.target == focused_system {
-                    return;
-                }
-            }
-
             for (_, button, _) in button_query.iter() {
                 if matches!(button.ty, CreateButtonType::Inflow)
                     && button.connection_source == focused_system

@@ -97,7 +97,9 @@ pub fn add_interface_subsystem_create_buttons(
             flow_usabilities
                 .get_mut(&flow_end_connection.target)
                 .map(|u| {
-                    u.usabilities.insert(flow.usability);
+                    if flow.usability.is_import() {
+                        u.usabilities.insert(flow.usability);
+                    }
                     u.has_inflow = true;
                 });
         }
@@ -108,7 +110,9 @@ pub fn add_interface_subsystem_create_buttons(
             flow_usabilities
                 .get_mut(&flow_start_connection.target)
                 .map(|u| {
-                    u.usabilities.insert(flow.usability);
+                    if flow.usability.is_export() {
+                        u.usabilities.insert(flow.usability);
+                    }
                     u.has_outflow = true;
                 });
         }

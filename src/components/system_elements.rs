@@ -166,9 +166,20 @@ pub enum InteractionUsability {
 }
 
 impl InteractionUsability {
-    /// Helper method to determine generically if a interaction is "usable"
+    #[inline(always)]
+    /// Helper method to determine generically if an interaction is "usable"
     pub fn is_useful(&self) -> bool {
         matches!(self, Self::Resource | Self::Product)
+    }
+
+    #[inline(always)]
+    pub fn is_export(&self) -> bool {
+        matches!(self, Self::Product | Self::Waste)
+    }
+
+    #[inline(always)]
+    pub fn is_import(&self) -> bool {
+        !self.is_export()
     }
 }
 
