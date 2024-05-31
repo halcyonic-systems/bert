@@ -1,3 +1,6 @@
+//! Systems that manipulate the geometry of the diagram.
+//! See design/Geometry_High-Level_Overview.pdf for a big picture overview.
+
 use crate::bundles::{
     aabb_from_radius, get_system_geometry_from_radius, FixedSystemElementGeometry,
 };
@@ -19,6 +22,7 @@ use bevy::render::primitives::Aabb;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
+/// The zoom value is multiplied to the translations x and y of all Non-Camera entities. The z component stays unchanged.
 pub fn apply_zoom(
     mut query: Query<(&mut Transform, &InitialPosition), Without<Camera>>,
     zoom: Res<Zoom>,
@@ -28,6 +32,9 @@ pub fn apply_zoom(
     }
 }
 
+/// Only system entities change size according to the current zoom value. 
+/// This is done by drawing a circle with it’s base radius multiplied by zoom.
+/// The transform’s scale is not changed.
 pub fn apply_zoom_to_system_radii(
     changed_query: Query<(), Changed<crate::components::System>>,
     mut query: Query<(
@@ -64,6 +71,7 @@ pub fn apply_zoom_to_system_radii(
     }
 }
 
+/// Moves the camera to always be centered on the same point relative to the world entities.
 pub fn apply_zoom_to_camera_position(
     mut query: Query<&mut Transform, With<Camera>>,
     zoom: Res<Zoom>,
@@ -74,6 +82,7 @@ pub fn apply_zoom_to_camera_position(
     **prev_zoom = **zoom;
 }
 
+/// Updates the position of the sides(s) of a flow that are missing an interface connection
 pub fn apply_zoom_to_incomplete_flows(
     mut flow_query: Query<
         (
@@ -101,6 +110,8 @@ pub fn apply_zoom_to_incomplete_flows(
     **prev_zoom = **zoom;
 }
 
+/// Updates the position of the sides(s) of a flow that is connected a System,
+/// and is missing an interface connection on both sides.
 pub fn apply_zoom_to_flow_without_interface(
     mut no_interface_flow_query: Query<
         (&mut FlowCurve, &FlowStartConnection, &FlowEndConnection),
