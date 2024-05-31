@@ -33,24 +33,34 @@ use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
 
+/// Prevents entity cleanup systems from running until after the user deletes a selected element.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct RemovalCleanupSet;
 
+/// Prevents diagram creation systems from running while file selection is active.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct AllSet;
 
+/// Prevents zoom systems from running until the zoom resource is changed.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct ZoomSet;
 
+/// Systems that manipulate the camera transform.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct CameraControlSet;
 
+/// Systems that place & update CreateButtons.
+/// Prevents buttons from updating until diagram elements child transforms are updated.
+/// Prevents buttons from showing while user is in the FlowTerminalSelection State.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct CreateButtonSet;
 
+/// Systems that control selection & placement of nested external entities on the diagram
+/// Prevents the systems from running while the App is in a Normal State.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct FlowTerminalSelectingSet;
 
+/// Systems that spawns all label types.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct AutoSpawnLabelSet;
 
@@ -77,7 +87,6 @@ fn main() {
     .add_event::<RemoveEvent>()
     .init_state::<AppState>()
     .add_systems(Startup, (window_setup, setup));
-
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
 
@@ -189,7 +198,6 @@ fn main() {
                 add_interface_subsystem_create_buttons,
                 add_subsystem_from_external_entities_create_button,
                 remove_unfocused_system_buttons,
-                // update_unpinned_pinnables,
             )
                 .in_set(CreateButtonSet),
             update_flow_from_interface,
@@ -201,7 +209,6 @@ fn main() {
                 .after(update_subsystem_radius_from_interface_count),
             update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
             update_flow_from_subsystem_without_interface,
-            //update_pin_rotation,
             apply_zoom_to_added_label.after(AutoSpawnLabelSet),
         )
             .in_set(AllSet),
@@ -269,6 +276,9 @@ fn main() {
             ..default()
         },
     );
+    // let settings = bevy_mod_debugdump::schedule_graph::Settings::default();
+    // let dot = bevy_mod_debugdump::schedule_graph_dot(&mut app, PreUpdate, &settings);
+    // std::fs::write(format!("schedule_preupdate.dot"), dot);
 
     app.run();
 }
