@@ -29,7 +29,7 @@ pub const FLOW_LINE_WIDTH: f32 = 3.0;
 pub const FLOW_SELECTED_LINE_WIDTH: f32 = 5.0;
 /// Default width of the selection line segment overlaid on top of a selected flow's line segment.
 pub const FLOW_SELECTED_INNER_LINE_WIDTH: f32 = FLOW_SELECTED_LINE_WIDTH - 4.0;
-/// Default z-index of a flow.
+/// Local z coordinate of a flow.
 pub const FLOW_Z: f32 = 1.0;
 
 pub const FLOW_CLICK_WIDTH: f32 = 20.0;
@@ -44,7 +44,7 @@ pub const FLOW_ARROW_HEAD_WIDTH_HALF: f32 = 10.0;
 pub const SUBSYSTEM_SCALING_FACTOR: f32 = 0.3;
 /// Default number that defines the lower bound of the scale factor used in the (re)sizing a subsystem.
 pub const SUBSYSTEM_MIN_SCALING_FACTOR: f32 = 0.15;
-/// Default z-index of a subsystem.
+/// Local z coordinate of a subsystem.
 pub const SUBSYSTEM_Z: f32 = 10.0;
 /// Size of subsystems are scaled based on the number of interfaces it has until it reaches this limit.
 pub const SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT: f32 = 8.0;
@@ -59,11 +59,14 @@ pub const INTERFACE_LINE_WIDTH: f32 = DEFAULT_LINE_WIDTH;
 pub const INTERFACE_SELECTED_LINE_WIDTH: f32 = INTERFACE_LINE_WIDTH + 2.0;
 /// Default line width of the selection lines overlaid on the perimeter of the rectangle of a selected interface.
 pub const INTERFACE_SELECTED_INNER_LINE_WIDTH: f32 = INTERFACE_SELECTED_LINE_WIDTH - 4.0;
-/// Default z-index of an interface.
+/// Local z coordinate of an interface.
 pub const INTERFACE_Z: f32 = 100.0;
 
 /// Default half width of a create-button.
 pub const BUTTON_WIDTH_HALF: f32 = 16.0;
+/// Local z coordinate of a create-button.
+pub const BUTTON_Z: f32 = 200.0;
+
 
 /// Default half width of an external entity.
 pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 20.0;
@@ -76,7 +79,7 @@ pub const EXTERNAL_ENTITY_SELECTED_LINE_WIDTH: f32 = EXTERNAL_ENTITY_LINE_WIDTH 
 /// Default line width of the selection lines overlaid on a selected external entity.
 pub const EXTERNAL_ENTITY_SELECTED_INNER_LINE_WIDTH: f32 =
     EXTERNAL_ENTITY_SELECTED_LINE_WIDTH - 4.0;
-/// Default z-index of an external entity.
+/// Local z coordinate of an external entity.
 pub const EXTERNAL_ENTITY_Z: f32 = 1.0;
 
 /// The initial handle for the default color material on some meshes.

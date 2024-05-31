@@ -1,5 +1,5 @@
 use crate::components::*;
-use crate::constants::BUTTON_WIDTH_HALF;
+use crate::constants::{BUTTON_WIDTH_HALF, BUTTON_Z};
 use crate::systems::{
     on_create_button_click, on_external_entity_create_button_click, on_flow_terminal_button_click,
     on_subsystem_button_click,
@@ -60,7 +60,7 @@ pub fn spawn_create_button(
             create_button,
             SpriteBundle {
                 texture: asset_server.load(path),
-                transform: Transform::from_translation((position * zoom).extend(200.))
+                transform: Transform::from_translation((position * zoom).extend(BUTTON_Z))
                     .with_rotation(Quat::from_rotation_z(angle)),
                 sprite: Sprite {
                     custom_size: Some(Vec2::new(button_width, button_width)),
