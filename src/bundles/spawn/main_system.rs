@@ -3,7 +3,6 @@ use crate::components::{NestingLevel, Subsystem, SystemBoundary, SystemEnvironme
 use crate::constants::MAIN_SYSTEM_RADIUS;
 use crate::data_model::Complexity;
 use crate::plugins::label::{add_name_label, Alignment, AutoContrastTextColor, CopyPositionArgs};
-use crate::Pinnable;
 use bevy::math::{vec2, vec3, Vec2};
 use bevy::prelude::*;
 
@@ -34,7 +33,6 @@ pub fn spawn_main_system(
                 description,
             ),
             SystemEnvironment::default(),
-            Pinnable { has_pins: false },
         ))
         .id()
 }

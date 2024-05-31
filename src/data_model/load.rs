@@ -478,7 +478,6 @@ fn spawn_loaded_subsystem(
                 &system.info.name,
                 &system.info.description,
             ),
-            Pinnable { has_pins: false },
             On::<DragPosition>::send_event::<SubsystemDrag>(),
         ))
         .id()

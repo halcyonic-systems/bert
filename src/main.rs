@@ -263,8 +263,6 @@ fn main() {
     .register_type::<FlowCurve>()
     .register_type::<InitialPosition>()
     .register_type::<SelectedHighlightHelperAdded>()
-    .register_type::<Pinnable>()
-    .register_type::<Pin>()
     .register_type::<NestingLevel>()
     .register_type::<FocusedSystem>()
     .register_type::<Zoom>();

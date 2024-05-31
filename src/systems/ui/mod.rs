@@ -3,7 +3,6 @@ mod color;
 mod drag;
 mod flow;
 mod label;
-mod pin;
 mod selected_helper;
 mod zoom;
 
@@ -12,7 +11,6 @@ pub use add_remove_buttons::*;
 pub use color::*;
 pub use drag::*;
 pub use flow::*;
-// pub use pin::*;
 pub use label::*;
 pub use selected_helper::*;
 pub use zoom::*;

@@ -172,7 +172,6 @@ fn spawn_subsystem_common(
                     name,
                     description,
                 ),
-                Pinnable { has_pins: false },
                 On::<DragPosition>::send_event::<SubsystemDrag>(),
             ))
             .id(),
