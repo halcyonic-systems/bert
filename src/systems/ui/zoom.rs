@@ -22,7 +22,8 @@ use bevy::render::primitives::Aabb;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
-/// The zoom value is multiplied to the translations x and y of all Non-Camera entities. The z component stays unchanged.
+/// Applies the current zoom value to the x and y translations of all non-camera entities.
+/// The z component of the translation remains unchanged.
 pub fn apply_zoom(
     mut query: Query<(&mut Transform, &InitialPosition), Without<Camera>>,
     zoom: Res<Zoom>,
@@ -32,9 +33,11 @@ pub fn apply_zoom(
     }
 }
 
-/// Only system entities change size according to the current zoom value. 
-/// This is done by drawing a circle with it’s base radius multiplied by zoom.
-/// The transform’s scale is not changed.
+/// Adjusts the size of system entities according to the current zoom level.
+///
+/// This function ensures that only system entities change size by drawing a circle
+/// with its base radius multiplied by the current zoom value. Note that the transform's
+/// scale is not modified in this process.
 pub fn apply_zoom_to_system_radii(
     changed_query: Query<(), Changed<crate::components::System>>,
     mut query: Query<(
@@ -83,7 +86,7 @@ pub fn apply_zoom_to_camera_position(
 }
 
 /// Adjusts the position of flow endpoints that are missing interface connections,
-/// when the flow is missing either a start or end connection.
+/// when the flow is also missing a start or end connection.
 pub fn apply_zoom_to_incomplete_flows(
     mut flow_query: Query<
         (
@@ -137,6 +140,9 @@ pub fn apply_zoom_to_flow_without_interface(
     **prev_zoom = **zoom;
 }
 
+/// Adjusts the zoom level based on keyboard input. 
+/// 
+/// Press the minus (-) key to zoom in, or press the equals (=) key to zoom out.
 pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
     if input.just_pressed(KeyCode::Minus) {
         zoom.mul(1.2);

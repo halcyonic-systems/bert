@@ -41,6 +41,7 @@ impl NestingLevel {
 }
 
 /// Marker for entities that need their scale & visibility updated based on the zoom level.
+/// Currently used to scale the arrow head of a flow
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct ApplyZoomToScale;
