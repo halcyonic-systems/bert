@@ -1,3 +1,6 @@
+//! Systems that manipulate the geometry of the diagram.
+//! See design/Geometry_High-Level_Overview.pdf for a big picture overview.
+
 use crate::bundles::{
     aabb_from_radius, get_system_geometry_from_radius, FixedSystemElementGeometry,
 };
@@ -19,6 +22,8 @@ use bevy::render::primitives::Aabb;
 use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
+/// Applies the current zoom value to the x and y translations of all non-camera entities.
+/// The z component of the translation remains unchanged.
 pub fn apply_zoom(
     mut query: Query<(&mut Transform, &InitialPosition), Without<Camera>>,
     zoom: Res<Zoom>,
@@ -28,6 +33,11 @@ pub fn apply_zoom(
     }
 }
 
+/// Adjusts the size of system entities according to the current zoom level.
+///
+/// This function ensures that only system entities change size by drawing a circle
+/// with its base radius multiplied by the current zoom value. Note that the transform's
+/// scale is not modified in this process.
 pub fn apply_zoom_to_system_radii(
     changed_query: Query<(), Changed<crate::components::System>>,
     mut query: Query<(
@@ -64,6 +74,7 @@ pub fn apply_zoom_to_system_radii(
     }
 }
 
+/// Moves the camera to always be centered on the same point relative to the world entities.
 pub fn apply_zoom_to_camera_position(
     mut query: Query<&mut Transform, With<Camera>>,
     zoom: Res<Zoom>,
@@ -74,6 +85,8 @@ pub fn apply_zoom_to_camera_position(
     **prev_zoom = **zoom;
 }
 
+/// Adjusts the position of flow endpoints that are missing interface connections,
+/// when the flow is also missing a start or end connection.
 pub fn apply_zoom_to_incomplete_flows(
     mut flow_query: Query<
         (
@@ -101,6 +114,8 @@ pub fn apply_zoom_to_incomplete_flows(
     **prev_zoom = **zoom;
 }
 
+/// Adjusts the position of the flow endpoints connected to a System,
+/// when the flow lacks interface connections at both ends.
 pub fn apply_zoom_to_flow_without_interface(
     mut no_interface_flow_query: Query<
         (&mut FlowCurve, &FlowStartConnection, &FlowEndConnection),
@@ -125,6 +140,9 @@ pub fn apply_zoom_to_flow_without_interface(
     **prev_zoom = **zoom;
 }
 
+/// Adjusts the 'Zoom' level based on keyboard input. 
+/// 
+/// Press the minus (-) key to zoom in, or press the equals (=) key to zoom out.
 pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
     if input.just_pressed(KeyCode::Minus) {
         zoom.mul(1.2);
@@ -211,6 +229,10 @@ pub fn apply_zoom_to_system_geometries(
     apply_geometries!(interface_query, interface);
 }
 
+/// Applies the given geometry to the specified entity.
+///
+/// This function updates the `Path`, `SimplifiedMesh`, and `Aabb` components of the specified
+/// entity with the values from the provided `FixedSystemElementGeometry`.
 fn apply_geometry(
     entity: Entity,
     geometry: &FixedSystemElementGeometry,
@@ -227,6 +249,7 @@ fn apply_geometry(
     aabb.half_extents = geometry.aabb.half_extents;
 }
 
+/// Adjusts the line width and `Visibility` state of a `Stroke` based on the current `Zoom` level.
 pub fn apply_zoom_to_strokes(
     mut highlight_query: Query<(
         &NestingLevel,
@@ -257,6 +280,8 @@ pub fn apply_zoom_to_strokes(
     }
 }
 
+/// Adjusts the scale and `Visibility` state of entities with a `ApplyZoomToScale` component
+/// based on the current `Zoom` level.
 pub fn apply_zoom_to_scale(
     mut query: Query<(&mut Transform, &mut Visibility, &NestingLevel), With<ApplyZoomToScale>>,
     zoom: Res<Zoom>,
@@ -272,6 +297,8 @@ pub fn apply_zoom_to_scale(
     }
 }
 
+/// Adjusts the scale and `Visibility` state of entities with a `LabelContainer` component
+/// based on the current `Zoom` level.
 pub fn apply_zoom_to_label(
     mut query: Query<(&mut Transform, &mut Visibility, &NestingLevel), With<LabelContainer>>,
     zoom: Res<Zoom>,
@@ -287,6 +314,8 @@ pub fn apply_zoom_to_label(
     }
 }
 
+/// Adjusts the scale of a `Transform` and the `Visibility` state based on
+/// the `NestingLevel`, zoom, and a threshold.
 fn apply_scale_and_visibility(
     nesting_level: &NestingLevel,
     transform: &mut Mut<Transform>,
@@ -300,6 +329,7 @@ fn apply_scale_and_visibility(
     apply_visibility(visibility, scale, threshold);
 }
 
+/// Adjusts the `Visibility` state based on a scale value and a threshold.
 fn apply_visibility(visibility: &mut Mut<Visibility>, scale: f32, threshold: f32) {
     **visibility = if scale > threshold {
         Visibility::Inherited
@@ -308,6 +338,7 @@ fn apply_visibility(visibility: &mut Mut<Visibility>, scale: f32, threshold: f32
     }
 }
 
+/// Adjusts the `Visibility` state of entities with newly added `LabelContainers` based on the current `Zoom` level.
 pub fn apply_zoom_to_added_label(
     mut query: Query<(&mut Transform, &mut Visibility, &NestingLevel), Added<LabelContainer>>,
     zoom: Res<Zoom>,

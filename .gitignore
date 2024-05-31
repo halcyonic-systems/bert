@@ -6,3 +6,4 @@ world_model.json
 *.iconset
 build
 *.dmg
+*.dot
