@@ -82,7 +82,8 @@ pub fn apply_zoom_to_camera_position(
     **prev_zoom = **zoom;
 }
 
-/// Updates the position of the sides(s) of a flow that are missing an interface connection
+/// Adjusts the position of flow endpoints that are missing interface connections,
+/// when the flow is missing either a start or end connection.
 pub fn apply_zoom_to_incomplete_flows(
     mut flow_query: Query<
         (
@@ -110,8 +111,8 @@ pub fn apply_zoom_to_incomplete_flows(
     **prev_zoom = **zoom;
 }
 
-/// Updates the position of the sides(s) of a flow that is connected a System,
-/// and is missing an interface connection on both sides.
+/// Adjusts the position of the flow endpoints connected to a System,
+/// when the flow lacks interface connections at both ends.
 pub fn apply_zoom_to_flow_without_interface(
     mut no_interface_flow_query: Query<
         (&mut FlowCurve, &FlowStartConnection, &FlowEndConnection),
