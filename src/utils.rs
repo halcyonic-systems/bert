@@ -59,9 +59,6 @@ pub fn compute_end_and_direction_from_subsystem(
     )
     .normalize();
 
-    direction += (other_end - system_pos).normalize();
-    direction = direction.normalize();
-
     (system_pos + direction * system_radius, direction)
 }
 
