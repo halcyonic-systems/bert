@@ -183,21 +183,27 @@ pub fn update_flow_from_interface(
 }
 
 pub fn update_flow_from_subsystem_without_interface(
-    subsystem_query: Query<
+    system_query: Query<
         (Entity, &GlobalTransform, &crate::components::System),
-        (With<Subsystem>, Changed<Transform>),
+        Or<(Changed<GlobalTransform>, Changed<crate::components::System>)>,
     >,
-    mut flow_query: Query<(
-        &mut FlowCurve,
-        &GlobalTransform,
-        Option<&FlowStartConnection>,
-        Option<&FlowEndConnection>,
-        Option<&FlowStartInterfaceConnection>,
-        Option<&FlowEndInterfaceConnection>,
-    )>,
+    mut flow_query: Query<
+        (
+            &mut FlowCurve,
+            &GlobalTransform,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+            Option<&FlowStartInterfaceConnection>,
+            Option<&FlowEndInterfaceConnection>,
+        ),
+        Or<(
+            Without<FlowStartInterfaceConnection>,
+            Without<FlowEndInterfaceConnection>,
+        )>,
+    >,
     zoom: Res<Zoom>,
 ) {
-    for (target, system_transform, system) in &subsystem_query {
+    for (target, system_transform, system) in &system_query {
         for (
             mut flow_curve,
             flow_transform,
@@ -212,12 +218,10 @@ pub fn update_flow_from_subsystem_without_interface(
                 .transform_point3(system_transform.translation())
                 .truncate();
 
-            if let Some(flow_end_connection) = flow_end_connection {
+            if let (Some(flow_end_connection), None) =
+                (flow_end_connection, flow_end_interface_connection)
+            {
                 if flow_end_connection.target == target {
-                    if flow_end_interface_connection.is_some() {
-                        continue;
-                    }
-
                     let (end, end_direction) = compute_end_and_direction_from_subsystem(
                         system_pos,
                         system.radius * **zoom,
@@ -230,12 +234,10 @@ pub fn update_flow_from_subsystem_without_interface(
                 }
             }
 
-            if let Some(flow_start_connection) = flow_start_connection {
+            if let (Some(flow_start_connection), None) =
+                (flow_start_connection, flow_start_interface_connection)
+            {
                 if flow_start_connection.target == target {
-                    if flow_start_interface_connection.is_some() {
-                        continue;
-                    }
-
                     let (start, start_direction) = compute_end_and_direction_from_subsystem(
                         system_pos,
                         system.radius * **zoom,
@@ -372,4 +374,67 @@ pub fn compute_smooth_flow_terminal_direction(
     tangent_len: f32,
 ) -> Vec2 {
     other_end + other_end_direction * tangent_len - pos
+}
+
+pub fn update_interface_button_from_interaction(
+    interaction_query: Query<
+        (
+            &FlowCurve,
+            &HasFlowInterfaceButton,
+            &GlobalTransform,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+        ),
+        Changed<FlowCurve>,
+    >,
+    global_transform_query: Query<&GlobalTransform>,
+    mut transform_query: Query<&mut Transform>,
+    parent_query: Query<&Parent>,
+) {
+    for (
+        flow_curve,
+        has_interface_button,
+        interaction_transform,
+        start_connection,
+        end_connection,
+    ) in &interaction_query
+    {
+        let parent_system_entity = parent_query
+            .get(has_interface_button.button_entity)
+            .expect("Parent should exist")
+            .get();
+
+        let system_transform = global_transform_query
+            .get(parent_system_entity)
+            .expect("System should have a GlobalTransform");
+
+        let interaction_to_system =
+            system_transform.affine().inverse() * interaction_transform.affine();
+
+        if let Some(start_connection) = start_connection {
+            if start_connection.target == parent_system_entity {
+                let mut transform = transform_query
+                    .get_mut(has_interface_button.button_entity)
+                    .expect("Button should have a Transform");
+
+                transform.translation = interaction_to_system
+                    .transform_point3(flow_curve.start.extend(0.0))
+                    .truncate()
+                    .extend(transform.translation.z);
+            }
+        }
+
+        if let Some(end_connection) = end_connection {
+            if end_connection.target == parent_system_entity {
+                let mut transform = transform_query
+                    .get_mut(has_interface_button.button_entity)
+                    .expect("Button should have a Transform");
+
+                transform.translation = interaction_to_system
+                    .transform_point3(flow_curve.end.extend(0.0))
+                    .truncate()
+                    .extend(transform.translation.z);
+            }
+        }
+    }
 }

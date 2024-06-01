@@ -83,7 +83,7 @@ pub fn spawn_create_button(
 
     match create_button.ty {
         CreateButtonType::ImportInterface | CreateButtonType::ExportInterface => {
-            commands.insert(HasFlowInterfaceButton);
+            commands.insert(HasFlowInterfaceButton { button_entity });
         }
         CreateButtonType::Source
         | CreateButtonType::Sink

@@ -94,7 +94,7 @@ pub fn update_subsystem_radius_from_interface_count(
     subsystem_query: Query<(
         Entity,
         &Subsystem,
-        &Children,
+        Option<&Children>,
         Option<&InterfaceSubsystem>,
         &Parent,
     )>,
@@ -117,7 +117,7 @@ pub fn update_subsystem_radius_from_interface_count(
             interface_count += 1;
         }
 
-        for child in children {
+        for child in children.map(|c| &**c).unwrap_or_default() {
             if interface_query.get(*child).is_ok() {
                 interface_count += 1;
             }

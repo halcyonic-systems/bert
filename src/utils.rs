@@ -51,7 +51,7 @@ pub fn compute_end_and_direction_from_subsystem(
     other_end: Vec2,
     other_end_direction: Vec2,
 ) -> (Vec2, Vec2) {
-    let mut direction = compute_smooth_flow_terminal_direction(
+    let direction = compute_smooth_flow_terminal_direction(
         system_pos,
         other_end,
         other_end_direction,

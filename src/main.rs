@@ -55,6 +55,11 @@ struct CameraControlSet;
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 struct CreateButtonSet;
 
+/// Contains the systems that update the geometry of one type of entity from another.
+/// For example, interfaces from subsystem radii.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct GeometryUpdateSet;
+
 /// Systems that control selection & placement of nested external entities on the diagram
 /// Prevents the systems from running while the App is in a Normal State.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -137,13 +142,13 @@ fn main() {
                 cleanup_interface_removal,
                 cleanup_subsystem_removal,
                 cleanup_flow_removal,
+                cleanup_focused_system,
             )
                 .in_set(RemovalCleanupSet),
             (
                 apply_zoom,
                 apply_zoom_to_camera_position,
                 apply_zoom_to_incomplete_flows,
-                apply_zoom_to_flow_without_interface,
                 apply_zoom_to_system_geometries,
                 apply_zoom_to_strokes,
                 apply_zoom_to_scale,
@@ -200,15 +205,20 @@ fn main() {
                 remove_unfocused_system_buttons,
             )
                 .in_set(CreateButtonSet),
-            update_flow_from_interface,
-            update_flow_from_external_entity,
-            update_label_offset_from_interface.before(copy_position),
-            update_label_from_interaction,
-            update_subsystem_radius_from_interface_count,
-            update_interface_positions_from_system_radius
-                .after(update_subsystem_radius_from_interface_count),
-            update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
-            update_flow_from_subsystem_without_interface,
+            (
+                update_flow_from_interface,
+                update_flow_from_external_entity,
+                update_label_offset_from_interface.before(copy_position),
+                update_label_from_interaction,
+                update_subsystem_radius_from_interface_count,
+                update_interface_positions_from_system_radius
+                    .after(update_subsystem_radius_from_interface_count),
+                update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
+                update_flow_from_subsystem_without_interface
+                    .after(update_subsystem_radius_from_interface_count),
+                update_interface_button_from_interaction,
+            )
+                .in_set(GeometryUpdateSet),
             apply_zoom_to_added_label.after(AutoSpawnLabelSet),
         )
             .in_set(AllSet),
@@ -237,6 +247,7 @@ fn main() {
         (
             CreateButtonSet
                 .after(TransformPropagate)
+                .after(GeometryUpdateSet)
                 .run_if(in_state(AppState::Normal)),
             AllSet.run_if(in_state(FileState::Inactive)),
         ),

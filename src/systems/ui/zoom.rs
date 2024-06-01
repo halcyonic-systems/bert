@@ -6,7 +6,8 @@ use crate::bundles::{
 };
 use crate::components::*;
 use crate::constants::{
-    EXTERNAL_ENTITY_LINE_WIDTH, LABEL_SCALE_VISIBILITY_THRESHOLD, SCALE_VISIBILITY_THRESHOLD,
+    BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, LABEL_SCALE_VISIBILITY_THRESHOLD,
+    SCALE_VISIBILITY_THRESHOLD,
 };
 use crate::plugins::label::LabelContainer;
 use crate::plugins::lyon_selection::HighlightBundles;
@@ -85,63 +86,40 @@ pub fn apply_zoom_to_camera_position(
     **prev_zoom = **zoom;
 }
 
-/// Adjusts the position of flow endpoints that are missing interface connections,
-/// when the flow is also missing a start or end connection.
+/// Adjusts the position of flow endpoints that are not connected to anything.
 pub fn apply_zoom_to_incomplete_flows(
     mut flow_query: Query<
         (
             &mut FlowCurve,
-            Option<&FlowStartInterfaceConnection>,
-            Option<&FlowEndInterfaceConnection>,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
         ),
         Or<(Without<FlowStartConnection>, Without<FlowEndConnection>)>,
     >,
     zoom: Res<Zoom>,
     mut prev_zoom: Local<Zoom>,
 ) {
-    for (mut flow_curve, flow_start_interface_connection, flow_end_interface_connection) in
-        &mut flow_query
-    {
-        if flow_start_interface_connection.is_none() {
+    for (mut flow_curve, flow_start_connection, flow_end_connection) in &mut flow_query {
+        if flow_start_connection.is_none() {
+            let button_offset = flow_curve.start_direction * BUTTON_WIDTH_HALF;
+            flow_curve.start -= button_offset;
             flow_curve.start *= **zoom / **prev_zoom;
+            flow_curve.start += button_offset;
         }
 
-        if flow_end_interface_connection.is_none() {
+        if flow_end_connection.is_none() {
+            let button_offset = flow_curve.end_direction * BUTTON_WIDTH_HALF;
+            flow_curve.end -= button_offset;
             flow_curve.end *= **zoom / **prev_zoom;
+            flow_curve.end += button_offset;
         }
     }
 
     **prev_zoom = **zoom;
 }
 
-/// Adjusts the position of the flow endpoints connected to a System,
-/// when the flow lacks interface connections at both ends.
-pub fn apply_zoom_to_flow_without_interface(
-    mut no_interface_flow_query: Query<
-        (&mut FlowCurve, &FlowStartConnection, &FlowEndConnection),
-        (
-            Without<FlowStartInterfaceConnection>,
-            Without<FlowEndInterfaceConnection>,
-        ),
-    >,
-    zoom: Res<Zoom>,
-    mut prev_zoom: Local<Zoom>,
-) {
-    for (mut flow_curve, start_connection, end_connection) in &mut no_interface_flow_query {
-        if matches!(start_connection.target_type, StartTargetType::System) {
-            flow_curve.start *= **zoom / **prev_zoom;
-        }
-
-        if matches!(end_connection.target_type, EndTargetType::System) {
-            flow_curve.end *= **zoom / **prev_zoom;
-        }
-    }
-
-    **prev_zoom = **zoom;
-}
-
-/// Adjusts the 'Zoom' level based on keyboard input. 
-/// 
+/// Adjusts the 'Zoom' level based on keyboard input.
+///
 /// Press the minus (-) key to zoom in, or press the equals (=) key to zoom out.
 pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
     if input.just_pressed(KeyCode::Minus) {

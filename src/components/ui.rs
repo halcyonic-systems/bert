@@ -30,7 +30,9 @@ pub enum CreateButtonType {
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
-pub struct HasFlowInterfaceButton;
+pub struct HasFlowInterfaceButton {
+    pub button_entity: Entity,
+}
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]

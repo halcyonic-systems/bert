@@ -20,20 +20,12 @@ pub fn remove_selected_elements(
     >,
     parent_query: Query<&Parent>,
     root_system_query: Query<&crate::components::System, Without<Subsystem>>,
-    subsystem_query: Query<&Subsystem>,
-    mut focused_system: ResMut<FocusedSystem>,
     mut remove_event_writer: EventWriter<RemoveEvent>,
 ) {
     for (entity_to_remove, selection, parent) in &selected_query {
         if selection.is_selected {
             if root_system_query.get(entity_to_remove).is_ok() {
                 continue;
-            }
-
-            if let Ok(subsystem) = subsystem_query.get(entity_to_remove) {
-                if entity_to_remove == **focused_system {
-                    **focused_system = subsystem.parent_system;
-                }
             }
 
             if let Ok((
@@ -80,6 +72,18 @@ pub fn remove_selected_elements(
             commands.entity(entity_to_remove).despawn_recursive();
 
             remove_event_writer.send(RemoveEvent);
+        }
+    }
+}
+
+pub fn cleanup_focused_system(
+    mut removed_systems: RemovedComponents<Subsystem>,
+    root_system_query: Query<Entity, (With<crate::components::System>, Without<Subsystem>)>,
+    mut focused_system: ResMut<FocusedSystem>,
+) {
+    for removed_system in removed_systems.read() {
+        if removed_system == **focused_system {
+            **focused_system = root_system_query.single();
         }
     }
 }
