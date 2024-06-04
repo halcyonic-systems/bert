@@ -18,10 +18,15 @@ fn load_from_json(file_name: &str) -> WorldModel {
     serde_json::from_slice(&bytes).expect("This shouldn't fail")
 }
 
+/// Context for bookkeeping while we traverse the data model and spawn the entities and components.
 struct Context {
+    /// Maps the data model id to the spawned bevy entity
     id_to_entity: HashMap<Id, Entity>,
+    /// Maps the data model id to wether this is an interface subsystem or not
     id_to_interface_subsystem: HashMap<Id, bool>,
+    /// Maps the id of an external entity to the subsystance type of it's connecting interaction
     external_entity_id_to_substance: HashMap<Id, SubstanceType>,
+    /// Maps the spawned bevy entity to wether there are (outgoing, ingoing) interactions connected
     entity_to_interface_interactions: HashMap<Entity, (bool, bool)>,
 }
 
@@ -46,6 +51,7 @@ pub fn load_world(
     zoom: Res<Zoom>,
 ) {
     for event in load_file_event_reader.read() {
+        // clear the scene first
         for entity in &existing_elements_query {
             commands.entity(entity).despawn_recursive();
         }
@@ -55,6 +61,7 @@ pub fn load_world(
 
         let mut ctx = Context::new();
 
+        // start by mapping all external entities to the substance type
         for interaction in &world_model.interactions {
             if matches!(interaction.sink.ty, IdType::Sink) {
                 ctx.external_entity_id_to_substance
@@ -66,6 +73,8 @@ pub fn load_world(
                     .insert(interaction.source.clone(), interaction.substance.ty);
             }
         }
+
+        // then spawn everything
 
         spawn_systems_interfaces_and_external_entities(
             &mut commands,
@@ -325,6 +334,9 @@ fn spawn_external_entities<S: HasSourcesAndSinks + HasInfo>(
     }
 }
 
+/// Go through all the systems create parent-child relationsships between them. If we find a first
+/// level interface subsystem we add it as a child of the interface. Otherwise it's added as a
+/// child to its parent system.
 fn make_systems_parent_child_hierarchy(
     commands: &mut Commands,
     ctx: &mut Context,

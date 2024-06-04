@@ -6,10 +6,16 @@ use bevy::core::Name;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
+/// Context for bookkeeping while we traverse the ECS and build the data model that is serialized.
 struct Context {
+    /// Remember how many objects of the given type and the index list of the parent have been created.
+    /// This is used by [`Context::next_id`].
     parent_id_to_count: HashMap<Id, i64>,
+    /// Map bevy entities to their data model ids
     entity_to_id: HashMap<Entity, Id>,
+    /// A list of all interactions
     interactions: Vec<Interaction>,
+    /// Map bevy entities to their index in `interactions`.
     entity_to_interaction_idx: HashMap<Entity, usize>,
 }
 
@@ -23,6 +29,8 @@ impl Context {
         }
     }
 
+    /// Return the next id for a given type and parent indices. Also keep a mapping
+    /// from the bevy entity to this id for later reference.
     fn next_id(&mut self, entity: Entity, ty: IdType, parent_idx: &[i64]) -> Id {
         let count = self
             .parent_id_to_count
@@ -75,6 +83,8 @@ pub fn save_world(
             .expect("System of interest should exist");
 
         let mut ctx = Context::new();
+
+        // Map bevy entities to their data model systems
         let mut entity_to_system = HashMap::<Entity, crate::data_model::System>::new();
 
         let mut environment = Environment {
@@ -91,6 +101,7 @@ pub fn save_world(
             sinks: vec![],
         };
 
+        // Build the root system
         build_system(
             system_entity,
             system_component,
@@ -107,10 +118,12 @@ pub fn save_world(
             &mut entity_to_system,
         );
 
+        // Retrieve the just built root system
         let system = entity_to_system
             .get_mut(&system_entity)
             .expect("Should exist");
 
+        // Add the interfaces, external interactions and entities to the root system
         build_interfaces_interaction_and_external_entities(
             &mut ctx,
             system_entity,
@@ -125,6 +138,7 @@ pub fn save_world(
 
         // TODO : connect interaction interface links
 
+        // Recursively build the subsystems in a similar manner as the root system
         build_subsystems(
             &mut ctx,
             system_entity,
@@ -138,6 +152,8 @@ pub fn save_world(
             &mut entity_to_system,
         );
 
+        // Add the source and sink interface connections to all interactions after all
+        // interfaces and interactions have been created.
         for (
             flow_entity,
             _,
@@ -170,6 +186,9 @@ pub fn save_world(
     }
 }
 
+/// Iterate through all subsystems of the given system entity and build them. Then build all
+/// the interactions between them and sources/sinks contained in the parent system.
+/// Then do it recursively for each subsystem again.
 fn build_subsystems(
     mut ctx: &mut Context,
     parent_system_entity: Entity,
@@ -190,6 +209,8 @@ fn build_subsystems(
     mut entity_to_system: &mut HashMap<Entity, System>,
 ) {
     let mut not_interface_subsystems = vec![];
+
+    // bevy entities that are subsystems of the parent system
     let mut system_entities = vec![];
 
     for (subsystem_entity, system_component, subsystem) in subsystem_query {
@@ -201,7 +222,9 @@ fn build_subsystems(
                 .expect("Subsystem should have a parent")
                 .get();
 
+            // If the subsystem in an interface subsystem (only first level, interface is the direct parent in bevy)...
             if interface_query.get(parent_entity).is_ok() {
+                // ...make sure it has the same id indices as it's parent interface
                 let interface_id = &ctx.entity_to_id[&parent_entity];
                 let indices = interface_id.indices.clone();
                 let (last_index, parent_indices) = indices.split_last().expect("Should exist");
@@ -237,6 +260,7 @@ fn build_subsystems(
                     &mut entity_to_system,
                 );
             } else {
+                // ... otherwise save it as 'normal' subsystem for later processing
                 let mut parent_interface_id = None;
 
                 while let Ok(parent) = parent_query.get(parent_entity) {
@@ -257,6 +281,8 @@ fn build_subsystems(
         }
     }
 
+    // Now that all the ids that are used by the interface subsystems are known, we can proceed with
+    // building all the 'normal' subsystems with normal id generation
     for (subsystem_entity, system_component, parent_interface_id) in not_interface_subsystems {
         let system = entity_to_system
             .get_mut(&parent_system_entity)
@@ -285,6 +311,8 @@ fn build_subsystems(
         .remove(&parent_system_entity)
         .expect("Should exist");
 
+    // For each subsystem build the interfaces it contains and interactions and external entities
+    // that are connected to it
     for system_entity in &system_entities {
         let system = entity_to_system
             .get_mut(system_entity)
@@ -305,6 +333,7 @@ fn build_subsystems(
 
     entity_to_system.insert(parent_system_entity, parent_system);
 
+    // recurse down
     for system_entity in system_entities {
         build_subsystems(
             ctx,
@@ -321,6 +350,8 @@ fn build_subsystems(
     }
 }
 
+/// Create all interfaces that are part of the given system together with connected
+/// interactions and external entities.
 fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAndSinks>(
     ctx: &mut Context,
     system_entity: Entity,
@@ -339,6 +370,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
     interface_query: &Query<(&crate::components::Interface, &Transform)>,
     external_entity_query: &Query<&crate::components::ExternalEntity>,
 ) {
+    /// we start from the interactions
     for (
         flow_entity,
         flow,
@@ -348,7 +380,9 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         flow_end_interface_connection,
     ) in flow_query
     {
+        // if it's connected at the start to this system ...
         if flow_start_connection.target == system_entity {
+            // ... first we build the start interface ...
             let interface_index =
                 if let Some(interface_connection) = flow_start_interface_connection {
                     build_interface(
@@ -363,7 +397,9 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     continue;
                 };
 
+            // ... then we see if the other end is a sink or a system ...
             let sink_id = match flow_end_connection.target_type {
+                // ... if it's a sink, and it doesn't exist yet, we build it
                 EndTargetType::Sink => {
                     let sink_entity = flow_end_connection.target;
 
@@ -386,13 +422,16 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                         id
                     }
                 }
+                // ... if it's a system we simply get the id because it has been built in a previous step
                 EndTargetType::System => ctx.entity_to_id[&flow_end_connection.target].clone(),
             };
 
+            // connect the interface to the sink, whatever it may be
             system.boundary.interfaces[interface_index]
                 .exports_to
                 .push(sink_id.clone());
 
+            // and finally, build the interaction itself (if it doesn't exist yet).
             if !ctx.entity_to_id.contains_key(&flow_entity) {
                 build_interaction(
                     ctx,
@@ -404,7 +443,9 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     name_and_description_query,
                 );
             }
+            // if connects at the end to this system ...
         } else if flow_end_connection.target == system_entity {
+            // ... first we build the end interface ...
             let interface_index = if let Some(interface_connection) = flow_end_interface_connection
             {
                 build_interface(
@@ -419,7 +460,9 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                 continue;
             };
 
+            // ... then we see if the other end is a source or a system ...
             let source_id = match flow_start_connection.target_type {
+                // ... if it's a source, and it doesn't exist yet, we build it
                 StartTargetType::Source => {
                     let source_entity = flow_start_connection.target;
 
@@ -442,13 +485,16 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                         id
                     }
                 }
+                // ... if it's a system we simply get the id because it has been built in a previous step
                 StartTargetType::System => ctx.entity_to_id[&flow_start_connection.target].clone(),
             };
 
+            // connect the interface to the source, whatever it may be
             system.boundary.interfaces[interface_index]
                 .receives_from
                 .push(source_id.clone());
 
+            // and finally, build the interaction itself (if it doesn't exist yet).
             if !ctx.entity_to_id.contains_key(&flow_entity) {
                 build_interaction(
                     ctx,
@@ -606,8 +652,8 @@ fn build_system(
         parent: parent_id,
         complexity: system.complexity,
         boundary,
-        sources: vec![], // TODO
-        sinks: vec![],   // TODO
+        sources: vec![],
+        sinks: vec![],
         radius: system.radius,
         transform: transform2d_from_entity(system_entity, transform_query),
         equivalence: system.equivalence.clone(),

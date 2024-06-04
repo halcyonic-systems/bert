@@ -10,17 +10,33 @@ use std::fmt;
 
 pub const CURRENT_FILE_VERSION: u32 = 1;
 
+/// Root object
 #[derive(Serialize, Deserialize)]
 pub struct WorldModel {
+    /// File format version. When changes are made to the structure then this needs to be increased
+    /// so files saved with previous versions can be converted when they are loaded.
     pub version: u32,
+    /// This is kind of the parent of the root system
     pub environment: Environment,
+    /// All systems including the root system and all subsystems at all nesting levels.
     pub systems: Vec<System>,
+    /// All interactions at all nesting levels.
     pub interactions: Vec<Interaction>,
 }
 
+/// Unique identifier for any kind of object.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Id {
+    /// Type of the object
     pub ty: IdType,
+    /// List of indices. The last is a serial number (starting at 0) for this type of object
+    /// (same `IdType`). The penultimate number is the serial number of the parent system. The third to
+    /// last is the number of the grandparent system and so on until the root (which is always 0)
+    /// is reached. The environment is the only object that has serial number -1 and it's children
+    /// are `[-1, 0]`, `[-1, 1]`, ...
+    ///
+    /// For example `[0, 1, 5]` means that this is object number `5` of this type and is the child
+    /// of system number `1` which is a subsystem of the root system.
     pub indices: Vec<i64>,
 }
 
@@ -84,6 +100,7 @@ impl<'de> Deserialize<'de> for Id {
     }
 }
 
+/// Type of an [`Id`]. Self explanatory.
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum IdType {
     #[serde(rename = "S")]
@@ -104,22 +121,32 @@ pub enum IdType {
     Boundary,
 }
 
+/// Common data. Most serialized entities have this.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Info {
+    /// The entities id
     pub id: Id,
+    /// The nesting level of the entity. It is usually the parent level + 1 and equals
+    /// `id.indices.len() - 1`. The exception is the environment and all interactions and
+    /// external entities in it. They all have level -1.
     pub level: i32,
     pub name: String,
     pub description: String,
 }
 
+/// A system. Either root or subsystem.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct System {
     pub info: Info,
+    /// All sources contained inside this system
     pub sources: Vec<ExternalEntity>,
+    /// All sinks contained inside this system
     pub sinks: Vec<ExternalEntity>,
+    /// Id of the parent system or the environment if this is the root system.
     pub parent: Id,
     pub complexity: Complexity,
     pub boundary: Boundary,
+    /// Radius in pixels when not zoom is 100%
     pub radius: f32,
     pub transform: Option<Transform2d>,
     pub equivalence: String,
@@ -129,30 +156,43 @@ pub struct System {
     pub time_constant: String,
 }
 
+/// Boundary of a system.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Boundary {
     pub info: Info,
     pub porosity: f32,
     pub perceptive_fuzziness: f32,
+    /// List of all interfaces that are a direct part of this system
     pub interfaces: Vec<Interface>,
+    /// In case this is an interface subsystem then this holds the id of that parent subsytem.
+    /// This interface is not contained in the field `interfaces`.
     pub parent_interface: Option<Id>,
 }
 
+/// Interface of a system
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Interface {
     pub info: Info,
     pub protocol: String,
     #[serde(rename = "type")]
     pub ty: InterfaceType,
+    /// Ids of targets that are connected through interactions from this interface. Can be either a
+    /// sink or another subsystem
     pub exports_to: Vec<Id>,
+    /// Ids of origins that are connected through interactions with this interface as target.
+    /// Can be either a source or another subsystem.
     pub receives_from: Vec<Id>,
+    /// Rotation in radians.
     pub angle: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
 pub enum InterfaceType {
+    /// Interface contains only outgoing interactions
     Export,
+    /// Interface contains only incoming interactions
     Import,
+    /// Interface contains both incoming and outgoing interactions. This is not implemented yet.
     Hybrid,
 }
 
@@ -165,13 +205,17 @@ impl From<crate::components::InterfaceType> for InterfaceType {
     }
 }
 
+/// Environment of the root system
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Environment {
     pub info: Info,
+    /// All external sources
     pub sources: Vec<ExternalEntity>,
+    /// All external sinks
     pub sinks: Vec<ExternalEntity>,
 }
 
+/// Source or sink
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ExternalEntity {
     pub info: Info,
@@ -188,6 +232,8 @@ pub enum ExternalEntityType {
     Sink,
 }
 
+/// Interaction between objects. One end is always a system. The other can be a system as well
+/// or an external entity.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Interaction {
     pub info: Info,
@@ -195,12 +241,19 @@ pub struct Interaction {
     #[serde(rename = "type")]
     pub ty: InteractionType,
     pub usability: InteractionUsability,
+    /// Start of the connection. Can be either a system or a source.
     pub source: Id,
+    /// If the source is a system, then this holds the id to the interface where this connection
+    /// starts from.
     pub source_interface: Option<Id>,
+    /// End of the connection. Can be either a system or a sink.
     pub sink: Id,
+    /// If the sink is a system, then this holds the id to the interface where this connection
+    /// ends at.
     pub sink_interface: Option<Id>,
     pub amount: Decimal,
     pub unit: String,
+    /// List of additional parameters
     pub parameters: Vec<Parameter>,
 }
 
@@ -241,9 +294,13 @@ impl Default for Complexity {
     }
 }
 
+/// Position and rotation of the object
 #[derive(Serialize, Deserialize, Clone, Copy, Default, PartialEq, Debug)]
 pub struct Transform2d {
+    /// position of the object relative to it's parent (as defined by the bevy scene graph, not
+    /// by this data model). This is in pixels if zoom is at 100%.
     pub translation: Vec2,
+    /// Rotation in radians.
     pub rotation: f32,
 }
 
