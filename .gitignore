@@ -7,3 +7,4 @@ world_model.json
 build
 *.dmg
 *.dot
+.cargo
