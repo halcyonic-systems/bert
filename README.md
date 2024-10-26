@@ -11,7 +11,7 @@ BERT represents a first step toward developing this formal systems language, bui
 
 
 # Installation
-Download [BERT v.0.1.0 here](https://drive.google.com/drive/folders/165GBxye1rvqUemeXeoT4--QJ7IoaRdBx)
+Download [BERT v.0.1.0 here](https://github.com/halcyonic-systems/bert/releases/tag/v0.1.0)
 
 # Usage
 
