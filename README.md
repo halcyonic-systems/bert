@@ -17,7 +17,7 @@ Download [BERT v.0.1.0 here](https://github.com/halcyonic-systems/bert/releases/
 
 BERT's GUI enforces the DSA methodology. 
 
-View [our tutorial videos](https://josephensminger.notion.site/Deep-System-Analysis-33b83a7c83e242e78f351404db416d76) introducing BERT's basic functionality. 
+View [our tutorial videos](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) introducing BERT's basic functionality. 
 
 
 # Example Models
