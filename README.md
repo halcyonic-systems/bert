@@ -20,7 +20,7 @@ BERT's GUI enforces the DSA methodology.
 View [our tutorial videos](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) introducing BERT's basic functionality. 
 
 
-# Example Models
+# Examples
 
 
 # Contributing
