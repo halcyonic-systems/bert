@@ -9,9 +9,12 @@ BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/empl
 
 BERT represents a first step toward developing this formal systems language, built specifically for modern systems scientists.
 
-Theory
-Knowledgebase
-System Language
+Head to the following pages for more information on:
+
+* The theory underlying BERT
+* The systems knowledgebase that underpins BERT's functionality
+* The formal system language that will be developed for future versions
+  
 
 # Installation
 Download [BERT v.0.1.0 here](https://github.com/halcyonic-systems/bert/releases/tag/v0.1.0)
