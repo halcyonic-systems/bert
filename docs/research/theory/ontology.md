@@ -1,1 +1,0 @@
-A formal sytem ontology is derived from the 12 principles of systems science. The ontology provides a set of base terms describing what fundamental components exist in all systems and gives us a basic language for discussing all relevant aspects of systemness.
