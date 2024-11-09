@@ -33,6 +33,9 @@
 
 <img width="562" alt="principles_1" src="https://github.com/user-attachments/assets/c5a4e170-e6a4-41f7-8869-a254cd99e1d1">
 
+*Mobus, George E.. Systems Science: Theory, Analysis, Modeling, and Design (p. 125). Springer International Publishing.*
+
+
 # Principles Applied 
 
 [Gitcoin Through the Lens of Systems Science](https://www.researchhub.com/post/723/gitcoin-through-the-lens-of-systems-science) (2022)
