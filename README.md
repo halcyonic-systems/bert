@@ -11,7 +11,7 @@ BERT represents a first step toward developing this formal systems language, bui
 
 Read the following pages for details on:
 
-* The theoretical [principles of systems science](https://github.com/halcyonic-systems/bert/blob/main/research/theory/principles.md) underpinning BERT
+* The theoretical [principles of systems science](https://github.com/halcyonic-systems/bert/blob/main/research/theory/principles.md) that serve as BERT's philosophical underpinnings.
   
 * BERT's [formal system ontology](https://github.com/halcyonic-systems/bert/blob/main/research/theory/ontology.md)
   
