@@ -7,9 +7,9 @@ The ontology is derived from the [12 principles of systems science](https://gith
 
 # Exploring the Ontology
 
-Download
+[Download](https://github.com/halcyonic-systems/bert/blob/main/research/theory/systemontology.rdf)
 
-Expoloration Tools
+Exploration Tools
 
 Protege tutorial
 
