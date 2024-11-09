@@ -16,6 +16,10 @@ The ontology is derived from the [12 principles of systems science](https://gith
 
 [Protege tutorial](https://drive.google.com/file/d/1A3Y8T6nIfXQ_UQOpCAr_HFSCwpTqELeP/view)
 
+[Ontology Visualization with Protégé](https://medium.com/analytics-vidhya/prot%C3%A9g%C3%A9-d533f024087b)
+
+[Ontology Generation and Visualization with Protégé](https://medium.com/@vindulajayawardana/ontology-generation-and-visualization-with-prot%C3%A9g%C3%A9-6df0af9955e0)
+
 [WebVOWL](https://service.tib.eu/webvowl/)
 
 
