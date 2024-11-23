@@ -115,5 +115,3 @@ In its final form, BERT should integrate each of the four layers into a user-fri
 Ultimately we strive to develop hyper-realistic models that, when run dynamically, behaves so much like our actual system of interest that we can manipulate the inputs and derive anticipatory (or predictive) statements about the future state of the system under our imagined conditions. These simulation models will be similar in nature to SD model except that the systems are treated as bounded (modular) processes. And their subsystems are internal bounded processes so that a simulation of a system is a recursive simulation of lower modules each at their level’s appropriate time scale.
 
 # Roadmap
-
-[SL_DOCS](https://www.notion.so/SL_DOCS-147e64cb6fe980559758c4b76ebcc0c8?pvs=21)
