@@ -5,19 +5,11 @@ BERT is a software tool for decomposing complex adaptive systems with deep syste
 
 
 # Background
-BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/employee/gmobus) [Systems Science: Theory, Analysis, Modeling and Design](https://link.springer.com/book/10.1007/978-3-030-93482-8). After an interdisciplinary career spanning naval engineering, robotics, artificial intelligence, computer science, energy systems modeling, and systems science, Mobus identified key limitations in standard systems modeling frameworks like [Stella](https://www.iseesystems.com/store/products/stella-online.aspx) and [UML](https://www.uml.org/)/[SysML](https://sysml.org/). To address these gaps, he proposed the creation of a new formal "System Language" grounded in systems science principles.
+BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/employee/gmobus) [Systems Science: Theory, Analysis, Modeling and Design](https://link.springer.com/book/10.1007/978-3-030-93482-8). After an interdisciplinary career spanning naval engineering, robotics, artificial intelligence, computer science, energy systems modeling, and systems science, Mobus identified key limitations in standard systems modeling frameworks like [Stella](https://www.iseesystems.com/store/products/stella-online.aspx) and [UML](https://www.uml.org/)/[SysML](https://sysml.org/). To address these gaps, he proposed the creation of a new formal "System Language" (SL) grounded in systems science principles.
 
 BERT represents a first step toward developing this formal systems language, built specifically for modern systems scientists.
 
-Read the following pages for details on:
-
-* The theoretical [principles of systems science](https://github.com/halcyonic-systems/bert/blob/main/research/theory/principles.md) that serve as BERT's philosophical underpinnings.
-  
-* BERT's [formal system ontology](https://github.com/halcyonic-systems/bert/blob/main/research/theory/ontology.md)
-  
-* BERT's planned [systems knowledgebase](https://github.com/halcyonic-systems/bert/blob/main/research/knowledgebase/knowledgebase.md)
-  
-* BERT's planned [formal system language](https://github.com/halcyonic-systems/bert/blob/main/research/theory/system_language.md)
+Read here for more information about the [various components of SL](https://github.com/halcyonic-systems/bert/blob/main/research/theory/system_language.md)
   
 
 # Installation
