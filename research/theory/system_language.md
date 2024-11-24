@@ -82,6 +82,7 @@ The knowledgebase architecture depicted below includes: RDBMS (core schema based
 
 This knowledgebase structure makes it possible to generate systems dynamics-like simulation models and produce sysXML specifications.
 
+(Elabaroate a bit more on the relationship between the knowledgebase (Layer 3) and the modeling/simulation capabilities).
 # Layer 4 — Implementation Languages
 
 ### SysXML
