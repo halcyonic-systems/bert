@@ -11,9 +11,7 @@ SL uses generic terms to represent the various elements of systemness — for ex
 
 Users would drag these icons from a palette onto a workspace in order to assemble system constructs. The tool would enforce the syntax as well as capture associated relevant data, such as the domain-specific names and types associated with the generic names and types.
 
-SL is speakable, viewable, and computable, allowing for humans and machines to discuss all relevant aspects of systemness.
-
-For more on SL see ch. 4.4 section *Toward  a Language of System.*
+SL is designed to support a holistic process of analysis and synthesis, or Deep Systems Analysis (DSA), that will allow us to better understand complex systems. The language is speakable, viewable, and computable, allowing for humans and machines to discuss all relevant aspects of systemness.
 
 We are developing SL in five distinct layers to ensure that each can be evolved independently while also maintaining compatibility between layers. This approach serves our long term goal of bridging the gap between innate human systems thinking and formal computational implementations while providing a solid theoretical foundation.
 
