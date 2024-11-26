@@ -9,7 +9,7 @@ BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/empl
 
 BERT represents a first step toward developing this formal systems language, built specifically for modern systems scientists.
 
-Read here for more information about the [various components of SL](https://github.com/halcyonic-systems/bert/blob/main/research/theory/system_language.md)
+Read here for more information about the [various components of SL](https://github.com/halcyonic-systems/bert/blob/main/research/system%20language/system_language.md)
   
 
 # Installation
