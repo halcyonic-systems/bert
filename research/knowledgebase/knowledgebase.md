@@ -47,6 +47,7 @@ Captures and stores relevant aspects and facts of a system from the analysis pro
 - [And Now for Something Completely Different: Using OWL with Neo4j](https://neo4j.com/blog/using-owl-with-neo4j/)
 - [Importing Ontologies](https://neo4j.com/labs/neosemantics/4.0/importing-ontologies/)
 - [CypherGUI](https://www.notion.so/Systems-Knowledgebase-137e64cb6fe980caa79ff524b71d51a9?pvs=21)
+- [Nodes 2024](https://www.youtube.com/playlist?list=PL9Hl4pk2FsvU6t-fXNeQfkpnmgMm4w5h3)
 
 Set Theory, Domain Semantics and XML
 
