@@ -13,7 +13,7 @@ Read here for more information about the [various components of SL](https://gith
   
 
 # Installation
-Download [BERT v.0.1.0 here](https://github.com/halcyonic-systems/bert/releases/tag/v0.1.0)
+Download [BERT v.0.1.0 here](https://github.com/halcyonic-systems/bert/releases/tag/v0.1.0) (Mac OS only, PC version coming soon)
 
 # Usage
 
