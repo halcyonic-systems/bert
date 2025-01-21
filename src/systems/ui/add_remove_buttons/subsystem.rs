@@ -16,8 +16,7 @@ struct FlowUsabilities {
     has_outflow: bool,
 }
 
-pub fn add_interface_subsystem_create_buttons(
-    mut commands: Commands,
+pub fn interface_subsystem_create_button_needs_update(
     changed_query: Query<
         (),
         Or<(
@@ -29,7 +28,19 @@ pub fn add_interface_subsystem_create_buttons(
             Changed<crate::components::System>,
         )>,
     >,
+    focused_system: Res<FocusedSystem>,
     mut remove_event_reader: EventReader<RemoveEvent>,
+) -> bool {
+    let should_run =
+        !changed_query.is_empty() || focused_system.is_changed() || !remove_event_reader.is_empty();
+
+    remove_event_reader.clear();
+
+    should_run
+}
+
+pub fn add_interface_subsystem_create_buttons(
+    mut commands: Commands,
     incomplete_flow_query: Query<
         (),
         (
@@ -53,12 +64,6 @@ pub fn add_interface_subsystem_create_buttons(
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
-    if changed_query.is_empty() && !focused_system.is_changed() && remove_event_reader.is_empty() {
-        return;
-    }
-
-    remove_event_reader.clear();
-
     let incomplete_flows_exist = !incomplete_flow_query.is_empty();
 
     let is_atomic = matches!(
