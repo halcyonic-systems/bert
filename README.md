@@ -11,7 +11,7 @@ View [our tutorial videos](https://github.com/halcyonic-systems/bert/blob/main/d
 - Structured knowledge capture in a standardized, computable format enabling validation and sharing
 
 # Example Analyses
-- The Bitcoin Network
+- [The Bitcoin Network](https://github.com/halcyonic-systems/bert/blob/main/btc.json)
 
 # Why BERT?
 BERT enables analysts to develop detailed understanding of complex systems while preserving the crucial details and meanings often lost through abstract modeling approaches. The tool implements a rigorous methodology called Deep Systems Analysis (DSA).
