@@ -10,7 +10,7 @@ use bevy::math::{vec2, Vec3A};
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
 use bevy::utils::HashMap;
-use bevy_mod_picking::backends::raycast::bevy_mod_raycast::markers::SimplifiedMesh;
+use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 
 #[derive(Clone)]
@@ -50,9 +50,7 @@ fn init_external_entity_geometry(
     let path = build_external_entity_path(scale);
 
     FixedSystemElementGeometry {
-        simplified: SimplifiedMesh {
-            mesh: tessellate_simplified_mesh(&path, meshes, tess),
-        },
+        simplified: SimplifiedMesh(tessellate_simplified_mesh(&path, meshes, tess)),
         path,
         mesh: Default::default(),
         material: WHITE_COLOR_MATERIAL_HANDLE,
@@ -90,9 +88,7 @@ fn init_interface_geometry(
     scale: f32,
 ) -> FixedSystemElementGeometry {
     FixedSystemElementGeometry {
-        simplified: SimplifiedMesh {
-            mesh: build_interface_simplified_mesh(meshes, scale),
-        },
+        simplified: SimplifiedMesh(build_interface_simplified_mesh(meshes, scale)),
         path: build_interface_path(scale),
         mesh: Default::default(),
         material: WHITE_COLOR_MATERIAL_HANDLE,

@@ -1,3 +1,4 @@
+use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use crate::bundles::{spawn_external_entity, spawn_interface};
 use crate::components::*;
 use crate::constants::*;
@@ -14,8 +15,6 @@ use crate::systems::{
 use crate::utils::ui_transform_from_button;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
-use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
-use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use rust_decimal::Decimal;
 
@@ -164,19 +163,15 @@ pub fn spawn_interaction_only(
         .spawn((
             flow,
             flow_curve,
-            SimplifiedMesh {
-                mesh: tessellate_simplified_mesh(&curve_path, meshes, stroke_tess),
-            },
+            SimplifiedMesh(tessellate_simplified_mesh(&curve_path, meshes, stroke_tess)),
             aabb,
             ShapeBundle {
                 path: curve_path,
-                spatial: SpatialBundle {
-                    transform: Transform::from_xyz(0.0, 0.0, FLOW_Z),
-                    ..default()
-                },
+                transform: Transform::from_xyz(0.0, 0.0, FLOW_Z),
                 ..default()
             },
-            PickableBundle::default(),
+            PickingBehavior::default(),
+            RayCastPickable::default(),
             PickSelection { is_selected },
             HighlightBundles {
                 idle: Stroke::new(color, FLOW_LINE_WIDTH * scale),
@@ -191,12 +186,9 @@ pub fn spawn_interaction_only(
             parent.spawn((
                 ShapeBundle {
                     path: head_path,
-                    spatial: SpatialBundle {
-                        transform: Transform::from_translation(flow_curve.end.extend(2.0))
-                            .with_scale(vec3(scale, scale, 1.0))
-                            .with_rotation(flow_curve.head_rotation()),
-                        ..default()
-                    },
+                    transform: Transform::from_translation(flow_curve.end.extend(2.0))
+                        .with_scale(vec3(scale, scale, 1.0))
+                        .with_rotation(flow_curve.head_rotation()),
                     ..default()
                 },
                 Fill::color(color),

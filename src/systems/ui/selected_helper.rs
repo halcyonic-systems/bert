@@ -23,14 +23,11 @@ pub fn spawn_selected_system(
                 .spawn((
                     PickParent,
                     ShapeBundle {
-                        spatial: SpatialBundle {
-                            transform: Transform::from_xyz(0.0, 0.0, 2.0),
-                            ..default()
-                        },
                         path: GeometryBuilder::build_as(&shapes::Circle {
                             radius: system.radius * **zoom,
                             ..default()
                         }),
+                        transform: Transform::from_xyz(0.0, 0.0, 2.0),
                         ..default()
                     },
                     Stroke::new(Color::WHITE, SYSTEM_SELECTED_INNER_LINE_WIDTH),
@@ -61,10 +58,7 @@ pub fn spawn_selected_interface(
         if selection.is_selected {
             let helper_entity = commands
                 .spawn((
-                    SpatialBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, 1.0),
-                        ..default()
-                    },
+                    Transform::from_xyz(0.0, 0.0, 1.0),
                     PickParent,
                     fixed_system_element_geometries
                         .get(&**nesting_level)
@@ -105,10 +99,7 @@ pub fn spawn_selected_flow(
                 .spawn((
                     ShapeBundle {
                         path: curve_path,
-                        spatial: SpatialBundle {
-                            transform: Transform::from_xyz(0.0, 0.0, 1.0),
-                            ..default()
-                        },
+                        transform: Transform::from_xyz(0.0, 0.0, 1.0),
                         ..default()
                     },
                     Stroke::new(Color::WHITE, FLOW_SELECTED_INNER_LINE_WIDTH),
@@ -139,10 +130,7 @@ pub fn spawn_selected_external_entity(
         if selection.is_selected {
             let helper_entity = commands
                 .spawn((
-                    SpatialBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, 1.0),
-                        ..default()
-                    },
+                    Transform::from_xyz(0.0, 0.0, 1.0),
                     fixed_system_element_geometries
                         .get(&**nesting_level)
                         .expect("Geometries have to be created already by spawn_external_entity")

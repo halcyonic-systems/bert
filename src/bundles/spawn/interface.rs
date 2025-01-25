@@ -8,10 +8,9 @@ use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
-use crate::utils::ui_transform_from_button;
+use crate::utils::{ui_transform_from_button};
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_interface(
@@ -90,12 +89,10 @@ pub fn spawn_interface_only(
     let interface_entity = commands
         .spawn((
             Interface::default(),
-            SpatialBundle {
-                transform,
-                ..default()
-            },
+            transform,
             Fill::color(substance_type.interface_color()),
-            PickableBundle::default(),
+            PickingBehavior::default(),
+            RayCastPickable::default(),
             PickSelection { is_selected },
             HighlightBundles {
                 idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH * scale),
@@ -110,9 +107,10 @@ pub fn spawn_interface_only(
                 .interface
                 .clone(),
             NestingLevel::new(nesting_level),
-            On::<DragPosition>::send_event::<InterfaceDrag>(),
         ))
         .id();
+
+    println!("interface spawned -- nesting level: {nesting_level}");
 
     commands.entity(parent_system).add_child(interface_entity);
     interface_entity

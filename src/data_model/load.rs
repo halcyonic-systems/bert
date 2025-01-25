@@ -10,7 +10,6 @@ use crate::plugins::mouse_interaction::DragPosition;
 use crate::resources::*;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
-use bevy_eventlistener::event_listener::On;
 use rust_decimal_macros::dec;
 
 fn load_from_json(file_name: &str) -> WorldModel {
@@ -334,7 +333,7 @@ fn spawn_external_entities<S: HasSourcesAndSinks + HasInfo>(
     }
 }
 
-/// Go through all the systems create parent-child relationsships between them. If we find a first
+/// Go through all the systems create parent-child relationships between them. If we find a first
 /// level interface subsystem we add it as a child of the interface. Otherwise it's added as a
 /// child to its parent system.
 fn make_systems_parent_child_hierarchy(
@@ -490,7 +489,9 @@ fn spawn_loaded_subsystem(
                 &system.info.name,
                 &system.info.description,
             ),
-            On::<DragPosition>::send_event::<SubsystemDrag>(),
         ))
+        .observe(|trigger: Trigger<DragPosition>, mut writer: EventWriter<SubsystemDrag>| {
+            writer.send(trigger.into());
+        })
         .id()
 }

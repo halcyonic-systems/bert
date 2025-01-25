@@ -24,12 +24,12 @@ use crate::plugins::mouse_interaction::{
 use crate::resources::*;
 use crate::states::*;
 use crate::systems::*;
-use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
+use bevy::input::common_conditions::{input_just_pressed, input_toggle_active};
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_egui::EguiPlugin;
-use bevy_mod_picking::prelude::*;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
 
@@ -73,16 +73,16 @@ fn main() {
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins,
-        // WorldInspectorPlugin::new(),
+        MeshPickingPlugin,
         EguiPlugin,
-        DefaultPickingPlugins,
+        // WorldInspectorPlugin::new().run_if(input_toggle_active(true, KeyCode::Escape)),
         ShapePlugin,
         LyonSelectionPlugin,
+        // DefaultPickingPlugins,
         MouseInteractionPlugin,
         LabelPlugin,
         FileDialogPlugin,
     ))
-    .insert_resource(DebugPickingMode::Disabled)
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
@@ -96,16 +96,15 @@ fn main() {
     app.add_systems(Startup, init_complete_system.after(setup));
 
     let wheel_zoom_condition = input_pressed(KeyCode::ControlLeft)
-        .or_else(input_pressed(KeyCode::ControlRight).or_else(
-            input_pressed(KeyCode::SuperLeft).or_else(input_pressed(KeyCode::SuperRight)),
-        ));
+        .or(input_pressed(KeyCode::ControlRight)
+            .or(input_pressed(KeyCode::SuperLeft).or(input_pressed(KeyCode::SuperRight))));
 
     app.add_systems(
         PreUpdate,
         (
             absorb_egui_inputs
-                .after(bevy_egui::systems::process_input_system)
-                .before(bevy_egui::EguiSet::BeginFrame),
+                .after(bevy_egui::EguiPreUpdateSet::ProcessInput)
+                .before(bevy_egui::EguiPreUpdateSet::BeginPass),
             control_zoom_from_keyboard,
             // TODO : for some reason this doesn't always work: control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
         )
@@ -116,7 +115,7 @@ fn main() {
         Update,
         (
             (
-                egui_selected_context.after(bevy_egui::EguiSet::InitContexts),
+                egui_selected_context.after(bevy_egui::EguiStartupSet::InitContexts),
                 change_focused_system,
                 draw_flow_curve,
                 update_initial_position_from_transform,
@@ -131,7 +130,7 @@ fn main() {
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),
                 reset_camera_position.run_if(
-                    input_pressed(KeyCode::SuperLeft).and_then(input_just_pressed(KeyCode::KeyR)),
+                    input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyR)),
                 ),
             )
                 .in_set(CameraControlSet),
@@ -162,12 +161,9 @@ fn main() {
                 spawn_selected_external_entity,
                 update_selected_flow_curve,
                 despawn_selected_helper,
-                remove_selected_elements.run_if(
-                    in_state(AppState::Normal).and_then(
-                        input_just_pressed(KeyCode::Backspace)
-                            .or_else(input_just_pressed(KeyCode::Delete)),
-                    ),
-                ),
+                remove_selected_elements.run_if(in_state(AppState::Normal).and(
+                    input_just_pressed(KeyCode::Backspace).or(input_just_pressed(KeyCode::Delete)),
+                )),
             ),
             (
                 update_color_from_substance_type::<FlowStartConnection>,
@@ -279,13 +275,15 @@ fn main() {
     .register_type::<FocusedSystem>()
     .register_type::<Zoom>();
 
-    app.world.resource_mut::<Assets<ColorMaterial>>().insert(
-        WHITE_COLOR_MATERIAL_HANDLE,
-        ColorMaterial {
-            color: Color::WHITE,
-            ..default()
-        },
-    );
+    app.world_mut()
+        .resource_mut::<Assets<ColorMaterial>>()
+        .insert(
+            &WHITE_COLOR_MATERIAL_HANDLE,
+            ColorMaterial {
+                color: Color::WHITE,
+                ..default()
+            },
+        );
     // let settings = bevy_mod_debugdump::schedule_graph::Settings::default();
     // let dot = bevy_mod_debugdump::schedule_graph_dot(&mut app, PreUpdate, &settings);
     // std::fs::write(format!("schedule_preupdate.dot"), dot);

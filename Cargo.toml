@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.13" } #, features = ["dynamic_linking"] }
-bevy_egui = "<0.26"
-bevy-inspector-egui = "<0.24"
-bevy_prototype_lyon = "0.11.0"
-bevy_eventlistener = "0.7"
+bevy = { version = "0.15.1" , features = ["bevy_picking", "bevy_mesh_picking_backend"] } #, features = ["dynamic_linking"] }
+bevy_egui = { version =  "0.32.0"}
+bevy_picking = { version = "0.15.1", features = ["bevy_mesh_picking_backend"]}
+bevy-inspector-egui = "0.28"
+bevy_prototype_lyon = "0.13.0"
 lyon_algorithms = "1"
 num-traits = "0.2.18"
 rust_decimal = { version = "1", features = ["serde"] }
@@ -20,10 +20,10 @@ serde_json = "1"
 regex = "1.10.4"
 rfd = "0.14.1"
 
-[dependencies.bevy_mod_picking]
-version = "0.18"
-default-features = false
-features = ["backend_egui", "backend_raycast", "backend_sprite", "debug"]
+#[dependencies.bevy_mod_picking]
+#version = "0.20"
+#default-features = false
+#features = ["backend_egui", "backend_raycast", "backend_sprite", "debug"]
 
 [profile.dev]
 opt-level = 1

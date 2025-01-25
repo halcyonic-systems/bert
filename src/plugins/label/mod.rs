@@ -1,6 +1,7 @@
 use crate::plugins::mouse_interaction::PickTarget;
 use bevy::prelude::*;
-use bevy::text::{update_text2d_layout, BreakLineOn, Text2dBounds};
+use bevy::text::{update_text2d_layout, TextBounds};
+
 mod copy_position;
 mod text;
 
@@ -63,34 +64,26 @@ pub fn add_name_label<B: Bundle>(
     text_color: Option<AutoContrastTextColor>,
     additional_bundle: B,
 ) {
-    let text = Text {
-        sections: vec![TextSection::new(
+    let mut text_commands = commands.spawn((
+        Text2d::new(
             &name_query
                 .get(entity)
                 .expect("Entity should have a name")
                 .to_string(),
-            TextStyle {
-                font: asset_server
-                    .load("fonts/Fira_Sans/FiraSans-Bold.ttf")
-                    .clone(),
-                font_size: 16.0,
-                color: Color::BLACK,
-            }
-            .clone(),
-        )],
-        justify: JustifyText::Left,
-        linebreak_behavior: BreakLineOn::WordBoundary,
-    };
-
-    let mut text_commands = commands.spawn((
-        Text2dBundle {
-            text,
-            text_2d_bounds: Text2dBounds {
-                size: text_bounds_size,
-            },
-            transform: Transform::from_xyz(0.0, 0.0, 1.0),
+        ),
+        TextFont {
+            font: asset_server
+                .load("fonts/Fira_Sans/FiraSans-Bold.ttf")
+                .clone(),
+            font_size: 16.0,
             ..default()
         },
+        TextLayout {
+            justify: JustifyText::Left,
+            linebreak: LineBreak::WordBoundary,
+        },
+        TextBounds::from(text_bounds_size),
+        Transform::from_xyz(0.0, 0.0, 1.0),
         Name::new("Label Text"),
     ));
 
@@ -113,20 +106,17 @@ pub fn add_name_label<B: Bundle>(
 
     let sprite_entity = commands
         .spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: background_color,
-                    ..default()
-                },
-                transform: Transform::from_xyz(0.0, 0.0, LABEL_Z),
+            Sprite {
+                color: background_color,
                 ..default()
             },
+            Transform::from_xyz(0.0, 0.0, LABEL_Z),
             Name::new("Label Sprite"),
             PickTarget { target: entity },
             additional_bundle,
             LabelContainer,
         ))
-        .push_children(&[text_entity])
+        .add_children(&[text_entity])
         .id();
 
     let mut entity_commands = commands.entity(entity);

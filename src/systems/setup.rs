@@ -4,7 +4,6 @@ use crate::constants::*;
 use crate::data_model::Complexity;
 use crate::resources::*;
 use bevy::prelude::*;
-use bevy::render::deterministic::DeterministicRenderingConfig;
 use bevy::window::PrimaryWindow;
 
 /// Configures the primary window settings
@@ -27,12 +26,9 @@ pub fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     tess: ResMut<StrokeTessellator>,
     geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
-    mut deterministic_rendering_config: ResMut<DeterministicRenderingConfig>,
     asset_server: Res<AssetServer>,
 ) {
-    deterministic_rendering_config.stable_sort_z_fighting = true;
-
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
     let system_entity = spawn_main_system(
