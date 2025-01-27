@@ -8,21 +8,13 @@ macro_rules! impl_drag_event {
         #[derive(Event, Debug, Clone)]
         pub struct $name {
             pub target: Entity,
-            orig_target: Entity,
             pub position: Vec2,
-        }
-
-        impl $name {
-            pub fn has_bubbled(&self) -> bool {
-                self.target != self.orig_target
-            }
         }
 
         impl From<Trigger<'_, DragPosition>> for $name {
             fn from(trigger: Trigger<'_, DragPosition>) -> Self {
                 Self {
                     target: trigger.entity(),
-                    orig_target: trigger.observer(),
                     position: trigger.local_position,
                 }
             }

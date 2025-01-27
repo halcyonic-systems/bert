@@ -78,6 +78,7 @@ pub fn add_name_label<B: Bundle>(
             font_size: 16.0,
             ..default()
         },
+        TextColor::BLACK,
         TextLayout {
             justify: JustifyText::Left,
             linebreak: LineBreak::WordBoundary,

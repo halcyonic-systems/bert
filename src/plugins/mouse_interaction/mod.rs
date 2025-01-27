@@ -1,18 +1,11 @@
 #[cfg(feature = "debug_selection")]
 pub mod debug;
 
-use crate::events::InterfaceDrag;
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 use bevy::window::PrimaryWindow;
-use bevy_egui::EguiContext;
 use bevy_picking::focus::PickingInteraction;
-use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
-use bevy_picking::mesh_picking::update_hits;
-use bevy_picking::PickSet;
-use bevy_picking::pointer::PointerInteraction;
-use bevy_picking::prelude::*;
 
 const DRAG_THRESHOLD_SQUARED: f32 = 4.0;
 
@@ -21,7 +14,6 @@ pub struct MouseInteractionPlugin;
 impl Plugin for MouseInteractionPlugin {
     fn build(&self, app: &mut App) {
         app
-            // .init_resource::<PickingPlugin>()
             .init_resource::<Dragging>()
             .init_resource::<Selection>()
             .init_resource::<MouseWorldPosition>()
@@ -199,7 +191,6 @@ fn handle_mouse_up(
 fn handle_mouse_drag(
     mouse_position: Res<MouseWorldPosition>,
     mut commands: Commands,
-    // mut writer: EventWriter<DragPosition>,
     mut dragging: ResMut<Dragging>,
     transform_query: Query<&GlobalTransform>,
     parent_query: Query<&Parent>,

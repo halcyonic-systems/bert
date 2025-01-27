@@ -50,12 +50,11 @@ pub fn copy_name_to_label(
 }
 
 pub fn apply_text_color_contrast(
-    source_query: Query<(&Name, &NameLabel, &Fill), Or<(Changed<Fill>, Added<NameLabel>)>>,
+    source_query: Query<(&NameLabel, &Fill), Or<(Changed<Fill>, Added<NameLabel>)>>,
     mut target_query: Query<(&mut TextColor, &AutoContrastTextColor), With<Text2d>>,
 ) {
-    for (name, label, fill) in &source_query {
+    for (label, fill) in &source_query {
         if let Ok((mut color, text_color)) = target_query.get_mut(label.label) {
-            println!("label: {name:?} fill.color: {:?}; luminance: {}; color.luminance: {}, threshold: {}", fill.color, Lcha::from(fill.color).luminance(), text_color.lightness_threshold, color.0.luminance());
             let target_color = if Lcha::from(fill.color).luminance() < text_color.lightness_threshold {
                 text_color.light_color
             } else {

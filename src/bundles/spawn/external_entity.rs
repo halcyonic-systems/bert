@@ -3,7 +3,7 @@ use crate::constants::{
     BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_SELECTED_LINE_WIDTH,
     EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
 };
-use crate::events::{ExternalEntityDrag, SubsystemDrag};
+use crate::events::{ExternalEntityDrag};
 use crate::plugins::label::{add_name_label, Alignment, CopyPositionArgs};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
