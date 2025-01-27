@@ -15,16 +15,16 @@ rustflags = [
 # `brew install llvm`
 [target.x86_64-apple-darwin]
 rustflags = [
-  "-Clink-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld", # Use LLD Linker
-  "-Zshare-generics=y",                                   # (Nightly) Make the current crate share its generic instantiations
-  "-Zthreads=0",                                          # (Nightly) Use improved multithreading with the recommended amount of threads.
+  "-Clink-arg=-fuse-ld=/usr/local/Cellar/lld/19.1.7/bin/ld64.lld", # Use LLD Linker
+  "-Zshare-generics=y",                     # (Nightly) Make the current crate share its generic instantiations
+  "-Zthreads=0",                            # (Nightly) Use improved multithreading with the recommended amount of threads.
 ]
 
 [target.aarch64-apple-darwin]
 rustflags = [
-  "-Clink-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld", # Use LLD Linker
-  "-Zshare-generics=y",                                      # (Nightly) Make the current crate share its generic instantiations
-  "-Zthreads=0",                                             # (Nightly) Use improved multithreading with the recommended amount of threads.
+  "-Clink-arg=-fuse-ld=/usr/local/Cellar/lld/19.1.7/bin/ld64.lld", # Use LLD Linker
+  "-Zshare-generics=y",                     # (Nightly) Make the current crate share its generic instantiations
+  "-Zthreads=0",                            # (Nightly) Use improved multithreading with the recommended amount of threads.
 ]
 
 [target.x86_64-pc-windows-msvc]

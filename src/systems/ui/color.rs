@@ -103,6 +103,6 @@ pub fn update_system_color_from_subsystem(
         let mut system_fill = fill_query
             .get_mut(subsystem.parent_system)
             .expect("System should exist");
-        system_fill.color = Color::rgb(235.0, 231.0, 231.0);
+        system_fill.color = Color::srgb(235.0, 231.0, 231.0);
     }
 }

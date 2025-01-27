@@ -11,9 +11,7 @@ use crate::plugins::mouse_interaction::PickSelection;
 use bevy::prelude::*;
 use bevy::render::mesh::CircleMeshBuilder;
 use bevy::render::primitives::Aabb;
-use bevy::sprite::Mesh2dHandle;
-use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
-use bevy_mod_picking::prelude::*;
+use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn get_system_geometry_from_radius(radius: f32) -> (Mesh, Path) {
@@ -36,7 +34,7 @@ pub struct SystemBundle {
     pub name: Name,
     pub description: ElementDescription,
     pub system_element: SystemElement,
-    pub pickable_bundle: PickableBundle,
+    pub pickable_bundle: RayCastPickable,
     pub pick_selection: PickSelection,
     pub simplified_mesh: SimplifiedMesh,
     pub aabb: Aabb,
@@ -79,23 +77,18 @@ impl SystemBundle {
             name: Name::new(name.to_string()),
             description: ElementDescription::new(description),
             system_element: SystemElement::System,
-            pickable_bundle: PickableBundle::default(),
+            pickable_bundle: RayCastPickable::default(),
             pick_selection: PickSelection::default(),
-            simplified_mesh: SimplifiedMesh {
-                mesh: meshes.add(simplified_mesh),
-            },
+            simplified_mesh: SimplifiedMesh(meshes.add(simplified_mesh)),
             aabb: aabb_from_radius(zoomed_radius),
             system_shape_bundle: ShapeBundle {
                 path,
-                spatial: SpatialBundle {
-                    transform: Transform::from_translation(position.extend(z))
-                        .with_rotation(Quat::from_rotation_z(angle))
-                        .with_scale(vec3(1.0, 1.0, 0.9)),
-                    ..default()
-                },
+                transform: Transform::from_translation(position.extend(z))
+                    .with_rotation(Quat::from_rotation_z(angle))
+                    .with_scale(vec3(1.0, 1.0, 0.9)),
                 ..default()
             },
-            fill: Fill::color(Color::rgb_u8(41, 51, 64)),
+            fill: Fill::color(Color::srgb_u8(41, 51, 64)),
             highlight: HighlightBundles {
                 idle: Stroke::new(Color::BLACK, SYSTEM_LINE_WIDTH * scale),
                 selected: Stroke::new(Color::BLACK, SYSTEM_SELECTED_LINE_WIDTH),
@@ -109,17 +102,15 @@ impl SystemBundle {
 pub struct FixedSystemElementGeometry {
     pub simplified: SimplifiedMesh,
     pub path: Path,
-    pub mesh: Mesh2dHandle,
-    pub material: Handle<ColorMaterial>,
+    pub mesh: Mesh2d,
+    pub material: MeshMaterial2d<ColorMaterial>,
     pub aabb: Aabb,
 }
 
 impl Clone for FixedSystemElementGeometry {
     fn clone(&self) -> Self {
         Self {
-            simplified: SimplifiedMesh {
-                mesh: self.simplified.mesh.clone(),
-            },
+            simplified: self.simplified.clone(),
             path: Path(self.path.0.clone()),
             mesh: self.mesh.clone(),
             material: self.material.clone(),

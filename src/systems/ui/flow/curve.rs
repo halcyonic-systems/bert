@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::primitives::Aabb;
 use bevy::render::render_asset::RenderAssetUsages;
-use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
+use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::tess::{
     BuffersBuilder, StrokeVertex, StrokeVertexConstructor, VertexBuffers,
 };
@@ -63,7 +63,7 @@ pub fn update_flow_curve(
     let simplified_curve = flow_curve.skip_start();
     let simplified_curve_path = create_path_from_flow_curve(&simplified_curve, scale);
 
-    simplified_mesh.mesh = tessellate_simplified_mesh(&simplified_curve_path, meshes, stroke_tess);
+    simplified_mesh.0 = tessellate_simplified_mesh(&simplified_curve_path, meshes, stroke_tess);
     *aabb = create_aabb_from_flow_curve(&simplified_curve);
 
     *path = curve_path;

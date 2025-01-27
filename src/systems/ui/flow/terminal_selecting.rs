@@ -8,8 +8,8 @@ use crate::states::AppState;
 use crate::systems::compute_smooth_flow_terminal_direction;
 use crate::utils::transform_from_point2d_and_direction;
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
 use std::ops::DerefMut;
+use bevy_picking::focus::PickingInteraction;
 
 pub fn update_selecting_flow_from_mouse(
     mouse_position: Res<MouseWorldPosition>,

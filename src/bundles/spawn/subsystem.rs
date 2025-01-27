@@ -13,7 +13,6 @@ use crate::utils::{
 };
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
-use bevy_eventlistener::event_listener::On;
 
 pub fn spawn_interface_subsystem(
     commands: &mut Commands,
@@ -172,8 +171,12 @@ fn spawn_subsystem_common(
                     name,
                     description,
                 ),
-                On::<DragPosition>::send_event::<SubsystemDrag>(),
             ))
+            .observe(
+                |trigger: Trigger<DragPosition>, mut writer: EventWriter<SubsystemDrag>| {
+                    writer.send(trigger.into());
+                },
+            )
             .id(),
         radius,
         nesting_level,

@@ -20,7 +20,7 @@ use crate::systems::tessellate_simplified_mesh;
 use bevy::math::vec3;
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
-use bevy_mod_picking::backends::raycast::bevy_mod_raycast::prelude::*;
+use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 
 /// Applies the current zoom value to the x and y translations of all non-camera entities.
@@ -61,7 +61,7 @@ pub fn apply_zoom_to_system_radii(
 
         let (mesh, p) = get_system_geometry_from_radius(zoomed_radius);
 
-        simplified_mesh.mesh = meshes.add(mesh);
+        simplified_mesh.0 = meshes.add(mesh);
         *path = Path(p.0.clone());
 
         *aabb = aabb_from_radius(zoomed_radius);
@@ -170,13 +170,13 @@ pub fn apply_zoom_to_system_geometries(
         let scale = NestingLevel::compute_scale(*nesting_level, zoom);
 
         let external_entity_path = build_external_entity_path(scale);
-        geometries.external_entity.simplified.mesh =
+        geometries.external_entity.simplified.0 =
             tessellate_simplified_mesh(&external_entity_path, &mut meshes, &mut tess);
         geometries.external_entity.path = external_entity_path;
         geometries.external_entity.aabb.half_extents =
             build_external_entity_aabb_half_extents(scale);
 
-        geometries.interface.simplified.mesh = build_interface_simplified_mesh(&mut meshes, scale);
+        geometries.interface.simplified.0 = build_interface_simplified_mesh(&mut meshes, scale);
         geometries.interface.path = build_interface_path(scale);
         geometries.interface.aabb.half_extents = build_interface_aabb_half_extends(scale);
     }
@@ -223,7 +223,7 @@ fn apply_geometry(
     let geometry = geometry.clone();
 
     *path = geometry.path;
-    simplified_mesh.mesh = geometry.simplified.mesh;
+    simplified_mesh.0 = geometry.simplified.0;
     aabb.half_extents = geometry.aabb.half_extents;
 }
 

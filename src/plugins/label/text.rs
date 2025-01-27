@@ -40,33 +40,29 @@ pub struct LabelContainer;
 
 pub fn copy_name_to_label(
     source_query: Query<(&Name, &NameLabel), Or<(Changed<Name>, Added<NameLabel>)>>,
-    mut target_query: Query<&mut Text>,
+    mut target_query: Query<&mut Text2d>,
 ) {
     for (name, label) in &source_query {
         target_query
             .get_mut(label.label)
-            .expect("Label should exist")
-            .sections[0]
-            .value = name.to_string();
+            .expect("Label should exist").0 = name.to_string();
     }
 }
 
 pub fn apply_text_color_contrast(
     source_query: Query<(&NameLabel, &Fill), Or<(Changed<Fill>, Added<NameLabel>)>>,
-    mut target_query: Query<(&mut Text, &AutoContrastTextColor)>,
+    mut target_query: Query<(&mut TextColor, &AutoContrastTextColor), With<Text2d>>,
 ) {
     for (label, fill) in &source_query {
-        if let Color::Lcha { lightness, .. } = fill.color.as_lcha() {
-            if let Ok((mut text, text_color)) = target_query.get_mut(label.label) {
-                let target_color = if lightness < text_color.lightness_threshold {
-                    text_color.light_color
-                } else {
-                    text_color.dark_color
-                };
+        if let Ok((mut color, text_color)) = target_query.get_mut(label.label) {
+            let target_color = if Lcha::from(fill.color).luminance() < text_color.lightness_threshold {
+                text_color.light_color
+            } else {
+                text_color.dark_color
+            };
 
-                text.sections[0].style.color = target_color;
-            }
-        };
+            color.0 = target_color;
+        }
     }
 }
 
@@ -77,7 +73,7 @@ pub fn update_background_size_from_label(
     for (text_layout, parent, background) in &text_query {
         if let Ok(mut sprite) = sprite_query.get_mut(parent.get()) {
             sprite.custom_size = Some(
-                text_layout.logical_size
+                text_layout.size
                     + vec2(background.padding_horizontal, background.padding_vertical) * 2.0,
             );
         }

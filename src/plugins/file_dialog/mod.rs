@@ -20,11 +20,11 @@ impl Plugin for FileDialogPlugin {
                     (
                         open_file_dialog::<ImportFile>.run_if(
                             input_pressed(KeyCode::SuperLeft)
-                                .and_then(input_just_pressed(KeyCode::KeyL)),
+                                .and(input_just_pressed(KeyCode::KeyL)),
                         ),
                         open_file_dialog::<ExportFile>.run_if(
                             input_pressed(KeyCode::SuperLeft)
-                                .and_then(input_just_pressed(KeyCode::KeyS)),
+                                .and(input_just_pressed(KeyCode::KeyS)),
                         ),
                     )
                         .run_if(in_state(FileState::Inactive)),

@@ -5,10 +5,7 @@ use bevy::input::common_conditions::{input_just_pressed, input_just_released, in
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 use bevy::window::PrimaryWindow;
-use bevy_egui::EguiContext;
-use bevy_eventlistener::prelude::*;
-use bevy_mod_picking::backends::egui::EguiBackendSettings;
-use bevy_mod_picking::prelude::*;
+use bevy_picking::focus::PickingInteraction;
 
 const DRAG_THRESHOLD_SQUARED: f32 = 4.0;
 
@@ -16,11 +13,12 @@ pub struct MouseInteractionPlugin;
 
 impl Plugin for MouseInteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Dragging>()
+        app
+            .init_resource::<Dragging>()
             .init_resource::<Selection>()
             .init_resource::<MouseWorldPosition>()
             .init_resource::<SelectionEnabled>()
-            .add_plugins(EventListenerPlugin::<DragPosition>::default())
+            .add_event::<DragPosition>()
             .register_type::<PickSelection>()
             .add_systems(PreUpdate, mouse_screen_to_world_position)
             .add_systems(
@@ -37,8 +35,7 @@ impl Plugin for MouseInteractionPlugin {
                     deselect_when_invisible,
                     deselect_all.run_if(input_just_pressed(KeyCode::Escape)),
                 ),
-            )
-            .add_systems(First, update_settings);
+            );
 
         #[cfg(feature = "debug_selection")]
         {
@@ -62,11 +59,9 @@ impl Default for SelectionEnabled {
     }
 }
 
-#[derive(Clone, Event, EntityEvent)]
-#[can_bubble]
+#[derive(Clone, Event)]
 #[allow(dead_code)]
 pub struct DragPosition {
-    #[target]
     pub target: Entity,
     /// Local to parent coordinates
     pub local_position: Vec2,
@@ -104,21 +99,6 @@ pub struct PickParent;
 #[reflect(Component)]
 pub struct PickTarget {
     pub target: Entity,
-}
-
-pub fn update_settings(
-    mut commands: Commands,
-    settings: Res<EguiBackendSettings>,
-    egui_context: Query<Entity, With<EguiContext>>,
-) {
-    if settings.is_added() || settings.is_changed() {
-        for entity in &egui_context {
-            match settings.allow_deselect {
-                true => commands.entity(entity).remove::<NoDeselect>(),
-                false => commands.entity(entity).try_insert(NoDeselect),
-            };
-        }
-    }
 }
 
 fn handle_mouse_down(
@@ -210,7 +190,7 @@ fn handle_mouse_up(
 
 fn handle_mouse_drag(
     mouse_position: Res<MouseWorldPosition>,
-    mut writer: EventWriter<DragPosition>,
+    mut commands: Commands,
     mut dragging: ResMut<Dragging>,
     transform_query: Query<&GlobalTransform>,
     parent_query: Query<&Parent>,
@@ -238,11 +218,11 @@ fn handle_mouse_drag(
                 mouse_position
             };
 
-            writer.send(DragPosition {
+            commands.trigger_targets(DragPosition {
                 target: entity,
                 local_position: position,
                 world_position: mouse_position,
-            });
+            }, entity);
         }
     }
 }
@@ -255,10 +235,11 @@ fn mouse_screen_to_world_position(
     let (camera, camera_transform) = camera_query.single();
     let window = window_query.single();
 
-    if let Some(world_position) = window
-        .cursor_position()
-        .and_then(|window_position| camera.viewport_to_world_2d(camera_transform, window_position))
-    {
+    if let Some(world_position) = window.cursor_position().and_then(|window_position| {
+        camera
+            .viewport_to_world_2d(camera_transform, window_position)
+            .ok()
+    }) {
         **mouse_world_position = world_position;
     }
 }

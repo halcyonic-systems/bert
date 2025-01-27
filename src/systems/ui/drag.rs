@@ -14,10 +14,6 @@ pub fn drag_subsystem(
     zoom: Res<Zoom>,
 ) {
     for event in events.read() {
-        if event.has_bubbled() {
-            continue;
-        }
-
         let (mut transform, subsystem, interface_subsystem) = subsystem_query
             .get_mut(event.target)
             .expect("Subsystem should exist");
@@ -50,10 +46,6 @@ pub fn drag_external_entity(
     zoom: Res<Zoom>,
 ) {
     for event in events.read() {
-        if event.has_bubbled() {
-            continue;
-        }
-
         let mut transform = transform_query
             .get_mut(event.target)
             .expect("External entity should have a Transform");
@@ -268,10 +260,6 @@ pub fn drag_interface(
     zoom: Res<Zoom>,
 ) {
     for event in events.read() {
-        if event.has_bubbled() {
-            continue;
-        }
-
         let mut transform = transform_query
             .get_mut(event.target)
             .expect("External entity should have a Transform");

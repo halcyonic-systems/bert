@@ -196,17 +196,18 @@ impl SubstanceType {
     // Helper method to determine a the color of a flow from it's substance type.
     pub fn flow_color(&self) -> Color {
         match self {
-            SubstanceType::Energy => Color::rgb_u8(181, 27, 27),
-            SubstanceType::Material => Color::GRAY,
-            SubstanceType::Message => Color::SILVER,
+            SubstanceType::Energy => Color::srgb_u8(181, 27, 27),
+            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5),
+            SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75),
+
         }
     }
     // Helper method to determine a the color of an interface from it's substance type.
     pub fn interface_color(&self) -> Color {
         match self {
-            SubstanceType::Energy => Color::rgb_u8(233, 182, 178),
-            SubstanceType::Material => Color::GRAY,
-            SubstanceType::Message => Color::SILVER,
+            SubstanceType::Energy => Color::srgb_u8(233, 182, 178),
+            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5),
+            SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75),
         }
     }
 }

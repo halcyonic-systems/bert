@@ -5,7 +5,6 @@ use crate::systems::{
     on_subsystem_button_click,
 };
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
 
 pub fn spawn_create_button(
     commands: &mut Commands,
@@ -45,38 +44,35 @@ pub fn spawn_create_button(
 
     let button_width = BUTTON_WIDTH_HALF * 2.0;
 
-    let on_click_handler = match create_button.ty {
-        CreateButtonType::Subsystem => On::<Pointer<Click>>::run(on_subsystem_button_click),
+    let mut spawn_image = &mut commands.spawn((
+        create_button,
+        Sprite {
+            image: asset_server.load(path),
+            custom_size: Some(Vec2::new(button_width, button_width)),
+            ..default()
+        },
+        Transform::from_translation((position * zoom).extend(BUTTON_Z))
+            .with_rotation(Quat::from_rotation_z(angle)),
+        InitialPosition::new(position),
+        Name::new(name),
+        PickingBehavior::default(),
+    ));
+
+    spawn_image = match create_button.ty {
+        CreateButtonType::Subsystem => spawn_image.observe(on_subsystem_button_click),
         CreateButtonType::FlowTerminalStart | CreateButtonType::FlowTerminalEnd => {
-            On::<Pointer<Click>>::run(on_flow_terminal_button_click)
+            spawn_image.observe(on_flow_terminal_button_click)
         }
         CreateButtonType::Source | CreateButtonType::Sink => {
-            On::<Pointer<Click>>::run(on_external_entity_create_button_click)
+            spawn_image.observe(on_external_entity_create_button_click)
         }
-        _ => On::<Pointer<Click>>::run(on_create_button_click),
+        _ => spawn_image.observe(on_create_button_click),
     };
-    let button_entity = commands
-        .spawn((
-            create_button,
-            SpriteBundle {
-                texture: asset_server.load(path),
-                transform: Transform::from_translation((position * zoom).extend(BUTTON_Z))
-                    .with_rotation(Quat::from_rotation_z(angle)),
-                sprite: Sprite {
-                    custom_size: Some(Vec2::new(button_width, button_width)),
-                    ..default()
-                },
-                ..default()
-            },
-            PickableBundle::default(),
-            on_click_handler,
-            InitialPosition::new(position),
-            Name::new(name),
-        ))
-        .id();
+
+    let button_entity = spawn_image.id();
 
     if let Some(parent) = parent {
-        commands.entity(parent).push_children(&[button_entity]);
+        commands.entity(parent).add_children(&[button_entity]);
     }
 
     let mut commands = commands.entity(create_button.connection_source);

@@ -3,16 +3,15 @@ use crate::constants::{
     BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_SELECTED_LINE_WIDTH,
     EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
 };
-use crate::events::ExternalEntityDrag;
+use crate::events::{ExternalEntityDrag};
 use crate::plugins::label::{add_name_label, Alignment, CopyPositionArgs};
 use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
-use crate::utils::ui_transform_from_button;
+use crate::utils::{ui_transform_from_button};
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_external_entity(
@@ -111,10 +110,7 @@ pub fn spawn_external_entity_only(
                 equivalence: "".to_string(),
                 model: "".to_string(),
             },
-            SpatialBundle {
-                transform,
-                ..default()
-            },
+            transform,
             HighlightBundles {
                 idle: Stroke::new(color, EXTERNAL_ENTITY_LINE_WIDTH * scale),
                 selected: Stroke {
@@ -124,7 +120,8 @@ pub fn spawn_external_entity_only(
                         .with_line_cap(LineCap::Round),
                 },
             },
-            PickableBundle::default(),
+            PickingBehavior::default(),
+            RayCastPickable::default(),
             PickSelection { is_selected },
             SystemElement::ExternalEntity,
             Name::new(name.to_string()),
@@ -134,8 +131,10 @@ pub fn spawn_external_entity_only(
                 .get_or_create(nesting_level, zoom, meshes, tess)
                 .external_entity,
             NestingLevel::new(nesting_level),
-            On::<DragPosition>::send_event::<ExternalEntityDrag>(),
         ))
+        .observe(|trigger: Trigger<DragPosition>, mut writer: EventWriter<ExternalEntityDrag>| {
+            writer.send(trigger.into());
+        })
         .id()
 }
 
