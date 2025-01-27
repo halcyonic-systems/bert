@@ -27,12 +27,6 @@ impl Plugin for MouseInteractionPlugin {
             .init_resource::<MouseWorldPosition>()
             .init_resource::<SelectionEnabled>()
             .add_event::<DragPosition>()
-            .add_observer(
-                |on_drag: Trigger<DragPosition>, mut writer: EventWriter<InterfaceDrag>| {
-                    println!("interface dragged");
-                    writer.send(on_drag.into());
-                },
-            )
             .register_type::<PickSelection>()
             .add_systems(PreUpdate, mouse_screen_to_world_position)
             .add_systems(
@@ -140,7 +134,6 @@ fn handle_mouse_down(
                         .get(),
                 );
             } else if let Some(target) = pick_target {
-                println!("hovered_entity: {target:?}");
                 dragging.hovered_entity = Some(target.target);
             } else {
                 dragging.hovered_entity = Some(entity);
@@ -205,14 +198,14 @@ fn handle_mouse_up(
 
 fn handle_mouse_drag(
     mouse_position: Res<MouseWorldPosition>,
-    mut writer: EventWriter<DragPosition>,
+    mut commands: Commands,
+    // mut writer: EventWriter<DragPosition>,
     mut dragging: ResMut<Dragging>,
     transform_query: Query<&GlobalTransform>,
     parent_query: Query<&Parent>,
 ) {
     let mouse_position = **mouse_position;
 
-    // println!("dragging: {dragging:?}");
     if !dragging.started
         && mouse_position.distance_squared(dragging.start_pos) > DRAG_THRESHOLD_SQUARED
     {
@@ -234,11 +227,11 @@ fn handle_mouse_drag(
                 mouse_position
             };
 
-            writer.send(DragPosition {
+            commands.trigger_targets(DragPosition {
                 target: entity,
                 local_position: position,
                 world_position: mouse_position,
-            });
+            }, entity);
         }
     }
 }

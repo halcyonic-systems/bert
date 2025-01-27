@@ -133,7 +133,6 @@ pub fn spawn_external_entity_only(
             NestingLevel::new(nesting_level),
         ))
         .observe(|trigger: Trigger<DragPosition>, mut writer: EventWriter<ExternalEntityDrag>| {
-            println!("dragging external entity");
             writer.send(trigger.into());
         })
         .id()

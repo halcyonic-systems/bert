@@ -8,7 +8,7 @@ use crate::plugins::lyon_selection::HighlightBundles;
 use crate::plugins::mouse_interaction::DragPosition;
 use crate::plugins::mouse_interaction::PickSelection;
 use crate::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
-use crate::utils::{ui_transform_from_button};
+use crate::utils::ui_transform_from_button;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -108,9 +108,12 @@ pub fn spawn_interface_only(
                 .clone(),
             NestingLevel::new(nesting_level),
         ))
+        .observe(
+            |on_drag: Trigger<DragPosition>, mut writer: EventWriter<InterfaceDrag>| {
+                writer.send(on_drag.into());
+            },
+        )
         .id();
-
-    println!("interface spawned -- nesting level: {nesting_level}");
 
     commands.entity(parent_system).add_child(interface_entity);
     interface_entity
