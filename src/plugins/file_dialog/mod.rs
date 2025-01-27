@@ -4,6 +4,7 @@ use bevy::input::common_conditions::{input_just_pressed, input_pressed};
 use std::path::PathBuf;
 pub use systems::*;
 
+use crate::constants::MODIFIER;
 use bevy::prelude::*;
 use bevy::tasks::Task;
 
@@ -18,14 +19,10 @@ impl Plugin for FileDialogPlugin {
                 Update,
                 (
                     (
-                        open_file_dialog::<ImportFile>.run_if(
-                            input_pressed(KeyCode::SuperLeft)
-                                .and(input_just_pressed(KeyCode::KeyL)),
-                        ),
-                        open_file_dialog::<ExportFile>.run_if(
-                            input_pressed(KeyCode::SuperLeft)
-                                .and(input_just_pressed(KeyCode::KeyS)),
-                        ),
+                        open_file_dialog::<ImportFile>
+                            .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyL))),
+                        open_file_dialog::<ExportFile>
+                            .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyS))),
                     )
                         .run_if(in_state(FileState::Inactive)),
                     poll_for_selected_file.run_if(not(in_state(FileState::Inactive))),

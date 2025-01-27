@@ -1,6 +1,6 @@
 //! Constants referenced across modules.
 use bevy::asset::Handle;
-use bevy::prelude::{Color, ColorMaterial};
+use bevy::prelude::{Color, ColorMaterial, KeyCode};
 use bevy::sprite::MeshMaterial2d;
 
 /// Minimum scale of a system element before the visibility is switched to hidden.
@@ -68,7 +68,6 @@ pub const BUTTON_WIDTH_HALF: f32 = 16.0;
 /// Local z coordinate of a create-button.
 pub const BUTTON_Z: f32 = 200.0;
 
-
 /// Default half width of an external entity.
 pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 20.0;
 /// Default half height of an external entity.
@@ -89,3 +88,10 @@ pub const WHITE_COLOR_MATERIAL_HANDLE: MeshMaterial2d<ColorMaterial> =
 
 /// The default background color of the canvas. It's also used as the background color for flow labels in the environment.
 pub const CLEAR_COLOR: Color = Color::srgb(0.98, 0.92, 0.84);
+
+#[cfg(target_os = "macos")]
+/// Default key modifier for MacOS like for saving and loading
+pub const MODIFIER: KeyCode = KeyCode::SuperLeft;
+#[cfg(not(target_os = "macos"))]
+/// Default key modifier for other platforms like for saving and loading
+pub const MODIFIER: KeyCode = KeyCode::ControlLeft;

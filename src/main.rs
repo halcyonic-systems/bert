@@ -11,7 +11,7 @@ mod utils;
 
 use crate::bundles::*;
 use crate::components::*;
-use crate::constants::WHITE_COLOR_MATERIAL_HANDLE;
+use crate::constants::{MODIFIER, WHITE_COLOR_MATERIAL_HANDLE};
 use crate::data_model::load::load_world;
 use crate::data_model::save::save_world;
 use crate::events::*;
@@ -24,8 +24,8 @@ use crate::plugins::mouse_interaction::{
 use crate::resources::*;
 use crate::states::*;
 use crate::systems::*;
+use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
-use bevy::input::common_conditions::{input_just_pressed};
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_egui::EguiPlugin;
@@ -126,9 +126,8 @@ fn main() {
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),
-                reset_camera_position.run_if(
-                    input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyR)),
-                ),
+                reset_camera_position
+                    .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyR))),
             )
                 .in_set(CameraControlSet),
             (load_world, save_world),
