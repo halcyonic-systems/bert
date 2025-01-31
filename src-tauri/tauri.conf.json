@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "bert",
+  "version": "0.1.0",
+  "identifier": "com.bert",
+  "build": {
+    "beforeDevCommand": "trunk serve",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "trunk build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "bert",
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}

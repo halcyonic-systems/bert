@@ -8,3 +8,4 @@ build
 *.dmg
 *.dot
 .cargo
+/dist/
