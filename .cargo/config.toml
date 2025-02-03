@@ -11,8 +11,8 @@ rustflags = [
   "-Zthreads=0",             # (Nightly) Use improved multithreading with the recommended amount of threads.
 ]
 
-# NOTE: you must install [Mach-O LLD Port](https://lld.llvm.org/MachO/index.html) on mac. you can easily do this by installing llvm which includes lld with the "brew" package manager:
-# `brew install llvm`
+# NOTE: you must install [Mach-O LLD Port](https://lld.llvm.org/MachO/index.html) on mac. you can easily do this by installing it with the "brew" package manager:
+# `brew install lld`
 [target.x86_64-apple-darwin]
 rustflags = [
   "-Clink-arg=-fuse-ld=/usr/local/Cellar/lld/19.1.7/bin/ld64.lld", # Use LLD Linker
