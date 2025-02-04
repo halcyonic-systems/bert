@@ -1,4 +1,5 @@
 //! Custom defined events
+use crate::bevy_app::data_model::WorldModel;
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use bevy::prelude::*;
 
@@ -29,3 +30,13 @@ impl_drag_event!(SubsystemDrag);
 /// Fires when an entity is removed from the world. Used in system control flow.
 #[derive(Event, Debug, Clone, Copy)]
 pub struct RemoveEvent;
+
+#[derive(Event, Clone)]
+pub struct TreeEvent {
+    pub world_model: WorldModel,
+}
+
+#[derive(Event, Debug, Clone)]
+pub enum TriggerEvent {
+    ShowTree,
+}

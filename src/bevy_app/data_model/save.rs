@@ -60,8 +60,19 @@ impl Context {
     }
 }
 
-pub fn save_world(
-    mut commands: Commands,
+pub fn save_world(In(world_model): In<WorldModel>, mut commands: Commands) {
+    commands
+        .dialog()
+        .add_filter("valid_formats", &["json"])
+        .save_file::<JsonWorldData>(
+            serde_json::to_string(&world_model)
+                .expect("This shouldn't fail")
+                .as_bytes()
+                .to_vec(),
+        );
+}
+
+pub fn serialize_world(
     name_and_description_query: Query<(&Name, &ElementDescription)>,
     transform_query: Query<(&Transform, &InitialPosition)>,
     parent_query: Query<&Parent>,
@@ -84,7 +95,7 @@ pub fn save_world(
     )>,
     interface_query: Query<(&crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: Query<&crate::bevy_app::components::ExternalEntity>,
-) {
+) -> WorldModel {
     let (system_entity, system_component, environment) = main_system_info_query
         .get_single()
         .expect("System of interest should exist");
@@ -174,22 +185,12 @@ pub fn save_world(
         interaction.sink_interface = sink_interface;
     }
 
-    let model = WorldModel {
+    WorldModel {
         version: CURRENT_FILE_VERSION,
         systems: entity_to_system.into_values().collect(),
         interactions: ctx.interactions,
         environment,
-    };
-
-    commands
-        .dialog()
-        .add_filter("valid_formats", &["json"])
-        .save_file::<JsonWorldData>(
-            serde_json::to_string(&model)
-                .expect("This shouldn't fail")
-                .as_bytes()
-                .to_vec(),
-        );
+    }
 }
 
 /// Iterate through all subsystems of the given system entity and build them. Then build all

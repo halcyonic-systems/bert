@@ -2,7 +2,7 @@ mod bundles;
 mod components;
 mod constants;
 mod data_model;
-mod events;
+pub mod events;
 mod plugins;
 mod resources;
 mod states;
@@ -25,8 +25,9 @@ use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
 use components::*;
 use constants::WHITE_COLOR_MATERIAL_HANDLE;
 use data_model::load::load_world;
-use data_model::save::save_world;
+use data_model::save::{save_world, serialize_world};
 use events::*;
+use leptos_bevy_canvas::prelude::*;
 use plugins::label::{copy_position, LabelPlugin};
 use plugins::lyon_selection::LyonSelectionPlugin;
 use plugins::mouse_interaction::{disable_selection, enable_selection, MouseInteractionPlugin};
@@ -73,7 +74,10 @@ struct AutoSpawnLabelSet;
 /// Used to save and load the world
 pub struct JsonWorldData;
 
-pub fn init_bevy_app() -> App {
+pub fn init_bevy_app(
+    tree_event_sender: BevyEventSender<TreeEvent>,
+    trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
+) -> App {
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins
@@ -101,6 +105,8 @@ pub fn init_bevy_app() -> App {
             .with_save_file::<JsonWorldData>()
             .with_load_file::<JsonWorldData>(),
     ))
+    .import_event_from_leptos(trigger_event_receiver)
+    .export_event_to_leptos(tree_event_sender)
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
@@ -157,7 +163,7 @@ pub fn init_bevy_app() -> App {
                     input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyL)),
                 ),
                 load_world,
-                save_world.run_if(
+                serialize_world.pipe(save_world).run_if(
                     input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyS)),
                 ),
             ),
