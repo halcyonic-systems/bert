@@ -13,11 +13,6 @@ use bevy_file_dialog::{DialogFileLoaded, FileDialogExt};
 use rust_decimal_macros::dec;
 use crate::JsonWorldData;
 
-fn load_from_json(file_name: &str) -> WorldModel {
-    let bytes = std::fs::read(file_name).expect("This shouldn't fail");
-    serde_json::from_slice(&bytes).expect("This shouldn't fail")
-}
-
 fn load_from_bytes(bytes: &[u8]) -> WorldModel {
     serde_json::from_slice(bytes).expect("This shouldn't fail")
 }

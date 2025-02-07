@@ -1,21 +1,69 @@
-use leptos::prelude::*;
-use leptos_bevy_canvas::prelude::BevyCanvas;
+mod components;
+mod details;
+
 use crate::bevy_app::init_bevy_app;
+use crate::bevy_app::{
+    components::System, ElementDescription, ExternalEntity, Flow, Interface,
+    SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
+};
+use crate::leptos_app::details::Details;
+use crate::Subsystem;
+use bevy::prelude::{Name, With};
+use leptos::prelude::*;
+use leptos_bevy_canvas::prelude::{single_query_signal, BevyCanvas};
+use leptos_meta::*;
+
+pub type InterfaceQuery = (Name, ElementDescription, Interface);
+pub type InteractionQuery = (Name, ElementDescription, Flow);
+pub type ExternalEntityQuery = (Name, ElementDescription, ExternalEntity);
+pub type SystemQuery = (Name, ElementDescription, System, SystemEnvironment);
+pub type SubSystemQuery = (Name, ElementDescription, System);
+pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
+
+pub type SubSystemFilter = With<Subsystem>;
 
 #[component]
 pub fn App() -> impl IntoView {
+    provide_meta_context();
+
+    let (selected_details, selected_details_query) =
+        single_query_signal::<(SystemElement,), With<SelectedHighlightHelperAdded>>();
+
+    let (interface_details, interface_details_query) =
+        single_query_signal::<InterfaceQuery, SelectionFilter>();
+
+    let (interaction_details, interaction_details_query) =
+        single_query_signal::<InteractionQuery, SelectionFilter>();
+
+    let (external_entity_details, external_entity_details_query) =
+        single_query_signal::<ExternalEntityQuery, SelectionFilter>();
+
+    let (system_details, system_details_query) =
+        single_query_signal::<SystemQuery, SelectionFilter>();
+
+    let (sub_system_details, sub_system_details_query) =
+        single_query_signal::<SubSystemQuery, (SelectionFilter, SubSystemFilter)>();
 
     view! {
-        <h2> "Hello World" </h2>
-        <BevyCanvas
-            init=move || {
-                // Pass the receiver into the Bevy app initialization
-                init_bevy_app()
-            }
-
-            {..}
-            width="500"
-            height="300"
+        <div class="h-screen">
+            <BevyCanvas init=move || {
+                init_bevy_app(
+                    selected_details_query,
+                    interface_details_query,
+                    interaction_details_query,
+                    external_entity_details_query,
+                    system_details_query,
+                    sub_system_details_query,
+                )
+            } />
+        </div>
+        <Details
+            selected=selected_details
+            interaction_details
+            interface_details
+            external_entity_details
+            system_details
+            sub_system_details
         />
     }
 }

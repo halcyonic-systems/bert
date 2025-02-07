@@ -1,8 +1,12 @@
 //! This file contains all the Bevy components and data structures related to System Elements and their associated helper methods.
+
+use std::fmt::Formatter;
 use crate::bevy_app::data_model::Complexity;
 use bevy::prelude::*;
+use enum_iterator::Sequence;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use uuid::{Uuid};
 
 /// Corresponds to the System Language elements and their visual representation in the diagram.
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
@@ -89,19 +93,42 @@ pub struct Flow {
 }
 
 /// Represents a user-defined parameter stored in a Flow.
-#[derive(Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Reflect, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Parameter {
+    #[serde(skip)]
+    #[reflect(ignore)]
+    pub id: Uuid,
     pub name: String,
     pub value: String,
 }
 
+impl Default for Parameter {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            name: "".to_string(),
+            value: "".to_string(),
+        }
+    }
+}
+
 /// Corresponds to the System Language Interaction types.
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize, Sequence)]
 pub enum InteractionType {
     #[default]
     Flow,
     Force,
 }
+
+impl core::fmt::Display for InteractionType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InteractionType::Flow => write!(f, "Flow"),
+            InteractionType::Force => write!(f, "Force"),
+        }
+    }
+}
+
 
 /// Attached to entities with a SystemElement::ExternalEntity component to hold modeling data related to the external entity.
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
@@ -157,7 +184,7 @@ impl InterfaceSubsystem {
 }
 
 /// Corresponds to System Language interaction types. Used to determine to app control flow.
-#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
+#[derive(Serialize, Deserialize, Sequence, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
 pub enum InteractionUsability {
     Resource,
     Disruption,
@@ -183,8 +210,19 @@ impl InteractionUsability {
     }
 }
 
+impl core::fmt::Display for InteractionUsability {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InteractionUsability::Resource => write!(f, "Resource"),
+            InteractionUsability::Disruption => write!(f, "Disruption"),
+            InteractionUsability::Product => write!(f, "Product"),
+            InteractionUsability::Waste => write!(f, "Waste"),
+        }
+    }
+}
+
 /// Corresponds to System Language fundemental substance types. Used to determine graphical representation and app control flow.
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence)]
 pub enum SubstanceType {
     #[default]
     Energy,
@@ -208,6 +246,16 @@ impl SubstanceType {
             SubstanceType::Energy => Color::srgb_u8(233, 182, 178),
             SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5),
             SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75),
+        }
+    }
+}
+
+impl std::fmt::Display for SubstanceType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SubstanceType::Energy => write!(f, "Energy"),
+            SubstanceType::Material => write!(f, "Material"),
+            SubstanceType::Message => write!(f, "Message"),
         }
     }
 }

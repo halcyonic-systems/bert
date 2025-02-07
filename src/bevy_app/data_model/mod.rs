@@ -274,6 +274,48 @@ pub enum Complexity {
     Multiset(u64),
 }
 
+impl Complexity {
+    pub fn is_complex(&self) -> bool {
+        matches!(self, Complexity::Complex { .. })
+    }
+    
+    pub fn is_atomic(&self) -> bool {
+        matches!(self, Complexity::Atomic)
+    }
+    
+    pub fn is_multiset(&self) -> bool {
+        matches!(self, Complexity::Multiset(_))
+    }
+    
+    pub fn is_adaptable(&self) -> bool {
+        match self {
+            Complexity::Complex { adaptable, .. } => *adaptable,
+            _ => false,
+        }
+    }
+    
+    pub fn is_evolveable(&self) -> bool {
+        match self {
+            Complexity::Complex { evolveable, .. } => *evolveable,
+            _ => false,
+        }
+    }
+    
+    pub fn set_adaptable(&mut self, adapt: bool) {
+        match self {
+            Complexity::Complex { adaptable, .. } => *adaptable = adapt,
+            _ => (),
+        }
+    }
+    
+    pub fn set_evolveable(&mut self, evolve: bool) {
+        match self {
+            Complexity::Complex { evolveable, .. } => *evolveable = evolve,
+            _ => (),
+        }
+    }
+}
+
 impl std::fmt::Display for Complexity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         type T = Complexity;

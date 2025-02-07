@@ -4,11 +4,8 @@ use crate::bevy_app::data_model::*;
 use crate::JsonWorldData;
 use bevy::core::Name;
 use bevy::prelude::*;
-use bevy::tasks::futures_lite::future;
-use bevy::tasks::AsyncComputeTaskPool;
 use bevy::utils::HashMap;
 use bevy_file_dialog::FileDialogExt;
-use rfd::FileHandle;
 
 /// Context for bookkeeping while we traverse the ECS and build the data model that is serialized.
 struct Context {
@@ -184,6 +181,7 @@ pub fn save_world(
     commands
         .dialog()
         .add_filter("valid_formats", &["json"])
+        .set_file_name("test.json")
         .save_file::<JsonWorldData>(
             serde_json::to_string(&model)
                 .expect("This shouldn't fail")
@@ -376,7 +374,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: &Query<&crate::bevy_app::components::ExternalEntity>,
 ) {
-    /// we start from the interactions
+    // we start from the interactions
     for (
         flow_entity,
         flow,

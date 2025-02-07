@@ -1,32 +1,35 @@
 mod bundles;
-mod components;
+pub(crate) mod components;
 mod constants;
-mod data_model;
+pub(crate) mod data_model;
 mod events;
-mod plugins;
+pub(crate) mod plugins;
 mod resources;
 mod states;
 mod systems;
 mod utils;
 
-// use plugins::file_dialog::{FileDialogPlugin, FileState};
 use crate::bevy_app::data_model::load::load_file;
+use crate::{
+    ExternalEntityQuery, InteractionQuery, InterfaceQuery, SelectionFilter, SubSystemQuery,
+    SystemQuery,
+};
 use bevy::asset::AssetMetaCheck;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
-use bevy::window::WindowResolution;
 use bevy_egui::EguiPlugin;
 use bevy_file_dialog::FileDialogPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::*;
 use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
-use components::*;
+pub use components::*;
 use constants::WHITE_COLOR_MATERIAL_HANDLE;
 use data_model::load::load_world;
 use data_model::save::save_world;
 use events::*;
+use leptos_bevy_canvas::prelude::{BevyQueryDuplex, LeptosBevyApp};
 use plugins::label::{copy_position, LabelPlugin};
 use plugins::lyon_selection::LyonSelectionPlugin;
 use plugins::mouse_interaction::{disable_selection, enable_selection, MouseInteractionPlugin};
@@ -73,7 +76,17 @@ struct AutoSpawnLabelSet;
 /// Used to save and load the world
 pub struct JsonWorldData;
 
-pub fn init_bevy_app() -> App {
+pub fn init_bevy_app(
+    selected_details_query: BevyQueryDuplex<(SystemElement,), With<SelectedHighlightHelperAdded>>,
+    interface_details_query: BevyQueryDuplex<InterfaceQuery, SelectionFilter>,
+    interaction_details_query: BevyQueryDuplex<InteractionQuery, SelectionFilter>,
+    external_entity_details_query: BevyQueryDuplex<ExternalEntityQuery, SelectionFilter>,
+    system_details_query: BevyQueryDuplex<SystemQuery, SelectionFilter>,
+    sub_system_details_query: BevyQueryDuplex<
+        SubSystemQuery,
+        (SelectionFilter, crate::SubSystemFilter),
+    >,
+) -> App {
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins
@@ -86,7 +99,7 @@ pub fn init_bevy_app() -> App {
                     focused: false,
                     fit_canvas_to_parent: true,
                     canvas: Some("#bevy_canvas".into()),
-                    resolution: WindowResolution::new(500.0, 300.0),
+                    // resolution: WindowResolution::new(500.0, 300.0),
                     ..default()
                 }),
                 ..default()
@@ -109,6 +122,12 @@ pub fn init_bevy_app() -> App {
     .add_event::<SubsystemDrag>()
     .add_event::<RemoveEvent>()
     .init_state::<AppState>()
+    .sync_leptos_signal_with_query(selected_details_query)
+    .sync_leptos_signal_with_query(interface_details_query)
+    .sync_leptos_signal_with_query(interaction_details_query)
+    .sync_leptos_signal_with_query(external_entity_details_query)
+    .sync_leptos_signal_with_query(system_details_query)
+    .sync_leptos_signal_with_query(sub_system_details_query)
     .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
@@ -120,9 +139,6 @@ pub fn init_bevy_app() -> App {
     app.add_systems(
         PreUpdate,
         (
-            absorb_egui_inputs
-                .after(bevy_egui::EguiPreUpdateSet::ProcessInput)
-                .before(bevy_egui::EguiPreUpdateSet::BeginPass),
             control_zoom_from_keyboard,
             // TODO : for some reason this doesn't always work: control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
         )
@@ -133,7 +149,6 @@ pub fn init_bevy_app() -> App {
         Update,
         (
             (
-                egui_selected_context.after(bevy_egui::EguiStartupSet::InitContexts),
                 change_focused_system,
                 draw_flow_curve,
                 update_initial_position_from_transform,
