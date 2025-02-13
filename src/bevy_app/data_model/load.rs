@@ -7,11 +7,11 @@ use crate::bevy_app::data_model::*;
 use crate::bevy_app::events::SubsystemDrag;
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::resources::*;
+use crate::JsonWorldData;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_file_dialog::{DialogFileLoaded, FileDialogExt};
 use rust_decimal_macros::dec;
-use crate::JsonWorldData;
 
 fn load_from_bytes(bytes: &[u8]) -> WorldModel {
     serde_json::from_slice(bytes).expect("This shouldn't fail")
@@ -41,7 +41,10 @@ impl Context {
 }
 
 pub fn load_file(mut commands: Commands) {
-    commands.dialog().add_filter("valid_formats", &["json"]).load_file::<JsonWorldData>();
+    commands
+        .dialog()
+        .add_filter("valid_formats", &["json"])
+        .load_file::<JsonWorldData>();
 }
 
 pub fn load_world(
@@ -395,9 +398,15 @@ fn make_systems_parent_child_hierarchy(
 
         commands.entity(parent_entity).add_child(system_entity);
 
-        commands.entity(system_entity).insert(Subsystem {
-            parent_system: ctx.id_to_entity[&system.parent],
-        });
+        commands
+            .entity(system_entity)
+            .insert(Subsystem {
+                parent_system: ctx.id_to_entity[&system.parent],
+            })
+            .insert(ParentState {
+                name: system.info.name.clone(),
+                description: system.info.description.clone(),
+            });
     }
 }
 
@@ -493,8 +502,10 @@ fn spawn_loaded_subsystem(
                 &system.info.description,
             ),
         ))
-        .observe(|trigger: Trigger<DragPosition>, mut writer: EventWriter<SubsystemDrag>| {
-            writer.send(trigger.into());
-        })
+        .observe(
+            |trigger: Trigger<DragPosition>, mut writer: EventWriter<SubsystemDrag>| {
+                writer.send(trigger.into());
+            },
+        )
         .id()
 }

@@ -103,12 +103,6 @@ pub fn Details(
                                             id="slide-over-title"
                                         >
                                             Element Details
-                                            <a
-                                                download="test.png"
-                                                href="assets/create-button/inflow.png"
-                                            >
-                                                Bruh
-                                            </a>
                                         </h2>
                                         <div class="flex items-center ml-3 h-7">
                                             <button
@@ -1199,10 +1193,10 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             }
         />
 
-        <InputGroup
+        <TextArea
             id="parent-system-description"
             label="Description"
-            value=parent_system_description
+            text=parent_system_description
             disabled=true
             on_input=move |value| {
                 sub_system_query
