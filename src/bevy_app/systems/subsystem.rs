@@ -95,7 +95,6 @@ pub fn update_sub_system_parent_system(
         (Entity, &Name, &ElementDescription),
         (
             With<crate::bevy_app::components::System>,
-            Without<Subsystem>,
             Or<(Changed<Name>, Changed<ElementDescription>)>,
         ),
     >,
