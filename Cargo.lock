@@ -4417,6 +4417,7 @@ dependencies = [
 [[package]]
 name = "leptos-bevy-canvas"
 version = "0.1.0"
+source = "git+https://github.com/Synphonyte/leptos-bevy-canvas.git#3e76bf1e58988e5774d5e518b828244ea7eeb8cd"
 dependencies = [
  "bevy",
  "crossbeam-channel",
