@@ -17,7 +17,7 @@ console_error_panic_hook = "0.1.7"
 enum-iterator = "2.1.0"
 js-sys = "0.3"
 leptos = { version = "0.7.4", features = ["csr"] }
-leptos-bevy-canvas = { path = "../leptos-bevy-canvas" }
+leptos-bevy-canvas = { git = "https://github.com/Synphonyte/leptos-bevy-canvas.git" }
 leptos_meta = { version = "0.7.5", default-features = true }
 leptos-use = "0.15.6"
 lyon_algorithms = "1"
