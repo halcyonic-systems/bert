@@ -21,14 +21,11 @@ impl FromStr for DecimalWrapper {
     type Err = Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        leptos::logging::log!("s: {}", s);
-
         let mut s = s.trim().to_string();
 
         if s.ends_with(".") || s.ends_with(",") {
             s.push('0');
             s.push('0');
-            leptos::logging::log!("after...");
         }
         Ok(DecimalWrapper(Decimal::from_str(&s)?))
     }
@@ -89,28 +86,34 @@ pub fn Details(
             aria-modal="true"
         >
 
-            <div class="fixed overflow-hidden">
-                <div class="absolute overflow-hidden">
-                    <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div class="overflow-hidden fixed">
+                <div class="overflow-hidden absolute">
+                    <div class="flex fixed inset-y-0 right-0 pl-10 max-w-full pointer-events-none">
 
                         <div
-                            class="pointer-events-auto w-screen max-w-md transform transition ease-in-out duration-500 sm:duration-700"
+                            class="w-screen max-w-md transition duration-500 ease-in-out transform pointer-events-auto sm:duration-700"
                             class:translate-x-full=move || selected.get().is_none()
                             class:translate-x-0=move || selected.get().is_some()
                         >
-                            <div class="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
+                            <div class="flex overflow-y-scroll flex-col py-6 h-full bg-white shadow-xl">
                                 <div class="px-4 sm:px-6">
-                                    <div class="flex items-start justify-between">
+                                    <div class="flex justify-between items-start">
                                         <h2
                                             class="text-base font-semibold text-gray-900"
                                             id="slide-over-title"
                                         >
                                             Element Details
+                                            <a
+                                                download="test.png"
+                                                href="assets/create-button/inflow.png"
+                                            >
+                                                Bruh
+                                            </a>
                                         </h2>
-                                        <div class="ml-3 flex h-7 items-center">
+                                        <div class="flex items-center ml-3 h-7">
                                             <button
                                                 type="button"
-                                                class="relative rounded-md bg-white text-gray-400 hover:text-gray-500 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:outline-hidden"
+                                                class="relative text-gray-400 bg-white rounded-md hover:text-gray-500 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:outline-hidden"
                                             >
                                                 <span class="absolute -inset-2.5"></span>
                                                 <span class="sr-only">Close panel</span>
@@ -133,7 +136,7 @@ pub fn Details(
                                         </div>
                                     </div>
                                 </div>
-                                <div class="relative mt-6 flex-1 px-4 sm:px-6">
+                                <div class="relative flex-1 px-4 mt-6 sm:px-6">
                                     <Show when=move || interaction_details.get().is_some()>
                                         <InteractionDetails interaction_query=interaction_details />
                                     </Show>
@@ -408,7 +411,7 @@ pub fn InteractionDetails(
                     .as_mut()
                     .map(|(_, _, interaction)| interaction.parameters.push(Parameter::default()));
             }
-            class="w-full rounded-full bg-rose-950 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-rose-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
+            class="py-1.5 px-3 w-full text-sm font-semibold text-white rounded-full shadow-sm hover:bg-rose-800 bg-rose-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
         >
             Add
         </button>
@@ -439,7 +442,7 @@ pub fn InteractionDetails(
                             });
                     }
                     {..}
-                    class="col-span-4 flex item-center justify-self-center"
+                    class="flex col-span-4 justify-self-center item-center"
                 />
                 <InputGroup
                     id="bruh"
@@ -461,7 +464,7 @@ pub fn InteractionDetails(
                             });
                     }
                     {..}
-                    class="col-span-4 flex item-center justify-self-center"
+                    class="flex col-span-4 justify-self-center item-center"
                 />
                 <button
                     type="button"
@@ -473,10 +476,10 @@ pub fn InteractionDetails(
                                 interaction.parameters.retain(|param| param.id != id);
                             });
                     }
-                    class="size-fit self-center justify-self-center rounded-full bg-rose-950 p-1 text-sm font-semibold text-white shadow-sm hover:bg-rose-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
+                    class="justify-self-center self-center p-1 text-sm font-semibold text-white rounded-full shadow-sm hover:bg-rose-800 size-fit bg-rose-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
                 >
                     <svg
-                        class="size-5 rotate-45"
+                        class="rotate-45 size-5"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                         aria-hidden="true"
@@ -714,7 +717,7 @@ pub fn SystemDetails(system_query: RwSignalSynced<Option<SystemQuery>>) -> impl 
             }
         />
         <div class="mb-2">
-            <label for="complexity" class="block text-sm/6 font-medium text-gray-900">
+            <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
                 Complexity
             </label>
         </div>

@@ -4,8 +4,10 @@ use crate::bevy_app::data_model::*;
 use crate::JsonWorldData;
 use bevy::core::Name;
 use bevy::prelude::*;
+use bevy::tasks::AsyncComputeTaskPool;
 use bevy::utils::HashMap;
 use bevy_file_dialog::FileDialogExt;
+use tauri_sys::core::invoke;
 
 /// Context for bookkeeping while we traverse the ECS and build the data model that is serialized.
 struct Context {
@@ -178,16 +180,48 @@ pub fn save_world(
         environment,
     };
 
-    commands
-        .dialog()
-        .add_filter("valid_formats", &["json"])
-        .set_file_name("test.json")
-        .save_file::<JsonWorldData>(
-            serde_json::to_string(&model)
-                .expect("This shouldn't fail")
-                .as_bytes()
-                .to_vec(),
-        );
+    #[derive(serde::Serialize)]
+    struct Args {
+        data: String,
+        path: String
+    }
+
+    let file_name = "bert_backup.json".to_string();
+
+    let window = web_sys::window().expect("window should exist");
+
+    let tauri_exists = leptos_use::js! {
+        "__TAURI__" in &window
+    };
+
+    if tauri_exists {
+        let task = AsyncComputeTaskPool::get().spawn_local({
+            let model = model.clone();
+            async move {
+                invoke::<()>(
+                    "save_to_file",
+                    &Args {
+                        data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
+                        path: file_name.clone(),
+                    },
+                )
+                    .await;
+            }
+        });
+
+        task.detach();
+    } else {
+        commands
+            .dialog()
+            .add_filter("valid_formats", &["json"])
+            .set_file_name(&file_name)
+            .save_file::<JsonWorldData>(
+                serde_json::to_string(&model)
+                    .expect("This shouldn't fail")
+                    .as_bytes()
+                    .to_vec(),
+            );
+    }
 }
 
 /// Iterate through all subsystems of the given system entity and build them. Then build all

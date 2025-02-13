@@ -11,7 +11,7 @@ use std::fmt;
 pub const CURRENT_FILE_VERSION: u32 = 1;
 
 /// Root object
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct WorldModel {
     /// File format version. When changes are made to the structure then this needs to be increased
     /// so files saved with previous versions can be converted when they are loaded.

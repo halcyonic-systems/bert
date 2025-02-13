@@ -19,7 +19,6 @@ use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
-use bevy_egui::EguiPlugin;
 use bevy_file_dialog::FileDialogPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::*;
@@ -105,7 +104,6 @@ pub fn init_bevy_app(
                 ..default()
             }),
         MeshPickingPlugin,
-        EguiPlugin,
         ShapePlugin,
         LyonSelectionPlugin,
         MouseInteractionPlugin,

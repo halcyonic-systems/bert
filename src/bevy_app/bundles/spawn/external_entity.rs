@@ -3,13 +3,13 @@ use crate::bevy_app::constants::{
     BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_SELECTED_LINE_WIDTH,
     EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
 };
-use crate::bevy_app::events::{ExternalEntityDrag};
+use crate::bevy_app::events::ExternalEntityDrag;
 use crate::bevy_app::plugins::label::{add_name_label, Alignment, CopyPositionArgs};
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::plugins::mouse_interaction::PickSelection;
 use crate::bevy_app::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
-use crate::bevy_app::utils::{ui_transform_from_button};
+use crate::bevy_app::utils::ui_transform_from_button;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -132,9 +132,11 @@ pub fn spawn_external_entity_only(
                 .external_entity,
             NestingLevel::new(nesting_level),
         ))
-        .observe(|trigger: Trigger<DragPosition>, mut writer: EventWriter<ExternalEntityDrag>| {
-            writer.send(trigger.into());
-        })
+        .observe(
+            |trigger: Trigger<DragPosition>, mut writer: EventWriter<ExternalEntityDrag>| {
+                writer.send(trigger.into());
+            },
+        )
         .id()
 }
 
