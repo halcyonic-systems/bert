@@ -25,7 +25,7 @@ pub fn InputGroup<F, I>(
     #[prop(into)] value: Signal<I>,
     #[prop(optional)] input_class: Option<&'static str>,
     #[prop(optional)] type_: Option<&'static str>,
-    #[prop(optional)] disabled: Signal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] name: Option<String>,
     #[prop(optional)] placeholder: Option<&'static str>,
     #[prop(optional)] label_class: Option<&'static str>,
@@ -61,7 +61,7 @@ where
             </label>
             <div class="relative mt-2 rounded-md">
                 <div
-                    class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"
+                    class="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none"
                     class:hidden=!has_icon
                 >
                     {icon}
@@ -86,7 +86,7 @@ where
                     maxlength=max_length
                 />
                 <div>
-                    <p class="text-red-500 text-xs italic mt-2">{error}</p>
+                    <p class="mt-2 text-xs italic text-red-500">{error}</p>
                 </div>
             </div>
         </div>

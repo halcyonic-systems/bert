@@ -1,4 +1,3 @@
-use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use crate::bevy_app::bundles::{spawn_external_entity, spawn_interface};
 use crate::bevy_app::components::*;
 use crate::bevy_app::constants::*;
@@ -15,6 +14,7 @@ use crate::bevy_app::systems::{
 use crate::bevy_app::utils::ui_transform_from_button;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
+use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 use rust_decimal::Decimal;
 
@@ -29,7 +29,12 @@ macro_rules! spawn_flow {
             commands: &mut Commands,
             subsystem_query: &Query<&Subsystem>,
             nesting_query: &Query<&NestingLevel>,
-            system_query: &Query<(&Transform, &crate::bevy_app::components::System)>,
+            system_query: &Query<(
+                &Transform,
+                &crate::bevy_app::components::System,
+                &Name,
+                &ElementDescription,
+            )>,
             system_entity: Entity,
             transform: &Transform,
             stroke_tess: &mut ResMut<StrokeTessellator>,
@@ -50,7 +55,7 @@ macro_rules! spawn_flow {
             let nesting_level = NestingLevel::current(system_entity, nesting_query);
 
             let scale = if let Ok(subsystem) = subsystem_query.get(system_entity) {
-                let (_, system) = system_query
+                let (_, system, _, _) = system_query
                     .get(subsystem.parent_system)
                     .expect("Parent system has to exist");
 
@@ -207,7 +212,12 @@ macro_rules! spawn_complete_flow {
             focused_system: FocusedSystem,
             subsystem_query: &Query<&Subsystem>,
             nesting_query: &Query<&NestingLevel>,
-            system_query: &Query<(&Transform, &crate::bevy_app::components::System)>,
+            system_query: &Query<(
+                &Transform,
+                &crate::bevy_app::components::System,
+                &Name,
+                &ElementDescription,
+            )>,
             mut meshes: &mut ResMut<Assets<Mesh>>,
             mut stroke_tess: &mut ResMut<StrokeTessellator>,
             fixed_system_element_geometries: &mut ResMut<

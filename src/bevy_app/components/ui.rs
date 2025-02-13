@@ -131,3 +131,10 @@ pub enum FlowTerminalSelecting {
 pub struct SelectedHighlightHelperAdded {
     pub helper_entity: Entity,
 }
+
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct ParentState {
+    pub name: String,
+    pub description: String,
+}

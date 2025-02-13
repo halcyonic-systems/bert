@@ -7,7 +7,7 @@ use crate::bevy_app::{
     SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
 use crate::leptos_app::details::Details;
-use crate::Subsystem;
+use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::{single_query_signal, BevyCanvas};
@@ -17,9 +17,9 @@ pub type InterfaceQuery = (Name, ElementDescription, Interface);
 pub type InteractionQuery = (Name, ElementDescription, Flow);
 pub type ExternalEntityQuery = (Name, ElementDescription, ExternalEntity);
 pub type SystemQuery = (Name, ElementDescription, System, SystemEnvironment);
-pub type SubSystemQuery = (Name, ElementDescription, System);
-pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
+pub type SubSystemQuery = (Name, ElementDescription, System, ParentState);
 
+pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 
 #[component]

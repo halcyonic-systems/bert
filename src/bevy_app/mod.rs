@@ -205,6 +205,7 @@ pub fn init_bevy_app(
                 )),
             ),
             (
+                update_sub_system_parent_system,
                 update_color_from_substance_type::<FlowStartConnection>,
                 update_color_from_substance_type::<FlowEndConnection>,
                 update_button_substance_type_from_flow,

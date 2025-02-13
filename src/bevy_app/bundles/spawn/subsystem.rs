@@ -3,7 +3,9 @@ use crate::bevy_app::components::*;
 use crate::bevy_app::constants::*;
 use crate::bevy_app::data_model::Complexity;
 use crate::bevy_app::events::SubsystemDrag;
-use crate::bevy_app::plugins::label::{add_name_label, Alignment, AutoContrastTextColor, CopyPositionArgs};
+use crate::bevy_app::plugins::label::{
+    add_name_label, Alignment, AutoContrastTextColor, CopyPositionArgs,
+};
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
@@ -25,7 +27,12 @@ pub fn spawn_interface_subsystem(
         Option<&FlowEndInterfaceConnection>,
         Option<&FlowStartInterfaceConnection>,
     )>,
-    system_query: &Query<(&Transform, &crate::bevy_app::components::System)>,
+    system_query: &Query<(
+        &Transform,
+        &crate::bevy_app::components::System,
+        &Name,
+        &ElementDescription,
+    )>,
     nesting_level_query: &Query<&NestingLevel>,
     focused_system: &Res<FocusedSystem>,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -125,7 +132,12 @@ enum SubsystemPosition {
 
 fn spawn_subsystem_common(
     commands: &mut Commands,
-    system_query: &Query<(&Transform, &crate::bevy_app::components::System)>,
+    system_query: &Query<(
+        &Transform,
+        &crate::bevy_app::components::System,
+        &Name,
+        &ElementDescription,
+    )>,
     nesting_level_query: &Query<&NestingLevel>,
     meshes: &mut ResMut<Assets<Mesh>>,
     zoom: f32,
@@ -136,11 +148,11 @@ fn spawn_subsystem_common(
     z: f32,
     position: SubsystemPosition,
 ) -> (Entity, f32, u16) {
-    let parent_radius = system_query
+    let parent = system_query
         .get(parent_system)
-        .expect("focused system not found")
-        .1
-        .radius;
+        .expect("focused system not found");
+
+    let parent_radius = parent.1.radius;
 
     let radius = parent_radius * SUBSYSTEM_MIN_SCALING_FACTOR;
 
@@ -156,6 +168,10 @@ fn spawn_subsystem_common(
     (
         commands
             .spawn((
+                ParentState {
+                    name: parent.2.as_str().to_owned(),
+                    description: parent.3.text.clone(),
+                },
                 Subsystem { parent_system },
                 NestingLevel::new(nesting_level),
                 SystemBundle::new(
@@ -186,7 +202,12 @@ fn spawn_subsystem_common(
 pub fn spawn_subsystem(
     commands: &mut Commands,
     parent_system: Entity,
-    system_query: &Query<(&Transform, &crate::bevy_app::components::System)>,
+    system_query: &Query<(
+        &Transform,
+        &crate::bevy_app::components::System,
+        &Name,
+        &ElementDescription,
+    )>,
     nesting_level_query: &Query<&NestingLevel>,
     flow_query: &Query<(&FlowCurve, &Flow)>,
     inflows: &[Entity],

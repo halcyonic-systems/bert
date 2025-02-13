@@ -423,7 +423,7 @@ pub fn InteractionDetails(
                 let(Parameter { id, name, value })
             >
                 <InputGroup
-                    id=""
+                    id="name"
                     label="Name"
                     value=name
                     label_class="self-center"
@@ -445,7 +445,7 @@ pub fn InteractionDetails(
                     class="flex col-span-4 justify-self-center item-center"
                 />
                 <InputGroup
-                    id="bruh"
+                    id="value"
                     label="Value"
                     value=value
                     label_class="self-center"
@@ -866,7 +866,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(name, _, _)| name.to_string())
+            .map(|(name, _, _, _)| name.to_string())
             .unwrap_or_default()
     });
 
@@ -874,7 +874,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, description, _)| description.text.clone())
+            .map(|(_, description, _, _)| description.text.clone())
             .unwrap_or_default()
     });
 
@@ -891,14 +891,14 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.complexity)
+            .map(|(_, _, system, _)| system.complexity)
     });
 
     let adaptable = Signal::derive(move || {
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.complexity.is_adaptable())
+            .map(|(_, _, system, _)| system.complexity.is_adaptable())
             .unwrap_or_default()
     });
 
@@ -906,7 +906,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.complexity.is_evolveable())
+            .map(|(_, _, system, _)| system.complexity.is_evolveable())
             .unwrap_or_default()
     });
 
@@ -914,7 +914,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.membership as f64)
+            .map(|(_, _, system, _)| system.membership as f64)
             .unwrap_or_default()
     });
 
@@ -922,7 +922,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.equivalence.clone())
+            .map(|(_, _, system, _)| system.equivalence.clone())
             .unwrap_or_default()
     });
 
@@ -930,7 +930,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.time_unit.clone())
+            .map(|(_, _, system, _)| system.time_unit.clone())
             .unwrap_or_default()
     });
 
@@ -938,7 +938,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.history.clone())
+            .map(|(_, _, system, _)| system.history.clone())
             .unwrap_or_default()
     });
 
@@ -946,7 +946,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.transformation.clone())
+            .map(|(_, _, system, _)| system.transformation.clone())
             .unwrap_or_default()
     });
 
@@ -954,7 +954,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.boundary.name.clone())
+            .map(|(_, _, system, _)| system.boundary.name.clone())
             .unwrap_or_default()
     });
 
@@ -962,7 +962,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.boundary.description.clone())
+            .map(|(_, _, system, _)| system.boundary.description.clone())
             .unwrap_or_default()
     });
 
@@ -970,7 +970,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.boundary.porosity as f64)
+            .map(|(_, _, system, _)| system.boundary.porosity as f64)
             .unwrap_or_default()
     });
 
@@ -978,25 +978,25 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system)| system.boundary.perceptive_fuzziness as f64)
+            .map(|(_, _, system, _)| system.boundary.perceptive_fuzziness as f64)
             .unwrap_or_default()
     });
 
-    // let environment_name = Signal::derive(move || {
-    //     sub_system_query
-    //         .read()
-    //         .as_ref()
-    //         .map(|(_, _, _)| system_env.name.clone())
-    //         .unwrap_or_default()
-    // });
-    //
-    // let environment_description = Signal::derive(move || {
-    //     sub_system_query
-    //         .read()
-    //         .as_ref()
-    //         .map(|(_, _, _)| system_env.description.clone())
-    //         .unwrap_or_default()
-    // });
+    let parent_system_name = Signal::derive(move || {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, _, parent_state)| parent_state.name.clone())
+            .unwrap_or_default()
+    });
+
+    let parent_system_description = Signal::derive(move || {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, _, parent_state)| parent_state.description.clone())
+            .unwrap_or_default()
+    });
 
     view! {
         <InputGroup
@@ -1005,7 +1005,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             placeholder="External Entity Name"
             value=name
             on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(name, _, _)| name.set(value));
+                sub_system_query.write().as_mut().map(|(name, _, _, _)| name.set(value));
             }
         />
 
@@ -1018,7 +1018,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, description, _)| description.text = value);
+                    .map(|(_, description, _, _)| description.text = value);
             }
         />
 
@@ -1031,7 +1031,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system)| system.complexity = value.unwrap_or_default());
+                    .map(|(_, _, system, _)| system.complexity = value.unwrap_or_default());
             }
         />
 
@@ -1039,7 +1039,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             sub_system_query
                 .read()
                 .as_ref()
-                .map(|(_, _, system)| system.complexity.is_complex())
+                .map(|(_, _, system, _)| system.complexity.is_complex())
                 .unwrap_or_default()
         }>
             <div class="flex justify-evenly">
@@ -1051,7 +1051,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                         sub_system_query
                             .write()
                             .as_mut()
-                            .map(|(_, _, system)| system.complexity.set_adaptable(value));
+                            .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
                     }
                 />
 
@@ -1063,7 +1063,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                         sub_system_query
                             .write()
                             .as_mut()
-                            .map(|(_, _, system)| system.complexity.set_evolveable(value));
+                            .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
                     }
                 />
             </div>
@@ -1073,7 +1073,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             sub_system_query
                 .read()
                 .as_ref()
-                .map(|(_, _, system)| system.complexity.is_multiset())
+                .map(|(_, _, system, _)| system.complexity.is_multiset())
                 .unwrap_or_default()
         }>
             <Slider
@@ -1085,7 +1085,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                     sub_system_query
                         .write()
                         .as_mut()
-                        .map(|(_, _, system)| system.membership = value as f32);
+                        .map(|(_, _, system, _)| system.membership = value as f32);
                 }
             />
         </Show>
@@ -1095,7 +1095,10 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             label="Equivalence"
             value=equivalence
             on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(_, _, system)| system.equivalence = value);
+                sub_system_query
+                    .write()
+                    .as_mut()
+                    .map(|(_, _, system, _)| system.equivalence = value);
             }
         />
 
@@ -1104,7 +1107,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             label="Time Unit"
             value=time_unit
             on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(_, _, system)| system.time_unit = value);
+                sub_system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
             }
         />
 
@@ -1113,7 +1116,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             label="History"
             value=history
             on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(_, _, system)| system.history = value);
+                sub_system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
             }
         />
 
@@ -1125,7 +1128,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system)| system.transformation = value);
+                    .map(|(_, _, system, _)| system.transformation = value);
             }
         />
 
@@ -1139,7 +1142,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system)| system.boundary.name = value);
+                    .map(|(_, _, system, _)| system.boundary.name = value);
             }
         />
 
@@ -1151,7 +1154,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system)| system.boundary.description = value);
+                    .map(|(_, _, system, _)| system.boundary.description = value);
             }
         />
 
@@ -1164,7 +1167,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system)| system.boundary.porosity = value as f32);
+                    .map(|(_, _, system, _)| system.boundary.porosity = value as f32);
             }
         />
 
@@ -1177,12 +1180,36 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system)| system.boundary.perceptive_fuzziness = value as f32);
+                    .map(|(_, _, system, _)| system.boundary.perceptive_fuzziness = value as f32);
             }
         />
 
         <Divider name="Parent System" />
 
-        Not yet implemented ... coming soon
+        <InputGroup
+            id="parent-system-name"
+            label="Name"
+            value=parent_system_name
+            disabled=true
+            on_input=move |value| {
+                sub_system_query
+                    .write()
+                    .as_mut()
+                    .map(|(_, _, _, parent_state)| parent_state.name = value);
+            }
+        />
+
+        <InputGroup
+            id="parent-system-description"
+            label="Description"
+            value=parent_system_description
+            disabled=true
+            on_input=move |value| {
+                sub_system_query
+                    .write()
+                    .as_mut()
+                    .map(|(_, _, _, parent_state)| parent_state.description = value);
+            }
+        />
     }
 }

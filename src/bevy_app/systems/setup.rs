@@ -73,7 +73,12 @@ pub fn init_complete_system(
     mut commands: Commands,
     subsystem_query: Query<&crate::bevy_app::components::Subsystem>,
     nesting_query: Query<&crate::bevy_app::components::NestingLevel>,
-    system_query: Query<(&Transform, &crate::bevy_app::components::System)>,
+    system_query: Query<(
+        &Transform,
+        &crate::bevy_app::components::System,
+        &Name,
+        &crate::ElementDescription,
+    )>,
     focused_system: Res<FocusedSystem>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,

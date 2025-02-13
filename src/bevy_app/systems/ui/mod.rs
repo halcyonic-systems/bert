@@ -31,7 +31,10 @@ use rust_decimal_macros::dec;
 pub fn change_focused_system(
     selected_query: Query<
         (Entity, &PickSelection, Option<&Subsystem>),
-        (Changed<PickSelection>, With<crate::bevy_app::components::System>),
+        (
+            Changed<PickSelection>,
+            With<crate::bevy_app::components::System>,
+        ),
     >,
     button_query: Query<&CreateButton>,
     mut focused_system: ResMut<FocusedSystem>,
@@ -82,7 +85,12 @@ pub fn on_subsystem_button_click(
     external_entity_query: Query<(Entity, &PickSelection, &Parent), With<ExternalEntity>>,
     flow_connection_query: Query<(Entity, &FlowStartConnection, &FlowEndConnection)>,
     flow_query: Query<(&FlowCurve, &Flow)>,
-    system_query: Query<(&Transform, &crate::bevy_app::components::System)>,
+    system_query: Query<(
+        &Transform,
+        &crate::bevy_app::components::System,
+        &Name,
+        &ElementDescription,
+    )>,
     nesting_level_query: Query<&NestingLevel>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
@@ -253,7 +261,12 @@ pub fn on_create_button_click(
         Option<&FlowEndInterfaceConnection>,
         Option<&FlowStartInterfaceConnection>,
     )>,
-    system_query: Query<(&Transform, &crate::bevy_app::components::System)>,
+    system_query: Query<(
+        &Transform,
+        &crate::bevy_app::components::System,
+        &Name,
+        &ElementDescription,
+    )>,
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>,
     subsystem_query: Query<&Subsystem>,

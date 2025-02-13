@@ -89,6 +89,27 @@ pub fn update_interface_subsystem_from_flows(
     }
 }
 
+pub fn update_sub_system_parent_system(
+    mut subsystem_query: Query<(&Subsystem, &mut ParentState)>,
+    system_query: Query<
+        (Entity, &Name, &ElementDescription),
+        (
+            With<crate::bevy_app::components::System>,
+            Without<Subsystem>,
+            Or<(Changed<Name>, Changed<ElementDescription>)>,
+        ),
+    >,
+) {
+    for (subsystem, mut parent_state) in &mut subsystem_query {
+        if let Ok((system_entity, name, element_description)) = system_query.get_single() {
+            if subsystem.parent_system == system_entity {
+                parent_state.name = name.as_str().to_owned();
+                parent_state.description = element_description.text.clone();
+            }
+        }
+    }
+}
+
 pub fn update_subsystem_radius_from_interface_count(
     changed_query: Query<(), Added<Interface>>,
     subsystem_query: Query<(
