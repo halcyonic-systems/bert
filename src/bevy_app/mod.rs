@@ -210,6 +210,7 @@ pub fn init_bevy_app(
         )
             .in_set(AllSet),
     )
+    .add_systems(Update, react_to_trigger_event)
     .add_systems(
         PostUpdate,
         (

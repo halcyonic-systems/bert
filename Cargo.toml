@@ -16,6 +16,7 @@ console_error_panic_hook = "0.1.7"
 js-sys = "0.3"
 leptos = { version = "0.7.4" , features = ["csr"]}
 leptos-bevy-canvas = "0.1.0"
+leptos-use = "0.15"
 lyon_algorithms = "1"
 num-traits = "0.2.18"
 regex = "1.10.4"

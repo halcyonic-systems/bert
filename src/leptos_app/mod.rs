@@ -2,9 +2,9 @@ mod tree;
 
 use crate::bevy_app::init_bevy_app;
 use crate::events::{TreeEvent, TriggerEvent};
+use crate::leptos_app::tree::Tree;
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::*;
-use crate::leptos_app::tree::Tree;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -15,19 +15,29 @@ pub fn App() -> impl IntoView {
 
     view! {
         <h2>"Hello World"</h2>
-        <button on:click=move |_| {
-            trigger_event_sender.send(TriggerEvent::ShowTree).ok();
-            tree_visible.set(true);
-        }>{"Show Tree"}</button>
+        <Show when=move || tree_visible.get() fallback=move || {
+            let trigger_event_sender = trigger_event_sender.clone();
+            view! {
+                <button on:click=move |_| {
+                    trigger_event_sender.send(TriggerEvent::ShowTree).ok();
+                    set_tree_visible.set(true);
+                }>{"Show Tree"}</button>
+            }
+        }>
+            <button on:click=move |_| {
+                set_tree_visible.set(false);
+            }>{"Hide Tree"}</button>
+        </Show>
+        <Tree visible=tree_visible event_receiver=tree_event_receiver />
+
         <BevyCanvas
-            init=move || { init_bevy_app(tree_event_sender) }
+            init=move || { init_bevy_app(tree_event_sender, trigger_event_receiver) }
 
             {..}
             width="500"
             height="300"
         />
 
-        <Tree visible=tree_visible event_receiver=tree_event_receiver />
     }
 }
 
