@@ -45,6 +45,9 @@ Captures and stores relevant aspects and facts of a system from the analysis pro
 ## Graph Databases
 
 - [And Now for Something Completely Different: Using OWL with Neo4j](https://neo4j.com/blog/using-owl-with-neo4j/)
+- [Free Neo4j Generative AI Courses](https://graphacademy.neo4j.com/categories/generative-ai/)
+- [Building knowledge graph agents with LlamaIndex Workflows](https://www.llamaindex.ai/blog/building-knowledge-graph-agents-with-llamaindex-workflows)
+-[Visual Cypher Builder — Querying Neo4j for Everyone](https://medium.com/neo4j/visual-cypher-builder-querying-neo4j-for-everyone-85cdbcd6dbb1)
 - [Importing Ontologies](https://neo4j.com/labs/neosemantics/4.0/importing-ontologies/)
 - [CypherGUI](https://github.com/stefanak-michal/cyphergui)
 - [Nodes 2024](https://www.youtube.com/playlist?list=PL9Hl4pk2FsvU6t-fXNeQfkpnmgMm4w5h3)
