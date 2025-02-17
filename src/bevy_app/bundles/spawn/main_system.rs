@@ -2,7 +2,9 @@ use crate::bevy_app::bundles::SystemBundle;
 use crate::bevy_app::components::{NestingLevel, Subsystem, SystemBoundary, SystemEnvironment};
 use crate::bevy_app::constants::MAIN_SYSTEM_RADIUS;
 use crate::bevy_app::data_model::Complexity;
-use crate::bevy_app::plugins::label::{add_name_label, Alignment, AutoContrastTextColor, CopyPositionArgs};
+use crate::bevy_app::plugins::label::{
+    add_name_label, Alignment, AutoContrastTextColor, CopyPositionArgs,
+};
 use bevy::math::{vec2, vec3, Vec2};
 use bevy::prelude::*;
 
@@ -39,7 +41,13 @@ pub fn spawn_main_system(
 
 pub fn auto_spawn_system_label(
     mut commands: Commands,
-    system_query: Query<Entity, (Added<crate::bevy_app::components::System>, Without<Subsystem>)>,
+    system_query: Query<
+        Entity,
+        (
+            Added<crate::bevy_app::components::System>,
+            Without<Subsystem>,
+        ),
+    >,
     name_query: Query<&Name>,
     asset_server: Res<AssetServer>,
 ) {

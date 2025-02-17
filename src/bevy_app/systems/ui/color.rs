@@ -3,7 +3,7 @@ use crate::bevy_app::components::{
     Connection, CreateButton, Flow, HasFlowOtherEndButton, InterfaceSubsystem, TargetTypeConnection,
 };
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
-use crate::bevy_app::{Interface, Subsystem};
+use crate::bevy_app::{Hidden, Interface, Subsystem};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -19,7 +19,7 @@ pub fn update_color_from_substance_type<C>(
         Or<(Added<Flow>, Changed<Flow>)>,
     >,
     mut external_entity_query: Query<&mut HighlightBundles<Stroke, Stroke>, Without<Flow>>,
-    mut arrow_query: Query<&mut Fill>,
+    mut arrow_query: Query<(&mut Fill, Option<&Hidden>)>,
 ) where
     C: Connection + TargetTypeConnection + Component,
 {
@@ -29,8 +29,11 @@ pub fn update_color_from_substance_type<C>(
         highlight.selected.color = color;
 
         for child in children.iter() {
-            if let Ok(mut fill) = arrow_query.get_mut(*child) {
+            if let Ok((mut fill, hidden)) = arrow_query.get_mut(*child) {
                 fill.color = color;
+                if hidden.is_some() {
+                    fill.color.set_alpha(0.2);
+                }
             }
         }
 
@@ -63,26 +66,32 @@ pub fn update_button_substance_type_from_flow(
 /// Update the color of an interface based the flow substance type.
 pub fn update_interface_color_from_flow<C>(
     mut query: Query<(&Flow, &C), Or<(Added<Flow>, Changed<Flow>)>>,
-    mut interface_query: Query<&mut Fill, (Without<Flow>, With<Interface>)>,
+    mut interface_query: Query<(&mut Fill, Option<&Hidden>), (Without<Flow>, With<Interface>)>,
 ) where
     C: Connection + Component,
 {
     for (flow, interface_connection) in &mut query {
-        if let Ok(mut interface_fill) = interface_query.get_mut(interface_connection.target()) {
+        if let Ok((mut interface_fill, hidden)) =
+            interface_query.get_mut(interface_connection.target())
+        {
             interface_fill.color = flow.substance_type.interface_color();
+            if hidden.is_some() {
+                interface_fill.color.set_alpha(0.2);
+            }
         }
     }
 }
 
 /// Update the color of an interface subsystem based on the substance type of the parent interface.
+/// Also hide (transparent) the interface subsystem if it's marked `Hidden`.
 pub fn update_interface_subsystem_color(
     mut interface_subsystem_query: Query<
-        (Entity, &mut Fill, &InterfaceSubsystem),
+        (Entity, &mut Fill, &InterfaceSubsystem, Option<&Hidden>),
         Changed<InterfaceSubsystem>,
     >,
     subsystem_query: Query<&Subsystem>,
 ) {
-    'outer: for (system_entity, mut subsystem_fill, interface_subsystem) in
+    'outer: for (system_entity, mut subsystem_fill, interface_subsystem, hidden) in
         &mut interface_subsystem_query
     {
         for subsystem in &subsystem_query {
@@ -91,18 +100,26 @@ pub fn update_interface_subsystem_color(
             }
         }
         subsystem_fill.color = interface_subsystem.substance_type.interface_color();
+        if hidden.is_some() {
+            subsystem_fill.color.set_alpha(0.2);
+        }
     }
 }
 
 /// Update the color of a subsystem based on the color of the parent system.
 pub fn update_system_color_from_subsystem(
     subsystem_query: Query<&Subsystem, Added<Subsystem>>,
-    mut fill_query: Query<&mut Fill>,
+    mut fill_query: Query<(&mut Fill, Option<&Hidden>)>,
 ) {
     for subsystem in &subsystem_query {
-        let mut system_fill = fill_query
+        let (mut system_fill, hidden) = fill_query
             .get_mut(subsystem.parent_system)
             .expect("System should exist");
-        system_fill.color = Color::srgb(235.0, 231.0, 231.0);
+
+        if hidden.is_some() {
+            system_fill.color = Color::srgba(235.0, 231.0, 231.0, 0.2)
+        } else {
+            system_fill.color = Color::srgb(235.0, 231.0, 231.0);
+        }
     }
 }

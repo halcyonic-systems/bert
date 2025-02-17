@@ -215,6 +215,9 @@ pub fn init_bevy_app(
                 update_system_color_from_subsystem,
                 apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
             ),
+            hide_selected.run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),
+            un_hide_selected
+                .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyU))),
         )
             .in_set(AllSet),
     )

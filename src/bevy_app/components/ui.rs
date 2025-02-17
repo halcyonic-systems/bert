@@ -132,6 +132,10 @@ pub struct SelectedHighlightHelperAdded {
     pub helper_entity: Entity,
 }
 
+#[derive(Component, Copy, Clone, Eq, PartialEq, Reflect, Debug, Default)]
+#[reflect(Component)]
+pub struct Hidden;
+
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub struct ParentState {

@@ -25,20 +25,6 @@ where
         }
     };
 
-    let is_selected = Signal::derive({
-        let options = options.clone();
-        move || {
-            options
-                .iter()
-                .find(|opt| {
-                    selected_option
-                        .get()
-                        .is_some_and(|selected| **opt == selected)
-                })
-                .is_some()
-        }
-    });
-
     view! {
         <div class="mb-2">
             <label for=id.clone() class="block font-medium text-gray-900 text-sm/6">

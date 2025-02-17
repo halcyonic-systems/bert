@@ -21,6 +21,7 @@ impl Plugin for LabelPlugin {
                 copy_name_to_label,
                 apply_text_color_contrast,
                 update_background_size_from_label.after(update_text2d_layout),
+                update_text_color,
             ),
         )
         .register_type::<NameLabel>()
