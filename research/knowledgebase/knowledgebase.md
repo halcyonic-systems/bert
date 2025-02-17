@@ -51,6 +51,7 @@ Captures and stores relevant aspects and facts of a system from the analysis pro
 - [Importing Ontologies](https://neo4j.com/labs/neosemantics/4.0/importing-ontologies/)
 - [CypherGUI](https://github.com/stefanak-michal/cyphergui)
 - [Nodes 2024](https://www.youtube.com/playlist?list=PL9Hl4pk2FsvU6t-fXNeQfkpnmgMm4w5h3)
+- [Graphista: Dynamic Graph-Based LLM-Powered Memory System](https://github.com/pippinlovesyou/graphista)
 
 Set Theory, Domain Semantics and XML
 
