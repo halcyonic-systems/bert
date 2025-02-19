@@ -15,7 +15,7 @@ pub const DEFAULT_LINE_WIDTH: f32 = 3.0;
 
 /// Radius of the initial system circle created upon app startup.
 pub const MAIN_SYSTEM_RADIUS: f32 = 300.0;
-/// Default width of the curve outlining the circumference of a system circle.  
+/// Default width of the curve outlining the circumference of a system circle.
 pub const SYSTEM_LINE_WIDTH: f32 = DEFAULT_LINE_WIDTH + 1.0;
 /// Default width of the curve outlining the circumference of a selected system circle.
 pub const SYSTEM_SELECTED_LINE_WIDTH: f32 = SYSTEM_LINE_WIDTH + 2.0;
@@ -68,7 +68,6 @@ pub const BUTTON_WIDTH_HALF: f32 = 16.0;
 /// Local z coordinate of a create-button.
 pub const BUTTON_Z: f32 = 200.0;
 
-
 /// Default half width of an external entity.
 pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 20.0;
 /// Default half height of an external entity.
@@ -89,3 +88,6 @@ pub const WHITE_COLOR_MATERIAL_HANDLE: MeshMaterial2d<ColorMaterial> =
 
 /// The default background color of the canvas. It's also used as the background color for flow labels in the environment.
 pub const CLEAR_COLOR: Color = Color::srgb(0.98, 0.92, 0.84);
+
+/// Transparency of hiding elements.
+pub const HIDDING_TRANSPARENCY: f32 = 0.2;

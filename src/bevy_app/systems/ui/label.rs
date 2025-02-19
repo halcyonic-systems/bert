@@ -1,5 +1,7 @@
 use crate::bevy_app::components::*;
-use crate::bevy_app::constants::{INTERFACE_HEIGHT_HALF, INTERFACE_WIDTH_HALF};
+use crate::bevy_app::constants::{
+    HIDDING_TRANSPARENCY, INTERFACE_HEIGHT_HALF, INTERFACE_WIDTH_HALF,
+};
 use crate::bevy_app::plugins::label::{CopyPosition, NameLabel};
 use crate::bevy_app::resources::Zoom;
 use bevy::math::vec3;
@@ -73,5 +75,31 @@ pub fn update_label_from_interaction(
         };
 
         walk_along_path(&path.0, path_len * 0.5, 0.1, &mut pattern);
+    }
+}
+
+pub fn update_text_color(
+    source_query: Query<&NameLabel, Added<Hidden>>,
+    mut target_query: Query<(Entity, &mut TextColor), With<Text2d>>,
+    mut removed_hidden: RemovedComponents<Hidden>,
+    name_label_query: Query<&NameLabel>,
+    parent_query: Query<&Parent>,
+) {
+    for label in &source_query {
+        if let Ok((entity, mut color)) = target_query.get_mut(label.label) {
+            if parent_query.get(entity).is_ok() {
+                color.0.set_alpha(HIDDING_TRANSPARENCY);
+            }
+        }
+    }
+
+    for hidden_entity in removed_hidden.read() {
+        if let Ok(label) = name_label_query.get(hidden_entity) {
+            if let Ok((entity, mut color)) = target_query.get_mut(label.label) {
+                if parent_query.get(entity).is_ok() {
+                    color.0.set_alpha(1.0);
+                }
+            }
+        }
     }
 }

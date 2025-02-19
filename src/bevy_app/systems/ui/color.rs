@@ -2,6 +2,7 @@
 use crate::bevy_app::components::{
     Connection, CreateButton, Flow, HasFlowOtherEndButton, InterfaceSubsystem, TargetTypeConnection,
 };
+use crate::bevy_app::constants::HIDDING_TRANSPARENCY;
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::{Hidden, Interface, Subsystem};
 use bevy::prelude::*;
@@ -32,7 +33,7 @@ pub fn update_color_from_substance_type<C>(
             if let Ok((mut fill, hidden)) = arrow_query.get_mut(*child) {
                 fill.color = color;
                 if hidden.is_some() {
-                    fill.color.set_alpha(0.2);
+                    fill.color.set_alpha(HIDDING_TRANSPARENCY);
                 }
             }
         }
@@ -76,7 +77,7 @@ pub fn update_interface_color_from_flow<C>(
         {
             interface_fill.color = flow.substance_type.interface_color();
             if hidden.is_some() {
-                interface_fill.color.set_alpha(0.2);
+                interface_fill.color.set_alpha(HIDDING_TRANSPARENCY);
             }
         }
     }
@@ -101,7 +102,7 @@ pub fn update_interface_subsystem_color(
         }
         subsystem_fill.color = interface_subsystem.substance_type.interface_color();
         if hidden.is_some() {
-            subsystem_fill.color.set_alpha(0.2);
+            subsystem_fill.color.set_alpha(HIDDING_TRANSPARENCY);
         }
     }
 }
@@ -116,10 +117,10 @@ pub fn update_system_color_from_subsystem(
             .get_mut(subsystem.parent_system)
             .expect("System should exist");
 
+        system_fill.color = Color::srgb(235.0, 231.0, 231.0);
+
         if hidden.is_some() {
-            system_fill.color = Color::srgba(235.0, 231.0, 231.0, 0.2)
-        } else {
-            system_fill.color = Color::srgb(235.0, 231.0, 231.0);
+            system_fill.color.set_alpha(HIDDING_TRANSPARENCY);
         }
     }
 }

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::bevy_app::constants::HIDDING_TRANSPARENCY;
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::{Hidden, SelectedHighlightHelperAdded, SystemElement};
 use bevy_prototype_lyon::prelude::*;
@@ -23,14 +24,17 @@ pub fn hide_selected(
 ) {
     for (entity, fill, mut highlight_bundle, children) in &mut selected_system_query {
         if let Some(mut fill) = fill {
-            fill.color.set_alpha(0.2);
+            fill.color.set_alpha(HIDDING_TRANSPARENCY);
         }
-        highlight_bundle.idle.color.set_alpha(0.2);
-        highlight_bundle.selected.color.set_alpha(0.2);
+        highlight_bundle.idle.color.set_alpha(HIDDING_TRANSPARENCY);
+        highlight_bundle
+            .selected
+            .color
+            .set_alpha(HIDDING_TRANSPARENCY);
 
         for &child in children.iter() {
             if let Ok(mut fill) = fill_query.get_mut(child) {
-                fill.color.set_alpha(0.2);
+                fill.color.set_alpha(HIDDING_TRANSPARENCY);
             }
         }
 

@@ -257,6 +257,7 @@ pub fn init_bevy_app(
                 update_flow_from_subsystem_without_interface
                     .after(update_subsystem_radius_from_interface_count),
                 update_interface_button_from_interaction,
+                update_text_color,
             )
                 .in_set(GeometryUpdateSet),
             apply_zoom_to_added_label.after(AutoSpawnLabelSet),
