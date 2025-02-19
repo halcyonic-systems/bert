@@ -281,21 +281,6 @@ fn apportion(
     Rc::clone(&default_ancestor)
 }
 
-fn move_subtree(wl: Rc<RefCell<SvgSystem>>, wr: Rc<RefCell<SvgSystem>>, shift: f64) {
-    let sibling_order_number_wl = wl.borrow().sibling_order_number;
-    let sibling_order_number_wr = wr.borrow().sibling_order_number;
-    let subtrees = sibling_order_number_wr - sibling_order_number_wl;
-    let shift_by_subtrees = shift / subtrees as f64;
-
-    let mut wr = wr.borrow_mut();
-    wr.change -= shift_by_subtrees;
-    wr.shift += shift;
-    wr.x += shift;
-    wr.offset_modifier += shift;
-
-    wl.borrow_mut().change += shift_by_subtrees;
-}
-
 fn execute_shifts(node: Rc<RefCell<SvgSystem>>) {
     let mut shift = 0.0;
     let mut change = 0.0;
@@ -351,20 +336,21 @@ pub fn get_node_row_width(children_len: usize, child_width: f64) -> f64 {
 }
 
 pub fn get_max_tree_width(system_vec: &Vec<InputSvgSystem>) -> f64 {
-    let widest_level = &system_vec
-        .iter()
-        .max_by_key(|sys| sys.level)
-        .unwrap()
-        .level;
+    let mut level_counts = std::collections::HashMap::new();
 
-    let wides_level_count = &system_vec
+    for sys in system_vec.iter() {
+        *level_counts.entry(sys.level).or_insert(0) += 1;
+    }
+
+    let (most_common_level, count) = level_counts
         .iter()
-        .filter(|sys| sys.level == *widest_level)
-        .count();
+        .max_by_key(|&(_, count)| count)
+        .map(|(&level, &count)| (level, count))
+        .unwrap();
 
     let dummy_svg_sys = SvgSystem {
         label: "".to_string(),
-        level: widest_level.clone(),
+        level: most_common_level.clone(),
         thread: None,
         x: 0.0,
         offset_modifier: 0.0,
@@ -376,5 +362,5 @@ pub fn get_max_tree_width(system_vec: &Vec<InputSvgSystem>) -> f64 {
         sibling_order_number: 0,
     };
 
-    get_node_row_width(*wides_level_count, dummy_svg_sys.get_node_width())
+    get_node_row_width(count, dummy_svg_sys.get_node_width())
 }

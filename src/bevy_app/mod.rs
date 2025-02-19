@@ -1,7 +1,7 @@
 mod bundles;
 mod components;
 mod constants;
-mod data_model;
+pub mod data_model;
 pub mod events;
 mod plugins;
 mod resources;
