@@ -18,3 +18,19 @@ pub fn SvgNode(
         <line x1={x + width / 2.0} y1={y + height} x2={x + width / 2.0} y2={y + height + 15.0} stroke-width="2" stroke="black" />
     }
 }
+
+#[component]
+pub fn SvgSinkOrSource(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    color: &'static str,
+) -> impl IntoView {
+    let points = format!("{x},{y} {},{} {},{} {x},{}", x+width, y+1.0, x+width, y+height, y+height+1.0);
+
+    view! {
+        <polyline points={points} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round"/>
+        <line x1={x + width / 2.0} y1={y + height} x2={x + width / 2.0} y2={y + height + 15.0} stroke-width="2" stroke="black" />
+    }
+}

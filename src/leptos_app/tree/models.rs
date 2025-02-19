@@ -4,11 +4,11 @@ use std::rc::{Rc, Weak};
 const NODE_GAP: f64 = 20.0;
 
 #[derive(Clone)]
-pub struct InputSvgSystem {
+pub struct InputSystem {
     pub label: String,
     pub level: i32,
     pub parent_label: String,
-    pub children: Vec<InputSvgSystem>,
+    pub children: Vec<InputSystem>,
 }
 
 #[derive(Clone)]
@@ -26,6 +26,24 @@ pub struct SvgSystem {
     pub sibling_order_number: usize,
 }
 
+impl Default for SvgSystem {
+    fn default() -> Self {
+        Self {
+            x: 0.0,
+            label: "".to_string(),
+            level: 0,
+            ancestor: None,
+            children: vec![],
+            parent: None,
+            thread: None,
+            offset_modifier: 0.0,
+            change: 0.0,
+            shift: 0.0,
+            sibling_order_number: 0,
+        }
+    }
+}
+
 impl PartialEq for SvgSystem {
     fn eq(&self, other: &Self) -> bool {
         self.level == other.level && self.label == other.label
@@ -38,7 +56,8 @@ impl SvgSystem {
     }
 
     pub fn get_node_y(&self) -> f64 {
-        100.0 + self.level as f64 * 70.0
+        let base = 100.0 + self.level as f64 * 70.0;
+        base - self.level as f64 * 5.0
     }
     pub fn get_node_width(&self) -> f64 {
         match self.level {
@@ -142,7 +161,6 @@ fn first_walk(node: Rc<RefCell<SvgSystem>>) {
 
         let mut node = node.borrow_mut();
         node.x = x;
-
     } else {
         let mut default_ancestor = Rc::clone(&node.borrow().children[0]);
         let children = node.borrow().children.clone();
@@ -199,7 +217,9 @@ fn apportion(
             let next_right_of_node_il = node_il.borrow().next_right();
             let next_left_of_node_ir = node_ir.borrow().next_left();
 
-            if let (Some(next_node_il), Some(next_node_ir)) = (next_right_of_node_il, next_left_of_node_ir) {
+            if let (Some(next_node_il), Some(next_node_ir)) =
+                (next_right_of_node_il, next_left_of_node_ir)
+            {
                 node_il = next_node_il;
                 node_ir = next_node_ir;
             } else {
@@ -217,8 +237,9 @@ fn apportion(
                 node_or.borrow_mut().ancestor = Some(Rc::downgrade(&node));
             }
 
-            let shift =
-                (node_il.borrow().x + offset_il) - (node_ir.borrow().x + offset_ir) + node.borrow().get_node_width() + NODE_GAP;
+            let shift = (node_il.borrow().x + offset_il) - (node_ir.borrow().x + offset_ir)
+                + node.borrow().get_node_width()
+                + NODE_GAP;
             if shift > 0.0 {
                 let ancestor = get_ancestor(&node_il, &node, &default_ancestor);
 
@@ -335,10 +356,10 @@ pub fn get_node_row_width(children_len: usize, child_width: f64) -> f64 {
     nodes_width + gap
 }
 
-pub fn get_max_tree_width(system_vec: &Vec<InputSvgSystem>) -> f64 {
+pub fn get_max_tree_width(system_vec: &Vec<InputSystem>) -> f64 {
     let mut level_counts = std::collections::HashMap::new();
 
-    for sys in system_vec.iter() {
+    for sys in system_vec {
         *level_counts.entry(sys.level).or_insert(0) += 1;
     }
 
@@ -349,17 +370,8 @@ pub fn get_max_tree_width(system_vec: &Vec<InputSvgSystem>) -> f64 {
         .unwrap();
 
     let dummy_svg_sys = SvgSystem {
-        label: "".to_string(),
         level: most_common_level.clone(),
-        thread: None,
-        x: 0.0,
-        offset_modifier: 0.0,
-        change: 0.0,
-        shift: 0.0,
-        parent: None,
-        children: vec![],
-        ancestor: None,
-        sibling_order_number: 0,
+        ..Default::default()
     };
 
     get_node_row_width(count, dummy_svg_sys.get_node_width())
