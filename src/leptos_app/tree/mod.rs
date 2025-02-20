@@ -25,7 +25,7 @@ pub fn Tree(
     view! {
         <Show when=move || visible.get()>
             <h2>"Tree"</h2>
-                <div node_ref=tree_ref style="padding: 1rem; height: 100vh;">
+            <div node_ref=tree_ref style="height: 100vh;">
                 {
                     let event_receiver = event_receiver.clone();
                     move || {
@@ -47,24 +47,24 @@ fn layout_tree(
         .as_ref()
         .map(|TreeEvent { world_model }| {
             let ordered_systems = get_world_systems_ordered(&world_model);
-            // Todo: create svg nodes and read width
 
             let mid_x = width * 0.5;
-            let max_tree_width = get_max_tree_width(&ordered_systems);
-            let x_for_mid_aligned_tree = mid_x - max_tree_width * 0.5;
+            let min_tree_width = get_min_tree_width(&ordered_systems);
+            let x_for_mid_aligned_tree = mid_x - min_tree_width * 0.5;
 
             let root_node = create_node_tree(&ordered_systems, x_for_mid_aligned_tree);
+            let root_x_mid = root_node.x + root_node.get_node_width() * 0.5;
 
             let svg_tree_view = draw_node_tree(root_node);
-            let svg_tree_header_view = draw_node_tree_header(&world_model, mid_x);
+            let svg_tree_header_view = draw_node_tree_header(&world_model, root_x_mid);
             let svg_tree_aside_view =
                 draw_node_tree_aside(&ordered_systems, x_for_mid_aligned_tree);
 
             view! {
                 <svg width={width} height={height}>
-                    {svg_tree_aside_view}
-                    {svg_tree_header_view}
                     {svg_tree_view}
+                    {svg_tree_header_view}
+                    {svg_tree_aside_view}
                 </svg>
             }
         })
@@ -179,7 +179,7 @@ fn draw_node_tree(node: SvgSystem) -> Vec<AnyView> {
 
         if node.children.len() > 1 {
             let child_node_width = node.children[0].borrow().get_node_width();
-            let children_width = get_node_row_width(node.children.len(), child_node_width);
+            let children_width = node.get_children_width();
 
             let children_start_x =
                 node.children.first().unwrap().borrow().x + child_node_width * 0.5;
@@ -268,7 +268,7 @@ fn draw_node_tree_header(world_model: &WorldModel, midpoint: f64) -> Vec<AnyView
             <SvgLine x1={start_x} y1={y} x2={end_x} y2={y} />
             <SvgLine x1={midpoint} y1={y} x2={midpoint} y2={y + 15.0} />
             <SvgText text="Sources".to_string() font_size="0.75rem" x={start_x + 21.0} y={y + 12.5} />
-            <SvgText text="Sinks".to_string() font_size="0.75rem" x={end_x - 19.0} y={y + 12.5} />
+            <SvgText text="Sinks".to_string() font_size="0.75rem" x={end_x - 16.0} y={y + 12.5} />
         }.into_any());
     }
 

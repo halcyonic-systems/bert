@@ -72,8 +72,7 @@ impl SvgSystem {
             1 => 75.0,
             2 => 60.0,
             3 => 45.0,
-            4 => 35.0,
-            _ => 25.0,
+            _ => 35.0,
         }
     }
     pub fn get_node_height(&self) -> f64 {
@@ -82,8 +81,7 @@ impl SvgSystem {
             1 => 30.0,
             2 => 25.0,
             3 => 22.5,
-            4 => 20.0,
-            _ => 15.0,
+            _ => 20.0,
         }
     }
 
@@ -93,9 +91,19 @@ impl SvgSystem {
             1 => "0.95rem",
             2 => "0.8rem",
             3 => "0.7rem",
-            4 => "0.65rem",
-            _ => "0.6rem",
+            _ => "0.65rem",
         }
+    }
+
+    pub fn get_children_width(&self) -> f64 {
+        if self.children.len() == 0 {
+            return 0.0;
+        }
+
+        let gap = NODE_GAP * (self.children.len() - 1) as f64;
+        let nodes_width = self.children.iter().map(|c| c.borrow().get_node_width()).sum::<f64>();
+
+        nodes_width + gap
     }
 
     pub fn next_left(&self) -> Option<Rc<RefCell<SvgSystem>>> {
@@ -354,16 +362,7 @@ fn second_walk(node: Rc<RefCell<SvgSystem>>, m: f64) {
     node.borrow_mut().x += m;
 }
 
-pub fn get_node_row_width(children_len: usize, child_width: f64) -> f64 {
-    if children_len == 0 {
-        return 0.0;
-    }
-    let nodes_width = child_width * children_len as f64;
-    let gap = NODE_GAP * (children_len - 1) as f64;
-    nodes_width + gap
-}
-
-pub fn get_max_tree_width(system_vec: &Vec<InputSystem>) -> f64 {
+pub fn get_min_tree_width(system_vec: &Vec<InputSystem>) -> f64 {
     let mut level_counts = std::collections::HashMap::new();
 
     for sys in system_vec {
@@ -381,5 +380,8 @@ pub fn get_max_tree_width(system_vec: &Vec<InputSystem>) -> f64 {
         ..Default::default()
     };
 
-    get_node_row_width(count, dummy_svg_sys.get_node_width())
+    let nodes_width = dummy_svg_sys.get_node_width() * count as f64;
+    let gap = NODE_GAP * (count - 1) as f64;
+
+    nodes_width + gap
 }
