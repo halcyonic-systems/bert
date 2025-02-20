@@ -1,3 +1,4 @@
+use crate::data_model::Complexity;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
@@ -5,14 +6,18 @@ const NODE_GAP: f64 = 20.0;
 
 #[derive(Clone)]
 pub struct InputSystem {
+    pub id: String,
+    pub type_: Complexity,
     pub label: String,
     pub level: i32,
-    pub parent_label: String,
+    pub parent_id: String,
     pub children: Vec<InputSystem>,
 }
 
 #[derive(Clone)]
 pub struct SvgSystem {
+    pub id: String,
+    pub type_: Complexity,
     pub x: f64,
     pub label: String,
     pub level: i32,
@@ -29,6 +34,8 @@ pub struct SvgSystem {
 impl Default for SvgSystem {
     fn default() -> Self {
         Self {
+            id: "".to_string(),
+            type_: Complexity::default(),
             x: 0.0,
             label: "".to_string(),
             level: 0,
@@ -46,7 +53,7 @@ impl Default for SvgSystem {
 
 impl PartialEq for SvgSystem {
     fn eq(&self, other: &Self) -> bool {
-        self.level == other.level && self.label == other.label
+        self.level == other.level && self.id == other.id
     }
 }
 
@@ -74,20 +81,20 @@ impl SvgSystem {
             0 => 35.0,
             1 => 30.0,
             2 => 25.0,
-            3 => 20.0,
-            4 => 15.0,
-            _ => 10.0,
+            3 => 22.5,
+            4 => 20.0,
+            _ => 15.0,
         }
     }
 
     pub fn get_node_font_size(&self) -> &'static str {
         match self.level {
             0 => "1.1rem",
-            1 => "0.9rem",
+            1 => "0.95rem",
             2 => "0.8rem",
             3 => "0.7rem",
-            4 => "0.6rem",
-            _ => "0.5rem",
+            4 => "0.65rem",
+            _ => "0.6rem",
         }
     }
 
