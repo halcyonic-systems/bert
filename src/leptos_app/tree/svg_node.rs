@@ -18,12 +18,38 @@ pub fn SvgNode(
 
         <Show when=move || type_ == Complexity::Atomic clone:label>
             <circle r={height * 0.4} cx={x + width * 0.5} cy={y + height * 0.4} fill="steelblue" stroke="darkblue" stroke-width="1" />
-            <SvgText text={label.clone()} font_size={font_size} x={x + (width * 0.5)} y={y + height * 1.25} />
+            <switch>
+                <foreignObject x={x - 2.5} y={y + height * 0.6} width={width + 5.0} height={height}>
+                    <p style:font-size=move || format!("{font_size}")
+                       style:line-height=move || format!("{height}px")
+                       style="margin:0;padding:0 2px;text-align:center;overflow:hidden;text-overflow:ellipsis;font-weight:bold;font-family:sans-serif;color:#222;"
+                    >
+                        {label.clone()}
+                    </p>
+                </foreignObject>
+
+                <text x={x + (width * 0.5)} y={y + height * 1.25} font-size={font_size} font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="#222">
+                    {label.clone()}
+                </text>
+            </switch>
         </Show>
 
         <Show when=is_complex clone:label>
             <rect x={x} y={y} fill="none" stroke="steelblue" stroke-width="2" rx="5" ry="5" width={width} height={height}></rect>
-            <SvgText text={label.clone()} font_size={font_size} x={x + (width * 0.5)} y={y + height / 1.5} />
+            <switch>
+                <foreignObject x={x - 1.0} y={y + 1.0} width={width + 2.5} height={height}>
+                    <p style:font-size=move || format!("{font_size}")
+                       style:line-height=move || format!("{height}px")
+                       style="margin:0;padding:0 2px;text-align:center;overflow:hidden;text-overflow:ellipsis;font-weight:bold;font-family:sans-serif;color:#222;"
+                    >
+                        {label.clone()}
+                    </p>
+                </foreignObject>
+
+                <text x={x + (width * 0.5)} y={y + height / 1.5} font-size={font_size} font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="#222">
+                    {label.clone()}
+                </text>
+            </switch>
             <SvgLine x1={x + width * 0.5} y1={y + height} x2={x + width * 0.5} y2={y + height + 15.0} />
         </Show>
     }
@@ -60,10 +86,28 @@ pub fn SvgLine(x1: f64, y1: f64, x2: f64, y2: f64) -> impl IntoView {
 }
 
 #[component]
-pub fn SvgText(text: String, font_size: &'static str, x: f64, y: f64) -> impl IntoView {
+pub fn SvgText(
+    text: String,
+    font_size: &'static str,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> impl IntoView {
     view! {
-        <text x={x} y={y} font-size={font_size} font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="#222">
-            {text}
-        </text>
+        <switch>
+            <foreignObject x={x - 25.0} y={y - 16.0} width={width} height={height}>
+                <p style:font-size=move || format!("{font_size}")
+                   style:line-height=move || format!("{height}px")
+                   style="margin:0;text-align:center;font-weight:bold;font-family:sans-serif;color:#222;"
+                >
+                    {text.clone()}
+                </p>
+            </foreignObject>
+
+            <text x={x} y={y} font-size={font_size} font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="#222">
+                {text}
+            </text>
+        </switch>
     }
 }

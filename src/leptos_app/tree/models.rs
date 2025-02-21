@@ -70,9 +70,9 @@ impl SvgSystem {
         match self.level {
             0 => 90.0,
             1 => 75.0,
-            2 => 60.0,
-            3 => 45.0,
-            _ => 35.0,
+            2 => 65.0,
+            3 => 55.0,
+            _ => 45.0,
         }
     }
     pub fn get_node_height(&self) -> f64 {
