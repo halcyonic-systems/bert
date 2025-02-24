@@ -14,17 +14,16 @@ pub fn App() -> impl IntoView {
     let (tree_visible, set_tree_visible) = signal(false);
 
     view! {
-        <h2>"Hello World"</h2>
         <Show when=move || tree_visible.get() fallback=move || {
             let trigger_event_sender = trigger_event_sender.clone();
             view! {
-                <button on:click=move |_| {
+                <button class="tree-button" on:click=move |_| {
                     trigger_event_sender.send(TriggerEvent::ShowTree).ok();
                     set_tree_visible.set(true);
                 }>{"Show Tree"}</button>
             }
         }>
-            <button on:click=move |_| {
+            <button class="tree-button" on:click=move |_| {
                 set_tree_visible.set(false);
             }>{"Hide Tree"}</button>
         </Show>

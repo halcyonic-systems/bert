@@ -24,7 +24,7 @@ pub fn Tree(
 
     view! {
         <Show when=move || visible.get()>
-            <h2>"Tree"</h2>
+            <h2 style="text-align:center;">"Tree"</h2>
             <div node_ref=tree_ref style="height: 100vh;">
                 {
                     let event_receiver = event_receiver.clone();
