@@ -28,7 +28,6 @@ pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
 use crate::events::{TreeEvent, TriggerEvent};
 use crate::leptos_app::tree::Tree;
-use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::*;
 
 #[component]
@@ -70,7 +69,7 @@ pub fn App() -> impl IntoView {
                 let trigger_event_sender = trigger_event_sender.clone();
                 view! {
                     <button
-                        class="tree-button"
+                        class="px-4 py-2 rounded-lg bg-white absolute top-4 left-4"
                         on:click=move |_| {
                             trigger_event_sender.send(TriggerEvent::ShowTree).ok();
                             set_tree_visible.set(true);
@@ -82,7 +81,7 @@ pub fn App() -> impl IntoView {
             }
         >
             <button
-                class="tree-button"
+                class="px-4 py-2 rounded-lg bg-white absolute top-4 left-4"
                 on:click=move |_| {
                     set_tree_visible.set(false);
                 }

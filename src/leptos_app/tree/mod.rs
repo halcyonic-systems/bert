@@ -23,8 +23,8 @@ pub fn Tree(
 
     view! {
         <Show when=move || visible.get()>
-            <h2 style="text-align:center;">"Tree"</h2>
-            <div node_ref=tree_ref style="height: 100vh;">
+            <h2 class="text-center text-2xl font-medium">"Tree"</h2>
+            <div node_ref=tree_ref class="h-screen">
                 {
                     let event_receiver = event_receiver.clone();
                     move || { layout_tree(event_receiver.clone(), width.get(), height.get()) }
@@ -95,7 +95,6 @@ fn get_world_systems_ordered(world_model: &WorldModel) -> Vec<InputSystem> {
             label,
             level: system.info.level,
             parent_id,
-            children: vec![],
         })
     }
 
@@ -174,7 +173,6 @@ fn draw_node_tree(node: SvgSystem) -> Vec<AnyView> {
 
         if node.children.len() > 1 {
             let child_node_width = node.children[0].borrow().get_node_width();
-            let children_width = node.get_children_width();
 
             let children_start_x =
                 node.children.first().unwrap().borrow().x + child_node_width * 0.5;
@@ -200,7 +198,7 @@ fn draw_node_tree_header(world_model: &WorldModel, midpoint: f64) -> Vec<AnyView
     let sources_len = world_model.environment.sources.len();
     let sinks_len = world_model.environment.sinks.len();
 
-    let free_y_space = 65.0;
+    let free_y_space = 85.0;
     let svg_width = 12.0;
     let svg_height = 38.0;
     let svg_gap = 20.0;
@@ -213,7 +211,7 @@ fn draw_node_tree_header(world_model: &WorldModel, midpoint: f64) -> Vec<AnyView
     let mut last_source_x = 0.0;
     let mut last_sink_x = 0.0;
 
-    for (i, source) in world_model.environment.sources.iter().enumerate() {
+    for (i, _) in world_model.environment.sources.iter().enumerate() {
         let x = midpoint + ((i + 1) as f64 * svg_width + (i + 1) as f64 * svg_gap) * -1.0;
 
         views.push(
@@ -234,7 +232,7 @@ fn draw_node_tree_header(world_model: &WorldModel, midpoint: f64) -> Vec<AnyView
         }
     }
 
-    for (i, sink) in world_model.environment.sinks.iter().enumerate() {
+    for (i, _) in world_model.environment.sinks.iter().enumerate() {
         let x = (i + 1) as f64 * svg_width + (i + 1) as f64 * svg_gap + midpoint;
 
         views.push(
@@ -297,7 +295,7 @@ fn draw_node_tree_aside(systems: &Vec<InputSystem>, tree_start_x: f64) -> Vec<An
     }
 
     let levels_count = levels_set.len();
-    let level_padding = 50.0;
+    let level_padding = 100.0;
 
     for level in 0..=levels_count {
         if level == 0 {
@@ -307,7 +305,7 @@ fn draw_node_tree_aside(systems: &Vec<InputSystem>, tree_start_x: f64) -> Vec<An
                         text="Level -1".to_string()
                         font_size="1rem"
                         x=tree_start_x - level_padding
-                        y=50.0
+                        y=60.0
                         width=70.0
                         height=24.0
                     />

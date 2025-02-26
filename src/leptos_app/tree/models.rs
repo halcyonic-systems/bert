@@ -11,7 +11,6 @@ pub struct InputSystem {
     pub label: String,
     pub level: i32,
     pub parent_id: String,
-    pub children: Vec<InputSystem>,
 }
 
 #[derive(Clone)]
@@ -63,7 +62,7 @@ impl SvgSystem {
     }
 
     pub fn get_node_y(&self) -> f64 {
-        let base = 100.0 + self.level as f64 * 70.0;
+        let base = 120.0 + self.level as f64 * 70.0;
         base - self.level as f64 * 5.0
     }
     pub fn get_node_width(&self) -> f64 {
@@ -93,17 +92,6 @@ impl SvgSystem {
             3 => "0.7rem",
             _ => "0.65rem",
         }
-    }
-
-    pub fn get_children_width(&self) -> f64 {
-        if self.children.len() == 0 {
-            return 0.0;
-        }
-
-        let gap = NODE_GAP * (self.children.len() - 1) as f64;
-        let nodes_width = self.children.iter().map(|c| c.borrow().get_node_width()).sum::<f64>();
-
-        nodes_width + gap
     }
 
     pub fn next_left(&self) -> Option<Rc<RefCell<SvgSystem>>> {
@@ -136,16 +124,6 @@ impl SvgSystem {
         }
         left_sibling
     }
-
-    pub fn is_leftmost_sibling(&self) -> bool {
-        if let Some(parent) = &self.parent {
-            if let Some(parent) = parent.upgrade() {
-                return &*parent.borrow().children[0].borrow() == self;
-            }
-        }
-        false
-    }
-
     pub fn leftmost_sibling(&self) -> Option<Rc<RefCell<SvgSystem>>> {
         if let Some(parent) = &self.parent {
             if let Some(parent) = parent.upgrade() {
