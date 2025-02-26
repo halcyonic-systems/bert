@@ -60,15 +60,48 @@ impl Context {
 }
 
 pub fn save_world(In(world_model): In<WorldModel>, mut commands: Commands) {
-    commands
-        .dialog()
-        .add_filter("valid_formats", &["json"])
-        .save_file::<JsonWorldData>(
-            serde_json::to_string(&world_model)
-                .expect("This shouldn't fail")
-                .as_bytes()
-                .to_vec(),
-        );
+    #[derive(serde::Serialize)]
+    struct Args {
+        data: String,
+        path: String
+    }
+
+    let file_name = "bert_backup.json".to_string();
+
+    let window = web_sys::window().expect("window should exist");
+
+    let tauri_exists = leptos_use::js! {
+        "__TAURI__" in &window
+    };
+
+    if tauri_exists {
+        let task = AsyncComputeTaskPool::get().spawn_local({
+            let model = world_model.clone();
+            async move {
+                invoke::<()>(
+                    "save_to_file",
+                    &Args {
+                        data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
+                        path: file_name.clone(),
+                    },
+                )
+                    .await;
+            }
+        });
+
+        task.detach();
+    } else {
+        commands
+            .dialog()
+            .add_filter("valid_formats", &["json"])
+            .set_file_name(&file_name)
+            .save_file::<JsonWorldData>(
+                serde_json::to_string(&world_model)
+                    .expect("This shouldn't fail")
+                    .as_bytes()
+                    .to_vec(),
+            );
+    }
 }
 
 pub fn serialize_world(
@@ -184,54 +217,11 @@ pub fn serialize_world(
         interaction.sink_interface = sink_interface;
     }
 
-    WorldModel {
+     WorldModel {
         version: CURRENT_FILE_VERSION,
         systems: entity_to_system.into_values().collect(),
         interactions: ctx.interactions,
         environment,
-    };
-
-    #[derive(serde::Serialize)]
-    struct Args {
-        data: String,
-        path: String
-    }
-
-    let file_name = "bert_backup.json".to_string();
-
-    let window = web_sys::window().expect("window should exist");
-
-    let tauri_exists = leptos_use::js! {
-        "__TAURI__" in &window
-    };
-
-    if tauri_exists {
-        let task = AsyncComputeTaskPool::get().spawn_local({
-            let model = model.clone();
-            async move {
-                invoke::<()>(
-                    "save_to_file",
-                    &Args {
-                        data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
-                        path: file_name.clone(),
-                    },
-                )
-                    .await;
-            }
-        });
-
-        task.detach();
-    } else {
-        commands
-            .dialog()
-            .add_filter("valid_formats", &["json"])
-            .set_file_name(&file_name)
-            .save_file::<JsonWorldData>(
-                serde_json::to_string(&model)
-                    .expect("This shouldn't fail")
-                    .as_bytes()
-                    .to_vec(),
-            );
     }
 }
 

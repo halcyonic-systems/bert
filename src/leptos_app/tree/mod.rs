@@ -6,8 +6,7 @@ use self::svg_node::*;
 
 use crate::data_model::{Id, WorldModel};
 use crate::events::TreeEvent;
-use bevy::render::render_resource::encase::private::RuntimeSizedArray;
-use leptos::{html::Div, logging, prelude::*};
+use leptos::{html::Div, prelude::*};
 use leptos_bevy_canvas::prelude::*;
 use leptos_use::{use_element_size, UseElementSizeReturn};
 use std::cell::RefCell;
@@ -28,9 +27,7 @@ pub fn Tree(
             <div node_ref=tree_ref style="height: 100vh;">
                 {
                     let event_receiver = event_receiver.clone();
-                    move || {
-                        layout_tree(event_receiver.clone(), width.get(), height.get())
-                    }
+                    move || { layout_tree(event_receiver.clone(), width.get(), height.get()) }
                 }
             </div>
         </Show>
@@ -61,7 +58,7 @@ fn layout_tree(
                 draw_node_tree_aside(&ordered_systems, x_for_mid_aligned_tree);
 
             view! {
-                <svg width={width} height={height}>
+                <svg width=width height=height>
                     {svg_tree_view}
                     {svg_tree_header_view}
                     {svg_tree_aside_view}
@@ -90,7 +87,7 @@ fn get_world_systems_ordered(world_model: &WorldModel) -> Vec<InputSystem> {
 
         let label = get_name_or_id(&system.info.name, &system.info.id);
 
-        let mut parent_id = get_string_from_id(&system.parent);
+        let parent_id = get_string_from_id(&system.parent);
 
         systems_vec.push(InputSystem {
             id,
@@ -152,13 +149,13 @@ fn draw_node_tree(node: SvgSystem) -> Vec<AnyView> {
     views.push(
         view! {
             <SvgNode
-                type_={node.type_}
-                label={node.label.clone()}
-                x={node.x}
-                y={node.get_node_y()}
-                width={node.get_node_width()}
-                height={node.get_node_height()}
-                font_size={node.get_node_font_size()}
+                type_=node.type_
+                label=node.label.clone()
+                x=node.x
+                y=node.get_node_y()
+                width=node.get_node_width()
+                height=node.get_node_height()
+                font_size=node.get_node_font_size()
             />
         }
         .into_any(),
@@ -171,10 +168,8 @@ fn draw_node_tree(node: SvgSystem) -> Vec<AnyView> {
         let y = node.children[0].borrow().get_node_y();
 
         views.push(
-            view! {
-                <SvgLine x1={children_mid_x} y1={y - 15.0} x2={children_mid_x} y2={y - 30.0} />
-            }
-            .into_any(),
+            view! { <SvgLine x1=children_mid_x y1=y - 15.0 x2=children_mid_x y2=y - 30.0 /> }
+                .into_any(),
         );
 
         if node.children.len() > 1 {
@@ -185,9 +180,10 @@ fn draw_node_tree(node: SvgSystem) -> Vec<AnyView> {
                 node.children.first().unwrap().borrow().x + child_node_width * 0.5;
             let children_end_x = node.children.last().unwrap().borrow().x + child_node_width * 0.5;
 
-            views.push(view! {
-                <SvgLine x1={children_start_x} y1={y - 15.0} x2={children_end_x} y2={y - 15.0} />
-            }.into_any());
+            views.push(
+                view! { <SvgLine x1=children_start_x y1=y - 15.0 x2=children_end_x y2=y - 15.0 /> }
+                    .into_any(),
+            );
         }
     }
 
@@ -223,8 +219,8 @@ fn draw_node_tree_header(world_model: &WorldModel, midpoint: f64) -> Vec<AnyView
         views.push(
             view! {
                 <SvgSinkOrSource
-                    x={x}
-                    y={y}
+                    x=x
+                    y=y
                     width=svg_width
                     height=svg_height
                     color=colors[i % colors.len()]
@@ -244,9 +240,9 @@ fn draw_node_tree_header(world_model: &WorldModel, midpoint: f64) -> Vec<AnyView
         views.push(
             view! {
                 <SvgSinkOrSource
-                    x={x}
-                    y={y}
-                    width={svg_width * -1.0}
+                    x=x
+                    y=y
+                    width=svg_width * -1.0
                     height=svg_height
                     color=colors[(i + sources_len) % colors.len()]
                 />
@@ -264,12 +260,29 @@ fn draw_node_tree_header(world_model: &WorldModel, midpoint: f64) -> Vec<AnyView
         let end_x = last_sink_x - svg_width * 0.5;
         let y = y + svg_height + 15.0;
 
-        views.push(view! {
-            <SvgLine x1={start_x} y1={y} x2={end_x} y2={y} />
-            <SvgLine x1={midpoint} y1={y} x2={midpoint} y2={y + 15.0} />
-            <SvgText text="Sources".to_string() font_size="0.75rem" x={start_x + 21.0} y={y + 12.5} width=50.0 height=24.0 />
-            <SvgText text="Sinks".to_string() font_size="0.75rem" x={end_x - 16.0} y={y + 12.5} width=50.0 height=24.0 />
-        }.into_any());
+        views.push(
+            view! {
+                <SvgLine x1=start_x y1=y x2=end_x y2=y />
+                <SvgLine x1=midpoint y1=y x2=midpoint y2=y + 15.0 />
+                <SvgText
+                    text="Sources".to_string()
+                    font_size="0.75rem"
+                    x=start_x + 21.0
+                    y=y + 12.5
+                    width=50.0
+                    height=24.0
+                />
+                <SvgText
+                    text="Sinks".to_string()
+                    font_size="0.75rem"
+                    x=end_x - 16.0
+                    y=y + 12.5
+                    width=50.0
+                    height=24.0
+                />
+            }
+            .into_any(),
+        );
     }
 
     views
@@ -288,9 +301,19 @@ fn draw_node_tree_aside(systems: &Vec<InputSystem>, tree_start_x: f64) -> Vec<An
 
     for level in 0..=levels_count {
         if level == 0 {
-            views.push(view! {
-                <SvgText text="Level -1".to_string() font_size="1rem" x={tree_start_x - level_padding} y={50.0} width=70.0 height=24.0 />
-            }.into_any());
+            views.push(
+                view! {
+                    <SvgText
+                        text="Level -1".to_string()
+                        font_size="1rem"
+                        x=tree_start_x - level_padding
+                        y=50.0
+                        width=70.0
+                        height=24.0
+                    />
+                }
+                .into_any(),
+            );
             continue;
         }
 
@@ -303,9 +326,19 @@ fn draw_node_tree_aside(systems: &Vec<InputSystem>, tree_start_x: f64) -> Vec<An
 
         let level_y = dummy.get_node_y() + dummy.get_node_height() * 0.5 + 5.0;
 
-        views.push(view! {
-            <SvgText text={level_text} font_size="1rem" x={tree_start_x - level_padding} y={level_y} width=70.0 height=24.0 />
-        }.into_any());
+        views.push(
+            view! {
+                <SvgText
+                    text=level_text
+                    font_size="1rem"
+                    x=tree_start_x - level_padding
+                    y=level_y
+                    width=70.0
+                    height=24.0
+                />
+            }
+            .into_any(),
+        );
     }
 
     views

@@ -25,14 +25,11 @@ use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::*;
 use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
 pub use components::*;
-use constants::WHITE_COLOR_MATERIAL_HANDLE;
+use constants::{MODIFIER, WHITE_COLOR_MATERIAL_HANDLE};
 use data_model::load::load_world;
 use data_model::save::{save_world, serialize_world};
-use events::*;
-use leptos_bevy_canvas::prelude::*;
-use plugins::label::{copy_position, LabelPlugin};
-use data_model::save::save_world;
 pub use events::*;
+use leptos_bevy_canvas::prelude::*;
 use plugins::label::{
     copy_position, copy_positions, copy_positions_changed, LabelPlugin, MarkerLabel, NameLabel,
 };
@@ -149,7 +146,7 @@ pub fn init_bevy_app(
 
     let wheel_zoom_condition = input_pressed(KeyCode::ControlLeft)
         .or(input_pressed(KeyCode::ControlRight)
-            .or(input_pressed(KeyCode::SuperLeft).or(input_pressed(KeyCode::SuperRight))));
+            .or(input_pressed(MODIFIER).or(input_pressed(KeyCode::SuperRight))));
 
     app.add_systems(
         PreUpdate,
@@ -178,19 +175,16 @@ pub fn init_bevy_app(
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),
-                reset_camera_position.run_if(
-                    input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyR)),
-                ),
+                reset_camera_position
+                    .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyR))),
             )
                 .in_set(CameraControlSet),
             (
-                load_file.run_if(
-                    input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyL)),
-                ),
+                load_file.run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyL))),
                 load_world,
-                serialize_world.pipe(save_world).run_if(
-                    input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyS)),
-                ),
+                serialize_world
+                    .pipe(save_world)
+                    .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyS))),
             ),
             (
                 cleanup_external_entity_removal,

@@ -64,21 +64,34 @@ pub fn App() -> impl IntoView {
     let (tree_visible, set_tree_visible) = signal(false);
 
     view! {
-        <div class="h-screen">
-        <Show when=move || tree_visible.get() fallback=move || {
-            let trigger_event_sender = trigger_event_sender.clone();
-            view! {
-                <button class="tree-button" on:click=move |_| {
-                    trigger_event_sender.send(TriggerEvent::ShowTree).ok();
-                    set_tree_visible.set(true);
-                }>{"Show Tree"}</button>
+        <Show
+            when=move || tree_visible.get()
+            fallback=move || {
+                let trigger_event_sender = trigger_event_sender.clone();
+                view! {
+                    <button
+                        class="tree-button"
+                        on:click=move |_| {
+                            trigger_event_sender.send(TriggerEvent::ShowTree).ok();
+                            set_tree_visible.set(true);
+                        }
+                    >
+                        {"Show Tree"}
+                    </button>
+                }
             }
-        }>
-            <button class="tree-button" on:click=move |_| {
-                set_tree_visible.set(false);
-            }>{"Hide Tree"}</button>
+        >
+            <button
+                class="tree-button"
+                on:click=move |_| {
+                    set_tree_visible.set(false);
+                }
+            >
+                {"Hide Tree"}
+            </button>
         </Show>
         <Tree visible=tree_visible event_receiver=tree_event_receiver />
+        <div class="h-screen">
             <BevyCanvas init=move || {
                 init_bevy_app(
                     selected_details_query,
@@ -89,7 +102,8 @@ pub fn App() -> impl IntoView {
                     sub_system_details_query,
                     is_same_as_id_query,
                     detach_event_receiver,
-                tree_event_sender, trigger_event_receiver
+                    tree_event_sender,
+                    trigger_event_receiver,
                 )
             } />
         </div>
@@ -103,7 +117,6 @@ pub fn App() -> impl IntoView {
             is_same_as_id
             detach_event_sender
         />
-
     }
 }
 
