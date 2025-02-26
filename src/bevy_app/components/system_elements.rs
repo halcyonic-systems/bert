@@ -1,12 +1,12 @@
 //! This file contains all the Bevy components and data structures related to System Elements and their associated helper methods.
 
-use std::fmt::Formatter;
 use crate::bevy_app::data_model::Complexity;
 use bevy::prelude::*;
 use enum_iterator::Sequence;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use uuid::{Uuid};
+use std::fmt::Formatter;
+use uuid::Uuid;
 
 /// Corresponds to the System Language elements and their visual representation in the diagram.
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
@@ -113,7 +113,9 @@ impl Default for Parameter {
 }
 
 /// Corresponds to the System Language Interaction types.
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize, Sequence)]
+#[derive(
+    Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize, Sequence,
+)]
 pub enum InteractionType {
     #[default]
     Flow,
@@ -129,13 +131,23 @@ impl core::fmt::Display for InteractionType {
     }
 }
 
-
 /// Attached to entities with a SystemElement::ExternalEntity component to hold modeling data related to the external entity.
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct ExternalEntity {
     pub equivalence: String,
     pub model: String,
+}
+
+/// Attached to entities with a SystemElement::ExternalEntity component to hold the source/sink equivalence id.
+#[derive(Clone, Copy, Deref, DerefMut, Debug, Component, Reflect, PartialEq, Eq, Default)]
+#[reflect(Component)]
+pub struct IsSameAsId(pub usize);
+
+impl From<usize> for IsSameAsId {
+    fn from(value: usize) -> Self {
+        Self(value)
+    }
 }
 
 /// Attached to entities with a System component that are nested inside of a parent system.
@@ -237,7 +249,6 @@ impl SubstanceType {
             SubstanceType::Energy => Color::srgb_u8(181, 27, 27),
             SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5),
             SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75),
-
         }
     }
     // Helper method to determine a the color of an interface from it's substance type.

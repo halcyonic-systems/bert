@@ -3,14 +3,14 @@ mod details;
 
 use crate::bevy_app::init_bevy_app;
 use crate::bevy_app::{
-    components::System, ElementDescription, ExternalEntity, Flow, Interface,
-    SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
+    components::System, DetachMarkerLabelEvent, ElementDescription, ExternalEntity, Flow,
+    Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
 use crate::leptos_app::details::Details;
 use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
 use leptos::prelude::*;
-use leptos_bevy_canvas::prelude::{single_query_signal, BevyCanvas};
+use leptos_bevy_canvas::prelude::{event_l2b, single_query_signal, BevyCanvas};
 use leptos_meta::*;
 
 pub type InterfaceQuery = (Name, ElementDescription, Interface);
@@ -19,8 +19,11 @@ pub type ExternalEntityQuery = (Name, ElementDescription, ExternalEntity);
 pub type SystemQuery = (Name, ElementDescription, System, SystemEnvironment);
 pub type SubSystemQuery = (Name, ElementDescription, System, ParentState);
 
+pub type IsSameAsIdQuery = (IsSameAsId,);
+
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
+pub type ExternalEntityFilter = With<ExternalEntity>;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -44,6 +47,11 @@ pub fn App() -> impl IntoView {
     let (sub_system_details, sub_system_details_query) =
         single_query_signal::<SubSystemQuery, (SelectionFilter, SubSystemFilter)>();
 
+    let (is_same_as_id, is_same_as_id_query) =
+        single_query_signal::<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>();
+
+    let (detach_event_sender, detach_event_receiver) = event_l2b::<DetachMarkerLabelEvent>();
+
     view! {
         <div class="h-screen">
             <BevyCanvas init=move || {
@@ -54,6 +62,8 @@ pub fn App() -> impl IntoView {
                     external_entity_details_query,
                     system_details_query,
                     sub_system_details_query,
+                    is_same_as_id_query,
+                    detach_event_receiver,
                 )
             } />
         </div>
@@ -64,6 +74,8 @@ pub fn App() -> impl IntoView {
             external_entity_details
             system_details
             sub_system_details
+            is_same_as_id
+            detach_event_sender
         />
     }
 }

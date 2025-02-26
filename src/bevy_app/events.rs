@@ -29,3 +29,7 @@ impl_drag_event!(SubsystemDrag);
 /// Fires when an entity is removed from the world. Used in system control flow.
 #[derive(Event, Debug, Clone, Copy)]
 pub struct RemoveEvent;
+
+/// Fires from leptos to bevy to detach a marker label from an entity.
+#[derive(Event, Debug, Clone, Copy)]
+pub struct DetachMarkerLabelEvent;

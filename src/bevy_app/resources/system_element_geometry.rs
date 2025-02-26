@@ -13,6 +13,9 @@ use bevy::utils::HashMap;
 use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 
+#[derive(Resource, Deref, DerefMut, Default, Clone, Copy)]
+pub struct IsSameAsIdCounter(pub usize);
+
 #[derive(Clone)]
 pub struct FixedSystemElementGeometries {
     pub interface: FixedSystemElementGeometry,

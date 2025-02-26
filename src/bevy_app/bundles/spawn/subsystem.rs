@@ -13,6 +13,7 @@ use crate::bevy_app::resources::{
 use crate::bevy_app::utils::{
     compute_end_and_direction_from_subsystem, transform_from_point2d_and_direction,
 };
+use crate::plugins::label::{HorizontalAttachmentAnchor, VerticalAttachmentAnchor};
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 
@@ -323,7 +324,10 @@ pub fn auto_spawn_subsystem_label(
                 offset: vec3(0.0, 0.0, 0.0),
                 horizontal_alignment: Alignment::Center,
                 vertical_alignment: Alignment::Center,
+                horizontal_anchor: HorizontalAttachmentAnchor::default(),
+                vertical_anchor: VerticalAttachmentAnchor::default(),
             }),
+            false,
             &name_query,
             &asset_server,
             Some(AutoContrastTextColor::default()),

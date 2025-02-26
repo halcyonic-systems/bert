@@ -1,15 +1,18 @@
 use crate::bevy_app::data_model::Complexity;
-use crate::leptos_app::components::{Checkbox, Divider, InputGroup, SelectGroup, Slider, TextArea};
+use crate::leptos_app::components::{
+    Button, Checkbox, Divider, InputGroup, SelectGroup, Slider, TextArea,
+};
 use crate::{
-    ExternalEntityQuery, InteractionQuery, InteractionType, InteractionUsability, InterfaceQuery,
-    Parameter, SubSystemQuery, SubstanceType, SystemElement, SystemQuery,
+    DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
+    InteractionUsability, InterfaceQuery, IsSameAsIdQuery, Parameter, SubSystemQuery,
+    SubstanceType, SystemElement, SystemQuery,
 };
 use enum_iterator::all;
 use leptos::prelude::*;
 use leptos::tachys::html::property::IntoProperty;
 use leptos::tachys::renderer::dom::Element;
 use leptos::tachys::renderer::Rndr;
-use leptos_bevy_canvas::prelude::RwSignalSynced;
+use leptos_bevy_canvas::prelude::*;
 use rust_decimal::Decimal;
 use std::str::FromStr;
 use wasm_bindgen::JsValue;
@@ -77,6 +80,8 @@ pub fn Details(
     external_entity_details: RwSignalSynced<Option<ExternalEntityQuery>>,
     system_details: RwSignalSynced<Option<SystemQuery>>,
     sub_system_details: RwSignalSynced<Option<SubSystemQuery>>,
+    is_same_as_id: RwSignalSynced<Option<IsSameAsIdQuery>>,
+    detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
 ) -> impl IntoView {
     view! {
         <div
@@ -138,7 +143,11 @@ pub fn Details(
                                         <InterfaceDetails interface_query=interface_details />
                                     </Show>
                                     <Show when=move || external_entity_details.get().is_some()>
-                                        <ExternalEntityDetails external_entity_query=external_entity_details />
+                                        <ExternalEntityDetails
+                                            external_entity_query=external_entity_details
+                                            is_same_as_id_query=is_same_as_id
+                                            detach_event_sender=detach_event_sender
+                                        />
                                     </Show>
                                     <Show when=move || { system_details.get().is_some() }>
                                         <SystemDetails system_query=system_details />
@@ -490,6 +499,8 @@ pub fn InteractionDetails(
 #[component]
 pub fn ExternalEntityDetails(
     external_entity_query: RwSignalSynced<Option<ExternalEntityQuery>>,
+    is_same_as_id_query: RwSignalSynced<Option<IsSameAsIdQuery>>,
+    detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
 ) -> impl IntoView {
     let name = Signal::derive(move || {
         external_entity_query
@@ -521,6 +532,13 @@ pub fn ExternalEntityDetails(
             .as_ref()
             .map(|(_, _, external_entity)| external_entity.model.clone())
             .unwrap_or_default()
+    });
+
+    let is_same_as_id = Signal::derive(move || {
+        is_same_as_id_query
+            .read()
+            .as_ref()
+            .map(|(is_same_as_id,)| *is_same_as_id)
     });
 
     view! {
@@ -570,6 +588,19 @@ pub fn ExternalEntityDetails(
                     .map(|(_, _, external_entity)| external_entity.model = value);
             }
         />
+
+        <div class="mt-4">
+            <Show when=move || is_same_as_id.get().is_some()>
+                <Button
+                    text=Signal::derive(move || {
+                        format!("Detach ({})", *is_same_as_id.get().unwrap_or_default())
+                    })
+                    on_click=move || {
+                        detach_event_sender.send(DetachMarkerLabelEvent).ok();
+                    }
+                />
+            </Show>
+        </div>
     }
 }
 

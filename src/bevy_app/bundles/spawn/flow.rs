@@ -339,6 +339,7 @@ pub fn auto_spawn_flow_label(
             vec2(50.0, 45.0),
             Some(BackgroundArgs { color, ..default() }),
             None,
+            false,
             &name_query,
             &asset_server,
             None,

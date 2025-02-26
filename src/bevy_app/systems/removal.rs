@@ -1,9 +1,10 @@
 use crate::bevy_app::components::*;
 use crate::bevy_app::constants::INTERFACE_WIDTH_HALF;
 use crate::bevy_app::events::RemoveEvent;
-use crate::bevy_app::plugins::label::NameLabel;
 use crate::bevy_app::plugins::mouse_interaction::{PickSelection, PickTarget};
 use crate::bevy_app::resources::FocusedSystem;
+use crate::plugins::label::{CopyPositions, MarkerLabel};
+use crate::DetachMarkerLabelEvent;
 use bevy::prelude::*;
 
 pub fn remove_selected_elements(
@@ -78,7 +79,13 @@ pub fn remove_selected_elements(
 
 pub fn cleanup_focused_system(
     mut removed_systems: RemovedComponents<Subsystem>,
-    root_system_query: Query<Entity, (With<crate::bevy_app::components::System>, Without<Subsystem>)>,
+    root_system_query: Query<
+        Entity,
+        (
+            With<crate::bevy_app::components::System>,
+            Without<Subsystem>,
+        ),
+    >,
     mut focused_system: ResMut<FocusedSystem>,
 ) {
     for removed_system in removed_systems.read() {
@@ -115,14 +122,15 @@ pub fn cleanup_external_entity_removal(
     }
 }
 
-pub fn cleanup_labelled_removal(
+pub fn cleanup_labelled_removal<T: Component>(
     mut commands: Commands,
-    mut removed: RemovedComponents<NameLabel>,
+    mut removed: RemovedComponents<T>,
+    copy_positions: Query<&CopyPositions>,
     label_query: Query<(Entity, &PickTarget, Option<&Parent>)>,
 ) {
     for removed in removed.read() {
         for (label_entity, pick_target, parent) in &label_query {
-            if pick_target.target == removed {
+            let mut despawn = || {
                 if let Some(parent) = parent {
                     commands
                         .entity(parent.get())
@@ -130,7 +138,46 @@ pub fn cleanup_labelled_removal(
                 }
 
                 commands.entity(label_entity).despawn_recursive();
+            };
+
+            if pick_target.target == removed {
+                if let Ok(copy_positions) = copy_positions.get(removed) {
+                    if copy_positions
+                        .0
+                        .iter()
+                        .find(|copy_position| copy_position.target == label_entity)
+                        .is_none()
+                    {
+                        despawn();
+                    }
+                } else {
+                    despawn();
+                }
             }
+        }
+    }
+}
+
+pub fn listen_to_remove_marker_label_event(
+    mut commands: Commands,
+    mut detach_marker_label_event: EventReader<DetachMarkerLabelEvent>,
+    mut selected_query: Query<
+        (Entity, &mut CopyPositions, &MarkerLabel),
+        With<SelectedHighlightHelperAdded>,
+    >,
+    parent_query: Query<&Parent>,
+) {
+    for _event in detach_marker_label_event.read() {
+        for (entity, mut copy_positions, marker_label) in selected_query.iter_mut() {
+            if let Ok(parent) = parent_query.get(marker_label.label) {
+                copy_positions
+                    .0
+                    .retain(|copy_position| copy_position.target != parent.get());
+            }
+            commands
+                .entity(entity)
+                .remove::<IsSameAsId>()
+                .remove::<MarkerLabel>();
         }
     }
 }

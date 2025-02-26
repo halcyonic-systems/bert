@@ -9,6 +9,7 @@ use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::plugins::mouse_interaction::PickSelection;
 use crate::bevy_app::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
 use crate::bevy_app::utils::ui_transform_from_button;
+use crate::plugins::label::{HorizontalAttachmentAnchor, VerticalAttachmentAnchor};
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -135,7 +136,10 @@ pub fn auto_spawn_interface_label(
                 offset: vec3(INTERFACE_HEIGHT_HALF * 1.7, -INTERFACE_HEIGHT_HALF, 0.0),
                 horizontal_alignment: Alignment::AutoStartEnd,
                 vertical_alignment: Alignment::Center,
+                horizontal_anchor: HorizontalAttachmentAnchor::default(),
+                vertical_anchor: VerticalAttachmentAnchor::default(),
             }),
+            false,
             &name_query,
             &asset_server,
             None,

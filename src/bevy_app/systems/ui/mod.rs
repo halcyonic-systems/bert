@@ -5,6 +5,7 @@ mod flow;
 mod hiding;
 mod label;
 mod selected_helper;
+mod source_sink_equivalence;
 mod zoom;
 
 use crate::bevy_app::plugins::mouse_interaction::{do_deselect_all, PickSelection};
@@ -15,6 +16,7 @@ pub use flow::*;
 pub use hiding::*;
 pub use label::*;
 pub use selected_helper::*;
+pub use source_sink_equivalence::*;
 pub use zoom::*;
 
 use crate::bevy_app::bundles::{

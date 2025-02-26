@@ -11,6 +11,12 @@ pub struct NameLabel {
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]
+pub struct MarkerLabel {
+    pub label: Entity,
+}
+
+#[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
+#[reflect(Component)]
 pub struct AutoContrastTextColor {
     pub light_color: Color,
     pub dark_color: Color,

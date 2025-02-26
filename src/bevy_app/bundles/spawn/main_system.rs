@@ -5,6 +5,7 @@ use crate::bevy_app::data_model::Complexity;
 use crate::bevy_app::plugins::label::{
     add_name_label, Alignment, AutoContrastTextColor, CopyPositionArgs,
 };
+use crate::plugins::label::{HorizontalAttachmentAnchor, VerticalAttachmentAnchor};
 use bevy::math::{vec2, vec3, Vec2};
 use bevy::prelude::*;
 
@@ -61,7 +62,10 @@ pub fn auto_spawn_system_label(
                 offset: vec3(0.0, 0.0, 0.0),
                 horizontal_alignment: Alignment::Center,
                 vertical_alignment: Alignment::Center,
+                horizontal_anchor: HorizontalAttachmentAnchor::default(),
+                vertical_anchor: VerticalAttachmentAnchor::default(),
             }),
+            false,
             &name_query,
             &asset_server,
             Some(AutoContrastTextColor::default()),

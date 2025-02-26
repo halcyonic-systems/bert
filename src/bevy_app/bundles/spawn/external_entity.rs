@@ -1,7 +1,7 @@
 use crate::bevy_app::components::*;
 use crate::bevy_app::constants::{
     BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, EXTERNAL_ENTITY_SELECTED_LINE_WIDTH,
-    EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z,
+    EXTERNAL_ENTITY_WIDTH_HALF, EXTERNAL_ENTITY_Z, LABEL_Z,
 };
 use crate::bevy_app::events::ExternalEntityDrag;
 use crate::bevy_app::plugins::label::{add_name_label, Alignment, CopyPositionArgs};
@@ -10,8 +10,13 @@ use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::plugins::mouse_interaction::PickSelection;
 use crate::bevy_app::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
 use crate::bevy_app::utils::ui_transform_from_button;
+use crate::plugins::label::{
+    add_marker_with_text, AutoContrastTextColor, CopyPositions, HorizontalAttachmentAnchor,
+    MarkerLabel, VerticalAttachmentAnchor,
+};
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_external_entity(
@@ -157,11 +162,66 @@ pub fn auto_spawn_external_entity_label(
                 offset: vec3(1.0, 0.0, 0.0),
                 horizontal_alignment: Alignment::Auto,
                 vertical_alignment: Alignment::Center,
+                horizontal_anchor: HorizontalAttachmentAnchor::default(),
+                vertical_anchor: VerticalAttachmentAnchor::default(),
             }),
+            true,
             &name_query,
             &asset_server,
             None,
             *nesting_level,
         );
+    }
+}
+
+pub fn auto_spawn_source_sink_equivalence(
+    mut commands: Commands,
+    mut is_same_as_query: Query<
+        (
+            Entity,
+            &mut CopyPositions,
+            &Aabb,
+            &IsSameAsId,
+            &NestingLevel,
+        ),
+        Added<IsSameAsId>,
+    >,
+    asset_server: Res<AssetServer>,
+) {
+    let button_width = BUTTON_WIDTH_HALF * 2.0;
+
+    for (entity, ref mut copy_positions, aabb, is_same_as_id, nesting_level) in
+        is_same_as_query.iter_mut()
+    {
+        add_marker_with_text(
+            &mut commands,
+            entity,
+            copy_positions,
+            aabb,
+            vec2(button_width, button_width),
+            Some(CopyPositionArgs {
+                offset: vec3(10.0, 10.0, LABEL_Z),
+                horizontal_alignment: Alignment::Center,
+                vertical_alignment: Alignment::Center,
+                horizontal_anchor: HorizontalAttachmentAnchor::WestLocal,
+                vertical_anchor: VerticalAttachmentAnchor::NorthWorld,
+            }),
+            &(**is_same_as_id).to_string(),
+            "label-icons/equivalence_annotation.png",
+            &asset_server,
+            Some(AutoContrastTextColor::default()),
+            *nesting_level,
+        );
+    }
+}
+
+pub fn update_is_same_as_id_label(
+    is_same_as_id_query: Query<(&IsSameAsId, &MarkerLabel), Changed<IsSameAsId>>,
+    mut target_query: Query<&mut Text2d>,
+) {
+    for (is_same_as_id, marker_label) in is_same_as_id_query.iter() {
+        if let Ok(mut text) = target_query.get_mut(marker_label.label) {
+            text.0 = (**is_same_as_id).to_string();
+        }
     }
 }

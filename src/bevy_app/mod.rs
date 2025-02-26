@@ -11,8 +11,8 @@ mod utils;
 
 use crate::bevy_app::data_model::load::load_file;
 use crate::{
-    ExternalEntityQuery, InteractionQuery, InterfaceQuery, SelectionFilter, SubSystemQuery,
-    SystemQuery,
+    ExternalEntityFilter, ExternalEntityQuery, InteractionQuery, InterfaceQuery, IsSameAsIdQuery,
+    SelectionFilter, SubSystemQuery, SystemQuery,
 };
 use bevy::asset::AssetMetaCheck;
 use bevy::input::common_conditions::input_just_pressed;
@@ -20,6 +20,7 @@ use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_file_dialog::FileDialogPlugin;
+// use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::*;
 use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
@@ -27,9 +28,11 @@ pub use components::*;
 use constants::WHITE_COLOR_MATERIAL_HANDLE;
 use data_model::load::load_world;
 use data_model::save::save_world;
-use events::*;
-use leptos_bevy_canvas::prelude::{BevyQueryDuplex, LeptosBevyApp};
-use plugins::label::{copy_position, LabelPlugin};
+pub use events::*;
+use leptos_bevy_canvas::prelude::{BevyEventReceiver, BevyQueryDuplex, LeptosBevyApp};
+use plugins::label::{
+    copy_position, copy_positions, copy_positions_changed, LabelPlugin, MarkerLabel, NameLabel,
+};
 use plugins::lyon_selection::LyonSelectionPlugin;
 use plugins::mouse_interaction::{disable_selection, enable_selection, MouseInteractionPlugin};
 use resources::*;
@@ -85,6 +88,8 @@ pub fn init_bevy_app(
         SubSystemQuery,
         (SelectionFilter, crate::SubSystemFilter),
     >,
+    is_same_as_id_query: BevyQueryDuplex<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>,
+    detach_event_receiver: BevyEventReceiver<DetachMarkerLabelEvent>,
 ) -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -112,13 +117,16 @@ pub fn init_bevy_app(
             .with_save_file::<JsonWorldData>()
             .with_load_file::<JsonWorldData>(),
     ))
+    // .add_plugins(WorldInspectorPlugin::new())
     .insert_resource(StrokeTessellator::new())
     .init_resource::<Zoom>()
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
+    .init_resource::<IsSameAsIdCounter>()
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
     .add_event::<RemoveEvent>()
+    .add_event::<DetachMarkerLabelEvent>()
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -126,6 +134,8 @@ pub fn init_bevy_app(
     .sync_leptos_signal_with_query(external_entity_details_query)
     .sync_leptos_signal_with_query(system_details_query)
     .sync_leptos_signal_with_query(sub_system_details_query)
+    .sync_leptos_signal_with_query(is_same_as_id_query)
+    .import_event_from_leptos(detach_event_receiver)
     .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
@@ -150,6 +160,7 @@ pub fn init_bevy_app(
                 change_focused_system,
                 draw_flow_curve,
                 update_initial_position_from_transform,
+                listen_to_remove_marker_label_event,
             ),
             (
                 update_selecting_flow_from_mouse,
@@ -176,7 +187,9 @@ pub fn init_bevy_app(
             ),
             (
                 cleanup_external_entity_removal,
-                cleanup_labelled_removal,
+                cleanup_labelled_removal::<NameLabel>,
+                cleanup_labelled_removal::<MarkerLabel>,
+                update_and_cleanup_source_sink_equivalence,
                 cleanup_interface_removal,
                 cleanup_subsystem_removal,
                 cleanup_flow_removal,
@@ -214,10 +227,16 @@ pub fn init_bevy_app(
                 update_interface_subsystem_color,
                 update_system_color_from_subsystem,
                 apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
+                update_is_same_as_id_label,
             ),
-            hide_selected.run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),
-            un_hide_selected
-                .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyU))),
+            (
+                hide_selected
+                    .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),
+                un_hide_selected
+                    .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyU))),
+            ),
+            (apply_sink_and_source_equivalence
+                .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyE))),),
         )
             .in_set(AllSet),
     )
@@ -230,6 +249,7 @@ pub fn init_bevy_app(
                 auto_spawn_system_label,
                 auto_spawn_interface_label,
                 auto_spawn_flow_label,
+                auto_spawn_source_sink_equivalence,
             )
                 .in_set(AutoSpawnLabelSet),
             (
@@ -248,7 +268,9 @@ pub fn init_bevy_app(
             (
                 update_flow_from_interface,
                 update_flow_from_external_entity,
-                update_label_offset_from_interface.before(copy_position),
+                update_label_offset_from_interface
+                    .before(copy_position)
+                    .before(copy_positions),
                 update_label_from_interaction,
                 update_subsystem_radius_from_interface_count,
                 update_interface_positions_from_system_radius
@@ -290,6 +312,7 @@ pub fn init_bevy_app(
                 .after(TransformPropagate)
                 .after(GeometryUpdateSet)
                 .run_if(in_state(AppState::Normal)),
+            AutoSpawnLabelSet.after(copy_positions_changed),
             // AllSet.run_if(in_state(FileState::Inactive)),
         ),
     )
