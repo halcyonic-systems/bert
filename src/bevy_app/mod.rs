@@ -1,9 +1,9 @@
 mod bundles;
-pub(crate) mod components;
+pub mod components;
 mod constants;
-pub(crate) mod data_model;
-mod events;
-pub(crate) mod plugins;
+pub mod data_model;
+pub mod events;
+pub mod plugins;
 mod resources;
 mod states;
 mod systems;
@@ -27,9 +27,12 @@ use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
 pub use components::*;
 use constants::WHITE_COLOR_MATERIAL_HANDLE;
 use data_model::load::load_world;
+use data_model::save::{save_world, serialize_world};
+use events::*;
+use leptos_bevy_canvas::prelude::*;
+use plugins::label::{copy_position, LabelPlugin};
 use data_model::save::save_world;
 pub use events::*;
-use leptos_bevy_canvas::prelude::{BevyEventReceiver, BevyQueryDuplex, LeptosBevyApp};
 use plugins::label::{
     copy_position, copy_positions, copy_positions_changed, LabelPlugin, MarkerLabel, NameLabel,
 };
@@ -90,6 +93,8 @@ pub fn init_bevy_app(
     >,
     is_same_as_id_query: BevyQueryDuplex<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>,
     detach_event_receiver: BevyEventReceiver<DetachMarkerLabelEvent>,
+    tree_event_sender: BevyEventSender<TreeEvent>,
+    trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
 ) -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -136,6 +141,8 @@ pub fn init_bevy_app(
     .sync_leptos_signal_with_query(sub_system_details_query)
     .sync_leptos_signal_with_query(is_same_as_id_query)
     .import_event_from_leptos(detach_event_receiver)
+    .import_event_from_leptos(trigger_event_receiver)
+    .export_event_to_leptos(tree_event_sender)
     .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
@@ -181,7 +188,7 @@ pub fn init_bevy_app(
                     input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyL)),
                 ),
                 load_world,
-                save_world.run_if(
+                serialize_world.pipe(save_world).run_if(
                     input_pressed(KeyCode::SuperLeft).and(input_just_pressed(KeyCode::KeyS)),
                 ),
             ),
@@ -240,6 +247,7 @@ pub fn init_bevy_app(
         )
             .in_set(AllSet),
     )
+    .add_systems(Update, react_to_trigger_event)
     .add_systems(
         PostUpdate,
         (

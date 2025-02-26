@@ -1,6 +1,8 @@
 mod components;
 mod details;
 
+mod tree;
+
 use crate::bevy_app::init_bevy_app;
 use crate::bevy_app::{
     components::System, DetachMarkerLabelEvent, ElementDescription, ExternalEntity, Flow,
@@ -24,6 +26,10 @@ pub type IsSameAsIdQuery = (IsSameAsId,);
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
+use crate::events::{TreeEvent, TriggerEvent};
+use crate::leptos_app::tree::Tree;
+use leptos::prelude::*;
+use leptos_bevy_canvas::prelude::*;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -52,8 +58,27 @@ pub fn App() -> impl IntoView {
 
     let (detach_event_sender, detach_event_receiver) = event_l2b::<DetachMarkerLabelEvent>();
 
+    let (tree_event_receiver, tree_event_sender) = event_b2l::<TreeEvent>();
+    let (trigger_event_sender, trigger_event_receiver) = event_l2b::<TriggerEvent>();
+
+    let (tree_visible, set_tree_visible) = signal(false);
+
     view! {
         <div class="h-screen">
+        <Show when=move || tree_visible.get() fallback=move || {
+            let trigger_event_sender = trigger_event_sender.clone();
+            view! {
+                <button class="tree-button" on:click=move |_| {
+                    trigger_event_sender.send(TriggerEvent::ShowTree).ok();
+                    set_tree_visible.set(true);
+                }>{"Show Tree"}</button>
+            }
+        }>
+            <button class="tree-button" on:click=move |_| {
+                set_tree_visible.set(false);
+            }>{"Hide Tree"}</button>
+        </Show>
+        <Tree visible=tree_visible event_receiver=tree_event_receiver />
             <BevyCanvas init=move || {
                 init_bevy_app(
                     selected_details_query,
@@ -64,6 +89,7 @@ pub fn App() -> impl IntoView {
                     sub_system_details_query,
                     is_same_as_id_query,
                     detach_event_receiver,
+                tree_event_sender, trigger_event_receiver
                 )
             } />
         </div>
@@ -77,6 +103,7 @@ pub fn App() -> impl IntoView {
             is_same_as_id
             detach_event_sender
         />
+
     }
 }
 

@@ -303,7 +303,6 @@ dependencies = [
  "raw-window-handle",
  "serde",
  "serde_repr",
- "tokio",
  "url",
  "wayland-backend",
  "wayland-client",
@@ -588,13 +587,10 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 name = "bert"
 version = "0.1.0"
 dependencies = [
- "leptos",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
  "tauri-plugin-opener",
 ]
 
@@ -609,9 +605,9 @@ dependencies = [
 
 [[package]]
 name = "bevy-inspector-egui"
-version = "0.29.1"
+version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3d3ea87310d78bacc94471bcf5a8b63ead43e7263d404571832c2297458b856"
+checksum = "36172627eb6fd8586600972bcbba2880ed6f59e4e243dcf2ed7ff68d987577ce"
 dependencies = [
  "bevy-inspector-egui-derive",
  "bevy_app",
@@ -620,7 +616,7 @@ dependencies = [
  "bevy_core",
  "bevy_core_pipeline",
  "bevy_ecs",
- "bevy_egui",
+ "bevy_egui 0.31.1",
  "bevy_hierarchy",
  "bevy_image",
  "bevy_log",
@@ -634,19 +630,18 @@ dependencies = [
  "bevy_window",
  "bytemuck",
  "disqualified",
- "egui",
+ "egui 0.29.1",
  "fuzzy-matcher",
  "image",
  "smallvec",
- "uuid",
  "winit",
 ]
 
 [[package]]
 name = "bevy-inspector-egui-derive"
-version = "0.29.0"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7259e525c7844b23f10fd2b2efaa3eea57996f101cc30e833070d139e2b4e4d"
+checksum = "3afc67826e0a4347414545e022e748f42550a577a502b26af44e6d03742c9266"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -905,6 +900,41 @@ dependencies = [
 
 [[package]]
 name = "bevy_egui"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "954fbe8551af4b40767ea9390ec7d32fe1070a6ab55d524cf0868c17f8469a55"
+dependencies = [
+ "arboard",
+ "bevy_app",
+ "bevy_asset",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_image",
+ "bevy_input",
+ "bevy_log",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_time",
+ "bevy_utils",
+ "bevy_window",
+ "bevy_winit",
+ "bytemuck",
+ "crossbeam-channel",
+ "egui 0.29.1",
+ "encase",
+ "js-sys",
+ "log",
+ "thread_local",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "wgpu-types",
+ "winit",
+]
+
+[[package]]
+name = "bevy_egui"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a4b8df063d7c4d4171bc853e5ea0d67c7f1b5edd3b014d43acbfe3042dd6cf4"
@@ -927,13 +957,14 @@ dependencies = [
  "bevy_winit",
  "bytemuck",
  "crossbeam-channel",
- "egui",
+ "egui 0.30.0",
  "encase",
  "js-sys",
  "thread_local",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+ "webbrowser",
  "wgpu-types",
  "winit",
 ]
@@ -2108,18 +2139,9 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d3ad3122b0001c7f140cf4d605ef9a9e2c24d96ab0b4fb4347b76de2425f445"
 dependencies = [
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "codee"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f18d705321923b1a9358e3fc3c57c3b50171196827fc7f5f10b053242aca627"
-dependencies = [
  "serde",
  "serde_json",
- "thiserror 2.0.11",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -2613,16 +2635,15 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "bevy_egui 0.32.0",
  "bevy_file_dialog",
  "bevy_picking",
  "bevy_prototype_lyon",
  "console_error_panic_hook",
- "enum-iterator",
  "js-sys",
  "leptos",
  "leptos-bevy-canvas",
- "leptos-use",
- "leptos_meta",
+ "leptos-use 0.15.6",
  "lyon_algorithms",
  "num-traits",
  "regex",
@@ -2632,11 +2653,8 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
- "tauri-sys",
- "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]
@@ -2872,12 +2890,34 @@ checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
 
 [[package]]
 name = "ecolor"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "775cfde491852059e386c4e1deb4aef381c617dc364184c6f6afee99b87c402b"
+dependencies = [
+ "bytemuck",
+ "emath 0.29.1",
+]
+
+[[package]]
+name = "ecolor"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d72e9c39f6e11a2e922d04a34ec5e7ef522ea3f5a1acfca7a19d16ad5fe50f5"
 dependencies = [
  "bytemuck",
- "emath",
+ "emath 0.30.0",
+]
+
+[[package]]
+name = "egui"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53eafabcce0cb2325a59a98736efe0bf060585b437763f8c476957fb274bb974"
+dependencies = [
+ "ahash 0.8.11",
+ "emath 0.29.1",
+ "epaint 0.29.1",
+ "nohash-hasher",
 ]
 
 [[package]]
@@ -2887,8 +2927,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "252d52224d35be1535d7fd1d6139ce071fb42c9097773e79f7665604f5596b5e"
 dependencies = [
  "ahash 0.8.11",
- "emath",
- "epaint",
+ "emath 0.30.0",
+ "epaint 0.30.0",
  "nohash-hasher",
  "profiling",
 ]
@@ -2906,6 +2946,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2dc0006c5cf511f802ddcffc0a6df9dcc1912f5f0e448f6641b3b035f14f43d"
 dependencies = [
  "pin-project-lite",
+]
+
+[[package]]
+name = "emath"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1fe0049ce51d0fb414d029e668dd72eb30bc2b739bf34296ed97bd33df544f3"
+dependencies = [
+ "bytemuck",
 ]
 
 [[package]]
@@ -2976,26 +3025,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3d8a32ae18130a3c84dd492d4215c3d913c3b07c6b63c2eb3eb7ff1101ab7bf"
 
 [[package]]
-name = "enum-iterator"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c280b9e6b3ae19e152d8e31cf47f18389781e119d4013a2a2bb0180e5facc635"
-dependencies = [
- "enum-iterator-derive",
-]
-
-[[package]]
-name = "enum-iterator-derive"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1ab991c1362ac86c61ab6f556cff143daa22e5a15e4e189df818b2fd19fe65b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.96",
-]
-
-[[package]]
 name = "enumflags2"
 version = "0.7.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3018,6 +3047,22 @@ dependencies = [
 
 [[package]]
 name = "epaint"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a32af8da821bd4f43f2c137e295459ee2e1661d87ca8779dfa0eaf45d870e20f"
+dependencies = [
+ "ab_glyph",
+ "ahash 0.8.11",
+ "bytemuck",
+ "ecolor 0.29.1",
+ "emath 0.29.1",
+ "epaint_default_fonts 0.29.1",
+ "nohash-hasher",
+ "parking_lot",
+]
+
+[[package]]
+name = "epaint"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5666f8d25236293c966fbb3635eac18b04ad1914e3bab55bc7d44b9980cafcac"
@@ -3025,13 +3070,19 @@ dependencies = [
  "ab_glyph",
  "ahash 0.8.11",
  "bytemuck",
- "ecolor",
- "emath",
- "epaint_default_fonts",
+ "ecolor 0.30.0",
+ "emath 0.30.0",
+ "epaint_default_fonts 0.30.0",
  "nohash-hasher",
  "parking_lot",
  "profiling",
 ]
+
+[[package]]
+name = "epaint_default_fonts"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "483440db0b7993cf77a20314f08311dbe95675092405518c0677aa08c151a3ea"
 
 [[package]]
 name = "epaint_default_fonts"
@@ -3983,6 +4034,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
+name = "home"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "589533453244b0995c858700322199b2becb13b627df2851f64a2775d024abcf"
+dependencies = [
+ "windows-sys 0.59.0",
+]
+
+[[package]]
 name = "html-escape"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4594,9 +4654,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "leptos"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78329c12843d64766d8f00216aae665416d804327302ce8e0ab83884dfa91887"
+checksum = "21c31c9d022c77702c53e02830d08b28320aca9c0899a19c443096c114623fa5"
 dependencies = [
  "any_spawner",
  "cfg-if",
@@ -4631,13 +4691,31 @@ dependencies = [
 [[package]]
 name = "leptos-bevy-canvas"
 version = "0.1.0"
-source = "git+https://github.com/Synphonyte/leptos-bevy-canvas.git#3e76bf1e58988e5774d5e518b828244ea7eeb8cd"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "864b2ff511513816caaca35558e1d84fcdb9a13058f6873a4c3f7ced545c7666"
 dependencies = [
  "bevy",
  "crossbeam-channel",
  "leptos",
- "leptos-use",
+ "leptos-use 0.14.0",
+]
+
+[[package]]
+name = "leptos-use"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b50a99041c6685fdbca516bf6f90e75013e00a093d231c5f6a73b7b9dfff633"
+dependencies = [
+ "cfg-if",
+ "default-struct-builder",
+ "js-sys",
+ "lazy_static",
+ "leptos",
  "paste",
+ "send_wrapper",
+ "thiserror 2.0.11",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -4648,7 +4726,7 @@ checksum = "9c902c63e4b25c2cbe7c02132f81c81fadff6590f2583db2c7063bfb8a77dbdf"
 dependencies = [
  "cfg-if",
  "chrono",
- "codee 0.2.0",
+ "codee",
  "cookie",
  "default-struct-builder",
  "futures-util",
@@ -4667,9 +4745,9 @@ dependencies = [
 
 [[package]]
 name = "leptos_config"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "132a18e8ffc4fbe2d624f3743d88a1b4989bff2d5e12be2b0d2749201d9dfb52"
+checksum = "5d874993c7664d757677d056c8f46b5cb5365fe622005e1bf26050f4996e7e52"
 dependencies = [
  "config",
  "regex",
@@ -4680,9 +4758,9 @@ dependencies = [
 
 [[package]]
 name = "leptos_dom"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d468f638f2f13d70d99d9952be98d671a75366034472f3828e586ba62d770049"
+checksum = "a462aaeec85bc4ecfb26bf324437b92690bf3add1e30eb29b3acc08b20e8b4cb"
 dependencies = [
  "js-sys",
  "or_poisoned",
@@ -4695,9 +4773,9 @@ dependencies = [
 
 [[package]]
 name = "leptos_hot_reload"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ba37d76693fc6228554e0bb06a9aa41c59e2b5180caf423c7913557b81d01dd"
+checksum = "07eb295ad2f3b2af190da62af339b84fd01ce3c71702f09eb69a57310fcf0c6d"
 dependencies = [
  "anyhow",
  "camino",
@@ -4713,9 +4791,9 @@ dependencies = [
 
 [[package]]
 name = "leptos_macro"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "064d0c8b144b93f8d7e84b30c16d1da0e64a63c7e91b9a872f7be63601c5868b"
+checksum = "90291b25ee576bc9c299d3371cc8f09bf60ea939a8de61fa8b744650aff76e24"
 dependencies = [
  "attribute-derive",
  "cfg-if",
@@ -4734,30 +4812,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "leptos_meta"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3abd2ac7fbfeee757fd569f7db4bdbaafe1e899049435476f06d4be1911f6097"
-dependencies = [
- "futures",
- "indexmap 2.7.1",
- "leptos",
- "once_cell",
- "or_poisoned",
- "send_wrapper",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "leptos_server"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb1779f1f0570915066c132fb11f999add8b13d02ca5221735193eb02b3fa69a"
+checksum = "18caffe32c245ddb35697edd898ccb3393efce67672a707a14eebd0db2e8249a"
 dependencies = [
  "any_spawner",
  "base64 0.22.1",
- "codee 0.3.0",
+ "codee",
  "futures",
  "hydration_context",
  "or_poisoned",
@@ -6428,9 +6490,9 @@ dependencies = [
 
 [[package]]
 name = "reactive_graph"
-version = "0.1.5"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "059aede5acae8f5c25b1d34b6df34700006418b3c493db3698b7ebcd4a8a6287"
+checksum = "9fbf210c04505e128fb7f64acecc23c71f82f56c7d481b190e1010b7bada2cb9"
 dependencies = [
  "any_spawner",
  "async-lock",
@@ -6645,9 +6707,6 @@ dependencies = [
  "block2",
  "core-foundation 0.10.0",
  "core-foundation-sys",
- "glib-sys",
- "gobject-sys",
- "gtk-sys",
  "js-sys",
  "log",
  "objc2",
@@ -7170,9 +7229,9 @@ dependencies = [
 
 [[package]]
 name = "server_fn"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c183c31152fd00e994a3ea0ca43e6017056ccf7812160b0ae008acc3de8241c"
+checksum = "f5dd7fcccd3ef2081da086c1f8595b506627abbbbc9f64be0141d2251219570e"
 dependencies = [
  "bytes",
  "const_format",
@@ -7200,9 +7259,9 @@ dependencies = [
 
 [[package]]
 name = "server_fn_macro"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c43b2266308c118be1a1cc60602f8efb07a64e72deed8d317704d5cfda092ca1"
+checksum = "e0bbac4f01a714b0490247ac625bdb7055548210556c39e8f56a2dbbe3abc70b"
 dependencies = [
  "const_format",
  "convert_case 0.6.0",
@@ -7214,9 +7273,9 @@ dependencies = [
 
 [[package]]
 name = "server_fn_macro_default"
-version = "0.7.5"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "087eca61bc8f93d868b8c10ca058da358fd7aaeb7bc8415b572f9f3f27ce0b93"
+checksum = "f07dfd1744a5f5612f00f69fe035b0bfafdf12bb46d76e785673078a9e56b170"
 dependencies = [
  "server_fn_macro",
  "syn 2.0.96",
@@ -7623,15 +7682,13 @@ dependencies = [
 
 [[package]]
 name = "tachys"
-version = "0.1.5"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59a3bbcf8e3b52cad5f0aa860837d4d1796c7c4873b083c9520a1bbba4747973"
+checksum = "d777e4426a597296b020edcb5c3d8f25a3ccd8adfd22eb5154ac81da946aef9f"
 dependencies = [
  "any_spawner",
- "async-trait",
  "const_str_slice_concat",
  "drain_filter_polyfill",
- "dyn-clone",
  "either_of",
  "futures",
  "html-escape",
@@ -7860,47 +7917,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-plugin-dialog"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b59fd750551b1066744ab956a1cd6b1ea3e1b3763b0b9153ac27a044d596426"
-dependencies = [
- "log",
- "raw-window-handle",
- "rfd",
- "serde",
- "serde_json",
- "tauri",
- "tauri-plugin",
- "tauri-plugin-fs",
- "thiserror 2.0.11",
- "url",
-]
-
-[[package]]
-name = "tauri-plugin-fs"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1a1edf18000f02903a7c2e5997fb89aca455ecbc0acc15c6535afbb883be223"
-dependencies = [
- "anyhow",
- "dunce",
- "glob",
- "percent-encoding",
- "schemars",
- "serde",
- "serde_json",
- "serde_repr",
- "tauri",
- "tauri-plugin",
- "tauri-utils",
- "thiserror 2.0.11",
- "toml 0.8.19",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "tauri-plugin-opener"
 version = "2.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7965,23 +7981,6 @@ dependencies = [
  "webview2-com",
  "windows 0.58.0",
  "wry",
-]
-
-[[package]]
-name = "tauri-sys"
-version = "0.2.0"
-source = "git+https://github.com/JonasKruckenberg/tauri-sys?branch=v2#6c75037edd06e4c39d972a7897a87fc52500c511"
-dependencies = [
- "derive_more 0.99.18",
- "futures",
- "js-sys",
- "log",
- "serde",
- "serde-wasm-bindgen",
- "serde_repr",
- "thiserror 1.0.69",
- "wasm-bindgen",
- "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -8242,9 +8241,7 @@ dependencies = [
  "libc",
  "mio",
  "pin-project-lite",
- "signal-hook-registry",
  "socket2",
- "tracing",
  "windows-sys 0.52.0",
 ]
 
@@ -9028,6 +9025,24 @@ checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "webbrowser"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea9fe1ebb156110ff855242c1101df158b822487e4957b0556d9ffce9db0f535"
+dependencies = [
+ "block2",
+ "core-foundation 0.10.0",
+ "home",
+ "jni",
+ "log",
+ "ndk-context",
+ "objc2",
+ "objc2-foundation",
+ "url",
+ "web-sys",
 ]
 
 [[package]]
@@ -10034,7 +10049,6 @@ dependencies = [
  "serde",
  "serde_repr",
  "static_assertions",
- "tokio",
  "tracing",
  "uds_windows",
  "windows-sys 0.59.0",

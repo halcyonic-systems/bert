@@ -1,4 +1,5 @@
 //! Custom defined events
+use crate::bevy_app::data_model::WorldModel;
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use bevy::prelude::*;
 
@@ -33,3 +34,13 @@ pub struct RemoveEvent;
 /// Fires from leptos to bevy to detach a marker label from an entity.
 #[derive(Event, Debug, Clone, Copy)]
 pub struct DetachMarkerLabelEvent;
+
+#[derive(Event, Clone)]
+pub struct TreeEvent {
+    pub world_model: WorldModel,
+}
+
+#[derive(Event, Debug, Clone)]
+pub enum TriggerEvent {
+    ShowTree,
+}
