@@ -137,10 +137,12 @@ impl SvgSystem {
     }
 }
 
-pub fn buchheim(node: &Rc<RefCell<SvgSystem>>, initial_offset: f64) {
+pub fn buchheim(node: &Rc<RefCell<SvgSystem>>, initial_offset: f64) -> f64 {
     first_walk(Rc::clone(node));
     debug_assert!(node.borrow().offset_modifier == 0.0);
-    second_walk(Rc::clone(node), initial_offset);
+    let tree_width = second_walk(Rc::clone(node), initial_offset);
+    third_walk(Rc::clone(node), tree_width * 0.5);
+    tree_width
 }
 
 fn first_walk(node: Rc<RefCell<SvgSystem>>) {
@@ -329,37 +331,36 @@ pub fn get_ancestor(
     Rc::clone(default_ancestor)
 }
 
-fn second_walk(node: Rc<RefCell<SvgSystem>>, m: f64) {
+fn second_walk(node: Rc<RefCell<SvgSystem>>, m: f64) -> f64 {
     let offset_modifier = node.borrow().offset_modifier;
     let children = node.borrow().children.clone();
 
+    let mut min_x = m;
+    let mut max_x = m + node.borrow().get_node_width();
+
     for child in children {
         second_walk(Rc::clone(&child), m + offset_modifier);
+        if child.borrow().x < min_x {
+            min_x = child.borrow().x;
+        }
+        if child.borrow().x > max_x {
+            max_x = child.borrow().x + child.borrow().get_node_width();
+        }
     }
 
     node.borrow_mut().x += m;
+
+    let tree_width = max_x - min_x;
+
+    tree_width
 }
 
-pub fn get_min_tree_width(system_vec: &Vec<InputSystem>) -> f64 {
-    let mut level_counts = std::collections::HashMap::new();
+fn third_walk(node: Rc<RefCell<SvgSystem>>, m: f64) {
+    let children = node.borrow().children.clone();
 
-    for sys in system_vec {
-        *level_counts.entry(sys.level).or_insert(0) += 1;
+    for child in children {
+        third_walk(Rc::clone(&child), m);
     }
 
-    let (most_common_level, count) = level_counts
-        .iter()
-        .max_by_key(|&(_, count)| count)
-        .map(|(&level, &count)| (level, count))
-        .unwrap();
-
-    let dummy_svg_sys = SvgSystem {
-        level: most_common_level.clone(),
-        ..Default::default()
-    };
-
-    let nodes_width = dummy_svg_sys.get_node_width() * count as f64;
-    let gap = NODE_GAP * (count - 1) as f64;
-
-    nodes_width + gap
+    node.borrow_mut().x -= m;
 }

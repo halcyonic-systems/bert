@@ -45,17 +45,17 @@ fn layout_tree(
         .map(|TreeEvent { world_model }| {
             let ordered_systems = get_world_systems_ordered(&world_model);
 
-            let mid_x = width * 0.5;
-            let min_tree_width = get_min_tree_width(&ordered_systems);
-            let x_for_mid_aligned_tree = mid_x - min_tree_width * 0.5;
+            let window_mid_x = width * 0.5;
 
-            let root_node = create_node_tree(&ordered_systems, x_for_mid_aligned_tree);
+            let (root_node, tree_width) = create_node_tree(&ordered_systems, window_mid_x);
+
             let root_x_mid = root_node.x + root_node.get_node_width() * 0.5;
+            let tree_start_x = root_x_mid - tree_width * 0.5;
 
             let svg_tree_view = draw_node_tree(root_node);
             let svg_tree_header_view = draw_node_tree_header(&world_model, root_x_mid);
             let svg_tree_aside_view =
-                draw_node_tree_aside(&ordered_systems, x_for_mid_aligned_tree);
+                draw_node_tree_aside(&ordered_systems, tree_start_x);
 
             view! {
                 <svg width=width height=height>
@@ -103,7 +103,7 @@ fn get_world_systems_ordered(world_model: &WorldModel) -> Vec<InputSystem> {
     systems_vec
 }
 
-fn create_node_tree(systems_vec: &Vec<InputSystem>, midpoint: f64) -> SvgSystem {
+fn create_node_tree(systems_vec: &Vec<InputSystem>, midpoint: f64) -> (SvgSystem, f64) {
     let mut node_map: HashMap<String, Rc<RefCell<SvgSystem>>> = HashMap::new();
 
     for system in systems_vec.iter() {
@@ -137,9 +137,9 @@ fn create_node_tree(systems_vec: &Vec<InputSystem>, midpoint: f64) -> SvgSystem 
 
     drop(node_map);
 
-    buchheim(&root, midpoint);
+    let tree_width = buchheim(&root, midpoint);
 
-    Rc::into_inner(root).unwrap().into_inner()
+    (Rc::into_inner(root).unwrap().into_inner(), tree_width)
 }
 
 fn draw_node_tree(node: SvgSystem) -> Vec<AnyView> {
@@ -295,7 +295,7 @@ fn draw_node_tree_aside(systems: &Vec<InputSystem>, tree_start_x: f64) -> Vec<An
     }
 
     let levels_count = levels_set.len();
-    let level_padding = 100.0;
+    let level_padding = 50.0;
 
     for level in 0..=levels_count {
         if level == 0 {
