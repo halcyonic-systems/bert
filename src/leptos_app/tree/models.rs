@@ -2,7 +2,9 @@ use crate::data_model::Complexity;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
-const NODE_GAP: f64 = 20.0;
+pub const TREE_Y_BASE: f64 = 120.0;
+pub const TREE_LEVEL_GAP: f64 = 70.0;
+pub const SIBLINGS_GAP: f64 = 20.0;
 
 #[derive(Clone)]
 pub struct InputSystem {
@@ -62,7 +64,7 @@ impl SvgSystem {
     }
 
     pub fn get_node_y(&self) -> f64 {
-        let base = 120.0 + self.level as f64 * 70.0;
+        let base = TREE_Y_BASE + self.level as f64 * TREE_LEVEL_GAP;
         base - self.level as f64 * 5.0
     }
     pub fn get_node_width(&self) -> f64 {
@@ -149,7 +151,7 @@ fn first_walk(node: Rc<RefCell<SvgSystem>>) {
     let is_leaf = node.borrow().is_leaf();
     if is_leaf {
         let x = if let Some(left_sibling) = node.borrow().left_sibling() {
-            left_sibling.borrow().x + node.borrow().get_node_width() + NODE_GAP
+            left_sibling.borrow().x + node.borrow().get_node_width() + SIBLINGS_GAP
         } else {
             0.0
         };
@@ -178,7 +180,7 @@ fn first_walk(node: Rc<RefCell<SvgSystem>>) {
 
         let left_sibling = node.borrow().left_sibling();
         let (x, offset_modifier) = if let Some(left_sibling) = left_sibling {
-            let x = left_sibling.borrow().x + node.borrow().get_node_width() + NODE_GAP;
+            let x = left_sibling.borrow().x + node.borrow().get_node_width() + SIBLINGS_GAP;
             (x, x - midpoint)
         } else {
             (midpoint, node.borrow().offset_modifier)
@@ -234,7 +236,7 @@ fn apportion(
 
             let shift = (node_il.borrow().x + offset_il) - (node_ir.borrow().x + offset_ir)
                 + node.borrow().get_node_width()
-                + NODE_GAP;
+                + SIBLINGS_GAP;
             if shift > 0.0 {
                 let ancestor = get_ancestor(&node_il, &node, &default_ancestor);
 
