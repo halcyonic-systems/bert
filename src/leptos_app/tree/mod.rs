@@ -280,11 +280,11 @@ fn draw_node_tree_description(
         let end_x = last_sink_x - svg_el_width * 0.5;
         let y = y + svg_el_height + 15.0;
 
-        let mut level_desc_x = tree_start_x - 100.0;
+        let mut level_desc_x = tree_start_x - 110.0;
         let level_desc_y = TREE_Y_BASE * 0.5 - svg_el_height * 0.25;
 
-        if start_x < tree_start_x - 100.0 {
-            level_desc_x = start_x - 100.0;
+        if start_x < tree_start_x {
+            level_desc_x = start_x - 150.0;
         }
 
         views.push(
@@ -333,7 +333,7 @@ fn draw_node_tree_description(
 
         let level_text = format!("Level {}", level);
 
-        let level_x = tree_start_x - 100.0;
+        let level_x = tree_start_x - 110.0;
         let level_y = dummy.get_node_y();
 
         views.push(
