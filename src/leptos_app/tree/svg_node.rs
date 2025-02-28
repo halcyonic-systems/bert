@@ -63,7 +63,6 @@ pub fn SvgSinkOrSource(
     y: f64,
     width: f64,
     height: f64,
-    color: &'static str,
     font_size: &'static str,
     #[prop(default = false)] text_left: bool
 ) -> impl IntoView {
@@ -84,7 +83,7 @@ pub fn SvgSinkOrSource(
     view! {
         <SvgText text=label font_size x={text_x} y={y + height * 0.25} width=text_width height=24.0 class
         />
-        <polyline points={points} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round"/>
+        <polyline points={points} fill="none" stroke="steelblue" stroke-width="2" stroke-linejoin="round"/>
         <SvgLine x1={x + width * 0.5} y1={y + height} x2={x + width * 0.5} y2={y + height + NODE_LINE_HEIGHT} />
     }
 }

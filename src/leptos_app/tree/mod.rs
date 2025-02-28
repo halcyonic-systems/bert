@@ -214,10 +214,6 @@ fn draw_node_tree_description(
     let svg_el_gap = 50.0;
     let y = free_header_space - svg_el_height;
 
-    let colors = vec![
-        "red", "gray", "green", "purple", "darkblue", "blue", "black",
-    ];
-
     let mut first_source_x = midpoint - (svg_el_width + svg_el_gap);
     let mut last_sink_x = midpoint + svg_el_width + svg_el_gap;
 
@@ -241,7 +237,6 @@ fn draw_node_tree_description(
                     y=y
                     width=svg_el_width
                     height=svg_el_height
-                    color=colors[i % colors.len()]
                 />
             }
             .into_any(),
@@ -270,7 +265,6 @@ fn draw_node_tree_description(
                     y=y
                     width=svg_el_width * -1.0
                     height=svg_el_height
-                    color=colors[(i + sources_len) % colors.len()]
                 />
             }
             .into_any(),
