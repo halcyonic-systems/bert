@@ -67,17 +67,17 @@ impl SvgSystem {
     }
     pub fn get_node_width(&self) -> f64 {
         match self.level {
-            0 => 90.0,
-            1 => 75.0,
-            2 => 65.0,
-            3 => 55.0,
-            _ => 45.0,
+            0 => 110.0,
+            1 => 100.0,
+            2 => 90.0,
+            3 => 80.0,
+            _ => 70.0,
         }
     }
     pub fn get_node_height(&self) -> f64 {
         match self.level {
-            0 => 35.0,
-            1 => 30.0,
+            0 => 30.0,
+            1 => 27.5,
             2 => 25.0,
             3 => 22.5,
             _ => 20.0,
@@ -87,10 +87,10 @@ impl SvgSystem {
     pub fn get_node_font_size(&self) -> &'static str {
         match self.level {
             0 => "1.1rem",
-            1 => "0.95rem",
-            2 => "0.8rem",
-            3 => "0.7rem",
-            _ => "0.65rem",
+            1 => "1.0rem",
+            2 => "0.9rem",
+            3 => "0.8rem",
+            _ => "0.7rem",
         }
     }
 

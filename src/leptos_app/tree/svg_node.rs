@@ -22,13 +22,12 @@ pub fn SvgNode(
                 <foreignObject x={x - 2.5} y={y + height * 0.6} width={width + 5.0} height={height}>
                     <p style:font-size=move || format!("{font_size}")
                        style:line-height=move || format!("{height}px")
-                       style="margin:0;padding:0 2px;text-align:center;overflow:hidden;text-overflow:ellipsis;font-weight:bold;font-family:sans-serif;color:#222;"
-                    >
+                       class="m-0 py-0 px-1 text-center truncate font-bold font-tree text-gray-900"                    >
                         {label.clone()}
                     </p>
                 </foreignObject>
 
-                <text x={x + (width * 0.5)} y={y + height * 1.25} font-size={font_size} font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="#222">
+                <text x={x + (width * 0.5)} y={y + height * 1.25} font-size={font_size} font-weight="bold" font-family="roboto-condensed" text-anchor="middle" fill="#111">
                     {label.clone()}
                 </text>
             </switch>
@@ -40,13 +39,13 @@ pub fn SvgNode(
                 <foreignObject x={x - 1.0} y={y + 1.0} width={width + 2.5} height={height}>
                     <p style:font-size=move || format!("{font_size}")
                        style:line-height=move || format!("{height}px")
-                       style="margin:0;padding:0 2px;text-align:center;overflow:hidden;text-overflow:ellipsis;font-weight:bold;font-family:sans-serif;color:#222;"
+                       class="m-0 py-0 px-1 text-center truncate font-bold font-tree text-gray-900"
                     >
                         {label.clone()}
                     </p>
                 </foreignObject>
 
-                <text x={x + (width * 0.5)} y={y + height / 1.5} font-size={font_size} font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="#222">
+                <text x={x + (width * 0.5)} y={y + height / 1.5} font-size={font_size} font-weight="bold" font-family="roboto-condensed" text-anchor="middle" fill="#111">
                     {label.clone()}
                 </text>
             </switch>
@@ -99,13 +98,13 @@ pub fn SvgText(
             <foreignObject x={x - 25.0} y={y - 16.0} width={width} height={height}>
                 <p style:font-size=move || format!("{font_size}")
                    style:line-height=move || format!("{height}px")
-                   style="margin:0;text-align:center;font-weight:bold;font-family:sans-serif;color:#222;"
+                   class="m-0 text-center font-bold font-tree text-gray-900"
                 >
                     {text.clone()}
                 </p>
             </foreignObject>
 
-            <text x={x} y={y} font-size={font_size} font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="#222">
+            <text x={x} y={y} font-size={font_size} font-weight="bold" font-family="roboto-condensed" text-anchor="middle" fill="#111">
                 {text}
             </text>
         </switch>
