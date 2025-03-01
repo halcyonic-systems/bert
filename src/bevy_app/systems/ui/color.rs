@@ -1,6 +1,6 @@
 //! This file holds the systems that control the color of system elements.
 use crate::bevy_app::components::{
-    Connection, CreateButton, Flow, HasFlowOtherEndButton, InterfaceSubsystem, TargetTypeConnection,
+    Connection, CreateButton, Flow, HasFlowOtherEndButton, TargetTypeConnection,
 };
 use crate::bevy_app::constants::HIDDING_TRANSPARENCY;
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
@@ -79,30 +79,6 @@ pub fn update_interface_color_from_flow<C>(
             if hidden.is_some() {
                 interface_fill.color.set_alpha(HIDDING_TRANSPARENCY);
             }
-        }
-    }
-}
-
-/// Update the color of an interface subsystem based on the substance type of the parent interface.
-/// Also hide (transparent) the interface subsystem if it's marked `Hidden`.
-pub fn update_interface_subsystem_color(
-    mut interface_subsystem_query: Query<
-        (Entity, &mut Fill, &InterfaceSubsystem, Option<&Hidden>),
-        Changed<InterfaceSubsystem>,
-    >,
-    subsystem_query: Query<&Subsystem>,
-) {
-    'outer: for (system_entity, mut subsystem_fill, interface_subsystem, hidden) in
-        &mut interface_subsystem_query
-    {
-        for subsystem in &subsystem_query {
-            if subsystem.parent_system == system_entity {
-                continue 'outer;
-            }
-        }
-        subsystem_fill.color = interface_subsystem.substance_type.interface_color();
-        if hidden.is_some() {
-            subsystem_fill.color.set_alpha(HIDDING_TRANSPARENCY);
         }
     }
 }

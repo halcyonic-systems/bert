@@ -100,6 +100,8 @@ pub struct Parameter {
     pub id: Uuid,
     pub name: String,
     pub value: String,
+    #[serde(default = "String::new")]
+    pub unit: String,
 }
 
 impl Default for Parameter {
@@ -108,6 +110,7 @@ impl Default for Parameter {
             id: Uuid::new_v4(),
             name: "".to_string(),
             value: "".to_string(),
+            unit: "".to_string(),
         }
     }
 }

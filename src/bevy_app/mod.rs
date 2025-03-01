@@ -225,7 +225,6 @@ pub fn init_bevy_app(
                 update_button_substance_type_from_flow,
                 update_interface_color_from_flow::<FlowStartInterfaceConnection>,
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
-                update_interface_subsystem_color,
                 update_system_color_from_subsystem,
                 apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
                 update_is_same_as_id_label,
