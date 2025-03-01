@@ -419,15 +419,21 @@ pub fn InteractionDetails(
             Add
         </button>
 
-        <div class="grid grid-cols-9 gap-x-4">
+        <div class="grid grid-cols-7 gap-x-4 mt-3">
+            <Show when=move || { parameters.get().len() > 0 }>
+                <div class="flex col-span-2 justify-self-center text-center item-center">Name</div>
+                <div class="flex col-span-2 justify-self-center text-center item-center">Value</div>
+                <div class="flex col-span-2 justify-self-center text-center item-center">Unit</div>
+                <div class="flex justify-self-center item-center"></div>
+            </Show>
             <For
                 each=move || parameters.get()
                 key=|param| param.id.clone()
-                let(Parameter { id, name, value })
+                let(Parameter { id, name, value, unit })
             >
                 <InputGroup
                     id="name"
-                    label="Name"
+                    placeholder="Name"
                     value=name
                     label_class="self-center"
                     input_class="ml-2"
@@ -445,11 +451,11 @@ pub fn InteractionDetails(
                             });
                     }
                     {..}
-                    class="flex col-span-4 justify-self-center item-center"
+                    class="flex col-span-2 justify-self-center item-center"
                 />
                 <InputGroup
                     id="value"
-                    label="Value"
+                    placeholder="Value"
                     value=value
                     label_class="self-center"
                     input_class="ml-2"
@@ -467,7 +473,29 @@ pub fn InteractionDetails(
                             });
                     }
                     {..}
-                    class="flex col-span-4 justify-self-center item-center"
+                    class="flex col-span-2 justify-self-center item-center"
+                />
+                <InputGroup
+                    id="value"
+                    placeholder="Unit"
+                    value=unit
+                    label_class="self-center"
+                    input_class="ml-2"
+                    on_input=move |val| {
+                        interaction_query
+                            .write()
+                            .as_mut()
+                            .map(|(_, _, interaction)| {
+                                let mut param = interaction
+                                    .parameters
+                                    .iter_mut()
+                                    .find(|param| param.id == id)
+                                    .expect("id to exist in parameters");
+                                param.unit = val;
+                            });
+                    }
+                    {..}
+                    class="flex col-span-2 justify-self-center item-center"
                 />
                 <button
                     type="button"
@@ -479,10 +507,10 @@ pub fn InteractionDetails(
                                 interaction.parameters.retain(|param| param.id != id);
                             });
                     }
-                    class="justify-self-center self-center p-1 text-sm font-semibold text-white rounded-full shadow-sm hover:bg-rose-800 size-fit bg-rose-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
+                    class="justify-self-center self-center text-sm font-semibold text-white rounded-full shadow-sm hover:bg-rose-800 w-fit bg-rose-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
                 >
                     <svg
-                        class="rotate-45 size-5"
+                        class="w-5 rotate-45"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                         aria-hidden="true"
