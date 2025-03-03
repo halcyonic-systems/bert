@@ -20,7 +20,7 @@ use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_file_dialog::FileDialogPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+// use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bundles::*;
 use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
@@ -119,7 +119,7 @@ pub fn init_bevy_app(
             .with_save_file::<JsonWorldData>()
             .with_load_file::<JsonWorldData>(),
     ))
-    .add_plugins(WorldInspectorPlugin::new())
+    // .add_plugins(WorldInspectorPlugin::new())
     .insert_resource(StrokeTessellator::new())
     .init_resource::<CurrentFile>()
     .init_resource::<Zoom>()
