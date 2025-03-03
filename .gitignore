@@ -10,3 +10,4 @@ build
 .cargo
 /node_modules
 package-lock.json
+/dist
