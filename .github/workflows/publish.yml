@@ -44,9 +44,12 @@ jobs:
       # If using tailwind...
       # - name: Download and install tailwindcss binary
       #   run: npm install -D tailwindcss && npx tailwindcss -i <INPUT/PATH.css> -o <OUTPUT/PATH.css>  # run tailwind
+      #
+      - name: Download binstall
+        run: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
       - name: Download and install Trunk binary
-        run: cargo install trunk
+        run: cargo binstall trunk
 
       - name: Build with Trunk
         # "${GITHUB_REPOSITORY#*/}" evaluates into the name of the repository
