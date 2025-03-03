@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   Github-Pages-Release:
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     environment:
       name: github-pages
@@ -40,6 +40,16 @@ jobs:
 
       - name: lint
         run: cargo clippy & cargo fmt
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       # If using tailwind...
       # - name: Download and install tailwindcss binary
