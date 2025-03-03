@@ -5,24 +5,18 @@ use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::{Hidden, SelectedHighlightHelperAdded, SystemElement};
 use bevy_prototype_lyon::prelude::*;
 
-pub fn hide_selected(
-    mut commands: Commands,
-    mut selected_system_query: Query<
+pub fn update_hiding_state(
+    mut added_hiding_state: Query<
         (
-            Entity,
             Option<&mut Fill>,
             &mut HighlightBundles<Stroke, Stroke>,
-            &Children,
+            Option<&Children>,
         ),
-        (
-            With<SelectedHighlightHelperAdded>,
-            Without<Hidden>,
-            With<SystemElement>,
-        ),
+        (Added<Hidden>, With<SystemElement>),
     >,
     mut fill_query: Query<&mut Fill, Without<SystemElement>>,
 ) {
-    for (entity, fill, mut highlight_bundle, children) in &mut selected_system_query {
+    for (fill, mut highlight_bundle, children) in &mut added_hiding_state {
         if let Some(mut fill) = fill {
             fill.color.set_alpha(HIDDING_TRANSPARENCY);
         }
@@ -32,12 +26,28 @@ pub fn hide_selected(
             .color
             .set_alpha(HIDDING_TRANSPARENCY);
 
-        for &child in children.iter() {
-            if let Ok(mut fill) = fill_query.get_mut(child) {
-                fill.color.set_alpha(HIDDING_TRANSPARENCY);
+        if let Some(children) = children {
+            for &child in children.iter() {
+                if let Ok(mut fill) = fill_query.get_mut(child) {
+                    fill.color.set_alpha(HIDDING_TRANSPARENCY);
+                }
             }
         }
+    }
+}
 
+pub fn hide_selected(
+    mut commands: Commands,
+    mut selected_system_query: Query<
+        Entity,
+        (
+            With<SelectedHighlightHelperAdded>,
+            Without<Hidden>,
+            With<SystemElement>,
+        ),
+    >,
+) {
+    for entity in &mut selected_system_query {
         commands.entity(entity).insert(Hidden);
     }
 }

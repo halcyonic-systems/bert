@@ -45,6 +45,7 @@ pub fn spawn_interface(
         is_selected,
         name,
         description,
+        "".to_string(),
         transform,
         initial_position,
         tess,
@@ -79,6 +80,7 @@ pub fn spawn_interface_only(
     is_selected: bool,
     name: &str,
     description: &str,
+    protocol: String,
     transform: Transform,
     initial_position: InitialPosition,
     tess: &mut ResMut<StrokeTessellator>,
@@ -89,7 +91,7 @@ pub fn spawn_interface_only(
 
     let interface_entity = commands
         .spawn((
-            Interface::default(),
+            Interface { protocol },
             transform,
             Fill::color(substance_type.interface_color()),
             PickingBehavior::default(),

@@ -5,7 +5,7 @@
   "identifier": "com.bert",
   "build": {
     "beforeDevCommand": "trunk serve",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:1320",
     "beforeBuildCommand": "trunk build",
     "frontendDist": "../dist"
   },
