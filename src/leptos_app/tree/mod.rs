@@ -23,7 +23,10 @@ pub fn Tree(
 
     view! {
         <Show when=move || visible.get()>
-            <div node_ref=tree_ref class="h-screen w-screen p-4 fixed top-0 left-0 z-10 bg-[#f6f6f6]">
+            <div
+                node_ref=tree_ref
+                class="fixed top-0 left-0 z-10 p-4 w-screen h-screen bg-[#f6f6f6]"
+            >
                 {
                     let event_receiver = event_receiver.clone();
                     move || { layout_tree(event_receiver.clone(), width.get(), height.get()) }
@@ -60,7 +63,6 @@ fn layout_tree(
             );
 
             view! {
-                <h2 class="text-center text-2xl font-medium">"Tree"</h2>
                 <svg width=width height=height>
                     {raw_svg_tree_view}
                     {svg_tree_description_view}
@@ -337,16 +339,8 @@ fn draw_node_tree_description(
         let level_y = dummy.get_node_y();
 
         views.push(
-            view! {
-                <SvgText
-                    text=level_text
-                    x=level_x
-                    y=level_y
-                    width=70.0
-                    height=24.0
-                />
-            }
-            .into_any(),
+            view! { <SvgText text=level_text x=level_x y=level_y width=70.0 height=24.0 /> }
+                .into_any(),
         );
     }
 

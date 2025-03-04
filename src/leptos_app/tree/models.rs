@@ -91,11 +91,11 @@ impl SvgSystem {
 
     pub fn get_node_font_size(&self) -> &'static str {
         match self.level {
-            0 => "1.1rem",
-            1 => "1.0rem",
-            2 => "0.9rem",
-            3 => "0.8rem",
-            _ => "0.7rem",
+            0 => "1.0rem",
+            1 => "0.9rem",
+            2 => "0.8rem",
+            3 => "0.7rem",
+            _ => "0.6rem",
         }
     }
 

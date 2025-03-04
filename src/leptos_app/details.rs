@@ -112,7 +112,7 @@ pub fn Details(
                                         <div class="flex items-center ml-3 h-7">
                                             <button
                                                 type="button"
-                                                class="relative text-gray-400 bg-white rounded-md hover:text-gray-500 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:outline-hidden"
+                                                class="relative text-gray-400 bg-white rounded-md hover:text-gray-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:outline-hidden"
                                             >
                                                 <span class="absolute -inset-2.5"></span>
                                                 <span class="sr-only">Close panel</span>
@@ -414,7 +414,7 @@ pub fn InteractionDetails(
                     .as_mut()
                     .map(|(_, _, interaction)| interaction.parameters.push(Parameter::default()));
             }
-            class="py-1.5 px-3 w-full text-sm font-semibold text-white rounded-full shadow-sm hover:bg-rose-800 bg-rose-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
+            class="py-1.5 px-3 w-full text-sm font-semibold text-white rounded-full shadow-sm hover:bg-cyan-800 bg-cyan-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-900"
         >
             Add
         </button>
@@ -507,7 +507,7 @@ pub fn InteractionDetails(
                                 interaction.parameters.retain(|param| param.id != id);
                             });
                     }
-                    class="justify-self-center self-center text-sm font-semibold text-white rounded-full shadow-sm hover:bg-rose-800 w-fit bg-rose-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900"
+                    class="justify-self-center self-center text-sm font-semibold text-white rounded-full shadow-sm hover:bg-cyan-800 w-fit bg-cyan-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-900"
                 >
                     <svg
                         class="w-5 rotate-45"

@@ -9,7 +9,7 @@ where
         <button
             on:click=move |_| on_click()
             type="button"
-            class="py-2 px-3.5 text-sm font-semibold text-white bg-rose-600 rounded-full shadow-sm hover:bg-rose-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
+            class="py-2 px-3.5 text-sm font-semibold text-white bg-cyan-600 rounded-full shadow-sm hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
         >
             {text}
         </button>

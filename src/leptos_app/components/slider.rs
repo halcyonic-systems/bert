@@ -12,7 +12,6 @@ pub fn Slider(
     // #[prop(into, optional)] show_steps: Signal<bool>,
     on_input: impl Fn(f64) + 'static + Clone,
 ) -> impl IntoView {
-
     let internal_value = RwSignal::new(value.get_untracked());
     // let range = Signal::derive(move || {
     //     if !show_steps.get() {
@@ -46,10 +45,10 @@ pub fn Slider(
 
     view! {
         <div class="mb-2">
-            <label for=id class="block text-sm/6 font-medium text-gray-900">
+            <label for=id class="block font-medium text-gray-900 text-sm/6">
                 {label}
             </label>
-            <div class="flex items-center relative rounded-md">
+            <div class="flex relative items-center rounded-md">
                 <input
                     id=id
                     type="range"
@@ -58,25 +57,7 @@ pub fn Slider(
                     prop:step=step
                     prop:value=value
                     on:input=on_input.clone()
-                    class="w-full appearance-none h-[15px] rounded-2xl cursor-pointer outline-none
-                    [&::-webkit-slider-runnable-track]:h-[16px]
-                    [&::-webkit-slider-runnable-track]:rounded-2xl
-                    [&::-webkit-slider-thumb]:h-[15px]
-                    [&::-webkit-slider-thumb]:w-[15px]
-                    [&::-webkit-slider-thumb]:bg-gray-200
-                    [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:border-rose-600
-                    [&::-webkit-slider-thumb]:border-2
-                    
-                    [&::-moz-range-track]:h-[15px]
-                    [&::-moz-range-track]:rounded-2xl
-                    [&::-moz-range-thumb]:h-[15px]
-                    [&::-moz-range-thumb]:w-[15px]
-                    [&::-moz-range-thumb]:rounded-full
-                    [&::-moz-range-thumb]:border
-                    [&::-moz-range-thumb]:border-rose-600
-                    [&::-moz-range-thumb]:bg-gray-200
-                    "
+                    class="w-full rounded-2xl appearance-none cursor-pointer outline-none h-[15px] [&::-webkit-slider-runnable-track]:h-[16px] [&::-webkit-slider-runnable-track]:rounded-2xl [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:bg-gray-200 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-cyan-600 [&::-webkit-slider-thumb]:border-2 [&::-moz-range-track]:h-[15px] [&::-moz-range-track]:rounded-2xl [&::-moz-range-thumb]:h-[15px] [&::-moz-range-thumb]:w-[15px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-cyan-600 [&::-moz-range-thumb]:bg-gray-200"
                     style:background=move || {
                         let percent = (value.get() / (max.get() - min.get())) * 100f64;
                         format!(
@@ -90,13 +71,7 @@ pub fn Slider(
                     prop:value=internal_value
                     on:input=on_input
                     type="number"
-                    class="ml-1 p-1 text-center border-rose-600 border-2 rounded-lg w-[60px]
-                    [&::-moz-appearance]: textfield
-                    [&::-webkit-outer-spin-button]:appearance-none
-                    [&::-webkit-inner-spin-button]:appearance-none
-                    [&::-webkit-outer-spin-button]:m-0
-                    [&::-webkit-inner-spin-button]:m-0
-                    "
+                    class="p-1 ml-1 text-center rounded-lg border-2 border-cyan-600 w-[60px] [&::-moz-appearance]: textfield [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
                 />
             // <div
             // class="absolute w-full h-full bg-gray-400 rounded-lg"

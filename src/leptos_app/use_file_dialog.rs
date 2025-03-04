@@ -74,7 +74,17 @@ where
 
     let cleanup = use_event_listener(window(), keydown, move |ev: web_sys::KeyboardEvent| {
         // Check if Ctrl + L was pressed
-        if ev.ctrl_key() && ev.key() == "l" {
+        let modifier = {
+            #[cfg(target_os = "macos")]
+            {
+                ev.meta_key()
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                ev.ctrl_key()
+            }
+        };
+        if modifier && ev.key() == "l" {
             // Prevent the default behavior and stop propagation
             ev.prevent_default();
             ev.stop_propagation();

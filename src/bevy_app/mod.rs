@@ -183,7 +183,6 @@ pub fn init_bevy_app(
             )
                 .in_set(CameraControlSet),
             (
-                // load_file.run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyL))),
                 load_world,
                 serialize_world
                     .pipe(save_world)

@@ -36,7 +36,7 @@ where
                     id=id
                     name=label
                     on:change=move |ev| on_change(select_option(event_target_value(&ev)))
-                    class="col-start-1 row-start-1 py-1.5 pr-8 pl-3 w-full text-base text-gray-900 bg-white rounded-md appearance-none focus:ring-1 focus:ring-rose-600 outline outline-1 -outline-offset-1 outline-gray-300 sm:text-sm/6 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-rose-600"
+                    class="col-start-1 row-start-1 py-1.5 pr-8 pl-3 w-full text-base text-gray-900 bg-white rounded-md appearance-none focus:ring-1 focus:ring-cyan-600 outline outline-1 -outline-offset-1 outline-gray-300 sm:text-sm/6 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-cyan-600"
                 >
                     <Show when=move || selected_option.get().is_none()>
                         <option disabled selected value>

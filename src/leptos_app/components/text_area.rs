@@ -24,7 +24,7 @@ where
                     id=id
                     prop:disabled=disabled
                     placeholder=placeholder
-                    class="block py-1.5 px-3 w-full text-base text-gray-900 bg-white rounded-md focus:ring-rose-600 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 sm:text-sm/6 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-rose-600"
+                    class="block py-1.5 px-3 w-full text-base text-gray-900 bg-white rounded-md focus:ring-cyan-600 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 sm:text-sm/6 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-cyan-600"
                     on:input=move |ev| on_input(event_target_value(&ev))
                 >
                     {move || text.get()}
