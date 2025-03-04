@@ -1,6 +1,7 @@
 use crate::bevy_app::components::*;
 use crate::bevy_app::data_model::Interaction;
 use crate::bevy_app::data_model::*;
+use crate::bevy_app::resources::CurrentFile;
 use crate::JsonWorldData;
 use bevy::core::Name;
 use bevy::prelude::*;
@@ -59,14 +60,18 @@ impl Context {
     }
 }
 
-pub fn save_world(In(world_model): In<WorldModel>, mut commands: Commands) {
+pub fn save_world(
+    In(world_model): In<WorldModel>,
+    mut commands: Commands,
+    mut current_file: ResMut<CurrentFile>
+) {
     #[derive(serde::Serialize)]
     struct Args {
         data: String,
         path: String
     }
 
-    let file_name = "bert_backup.json".to_string();
+    let file_name = (*current_file).clone();
 
     let window = web_sys::window().expect("window should exist");
 
@@ -78,14 +83,26 @@ pub fn save_world(In(world_model): In<WorldModel>, mut commands: Commands) {
         let task = AsyncComputeTaskPool::get().spawn_local({
             let model = world_model.clone();
             async move {
-                invoke::<()>(
-                    "save_to_file",
-                    &Args {
-                        data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
-                        path: file_name.clone(),
-                    },
-                )
-                    .await;
+                if file_name.is_empty(){
+                    invoke::<()>(
+                        "save_with_dialog",
+                        &Args {
+                            data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
+                            path: "untitled.json".to_string(),
+                        },
+                    )
+                        .await;
+                } else {
+                    invoke::<()>(
+                        "save_with_dialog", // save_to_file
+                        &Args {
+                            data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
+                            path: file_name.clone(),
+                        },
+                    )
+                        .await;
+                }
+
             }
         });
 
@@ -126,7 +143,8 @@ pub fn serialize_world(
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: Query<&crate::bevy_app::components::ExternalEntity>,
+    external_entity_query: Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
+    hidden_query: Query<Entity, With<Hidden>>,
 ) -> WorldModel {
     let (system_entity, system_component, environment) = main_system_info_query
         .get_single()
@@ -217,10 +235,18 @@ pub fn serialize_world(
         interaction.sink_interface = sink_interface;
     }
 
+
+    let mut hidden_entities = Vec::new();
+    for hidden_entity in &hidden_query {
+        let id = ctx.entity_to_id[&hidden_entity].clone();
+        hidden_entities.push(id);
+    }
+
      WorldModel {
         version: CURRENT_FILE_VERSION,
         systems: entity_to_system.into_values().collect(),
         interactions: ctx.interactions,
+        hidden_entities,
         environment,
     }
 }
@@ -244,7 +270,7 @@ fn build_subsystems(
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: &Query<&crate::bevy_app::components::ExternalEntity>,
+    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
     mut entity_to_system: &mut HashMap<Entity, System>,
 ) {
     let mut not_interface_subsystems = vec![];
@@ -407,7 +433,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: &Query<&crate::bevy_app::components::ExternalEntity>,
+    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
 ) {
     // we start from the interactions
     for (
@@ -632,11 +658,11 @@ fn build_external_entity<P: HasInfo>(
     parent: &P,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
-    external_entity_query: &Query<&crate::bevy_app::components::ExternalEntity>,
+    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
 ) -> crate::bevy_app::data_model::ExternalEntity {
     let id = ctx.next_id(entity, id_type, &parent.info().id.indices);
 
-    let external_entity_component = external_entity_query.get(entity).expect("Should exist");
+    let (external_entity_component, hidden) = external_entity_query.get(entity).expect("Should exist");
 
     let parent_level = parent.info().level;
 
@@ -655,6 +681,7 @@ fn build_external_entity<P: HasInfo>(
         transform: transform2d_from_entity(entity, &transform_query),
         equivalence: external_entity_component.equivalence.clone(),
         model: external_entity_component.model.clone(),
+        hidden: hidden.is_some()
     }
 }
 

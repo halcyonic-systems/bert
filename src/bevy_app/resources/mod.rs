@@ -45,3 +45,7 @@ impl StrokeTessellator {
         StrokeTessellator(bevy_prototype_lyon::prelude::tess::StrokeTessellator::new())
     }
 }
+
+#[derive(Resource, Deref, DerefMut, Default, Reflect, Debug)]
+#[reflect(Resource)]
+pub struct CurrentFile(pub String);

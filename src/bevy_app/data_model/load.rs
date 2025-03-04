@@ -27,6 +27,8 @@ struct Context {
     external_entity_id_to_substance: HashMap<Id, SubstanceType>,
     /// Maps the spawned bevy entity to wether there are (outgoing, ingoing) interactions connected
     entity_to_interface_interactions: HashMap<Entity, (bool, bool)>,
+    /// Collects all hidden entities
+    hidden_entities: Vec<Id>,
 }
 
 impl Context {
@@ -36,6 +38,7 @@ impl Context {
             id_to_interface_subsystem: HashMap::new(),
             external_entity_id_to_substance: HashMap::new(),
             entity_to_interface_interactions: HashMap::new(),
+            hidden_entities: Vec::new(),
         }
     }
 }
@@ -55,8 +58,18 @@ pub fn load_world(
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
+    mut current_file: ResMut<CurrentFile>,
 ) {
     for event in load_file_event_reader.read() {
+        #[cfg(target_arch = "wasm32")]
+        {
+            *current_file = CurrentFile(event.file_name.clone());
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            *current_file = CurrentFile(event.path.to_str().unwrap().to_string());
+        }
+
         // clear the scene first
         for entity in &existing_elements_query {
             commands.entity(entity).despawn_recursive();
@@ -78,6 +91,8 @@ pub fn load_world(
                     .insert(interaction.source.clone(), interaction.substance.ty);
             }
         }
+
+        ctx.hidden_entities = world_model.hidden_entities.clone();
 
         // then spawn everything
 
@@ -148,6 +163,10 @@ fn spawn_interactions(
 
         ctx.id_to_entity
             .insert(interaction.info.id.clone(), interaction_entity);
+
+        if ctx.hidden_entities.contains(&interaction.info.id) {
+            commands.entity(interaction_entity).insert(Hidden);
+        }
 
         let mut interaction_commands = commands.entity(interaction_entity);
 
@@ -277,10 +296,18 @@ fn spawn_systems_interfaces_and_external_entities(
 
             ctx.id_to_entity
                 .insert(interface.info.id.clone(), interface_entity);
+
+            if ctx.hidden_entities.contains(&interface.info.id) {
+                commands.entity(interface_entity).insert(Hidden);
+            }
         }
 
         ctx.id_to_entity
             .insert(system.info.id.clone(), system_entity);
+
+        if ctx.hidden_entities.contains(&system.info.id) {
+            commands.entity(system_entity).insert(Hidden);
+        }
 
         spawn_external_entities(
             commands,
@@ -332,6 +359,10 @@ fn spawn_external_entities<S: HasSourcesAndSinks + HasInfo>(
 
         ctx.id_to_entity
             .insert(ext_entity.info.id.clone(), external_entity);
+
+        if ctx.hidden_entities.contains(&ext_entity.info.id) {
+            commands.entity(external_entity).insert(Hidden);
+        }
 
         if let Some(parent_entity) = parent_entity {
             commands.entity(parent_entity).add_child(external_entity);
@@ -437,6 +468,7 @@ fn spawn_loaded_interface(
         false,
         &interface.info.name,
         &interface.info.description,
+        interface.protocol.clone(),
         transform,
         initial_position,
         stroke_tess,

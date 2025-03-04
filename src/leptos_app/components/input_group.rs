@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 const BASE_LABEL_CLASS: &str = "block text-sm font-medium leading-6 text-gray-900";
-const BASE_INPUT_CLASS: &str = "block w-full rounded-md border-0 py-2.5 text-gray-900 ring-1 \
+const BASE_INPUT_CLASS: &str = "block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 \
                                 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 \
                                 focus:ring-inset focus:ring-rose-600 sm:text-sm sm:leading-6 \
                                 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500";
@@ -20,7 +20,7 @@ pub struct InputGroupIcon {
 #[component]
 pub fn InputGroup<F, I>(
     id: &'static str,
-    label: &'static str,
+    #[prop(optional)] label: Option<&'static str>,
     on_input: F,
     #[prop(into)] value: Signal<I>,
     #[prop(optional)] input_class: Option<&'static str>,
@@ -40,7 +40,7 @@ where
     <I as FromStr>::Err: Debug,
 {
     let name = name.unwrap_or(id.to_string());
-    let placeholder = placeholder.unwrap_or(label);
+    let placeholder = placeholder.unwrap_or(label.unwrap_or(""));
     let label_class = format!("{} {}", BASE_LABEL_CLASS, label_class.unwrap_or(""));
 
     let has_icon = input_group_icon.is_some();
@@ -54,12 +54,17 @@ where
 
     let type_ = type_.unwrap_or("text");
 
-    view! {
-        <div class="mb-2">
+    let label = label.map(|label| {
+        view! {
             <label for=id class=label_class>
                 {label}
             </label>
-            <div class="relative mt-2 rounded-md">
+        }
+    });
+
+    view! {
+        <div class="mb-2">
+            {label} <div class="relative mt-2 rounded-md">
                 <div
                     class="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none"
                     class:hidden=!has_icon

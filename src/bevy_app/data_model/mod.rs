@@ -22,6 +22,9 @@ pub struct WorldModel {
     pub systems: Vec<System>,
     /// All interactions at all nesting levels.
     pub interactions: Vec<Interaction>,
+    /// A list of all hidden entities
+    #[serde(default)]
+    pub hidden_entities: Vec<Id>,
 }
 
 /// Unique identifier for any kind of object.
@@ -224,6 +227,9 @@ pub struct ExternalEntity {
     pub transform: Option<Transform2d>,
     pub equivalence: String,
     pub model: String,
+    /// Whether this interface is hidden from the user.
+    #[serde(default)]
+    pub hidden: bool,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
@@ -278,36 +284,36 @@ impl Complexity {
     pub fn is_complex(&self) -> bool {
         matches!(self, Complexity::Complex { .. })
     }
-    
+
     pub fn is_atomic(&self) -> bool {
         matches!(self, Complexity::Atomic)
     }
-    
+
     pub fn is_multiset(&self) -> bool {
         matches!(self, Complexity::Multiset(_))
     }
-    
+
     pub fn is_adaptable(&self) -> bool {
         match self {
             Complexity::Complex { adaptable, .. } => *adaptable,
             _ => false,
         }
     }
-    
+
     pub fn is_evolveable(&self) -> bool {
         match self {
             Complexity::Complex { evolveable, .. } => *evolveable,
             _ => false,
         }
     }
-    
+
     pub fn set_adaptable(&mut self, adapt: bool) {
         match self {
             Complexity::Complex { adaptable, .. } => *adaptable = adapt,
             _ => (),
         }
     }
-    
+
     pub fn set_evolveable(&mut self, evolve: bool) {
         match self {
             Complexity::Complex { evolveable, .. } => *evolveable = evolve,

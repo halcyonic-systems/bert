@@ -121,6 +121,7 @@ pub fn init_bevy_app(
     ))
     // .add_plugins(WorldInspectorPlugin::new())
     .insert_resource(StrokeTessellator::new())
+    .init_resource::<CurrentFile>()
     .init_resource::<Zoom>()
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .init_resource::<IsSameAsIdCounter>()
@@ -187,6 +188,13 @@ pub fn init_bevy_app(
                     .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyS))),
             ),
             (
+                hide_selected
+                    .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),
+                update_hiding_state,
+                un_hide_selected
+                    .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyU))),
+            ),
+            (
                 cleanup_external_entity_removal,
                 cleanup_labelled_removal::<NameLabel>,
                 cleanup_labelled_removal::<MarkerLabel>,
@@ -225,16 +233,9 @@ pub fn init_bevy_app(
                 update_button_substance_type_from_flow,
                 update_interface_color_from_flow::<FlowStartInterfaceConnection>,
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
-                update_interface_subsystem_color,
                 update_system_color_from_subsystem,
                 apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
                 update_is_same_as_id_label,
-            ),
-            (
-                hide_selected
-                    .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),
-                un_hide_selected
-                    .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyU))),
             ),
             (apply_sink_and_source_equivalence
                 .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyE))),),
@@ -337,6 +338,7 @@ pub fn init_bevy_app(
     .register_type::<HasFlowInterfaceButton>()
     .register_type::<HasFlowOtherEndButton>()
     .register_type::<HasInterfaceSubsystemButton>()
+    .register_type::<Hidden>()
     .register_type::<FlowCurve>()
     .register_type::<InitialPosition>()
     .register_type::<SelectedHighlightHelperAdded>()
