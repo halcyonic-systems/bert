@@ -130,8 +130,6 @@ pub fn SvgSinkOrSource(
         "truncate font-medium text-start"
     };
 
-    leptos::logging::log!("Substance type: {:?}", type_);
-
     view! {
         <SvgText
             text=label
