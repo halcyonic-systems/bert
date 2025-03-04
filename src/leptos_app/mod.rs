@@ -73,7 +73,7 @@ pub fn App() -> impl IntoView {
                 let trigger_event_sender = trigger_event_sender.clone();
                 view! {
                     <button
-                        class="absolute top-4 left-4 py-2 px-4 bg-white rounded-lg"
+                        class="px-4 py-2 rounded-lg bg-white absolute top-4 left-4 z-20"
                         on:click=move |_| {
                             trigger_event_sender.send(TriggerEvent::ShowTree).ok();
                             set_tree_visible.set(true);
@@ -85,7 +85,7 @@ pub fn App() -> impl IntoView {
             }
         >
             <button
-                class="absolute top-4 left-4 py-2 px-4 bg-white rounded-lg"
+                class="px-4 py-2 rounded-lg bg-white absolute top-4 left-4 z-20"
                 on:click=move |_| {
                     set_tree_visible.set(false);
                 }
