@@ -1,16 +1,15 @@
 use crate::bevy_app::bundles::{
-    spawn_external_entity_only, spawn_interaction_only, spawn_interface_only, spawn_main_system,
-    SystemBundle,
+    spawn_external_entity_only, spawn_interaction_only, spawn_interface_only,
+    spawn_is_same_as_id_counter, spawn_main_system, SystemBundle,
 };
 use crate::bevy_app::constants::{EXTERNAL_ENTITY_Z, INTERFACE_Z, SUBSYSTEM_Z};
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::events::SubsystemDrag;
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::resources::*;
-use crate::JsonWorldData;
+use crate::LoadFileEvent;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
-use bevy_file_dialog::{DialogFileLoaded, FileDialogExt};
 use rust_decimal_macros::dec;
 
 fn load_from_bytes(bytes: &[u8]) -> WorldModel {
@@ -43,39 +42,26 @@ impl Context {
     }
 }
 
-pub fn load_file(mut commands: Commands) {
-    commands
-        .dialog()
-        .add_filter("valid_formats", &["json"])
-        .load_file::<JsonWorldData>();
-}
-
 pub fn load_world(
     mut commands: Commands,
-    mut load_file_event_reader: EventReader<DialogFileLoaded<JsonWorldData>>,
+    mut file_event_reader: EventReader<LoadFileEvent>,
     existing_elements_query: Query<Entity, With<SystemElement>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
     mut current_file: ResMut<CurrentFile>,
+    mut is_same_as_id_counter: ResMut<IsSameAsIdCounter>,
 ) {
-    for event in load_file_event_reader.read() {
-        #[cfg(target_arch = "wasm32")]
-        {
-            *current_file = CurrentFile(event.file_name.clone());
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            *current_file = CurrentFile(event.path.to_str().unwrap().to_string());
-        }
+    for event in file_event_reader.read() {
+        *current_file = CurrentFile(Some(event.file_path.clone()));
 
         // clear the scene first
         for entity in &existing_elements_query {
             commands.entity(entity).despawn_recursive();
         }
 
-        let world_model = load_from_bytes(event.contents.as_slice());
+        let world_model = load_from_bytes(event.data.as_slice());
 
         let mut ctx = Context::new();
 
@@ -91,6 +77,8 @@ pub fn load_world(
                     .insert(interaction.source.clone(), interaction.substance.ty);
             }
         }
+
+        spawn_is_same_as_id_counter(&world_model, &mut is_same_as_id_counter);
 
         ctx.hidden_entities = world_model.hidden_entities.clone();
 
@@ -359,6 +347,12 @@ fn spawn_external_entities<S: HasSourcesAndSinks + HasInfo>(
 
         ctx.id_to_entity
             .insert(ext_entity.info.id.clone(), external_entity);
+
+        if let Some(is_same_as_id) = ext_entity.is_same_as_id {
+            commands
+                .entity(external_entity)
+                .insert(IsSameAsId(is_same_as_id));
+        }
 
         if ctx.hidden_entities.contains(&ext_entity.info.id) {
             commands.entity(external_entity).insert(Hidden);

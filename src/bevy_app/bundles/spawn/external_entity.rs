@@ -8,8 +8,11 @@ use crate::bevy_app::plugins::label::{add_name_label, Alignment, CopyPositionArg
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::plugins::mouse_interaction::PickSelection;
-use crate::bevy_app::resources::{FixedSystemElementGeometriesByNestingLevel, StrokeTessellator};
+use crate::bevy_app::resources::{
+    FixedSystemElementGeometriesByNestingLevel, IsSameAsIdCounter, StrokeTessellator,
+};
 use crate::bevy_app::utils::ui_transform_from_button;
+use crate::data_model::WorldModel;
 use crate::plugins::label::{
     add_marker_with_text, AutoContrastTextColor, CopyPositions, HorizontalAttachmentAnchor,
     MarkerLabel, VerticalAttachmentAnchor,
@@ -224,4 +227,35 @@ pub fn update_is_same_as_id_label(
             text.0 = (**is_same_as_id).to_string();
         }
     }
+}
+
+pub fn spawn_is_same_as_id_counter(
+    world_model: &WorldModel,
+    is_same_as_id_counter: &mut ResMut<IsSameAsIdCounter>,
+) {
+    let mut highest_id = 0;
+    for system in world_model.systems.iter() {
+        for ext in system.sources.iter().chain(system.sinks.iter()) {
+            if let Some(ext) = ext.is_same_as_id {
+                if ext > highest_id {
+                    highest_id = ext;
+                }
+            }
+        }
+    }
+
+    for ext in world_model
+        .environment
+        .sources
+        .iter()
+        .chain(world_model.environment.sinks.iter())
+    {
+        if let Some(ext) = ext.is_same_as_id {
+            if ext > highest_id {
+                highest_id = ext;
+            }
+        }
+    }
+
+    ***(is_same_as_id_counter) = highest_id;
 }

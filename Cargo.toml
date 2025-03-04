@@ -16,6 +16,7 @@ bevy_picking = { version = "0.15", features = ["bevy_mesh_picking_backend"] }
 bevy_prototype_lyon = "0.13.0"
 console_error_panic_hook = "0.1.7"
 enum-iterator = "2.1.0"
+gloo-file = "0.3"
 js-sys = "0.3"
 leptos = { version = "0.7", features = ["csr"] }
 leptos-bevy-canvas = { git = "https://github.com/Synphonyte/leptos-bevy-canvas.git" }

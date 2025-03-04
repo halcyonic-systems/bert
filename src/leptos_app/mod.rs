@@ -2,6 +2,7 @@ mod components;
 mod details;
 
 mod tree;
+mod use_file_dialog;
 
 use crate::bevy_app::init_bevy_app;
 use crate::bevy_app::{
@@ -14,6 +15,7 @@ use bevy::prelude::{Name, With};
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::{event_l2b, single_query_signal, BevyCanvas};
 use leptos_meta::*;
+use use_file_dialog::*;
 
 pub type InterfaceQuery = (Name, ElementDescription, Interface);
 pub type InteractionQuery = (Name, ElementDescription, Flow);
@@ -33,6 +35,8 @@ use leptos_bevy_canvas::prelude::*;
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+
+    let load_file_event_receiver = generate_file_loader();
 
     let (selected_details, selected_details_query) =
         single_query_signal::<(SystemElement,), With<SelectedHighlightHelperAdded>>();
@@ -69,7 +73,7 @@ pub fn App() -> impl IntoView {
                 let trigger_event_sender = trigger_event_sender.clone();
                 view! {
                     <button
-                        class="px-4 py-2 rounded-lg bg-white absolute top-4 left-4"
+                        class="absolute top-4 left-4 py-2 px-4 bg-white rounded-lg"
                         on:click=move |_| {
                             trigger_event_sender.send(TriggerEvent::ShowTree).ok();
                             set_tree_visible.set(true);
@@ -81,7 +85,7 @@ pub fn App() -> impl IntoView {
             }
         >
             <button
-                class="px-4 py-2 rounded-lg bg-white absolute top-4 left-4"
+                class="absolute top-4 left-4 py-2 px-4 bg-white rounded-lg"
                 on:click=move |_| {
                     set_tree_visible.set(false);
                 }
@@ -101,6 +105,7 @@ pub fn App() -> impl IntoView {
                     sub_system_details_query,
                     is_same_as_id_query,
                     detach_event_receiver,
+                    load_file_event_receiver,
                     tree_event_sender,
                     trigger_event_receiver,
                 )

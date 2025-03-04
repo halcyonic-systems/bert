@@ -227,9 +227,8 @@ pub struct ExternalEntity {
     pub transform: Option<Transform2d>,
     pub equivalence: String,
     pub model: String,
-    /// Whether this interface is hidden from the user.
     #[serde(default)]
-    pub hidden: bool,
+    pub is_same_as_id: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone)]

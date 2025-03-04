@@ -1,3 +1,6 @@
+//! Implementation of Walker-Buchheim algorithm. Paper: http://dx.doi.org/10.1007/3-540-36151-0_32
+//! Port of a python implementation: https://github.com/is55555/layoutTree/blob/master/layoutTree.py
+
 use crate::data_model::Complexity;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};

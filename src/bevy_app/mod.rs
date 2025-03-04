@@ -9,7 +9,6 @@ mod states;
 mod systems;
 mod utils;
 
-use crate::bevy_app::data_model::load::load_file;
 use crate::{
     ExternalEntityFilter, ExternalEntityQuery, InteractionQuery, InterfaceQuery, IsSameAsIdQuery,
     SelectionFilter, SubSystemQuery, SystemQuery,
@@ -90,6 +89,7 @@ pub fn init_bevy_app(
     >,
     is_same_as_id_query: BevyQueryDuplex<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>,
     detach_event_receiver: BevyEventReceiver<DetachMarkerLabelEvent>,
+    load_file_event_sender: BevyEventReceiver<LoadFileEvent>,
     tree_event_sender: BevyEventSender<TreeEvent>,
     trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
 ) -> App {
@@ -130,6 +130,7 @@ pub fn init_bevy_app(
     .add_event::<SubsystemDrag>()
     .add_event::<RemoveEvent>()
     .add_event::<DetachMarkerLabelEvent>()
+    .add_event::<LoadFileEvent>()
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -139,6 +140,7 @@ pub fn init_bevy_app(
     .sync_leptos_signal_with_query(sub_system_details_query)
     .sync_leptos_signal_with_query(is_same_as_id_query)
     .import_event_from_leptos(detach_event_receiver)
+    .import_event_from_leptos(load_file_event_sender)
     .import_event_from_leptos(trigger_event_receiver)
     .export_event_to_leptos(tree_event_sender)
     .add_systems(Startup, (window_setup, setup));
@@ -181,7 +183,7 @@ pub fn init_bevy_app(
             )
                 .in_set(CameraControlSet),
             (
-                load_file.run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyL))),
+                // load_file.run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyL))),
                 load_world,
                 serialize_world
                     .pipe(save_world)
@@ -252,7 +254,7 @@ pub fn init_bevy_app(
                 auto_spawn_system_label,
                 auto_spawn_interface_label,
                 auto_spawn_flow_label,
-                auto_spawn_source_sink_equivalence,
+                auto_spawn_source_sink_equivalence.after(auto_spawn_external_entity_label),
             )
                 .in_set(AutoSpawnLabelSet),
             (

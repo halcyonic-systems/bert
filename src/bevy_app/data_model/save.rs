@@ -2,13 +2,14 @@ use crate::bevy_app::components::*;
 use crate::bevy_app::data_model::Interaction;
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::resources::CurrentFile;
-use crate::JsonWorldData;
 use bevy::core::Name;
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use bevy::utils::HashMap;
-use bevy_file_dialog::FileDialogExt;
+use js_sys::{Array, Uint8Array};
 use tauri_sys::core::invoke;
+use wasm_bindgen::JsCast;
+use web_sys::{Blob, HtmlAnchorElement, Url};
 
 /// Context for bookkeeping while we traverse the ECS and build the data model that is serialized.
 struct Context {
@@ -62,8 +63,7 @@ impl Context {
 
 pub fn save_world(
     In(world_model): In<WorldModel>,
-    mut commands: Commands,
-    mut current_file: ResMut<CurrentFile>
+    current_file: Res<CurrentFile>
 ) {
     #[derive(serde::Serialize)]
     struct Args {
@@ -83,7 +83,16 @@ pub fn save_world(
         let task = AsyncComputeTaskPool::get().spawn_local({
             let model = world_model.clone();
             async move {
-                if file_name.is_empty(){
+                if let Some(file_name) = file_name {
+                    invoke::<()>(
+                        "save_to_file",
+                        &Args {
+                            data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
+                            path: file_name.clone(),
+                        },
+                    )
+                        .await;
+                } else {
                     invoke::<()>(
                         "save_with_dialog",
                         &Args {
@@ -92,32 +101,37 @@ pub fn save_world(
                         },
                     )
                         .await;
-                } else {
-                    invoke::<()>(
-                        "save_with_dialog", // save_to_file
-                        &Args {
-                            data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
-                            path: file_name.clone(),
-                        },
-                    )
-                        .await;
+
                 }
 
             }
         });
 
         task.detach();
+
     } else {
-        commands
-            .dialog()
-            .add_filter("valid_formats", &["json"])
-            .set_file_name(&file_name)
-            .save_file::<JsonWorldData>(
-                serde_json::to_string(&world_model)
-                    .expect("This shouldn't fail")
-                    .as_bytes()
-                    .to_vec(),
-            );
+
+        let array = Array::new();
+        let uint8_array = Uint8Array::from(serde_json::to_string(&world_model)
+                    .expect("This shouldn't fail").as_bytes());
+        array.push(&uint8_array);
+
+        let blob = Blob::new_with_str_sequence(&array).unwrap();
+        let url = Url::create_object_url_with_blob(&blob).unwrap();
+
+        // Create an anchor element
+        let document = window.document().unwrap();
+        let a = document.create_element("a").unwrap().dyn_into::<HtmlAnchorElement>().unwrap();
+        a.set_href(&url);
+        a.set_download(&file_name.unwrap_or("untitled.json".to_string()));
+
+        // Append to the document, trigger click, and remove
+        document.body().unwrap().append_child(&a).unwrap();
+        a.click();
+        document.body().unwrap().remove_child(&a).unwrap();
+
+        // Revoke the object URL
+        Url::revoke_object_url(&url).unwrap();
     }
 }
 
@@ -143,7 +157,7 @@ pub fn serialize_world(
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
+    external_entity_query: Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
     hidden_query: Query<Entity, With<Hidden>>,
 ) -> WorldModel {
     let (system_entity, system_component, environment) = main_system_info_query
@@ -270,7 +284,7 @@ fn build_subsystems(
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
+    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
     mut entity_to_system: &mut HashMap<Entity, System>,
 ) {
     let mut not_interface_subsystems = vec![];
@@ -433,7 +447,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
+    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
 ) {
     // we start from the interactions
     for (
@@ -658,11 +672,11 @@ fn build_external_entity<P: HasInfo>(
     parent: &P,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
-    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&Hidden>)>,
+    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
 ) -> crate::bevy_app::data_model::ExternalEntity {
     let id = ctx.next_id(entity, id_type, &parent.info().id.indices);
 
-    let (external_entity_component, hidden) = external_entity_query.get(entity).expect("Should exist");
+    let (external_entity_component, is_same_as_id) = external_entity_query.get(entity).expect("Should exist");
 
     let parent_level = parent.info().level;
 
@@ -681,7 +695,7 @@ fn build_external_entity<P: HasInfo>(
         transform: transform2d_from_entity(entity, &transform_query),
         equivalence: external_entity_component.equivalence.clone(),
         model: external_entity_component.model.clone(),
-        hidden: hidden.is_some()
+        is_same_as_id: is_same_as_id.map(|id| **id),
     }
 }
 

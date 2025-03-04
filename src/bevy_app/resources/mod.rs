@@ -48,4 +48,4 @@ impl StrokeTessellator {
 
 #[derive(Resource, Deref, DerefMut, Default, Reflect, Debug)]
 #[reflect(Resource)]
-pub struct CurrentFile(pub String);
+pub struct CurrentFile(pub Option<String>);

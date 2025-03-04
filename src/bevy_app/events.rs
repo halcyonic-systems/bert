@@ -2,6 +2,7 @@
 use crate::bevy_app::data_model::WorldModel;
 use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// Helper macro that defines and implements custom bevy events for the dragging feature.
 macro_rules! impl_drag_event {
@@ -34,6 +35,13 @@ pub struct RemoveEvent;
 /// Fires from leptos to bevy to detach a marker label from an entity.
 #[derive(Event, Debug, Clone, Copy)]
 pub struct DetachMarkerLabelEvent;
+
+/// Fires from leptos to bevy to load a file.
+#[derive(Event, Debug, Clone, Default, Serialize, Deserialize)]
+pub struct LoadFileEvent {
+    pub file_path: String,
+    pub data: Vec<u8>,
+}
 
 #[derive(Event, Clone)]
 pub struct TreeEvent {
