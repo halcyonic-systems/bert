@@ -23,8 +23,7 @@ pub fn Tree(
 
     view! {
         <Show when=move || visible.get()>
-            <h2 class="text-center text-2xl font-medium">"Tree"</h2>
-            <div node_ref=tree_ref class="h-screen">
+            <div node_ref=tree_ref class="h-screen w-screen p-4 fixed top-0 left-0 z-10 bg-[#f6f6f6]">
                 {
                     let event_receiver = event_receiver.clone();
                     move || { layout_tree(event_receiver.clone(), width.get(), height.get()) }
@@ -61,6 +60,7 @@ fn layout_tree(
             );
 
             view! {
+                <h2 class="text-center text-2xl font-medium">"Tree"</h2>
                 <svg width=width height=height>
                     {raw_svg_tree_view}
                     {svg_tree_description_view}
