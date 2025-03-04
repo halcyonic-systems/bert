@@ -1,4 +1,4 @@
-use crate::data_model::Complexity;
+use crate::{data_model::Complexity, SubstanceType};
 use leptos::prelude::*;
 
 pub const NODE_LINE_HEIGHT: f64 = 15.0;
@@ -99,6 +99,7 @@ pub fn SvgNode(
 
 #[component]
 pub fn SvgSinkOrSource(
+    type_: SubstanceType,
     label: String,
     x: f64,
     y: f64,
@@ -129,6 +130,8 @@ pub fn SvgSinkOrSource(
         "truncate font-medium text-start"
     };
 
+    leptos::logging::log!("Substance type: {:?}", type_);
+
     view! {
         <SvgText
             text=label
@@ -142,7 +145,7 @@ pub fn SvgSinkOrSource(
         <polyline
             points=points
             fill="none"
-            stroke="#b51b1b"
+            stroke=type_.to_rgb_string()
             stroke-width="2"
             stroke-linejoin="round"
         />

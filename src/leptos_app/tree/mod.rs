@@ -229,9 +229,22 @@ fn draw_node_tree_description(
 
         let label = get_name_or_id(&source.info.name, &source.info.id);
 
+        let substance_type = world_model
+            .interactions
+            .iter()
+            .find_map(|interaction| {
+                if interaction.source == source.info.id {
+                    Some(interaction.substance.ty)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_default();
+
         views.push(
             view! {
                 <SvgSinkOrSource
+                    type_=substance_type
                     label
                     text_left=true
                     font_size="0.9rem"
@@ -258,10 +271,23 @@ fn draw_node_tree_description(
 
         let label = get_name_or_id(&sink.info.name, &sink.info.id);
 
+        let substance_type = world_model
+            .interactions
+            .iter()
+            .find_map(|interaction| {
+                if interaction.sink == sink.info.id {
+                    Some(interaction.substance.ty)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_default();
+
         views.push(
             view! {
                 <SvgSinkOrSource
                     label
+                    type_=substance_type
                     font_size="0.9rem"
                     x=x
                     y=y

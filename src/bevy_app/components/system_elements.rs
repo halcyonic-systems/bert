@@ -262,6 +262,14 @@ impl SubstanceType {
             SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75),
         }
     }
+
+    pub fn to_rgb_string(&self) -> String {
+        let srgb = self.flow_color().to_srgba();
+        let r = srgb.red;
+        let g = srgb.green;
+        let b = srgb.blue;
+        format!("rgb({}, {}, {})", r * 255.0, g * 255.0, b * 255.0)
+    }
 }
 
 impl std::fmt::Display for SubstanceType {
