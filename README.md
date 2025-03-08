@@ -2,7 +2,19 @@
 A software tool that guides users through the rigorous analysis of complex adaptive systems
 
 # Quick Start
-Download [BERT v.0.1.0 here](https://github.com/halcyonic-systems/bert/releases/tag/v0.1.0) (macOS only, PC version coming soon)
+
+Visit [bert.systems](https://bert.systems/) to use the web application
+
+**Download BERT for**:
+
+[MacOS Apple Silicon](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_aarch64.dmg)
+
+[MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)
+
+[Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)
+
+
+
 View [our tutorial videos](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) introducing BERT's basic functionality.
 
 # Key Features
