@@ -12,33 +12,15 @@ A visual software tool that guides users through the rigorous analysis and decom
 - [MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)
 - [Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)
 
-## User Controls
+## Common Controls
 
-### Navigation
 - **Pan**: Right-click and drag
-- **Scroll**: Use mouse wheel to scroll vertically/horizontally
-- **Reset View**: Press `Ctrl+R` (both Mac and Windows)
+- **Zoom**: Press `-` (out) or `=` (in)
+- **Select**: Left-click elements, `Shift` for multi-select
+- **Delete**: Select element(s) and press `Delete` or `Backspace`
+- **Save**: Press `Ctrl+S`
 
-### Zoom
-- **Zoom Out**: Press `-` key (elements appear smaller)
-- **Zoom In**: Press `=` key (elements appear larger)
-
-### Selection
-- **Select Element**: Left-click on an element
-- **Multi-select**: Hold `Shift` while clicking elements
-- **Deselect All**: Press `Escape`
-
-### Element Management
-- **Move Elements**: Click and drag selected elements
-- **Delete Elements**: Select element(s) and press `Delete` or `Backspace`
-- **Hide Elements**: Select element(s) and press `H`
-- **Unhide Elements**: Press `U` to unhide previously hidden elements
-
-### File Operations
-- **Save**: Press `Ctrl+S` (both Mac and Windows)
-
-### Advanced
-- **Apply Sink/Source Equivalence**: Press `E`
+For a complete list of controls, see the [Controls Guide](docs/Controls.md).
 
 ## Learning Resources
 - [Tutorial videos](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) - Visual walkthroughs of basic functionality
