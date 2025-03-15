@@ -18,6 +18,7 @@ A visual software tool that guides users through the rigorous analysis and decom
 - **Zoom**: Press `-` (out) or `=` (in)
 - **Select**: Left-click elements, `Shift` for multi-select
 - **Delete**: Select element(s) and press `Delete` or `Backspace`
+- **Open File**: Press `Ctrl+L`
 - **Save**: Press `Ctrl+S`
 
 For a complete list of controls, see the [Controls Guide](docs/Controls.md).
@@ -71,3 +72,5 @@ cargo tauri dev
 - `src/leptos_app`: Leptos web UI components
 
 ## Contributing
+
+Interested in contributing to BERT? Please contact the project maintainers for information on how to get involved.
