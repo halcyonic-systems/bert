@@ -38,6 +38,7 @@ This document provides a comprehensive reference for all keyboard and mouse cont
 
 | Action | Control |
 |--------|---------|
+| **Open File** | Press `Ctrl+L` (both Mac and Windows) |
 | **Save** | Press `Ctrl+S` (both Mac and Windows) |
 
 ## Advanced Controls
@@ -91,9 +92,27 @@ This document provides a comprehensive reference for all keyboard and mouse cont
 - Resize subsystems by selecting and using the resize handles
 - Automatically position interfaces around subsystem boundaries
 
+## File Management
+
+### Starting a New Project
+- BERT automatically starts with a blank system canvas
+- A main system circle is provided as your starting point
+- Begin adding elements directly to this canvas
+
+### Opening Existing Projects
+1. Press `Ctrl+L` to open the file browser
+2. Navigate to and select your BERT JSON file
+3. Click "Open" to load the file into the editor
+
+### Saving Your Work
+- Press `Ctrl+S` to save your current work
+- When prompted, choose a location and filename
+- BERT will save your model in its native JSON format
+
 ## Tips for Efficient Usage
 
 - Use multi-select (Shift+click) to manipulate multiple elements simultaneously
 - Hide elements (H key) to reduce visual complexity when working on specific parts of a system
 - Use Ctrl+S frequently to save your work
 - For complex systems, build hierarchically from top-down, decomposing subsystems as needed
+- Create a backup of important models by using "Save As" with a new filename
