@@ -52,7 +52,7 @@ Captures and stores relevant aspects and facts of a system from the analysis pro
 - [CypherGUI](https://github.com/stefanak-michal/cyphergui)
 - [Nodes 2024](https://www.youtube.com/playlist?list=PL9Hl4pk2FsvU6t-fXNeQfkpnmgMm4w5h3)
 - [Graphista: Dynamic Graph-Based LLM-Powered Memory System](https://github.com/pippinlovesyou/graphista)
-
+- [LLM Knowledge Graph Builder](https://neo4j.com/blog/developer/llm-knowledge-graph-builder-release/)
 Set Theory, Domain Semantics and XML
 
 - [**Set Theory: the Method To Database Madness**](https://medium.com/basecs/set-theory-the-method-to-database-madness-5ec4b4f05d79)
