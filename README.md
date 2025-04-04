@@ -24,6 +24,7 @@ A visual software tool that guides users through the rigorous analysis and decom
 For a complete list of controls, see the [Controls Guide](docs/Controls.md).
 
 ## Learning Resources
+- [Written Tutorials](https://bert.gitbook.io/bert-documentation) (Under Construction)
 - [Tutorial videos](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) - Visual walkthroughs of basic functionality
 
 ## Key Features
