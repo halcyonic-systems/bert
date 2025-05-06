@@ -34,11 +34,13 @@ BERT enables analysts to develop detailed understanding of complex systems while
 - Visit [bert.systems](https://bert.systems/) to use BERT directly in your browser
 
 ### Desktop Applications
+BERT is also available as a desktop application for macOS and Windows.
+
 - [MacOS Apple Silicon](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_aarch64.dmg)
 - [MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)
 - [Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)
 
-Once you've launched BERT, check out our [interactive tutorial](https://bert.gitbook.io/bert-documentation) or see the [controls guide](https://github.com/halcyonic-systems/bert/blob/main/docs/getting-started/Controls.md) for navigation tips.
+Once you've launched BERT, check out our [tutorials](https://bert.gitbook.io/bert-documentation) or see the [controls guide](https://github.com/halcyonic-systems/bert/blob/main/docs/getting-started/Controls.md) for navigation tips.
 
 ## 🔧 Key Features
 
@@ -52,19 +54,16 @@ Once you've launched BERT, check out our [interactive tutorial](https://bert.git
 - [Written Tutorials](https://bert.gitbook.io/bert-documentation) - Comprehensive user guides
 - [Video Tutorials](https://github.com/halcyonic-systems/bert/blob/main/docs/getting-started/Tutorials.md) - Visual walkthroughs
 - [Architecture Overview](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture.md) - Understand how BERT works
-- [Example: Bitcoin Network](https://github.com/halcyonic-systems/bert/blob/main/btc.json) - See BERT in action
+- Examples - Coming Soon
 
-### For Systems Scientists
+### For Systems Researchers
 
-If you're a systems scientist interested in using or extending BERT:
+If you're a systems researcher interested in exploring how BERT implements key systems theoretical concepts:
 
 1. Start with [Getting Started for Systems Scientists](docs/getting-started/for-systems-scientists.md)
-2. Reference [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture.md) for a high-level conceptual overview
+2. Reference [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/architecture.md) for a high-level conceptual overview
 3. Use [Code Navigation Guide](docs/getting-started/code-navigation-guide.md) when exploring the code
 
-## 💾 Installation
-
-BERT is available as a desktop application for macOS and Windows, or you can use the web version. See the [Getting Started](#getting-started) section for download links.
 
 ## 👨‍💻 Development
 
@@ -88,7 +87,7 @@ cargo tauri dev
 - `src/bevy_app`: Bevy application and components
 - `src/leptos_app`: Leptos web UI components
 
-For more details, see [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/architecture.md) and the [documentation](https://bert.gitbook.io/bert-documentation).
+For more details, see [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/architecture.md).
 
 ## 🤝 Contributing
 
