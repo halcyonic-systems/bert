@@ -16,10 +16,15 @@
 - [📑 Table of Contents](#-table-of-contents)
 - [📖 Background](#-background)
 - [🚀 Getting Started](#-getting-started)
+  - [Web Version](#web-version)
+  - [Desktop Applications](#desktop-applications)
 - [🔧 Key Features](#-key-features)
 - [📚 Documentation](#-documentation)
-- [💾 Installation](#-installation)
+  - [For Systems Researchers](#for-systems-researchers)
 - [👨‍💻 Development](#-development)
+  - [Prerequisites](#prerequisites)
+  - [Run the Project](#run-the-project)
+  - [Project Structure](#project-structure)
 - [🔬 Research](#-research)
 - [🤝 Contributing](#-contributing)
 
@@ -27,7 +32,7 @@
 
 BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/employee/gmobus) [Systems Science: Theory, Analysis, Modeling and Design](https://link.springer.com/book/10.1007/978-3-030-93482-8). It was created to address key limitations in standard systems modeling frameworks like [Stella](https://www.iseesystems.com/store/products/stella-online.aspx) and [UML](https://www.uml.org/)/[SysML](https://sysml.org/).
 
-BERT enables analysts to develop detailed understanding of complex systems while preserving crucial details and meanings often lost through abstract modeling approaches. The tool implements a rigorous methodology called Deep Systems Analysis (DSA) and represents a first step toward developing a formal systems language, built specifically for modern systems scientists.
+BERT helps analysts to develop detailed understanding of complex systems while preserving crucial details and meanings often lost through abstract modeling approaches. The tool implements a rigorous methodology called Deep Systems Analysis (DSA) and represents a first step toward developing a formal systems language, built specifically for modern systems scientists.
 
 ## 🚀 Getting Started
 
