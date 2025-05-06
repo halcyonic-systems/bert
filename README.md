@@ -1,8 +1,35 @@
-# BERT (Bounded Entity Reasoning Toolkit)
+<h1 align="center">BERT (Bounded Entity Reasoning Toolkit)</h1>
 
-A visual software tool that guides users through the rigorous analysis and decomposition of complex adaptive systems.
+<p align="center">A visual software tool that guides users through the rigorous analysis and decomposition of complex adaptive systems.</p>
 
-## Quick Start
+<p align="center">
+  <a href="https://bert.systems/">Website</a> •
+  <a href="https://bert.gitbook.io/bert-documentation">Documentation</a> •
+  <a href="https://github.com/halcyonic-systems/bert/releases">Downloads</a> •
+  <a href="#getting-started">Getting Started</a>
+</p>
+
+![BERT Demo](https://bert.systems/demo.gif)
+
+## 📑 Table of Contents
+
+- [📑 Table of Contents](#-table-of-contents)
+- [📖 Background](#-background)
+- [🚀 Getting Started](#-getting-started)
+- [🔧 Key Features](#-key-features)
+- [📚 Documentation](#-documentation)
+- [💾 Installation](#-installation)
+- [👨‍💻 Development](#-development)
+- [🤝 Contributing](#-contributing)
+- [©️ License](#️-license)
+
+## 📖 Background
+
+BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/employee/gmobus) [Systems Science: Theory, Analysis, Modeling and Design](https://link.springer.com/book/10.1007/978-3-030-93482-8). It was created to address key limitations in standard systems modeling frameworks like [Stella](https://www.iseesystems.com/store/products/stella-online.aspx) and [UML](https://www.uml.org/)/[SysML](https://sysml.org/).
+
+BERT enables analysts to develop detailed understanding of complex systems while preserving crucial details and meanings often lost through abstract modeling approaches. The tool implements a rigorous methodology called Deep Systems Analysis (DSA) and represents a first step toward developing a formal systems language, built specifically for modern systems scientists.
+
+## 🚀 Getting Started
 
 ### Web Version
 - Visit [bert.systems](https://bert.systems/) to use BERT directly in your browser
@@ -12,45 +39,35 @@ A visual software tool that guides users through the rigorous analysis and decom
 - [MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)
 - [Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)
 
-## Common Controls
+Once you've launched BERT, check out our [interactive tutorial](https://bert.gitbook.io/bert-documentation/getting-started/basic-controls) or see the [Controls Guide](docs/Controls.md) for navigation tips.
 
-- **Pan**: Right-click and drag
-- **Zoom**: Press `-` (out) or `=` (in)
-- **Select**: Left-click elements, `Shift` for multi-select
-- **Delete**: Select element(s) and press `Delete` or `Backspace`
-- **Open File**: Press `Ctrl+L`
-- **Save**: Press `Ctrl+S`
-
-For a complete list of controls, see the [Controls Guide](docs/Controls.md).
-
-## Learning Resources
-- [Written Tutorials](https://bert.gitbook.io/bert-documentation) (Under Construction)
-- [Tutorial videos](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) - Visual walkthroughs of basic functionality
-
-## Key Features
+## 🔧 Key Features
 
 - Guides systematic decomposition of complex systems using Deep Systems Analysis methodology
 - Visual system mapping that preserves critical flows, interfaces, and relationships
 - Structured knowledge capture in a standardized, computable format
 - Hierarchical modeling with unlimited decomposition levels
 
-## Example Analyses
+## 📚 Documentation
 
-- [The Bitcoin Network](https://github.com/halcyonic-systems/bert/blob/main/btc.json)
+- [Written Tutorials](https://bert.gitbook.io/bert-documentation) - Comprehensive user guides
+- [Video Tutorials](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) - Visual walkthroughs
+- [Architecture Overview](ARCHITECTURE.md) - Understand how BERT works
+- [Example: Bitcoin Network](https://github.com/halcyonic-systems/bert/blob/main/btc.json) - See BERT in action
 
-## Why BERT?
+### For Systems Scientists
 
-BERT enables analysts to develop detailed understanding of complex systems while preserving crucial details and meanings often lost through abstract modeling approaches. The tool implements a rigorous methodology called Deep Systems Analysis (DSA).
+If you're a systems scientist interested in using or extending BERT:
 
-## Technical Background
+1. Start with [Getting Started for Systems Scientists](docs/getting-started/for-systems-scientists.md)
+2. Reference [ARCHITECTURE.md](ARCHITECTURE.md) for a high-level conceptual overview
+3. Use [Code Navigation Guide](docs/getting-started/code-navigation-guide.md) when exploring the code
 
-BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/employee/gmobus) [Systems Science: Theory, Analysis, Modeling and Design](https://link.springer.com/book/10.1007/978-3-030-93482-8). After an interdisciplinary career spanning naval engineering, robotics, artificial intelligence, computer science, energy systems modeling, and systems science, Mobus identified key limitations in standard systems modeling frameworks like [Stella](https://www.iseesystems.com/store/products/stella-online.aspx) and [UML](https://www.uml.org/)/[SysML](https://sysml.org/). To address these gaps, he proposed the creation of a new formal "System Language" (SL) grounded in systems science principles.
+## 💾 Installation
 
-BERT represents a first step toward developing this formal systems language, built specifically for modern systems scientists.
+BERT is available as a desktop application for macOS and Windows, or you can use the web version. See the [Getting Started](#getting-started) section for download links.
 
-Read more about the [various components of SL](https://github.com/halcyonic-systems/bert/blob/main/research/system%20language/system_language.md).
-
-## Development
+## 👨‍💻 Development
 
 BERT is a Rust-based project that uses:
 - [Leptos](https://leptos.dev/) for web UIs
@@ -72,6 +89,15 @@ cargo tauri dev
 - `src/bevy_app`: Bevy application and components
 - `src/leptos_app`: Leptos web UI components
 
-## Contributing
+For more details, see [ARCHITECTURE.md](ARCHITECTURE.md) and the [documentation](https://bert.gitbook.io/bert-documentation).
 
-Interested in contributing to BERT? Please contact the project maintainers for information on how to get involved.
+## 🤝 Contributing
+
+Interested in contributing to BERT? We welcome contributions of all kinds:
+
+- Review and update documentation
+- Test the application and report issues
+- Implement new features or fix bugs
+- Share your experience using BERT
+
+For more information, see [Contributing Guidelines](docs/contributing/guidelines.md).
