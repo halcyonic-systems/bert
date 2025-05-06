@@ -21,7 +21,6 @@
 - [💾 Installation](#-installation)
 - [👨‍💻 Development](#-development)
 - [🤝 Contributing](#-contributing)
-- [©️ License](#️-license)
 
 ## 📖 Background
 
@@ -39,7 +38,7 @@ BERT enables analysts to develop detailed understanding of complex systems while
 - [MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)
 - [Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)
 
-Once you've launched BERT, check out our [interactive tutorial](https://bert.gitbook.io/bert-documentation/getting-started/basic-controls) or see the [Controls Guide](docs/Controls.md) for navigation tips.
+Once you've launched BERT, check out our [interactive tutorial](https://bert.gitbook.io/bert-documentation/getting-started/basic-controls) or see the [controls guide](https://github.com/halcyonic-systems/bert/blob/main/docs/getting-started/Controls.md) for navigation tips.
 
 ## 🔧 Key Features
 
@@ -51,7 +50,7 @@ Once you've launched BERT, check out our [interactive tutorial](https://bert.git
 ## 📚 Documentation
 
 - [Written Tutorials](https://bert.gitbook.io/bert-documentation) - Comprehensive user guides
-- [Video Tutorials](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) - Visual walkthroughs
+- [Video Tutorials](https://github.com/halcyonic-systems/bert/blob/main/docs/getting-started/Tutorials.md) - Visual walkthroughs
 - [Architecture Overview](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture.md) - Understand how BERT works
 - [Example: Bitcoin Network](https://github.com/halcyonic-systems/bert/blob/main/btc.json) - See BERT in action
 
