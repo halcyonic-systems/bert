@@ -20,6 +20,7 @@
 - [📚 Documentation](#-documentation)
 - [💾 Installation](#-installation)
 - [👨‍💻 Development](#-development)
+- [🔬 Research](#-research)
 - [🤝 Contributing](#-contributing)
 
 ## 📖 Background
@@ -88,6 +89,24 @@ cargo tauri dev
 - `src/leptos_app`: Leptos web UI components
 
 For more details, see [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/architecture.md).
+
+## 🔬 Research
+
+BERT implements theoretical concepts from systems science and Deep Systems Analysis (DSA).
+If you're interested in:
+
+- Systems Ontology and Foundations
+- System Language Research
+- Process Primitives
+- Applied Research (Cryptoeconomics, etc.)
+- Simulation Models
+
+Please visit the Halcyonic Systems **[Research](https://github.com/halcyonic-systems/research)**
+repository which contains all theoretical foundations and research materials supporting
+BERT.
+
+The Research repository is the canonical source for theoretical content, while this
+repository focuses on the practical implementation and application of these concepts.
 
 ## 🤝 Contributing
 
