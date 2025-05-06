@@ -52,7 +52,7 @@ Once you've launched BERT, check out our [interactive tutorial](https://bert.git
 
 - [Written Tutorials](https://bert.gitbook.io/bert-documentation) - Comprehensive user guides
 - [Video Tutorials](https://github.com/halcyonic-systems/bert/blob/main/docs/Tutorials.md) - Visual walkthroughs
-- [Architecture Overview](ARCHITECTURE.md) - Understand how BERT works
+- [Architecture Overview](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture.md) - Understand how BERT works
 - [Example: Bitcoin Network](https://github.com/halcyonic-systems/bert/blob/main/btc.json) - See BERT in action
 
 ### For Systems Scientists
@@ -60,7 +60,7 @@ Once you've launched BERT, check out our [interactive tutorial](https://bert.git
 If you're a systems scientist interested in using or extending BERT:
 
 1. Start with [Getting Started for Systems Scientists](docs/getting-started/for-systems-scientists.md)
-2. Reference [ARCHITECTURE.md](ARCHITECTURE.md) for a high-level conceptual overview
+2. Reference [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture.md) for a high-level conceptual overview
 3. Use [Code Navigation Guide](docs/getting-started/code-navigation-guide.md) when exploring the code
 
 ## 💾 Installation
@@ -89,7 +89,7 @@ cargo tauri dev
 - `src/bevy_app`: Bevy application and components
 - `src/leptos_app`: Leptos web UI components
 
-For more details, see [ARCHITECTURE.md](ARCHITECTURE.md) and the [documentation](https://bert.gitbook.io/bert-documentation).
+For more details, see [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture.md) and the [documentation](https://bert.gitbook.io/bert-documentation).
 
 ## 🤝 Contributing
 
