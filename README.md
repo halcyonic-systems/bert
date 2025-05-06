@@ -88,7 +88,7 @@ cargo tauri dev
 - `src/bevy_app`: Bevy application and components
 - `src/leptos_app`: Leptos web UI components
 
-For more details, see [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture.md) and the [documentation](https://bert.gitbook.io/bert-documentation).
+For more details, see [architecture.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/architecture.md) and the [documentation](https://bert.gitbook.io/bert-documentation).
 
 ## 🤝 Contributing
 
