@@ -47,7 +47,7 @@ Welcome to BERT development! This guide helps systems scientists, engineers, and
 
 ### First Contribution
 
-1. **Read Architecture Documentation**: Start with [`docs/architecture/overview.md`](../architecture/overview.md)
+1. **Read Architecture Documentation**: Start with [`docs/architecture/comprehensive-architecture-overview.md`](../architecture/comprehensive-architecture-overview.md)
 2. **Review Coding Standards**: Read [`rust-documentation-guidelines.md`](rust-documentation-guidelines.md)
 3. **Check Current Status**: Review [`documentation-implementation-analysis.md`](documentation-implementation-analysis.md)
 4. **Choose Your First Issue**: Look for "good first issue" labels on GitHub
@@ -637,7 +637,7 @@ cargo tauri build                   # Full application build test
 - **Architecture Documentation**: [`docs/architecture/`](../architecture/)
 - **Development Standards**: [`rust-documentation-guidelines.md`](rust-documentation-guidelines.md)
 - **Current Status**: [`documentation-implementation-analysis.md`](documentation-implementation-analysis.md)
-- **System Language Specification**: [`docs/architecture/system-language-implementation.md`](../architecture/system-language-implementation.md)
+- **Comprehensive Architecture**: [`docs/architecture/comprehensive-architecture-overview.md`](../architecture/comprehensive-architecture-overview.md)
 
 ### Communication Channels
 

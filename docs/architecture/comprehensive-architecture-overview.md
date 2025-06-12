@@ -369,15 +369,14 @@ src/events.rs               # Cross-system event definitions
 ### Core Architecture
 - [Interaction System Architecture](interaction-system-architecture.md) - Complete interaction lifecycle
 - [Visual System Architecture](visual-system-architecture.md) - Rendering and spatial organization
-- [System Language Implementation](system-language-implementation.md) - Theoretical foundation
 
 ### Development
 - [Contributing Guidelines](../contributing/contributing.md) - Development standards and workflow
 - [Documentation Implementation Analysis](../contributing/documentation-implementation-analysis.md) - Current status
 
-### Legacy Documentation
-- [Original Overview](overview.md) - Initial architectural summary
-- [Original Architecture](architecture.md) - Early architectural documentation
+### Original Engineer's Documentation
+- [Architecture.pdf](Architecture.pdf) - Original interaction system specifications
+- [Geometry High-Level Overview.pdf](Geometry%20High-Level%20Overview.pdf) - Original visual system specifications
 
 ---
 
