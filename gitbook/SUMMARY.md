@@ -21,7 +21,7 @@
   * [System Elements](getting-started/creating-your-first-system/system-elements.md)
   * [Advanced Features](getting-started/creating-your-first-system/advanced-features.md)
   * [Video Tutorial](getting-started/creating-your-first-system/video-tutorial.md)
-* [Reference Guide](getting-started/reference-guide.md)
+* [Controls and Interface](getting-started/controls-and-interface.md)
 * [Glossary](getting-started/glossary.md)
 * [Examples](getting-started/examples/README.md)
   * [A Home](getting-started/examples/a-home.md)
