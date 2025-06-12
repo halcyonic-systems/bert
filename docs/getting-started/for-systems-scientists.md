@@ -134,6 +134,6 @@ Files to modify:
 
 Once you're comfortable with basic modifications:
 
-1. Explore the [Architecture Overview](../architecture/overview.md)
+1. Explore the [Comprehensive Architecture Overview](../architecture/comprehensive-architecture-overview.md)
 2. Look at the [Contributing Guidelines](../contributing/guidelines.md)
 3. Try [System Modeling Tutorials](../tutorials/basic-system-modeling.md)
