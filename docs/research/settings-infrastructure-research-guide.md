@@ -15,7 +15,7 @@ This document provides comprehensive research guidance for implementing a genera
 - **Current State**: BERT uses keyboard shortcuts exclusively (no menu system)
 - **Technical Reality**: Complex Bevy-Leptos integration with 15+ event channels
 - **Risk Assessment**: Full menu implementation = 78-117 hours with high breaking-change risk
-- **Recommended Approach**: Settings modal overlay (8-12 hours, low risk)
+- **Recommended Approach**: Settings modal overlay (4-7 hours with AI assistance, low risk)
 
 ## Research Objectives
 
@@ -72,7 +72,7 @@ pub fn init_bevy_app(
 
 ## Recommended Implementation Strategy
 
-### Phase 1: Settings Modal Infrastructure (8-12 hours)
+### Phase 1: Settings Modal Infrastructure (2-4 hours with AI)
 
 #### 1.1 Settings Data Structure
 ```rust
@@ -129,7 +129,7 @@ pub fn SettingsModal(
 - **Persistence**: Extend existing file operations
 - **Application**: Bevy resource updates
 
-### Phase 2: Theme System Integration (4-6 hours)
+### Phase 2: Theme System Integration (1-2 hours with AI)
 
 #### 2.1 Color Constants Extension
 ```rust
@@ -169,7 +169,7 @@ fn apply_theme_settings(
 }
 ```
 
-### Phase 3: Persistence Layer (2-3 hours)
+### Phase 3: Persistence Layer (30-60 minutes with AI)
 
 #### 3.1 Settings File Operations
 ```rust
@@ -186,6 +186,76 @@ FileDialogPlugin::new()
 - **Desktop**: Tauri app data directory
 - **Pattern**: Follow existing file operation patterns
 - **Versioning**: Include schema version for future migrations
+
+## AI-Accelerated Development Timeline
+
+### Revised Timeline Rationale
+
+The original timeline estimates (14-21 hours total) were based on traditional development approaches. With modern AI tools like Cursor and Claude, these estimates can be significantly reduced due to:
+
+#### AI Advantages for This Project
+1. **Pattern Recognition**: BERT's well-structured codebase provides excellent patterns for AI to follow
+2. **Boilerplate Generation**: AI excels at generating Rust struct definitions, component templates, and serialization code
+3. **Code Extension**: Adding to existing files rather than architecting from scratch
+4. **Documentation Standards**: AI can follow BERT's established documentation patterns
+
+#### Updated Timeline Breakdown
+
+| Phase | Traditional Estimate | AI-Assisted Estimate | Speedup Factor |
+|-------|---------------------|---------------------|----------------|
+| **Settings Modal Infrastructure** | 8-12 hours | **2-4 hours** | 3-4x faster |
+| **Theme System Integration** | 4-6 hours | **1-2 hours** | 3-4x faster |
+| **Persistence Layer** | 2-3 hours | **30-60 minutes** | 3-4x faster |
+| **Total Project** | 14-21 hours | **4-7 hours** | **~3x faster overall** |
+
+#### What AI Accelerates
+- **Struct and enum definitions**: Instant generation following BERT patterns
+- **Component boilerplate**: Modal components, form layouts, styling
+- **Serialization code**: Extending existing save/load patterns
+- **CSS and styling**: Theme variables and responsive design
+- **Documentation**: Following BERT's comprehensive templates
+
+#### What Still Requires Human Time
+- **Visual design decisions**: UX refinement and aesthetic choices
+- **Integration testing**: Ensuring cross-system compatibility
+- **Cross-platform validation**: Web vs. desktop behavior
+- **Performance optimization**: Fine-tuning and edge cases
+
+#### Optimized Implementation Strategy
+
+**Hours 1-2: Core Infrastructure (AI-Heavy)**
+- AI generates complete `UserPreferences` structure
+- AI creates `SettingsModal` component following BERT patterns
+- Human: Integration testing and basic validation
+
+**Hours 3-4: Theme System (AI-Assisted)**
+- AI generates color constants and theme application systems
+- AI creates CSS theme variables and responsive design
+- Human: Visual testing and theme coordination
+
+**Hours 5-6: Polish & Integration (Human-Led)**
+- Human: Cross-platform testing and UX refinement
+- AI assists: Bug fixes and optimizations
+- Human: Edge case handling and performance validation
+
+**Hour 7: Documentation (AI-Generated, Human-Reviewed)**
+- AI generates documentation following BERT's templates
+- Human: Final review and technical accuracy verification
+
+### Success Criteria (Revised)
+
+**4-Hour MVP Target**:
+- ✅ Functional settings modal with theme switching
+- ✅ Settings persistence across app restarts
+- ✅ No breaking changes to existing functionality
+- ✅ Basic documentation
+
+**6-7 Hour Complete Implementation**:
+- ✅ Multiple theme options (Default, B&W, High Contrast)
+- ✅ Keyboard shortcuts integration (`Ctrl+,`)
+- ✅ Comprehensive documentation following BERT standards
+- ✅ Cross-platform testing and validation
+- ✅ Performance optimization and edge case handling
 
 ## Research Focus Areas
 

@@ -66,8 +66,8 @@ The architecture directly implements core systems science concepts:
 | **Flow** | `FlowComponent` with lifecycle | `components/connections.rs` |
 | **Interface** | `InterfaceComponent` with positioning | `components/connections.rs` |
 | **External Entity** | `ExternalEntityComponent` | `components/system_elements.rs` |
-| **Hierarchy** | Scene graph with infinite nesting | Visual system architecture |
-| **Boundaries** | Visual containers with permeability | Bundle spawn system |
+| **Hierarchy** | `NestingLevel` component with parent-child relationships | `components/zoom.rs` & `bundles/spawn/` |
+| **Boundaries** | `SystemBoundary` struct with porosity properties | `components/system_elements.rs` & `bundles/` |
 
 ## Technical Architecture Stack
 
