@@ -9,10 +9,11 @@ This document outlines potential features for the BERT system modeling tool, pri
    - Improve user onboarding and discoverability of existing functionality
    - Make advanced features more accessible to new users
 
-2. **Add UI toggle button for black-white theme**
+2. **Add UI toggle button for black-white theme** ✅ COMPLETED
+   - ✅ Keyboard shortcut implemented: Ctrl+Alt+B toggles between normal and white background
    - Simple button to switch between normal and B&W modes
    - Complement the existing Ctrl+Alt+B keyboard shortcut
-   - Support creation of professional diagrams for academic papers
+   - Support creation of professional diagrams for academic papers and presentations
 
 3. **Add system template library**
    - Pre-configured system patterns for common research models

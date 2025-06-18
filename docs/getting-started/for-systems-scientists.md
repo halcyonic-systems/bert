@@ -137,3 +137,24 @@ Once you're comfortable with basic modifications:
 1. Explore the [Comprehensive Architecture Overview](../architecture/comprehensive-architecture-overview.md)
 2. Look at the [Contributing Guidelines](../contributing/guidelines.md)
 3. Try [System Modeling Tutorials](../tutorials/basic-system-modeling.md)
+
+## Tips for Efficient Usage
+
+- Use multi-select (Shift+click) to manipulate multiple elements simultaneously
+- Hide elements (H key) to reduce visual complexity when working on specific parts of a system
+- Use Ctrl+S frequently to save your work
+- For complex systems, build hierarchically from top-down, decomposing subsystems as needed
+- Create a backup of important models by using "Save As" with a new filename
+
+## Creating Professional Documentation
+
+When preparing diagrams for academic papers, presentations, or formal documentation:
+
+- Use **Ctrl+Alt+B** to toggle to a clean white background for better contrast in printed materials
+- The white background theme provides a professional appearance suitable for:
+  - Academic publications and research papers
+  - Professional presentations and reports
+  - Screenshots for documentation
+  - High-contrast diagrams for accessibility
+
+Switch back to the normal beige background anytime using the same **Ctrl+Alt+B** shortcut for regular modeling work.
