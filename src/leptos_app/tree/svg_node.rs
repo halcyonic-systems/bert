@@ -143,7 +143,7 @@ pub fn SvgSinkOrSource(
         <polyline
             points=points
             fill="none"
-            stroke=type_.to_rgb_string()
+            stroke=type_.to_rgb_string_default()
             stroke-width="2"
             stroke-linejoin="round"
         />

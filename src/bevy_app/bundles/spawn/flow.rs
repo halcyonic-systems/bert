@@ -162,7 +162,7 @@ pub fn spawn_interaction_only(
 
     let aabb = create_aabb_from_flow_curve(&flow_curve);
 
-    let color = flow.substance_type.flow_color();
+    let color = flow.substance_type.flow_color_default();
 
     let flow_entity = commands
         .spawn((

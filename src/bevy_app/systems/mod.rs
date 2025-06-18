@@ -190,6 +190,10 @@ pub fn react_to_trigger_event(
             TriggerEvent::ShowTree => {
                 got_event = true;
             }
+            TriggerEvent::ToggleTheme => {
+                // Theme toggle is handled by a separate system
+                // No need to set got_event here since we don't need world serialization
+            }
         }
     }
     if got_event {

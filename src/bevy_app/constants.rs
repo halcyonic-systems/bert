@@ -98,3 +98,19 @@ pub const MODIFIER: KeyCode = KeyCode::ControlLeft;
 
 /// Transparency of hiding elements.
 pub const HIDDING_TRANSPARENCY: f32 = 0.2;
+
+/// Background color toggle for clean screenshots and documentation.
+///
+/// Simple background color switching between the original BERT beige and clean white.
+/// All other visual elements (flows, systems, etc.) remain unchanged to preserve
+/// the familiar BERT visual language.
+///
+/// Toggle using the UI button, 'T' key, or Ctrl+Alt+B (Ctrl+Option+B on Mac)
+pub mod theme {
+    use bevy::prelude::Color;
+
+    /// Original BERT background color - warm, cream-colored background
+    pub const NORMAL_BACKGROUND: Color = Color::srgb(0.98, 0.92, 0.84);
+    /// White background for clean screenshots and documentation
+    pub const WHITE_BACKGROUND: Color = Color::srgb(1.0, 1.0, 1.0);
+}
