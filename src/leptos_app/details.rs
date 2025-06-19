@@ -1,6 +1,6 @@
 use crate::bevy_app::data_model::Complexity;
 use crate::leptos_app::components::{
-    Button, Checkbox, Divider, InputGroup, SelectGroup, Slider, TextArea,
+    Button, Checkbox, Divider, FieldTooltip, InputGroup, ResearchField, ResearchFieldProvider, ResearchFieldToggle, SelectGroup, Slider, TextArea,
 };
 use crate::{
     DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
@@ -83,6 +83,22 @@ pub fn Details(
     is_same_as_id: RwSignalSynced<Option<IsSameAsIdQuery>>,
     detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
 ) -> impl IntoView {
+    // Panel width state: 0 = narrow (md), 1 = medium (lg), 2 = wide (xl)
+    let (panel_width, set_panel_width) = signal(1);
+    
+    let width_class = move || match panel_width.get() {
+        0 => "max-w-md",    // ~448px
+        1 => "max-w-lg",    // ~512px  
+        2 => "max-w-xl",    // ~576px
+        _ => "max-w-lg",
+    };
+    
+    let width_label = move || match panel_width.get() {
+        0 => "Narrow",
+        1 => "Medium", 
+        2 => "Wide",
+        _ => "Medium",
+    };
     view! {
         <div
             class="relative z-10"
@@ -96,20 +112,65 @@ pub fn Details(
                     <div class="flex fixed inset-y-0 right-0 pl-10 max-w-full pointer-events-none">
 
                         <div
-                            class="w-screen max-w-md transition duration-500 ease-in-out transform pointer-events-auto sm:duration-700"
+                            class=move || format!("w-screen {} transition-all duration-300 ease-in-out transform pointer-events-auto", width_class())
                             class:translate-x-full=move || selected.get().is_none()
                             class:translate-x-0=move || selected.get().is_some()
                         >
                             <div class="flex overflow-y-scroll flex-col py-6 h-full bg-white shadow-xl">
                                 <div class="px-4 sm:px-6">
-                                    <div class="flex justify-between items-start">
-                                        <h2
-                                            class="text-base font-semibold text-gray-900"
-                                            id="slide-over-title"
-                                        >
-                                            Element Details
-                                        </h2>
-                                        <div class="flex items-center ml-3 h-7">
+                                    <div class="flex justify-between items-start w-full">
+                                        <div class="flex items-center space-x-2">
+                                            <h2
+                                                class="text-base font-semibold text-gray-900"
+                                                id="slide-over-title"
+                                            >
+                                                Element Details
+                                            </h2>
+                                            <div class="flex items-center space-x-1 px-2 py-1 bg-blue-50 rounded-md">
+                                                <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <span class="text-xs text-blue-600 font-medium">Editable</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center space-x-2">
+                                            // Panel width controls
+                                            <div class="flex items-center space-x-1">
+                                                <span class="text-xs text-gray-500 mr-1">{width_label}</span>
+                                                <button
+                                                    type="button"
+                                                    class="p-1 text-gray-400 hover:text-gray-600 rounded"
+                                                    on:click=move |_| {
+                                                        let current = panel_width.get();
+                                                        if current > 0 {
+                                                            set_panel_width.set(current - 1);
+                                                        }
+                                                    }
+                                                    disabled=move || panel_width.get() == 0
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="p-1 text-gray-400 hover:text-gray-600 rounded"
+                                                    on:click=move |_| {
+                                                        let current = panel_width.get();
+                                                        if current < 2 {
+                                                            set_panel_width.set(current + 1);
+                                                        }
+                                                    }
+                                                    disabled=move || panel_width.get() == 2
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="flex items-center h-7">
                                             <button
                                                 type="button"
                                                 class="relative text-gray-400 bg-white rounded-md hover:text-gray-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:outline-hidden"
@@ -133,28 +194,33 @@ pub fn Details(
                                                 </svg>
                                             </button>
                                         </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="relative flex-1 px-4 mt-6 sm:px-6">
-                                    <Show when=move || interaction_details.get().is_some()>
-                                        <InteractionDetails interaction_query=interaction_details />
-                                    </Show>
-                                    <Show when=move || interface_details.get().is_some()>
-                                        <InterfaceDetails interface_query=interface_details />
-                                    </Show>
-                                    <Show when=move || external_entity_details.get().is_some()>
-                                        <ExternalEntityDetails
-                                            external_entity_query=external_entity_details
-                                            is_same_as_id_query=is_same_as_id
-                                            detach_event_sender=detach_event_sender
-                                        />
-                                    </Show>
-                                    <Show when=move || { system_details.get().is_some() }>
-                                        <SystemDetails system_query=system_details />
-                                    </Show>
-                                    <Show when=move || { sub_system_details.get().is_some() }>
-                                        <SubSystemDetails sub_system_query=sub_system_details />
-                                    </Show>
+                                    <ResearchFieldProvider>
+                                        <ResearchFieldToggle />
+                                        
+                                        <Show when=move || interaction_details.get().is_some()>
+                                            <InteractionDetails interaction_query=interaction_details />
+                                        </Show>
+                                        <Show when=move || interface_details.get().is_some()>
+                                            <InterfaceDetails interface_query=interface_details />
+                                        </Show>
+                                        <Show when=move || external_entity_details.get().is_some()>
+                                            <ExternalEntityDetails
+                                                external_entity_query=external_entity_details
+                                                is_same_as_id_query=is_same_as_id
+                                                detach_event_sender=detach_event_sender
+                                            />
+                                        </Show>
+                                        <Show when=move || { system_details.get().is_some() }>
+                                            <SystemDetails system_query=system_details />
+                                        </Show>
+                                        <Show when=move || { sub_system_details.get().is_some() }>
+                                            <SubSystemDetails sub_system_query=sub_system_details />
+                                        </Show>
+                                    </ResearchFieldProvider>
                                 </div>
                             </div>
                         </div>
@@ -364,18 +430,20 @@ pub fn InteractionDetails(
             }
         />
 
-        <InputGroup
-            id="substance-sub-type"
-            label="Substance Sub Type"
-            placeholder=""
-            value=substance_sub_type
-            on_input=move |value: String| {
-                interaction_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interaction)| interaction.substance_sub_type = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="substance-sub-type"
+                label="Substance Sub Type"
+                placeholder=""
+                value=substance_sub_type
+                on_input=move |value: String| {
+                    interaction_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, interaction)| interaction.substance_sub_type = value);
+                }
+            />
+        </ResearchField>
 
         <InputGroup
             id="substance-unit"
@@ -593,17 +661,19 @@ pub fn ExternalEntityDetails(
             }
         />
 
-        <InputGroup
-            id="equivalence"
-            label="Equivalence"
-            value=equivalence
-            on_input=move |value: String| {
-                external_entity_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, external_entity)| external_entity.equivalence = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="equivalence"
+                label="Equivalence"
+                value=equivalence
+                on_input=move |value: String| {
+                    external_entity_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, external_entity)| external_entity.equivalence = value);
+                }
+            />
+        </ResearchField>
 
         <InputGroup
             id="model"
@@ -770,9 +840,11 @@ pub fn SystemDetails(system_query: RwSignalSynced<Option<SystemQuery>>) -> impl 
             }
         />
         <div class="mb-2">
-            <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
-                Complexity
-            </label>
+            <FieldTooltip field_id="complexity".to_string()>
+                <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
+                    Complexity
+                </label>
+            </FieldTooltip>
         </div>
         <div class="flex justify-evenly">
             <Checkbox
@@ -800,67 +872,79 @@ pub fn SystemDetails(system_query: RwSignalSynced<Option<SystemQuery>>) -> impl 
             />
         </div>
 
-        <InputGroup
-            id="system-equivalence"
-            label="Equivalence"
-            value=equivalence
-            on_input=move |value: String| {
-                system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="system-equivalence"
+                label="Equivalence"
+                value=equivalence
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="system-time-unit"
-            label="Time Unit"
-            value=time_unit
-            on_input=move |value: String| {
-                system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="system-time-unit"
+                label="Time Unit"
+                value=time_unit
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="system-history"
-            label="History"
-            value=history
-            on_input=move |value: String| {
-                system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="system-history"
+                label="History"
+                value=history
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="transformation"
-            label="Transformation"
-            value=transformation
-            on_input=move |value: String| {
-                system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.transformation = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="transformation"
+                label="Transformation"
+                value=transformation
+                on_input=move |value: String| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.transformation = value);
+                }
+            />
+        </ResearchField>
 
         <Divider name="Boundary" />
 
-        <InputGroup
-            id="boundary-name"
-            label="Name"
-            value=boundary_name
-            on_input=move |value| {
-                system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="boundary-name"
+                label="Name"
+                value=boundary_name
+                on_input=move |value| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="boundary-description"
-            label="Description"
-            value=boundary_description
-            on_input=move |value| {
-                system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.boundary.description = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="boundary-description"
+                label="Description"
+                value=boundary_description
+                on_input=move |value| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.boundary.description = value);
+                }
+            />
+        </ResearchField>
 
         <Slider
             id="boundary-porosity"
@@ -890,26 +974,30 @@ pub fn SystemDetails(system_query: RwSignalSynced<Option<SystemQuery>>) -> impl 
 
         <Divider name="Environment" />
 
-        <InputGroup
-            id="environment-name"
-            label="Name"
-            value=environment_name
-            on_input=move |value: String| {
-                system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="environment-name"
+                label="Name"
+                value=environment_name
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="environment-description"
-            label="Description"
-            value=environment_description
-            on_input=move |value: String| {
-                system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, _, system_env)| system_env.description = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="environment-description"
+                label="Description"
+                value=environment_description
+                on_input=move |value: String| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, _, system_env)| system_env.description = value);
+                }
+            />
+        </ResearchField>
     }
 }
 
@@ -1122,94 +1210,108 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             </div>
         </Show>
 
-        <Show when=move || {
-            sub_system_query
-                .read()
-                .as_ref()
-                .map(|(_, _, system, _)| system.complexity.is_multiset())
-                .unwrap_or_default()
-        }>
-            <Slider
-                id="system-membership"
-                label="Member Autonomy"
-                step=0.01
-                value=membership
-                on_input=move |value: f64| {
+        <ResearchField>
+            <Show when=move || {
+                sub_system_query
+                    .read()
+                    .as_ref()
+                    .map(|(_, _, system, _)| system.complexity.is_multiset())
+                    .unwrap_or_default()
+            }>
+                <Slider
+                    id="system-membership"
+                    label="Member Autonomy"
+                    step=0.01
+                    value=membership
+                    on_input=move |value: f64| {
+                        sub_system_query
+                            .write()
+                            .as_mut()
+                            .map(|(_, _, system, _)| system.membership = value as f32);
+                    }
+                />
+            </Show>
+        </ResearchField>
+
+        <ResearchField>
+            <InputGroup
+                id="system-equivalence"
+                label="Equivalence"
+                value=equivalence
+                on_input=move |value: String| {
                     sub_system_query
                         .write()
                         .as_mut()
-                        .map(|(_, _, system, _)| system.membership = value as f32);
+                        .map(|(_, _, system, _)| system.equivalence = value);
                 }
             />
-        </Show>
+        </ResearchField>
 
-        <InputGroup
-            id="system-equivalence"
-            label="Equivalence"
-            value=equivalence
-            on_input=move |value: String| {
-                sub_system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.equivalence = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="system-time-unit"
+                label="Time Unit"
+                value=time_unit
+                on_input=move |value: String| {
+                    sub_system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="system-time-unit"
-            label="Time Unit"
-            value=time_unit
-            on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="system-history"
+                label="History"
+                value=history
+                on_input=move |value: String| {
+                    sub_system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="system-history"
-            label="History"
-            value=history
-            on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
-            }
-        />
-
-        <InputGroup
-            id="transformation"
-            label="Transformation"
-            value=transformation
-            on_input=move |value: String| {
-                sub_system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.transformation = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="transformation"
+                label="Transformation"
+                value=transformation
+                on_input=move |value: String| {
+                    sub_system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.transformation = value);
+                }
+            />
+        </ResearchField>
 
         <Divider name="Boundary" />
 
-        <InputGroup
-            id="boundary-name"
-            label="Name"
-            value=boundary_name
-            on_input=move |value| {
-                sub_system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.boundary.name = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="boundary-name"
+                label="Name"
+                value=boundary_name
+                on_input=move |value| {
+                    sub_system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.boundary.name = value);
+                }
+            />
+        </ResearchField>
 
-        <InputGroup
-            id="boundary-description"
-            label="Description"
-            value=boundary_description
-            on_input=move |value| {
-                sub_system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.boundary.description = value);
-            }
-        />
+        <ResearchField>
+            <InputGroup
+                id="boundary-description"
+                label="Description"
+                value=boundary_description
+                on_input=move |value| {
+                    sub_system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.boundary.description = value);
+                }
+            />
+        </ResearchField>
 
         <Slider
             id="boundary-porosity"

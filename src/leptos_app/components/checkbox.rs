@@ -1,10 +1,12 @@
 use leptos::prelude::*;
+use crate::leptos_app::components::FieldTooltip;
 
 #[component]
 pub fn Checkbox<T>(
     #[prop(into)] id: String,
     #[prop(into)] label: String,
     #[prop(into)] checked: Signal<bool>,
+    #[prop(optional, default = true)] show_help: bool,
     on_toggle: T,
 ) -> impl IntoView
 where
@@ -19,9 +21,11 @@ where
                 type="checkbox"
                 on:input=move |_| on_toggle(!checked.get_untracked())
             />
-            <label for=id class="block pl-2 font-medium text-gray-900 text-sm/6">
-                {label}
-            </label>
+            <FieldTooltip field_id=id.clone() show_help=show_help>
+                <label for=id class="block pl-2 font-medium text-gray-900 text-sm/6">
+                    {label}
+                </label>
+            </FieldTooltip>
 
         </div>
     }

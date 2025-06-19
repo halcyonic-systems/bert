@@ -5,6 +5,7 @@ use leptos::web_sys::Event;
 use leptos::{component, slot, view, IntoView};
 use std::fmt::Debug;
 use std::str::FromStr;
+use crate::leptos_app::components::FieldTooltip;
 
 const BASE_LABEL_CLASS: &str = "block text-sm font-medium leading-6 text-gray-900";
 const BASE_INPUT_CLASS: &str = "block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 \
@@ -32,6 +33,7 @@ pub fn InputGroup<F, I>(
     #[prop(into, optional)] error: Signal<String>,
     #[prop(optional)] input_group_icon: Option<InputGroupIcon>,
     #[prop(optional)] max_length: Option<usize>,
+    #[prop(optional, default = true)] show_help: bool,
 ) -> impl IntoView
 where
     F: Fn(I) + Clone + Send + 'static,
@@ -56,9 +58,11 @@ where
 
     let label = label.map(|label| {
         view! {
-            <label for=id class=label_class>
-                {label}
-            </label>
+            <FieldTooltip field_id=id.to_string() show_help=show_help>
+                <label for=id class=label_class>
+                    {label}
+                </label>
+            </FieldTooltip>
         }
     });
 
