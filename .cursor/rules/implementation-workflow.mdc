@@ -1,0 +1,142 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# LLM Implementation Workflow
+
+This document defines the structured workflow for implementing features with LLM assistance in the BERT project.
+
+## Phase 1: Discovery & Planning
+
+### 1.1 Codebase Analysis
+- [ ] Search for similar existing patterns in the codebase
+- [ ] Identify reusable components and established conventions
+- [ ] Review existing styling and interaction patterns
+- [ ] Check version compatibility for dependencies (Leptos, Bevy, Tauri)
+
+### 1.2 Implementation Planning
+- [ ] List all files requiring modification or creation
+- [ ] Identify integration points with existing systems
+- [ ] Propose specific technical approach
+- [ ] Estimate complexity and potential challenges
+
+### 1.3 User Confirmation
+- [ ] Present discovery findings to user
+- [ ] Confirm implementation approach
+- [ ] Get approval before proceeding to implementation
+
+## Phase 2: Incremental Implementation
+
+### 2.1 File-by-File Implementation
+- [ ] Create/modify one file at a time
+- [ ] Follow established patterns from `patterns.mdc`
+- [ ] Test compilation after each significant change
+- [ ] Fix errors immediately before proceeding
+
+### 2.2 Component Creation Pattern
+1. **Create component file** in appropriate directory
+2. **Add module export** to `mod.rs`
+3. **Test compilation** to verify module structure
+4. **Implement component logic** following established patterns
+5. **Test compilation** again
+
+### 2.3 Integration Pattern
+1. **Import component** in main app file
+2. **Add signal management** for component state
+3. **Integrate component** into existing UI structure
+4. **Test functionality** at each step
+5. **Validate user workflow** end-to-end
+
+### 2.4 Error Resolution
+- **Immediate fixing**: Address compilation errors before continuing
+- **Pattern checking**: Verify against known working patterns
+- **API verification**: Check version-specific API usage
+- **Documentation review**: Consult relevant documentation when stuck
+
+## Phase 3: Integration & Polish
+
+### 3.1 Styling Consistency
+- [ ] Apply consistent Tailwind classes following project conventions
+- [ ] Ensure responsive design works across screen sizes
+- [ ] Verify color scheme matches existing components
+- [ ] Test interactive states (hover, focus, active)
+
+### 3.2 Documentation
+- [ ] Add component documentation following `commenting-guidelines.mdc`
+- [ ] Include usage examples where appropriate
+- [ ] Document any new patterns or conventions
+- [ ] Update relevant documentation files if needed
+
+### 3.3 Complete Testing
+- [ ] Test complete user workflow manually
+- [ ] Verify no regressions in existing functionality
+- [ ] Check console for errors or warnings
+- [ ] Test edge cases and error conditions
+
+### 3.4 Commit Preparation
+- [ ] Review all changes against original requirements
+- [ ] Prepare clear commit message following conventions
+- [ ] Ensure all files are properly formatted
+- [ ] Double-check no temporary or debug code remains
+
+## Quality Gates
+
+### Before Moving to Next Phase
+- **Phase 1 → 2**: User approval of implementation plan
+- **Phase 2 → 3**: All files compile without errors
+- **Phase 3 → Complete**: Full functionality verified
+
+### Rollback Triggers
+- **Compilation errors** that can't be resolved within 3 attempts
+- **Fundamental architecture conflicts** discovered during implementation
+- **User requests** to change approach mid-implementation
+
+## Common Pitfalls to Avoid
+
+### Planning Phase
+- ❌ Starting implementation without user confirmation
+- ❌ Not checking existing patterns first
+- ❌ Underestimating integration complexity
+
+### Implementation Phase
+- ❌ Making multiple changes before testing compilation
+- ❌ Ignoring established patterns and conventions
+- ❌ Proceeding with errors unresolved
+
+### Integration Phase
+- ❌ Skipping manual testing of complete workflow
+- ❌ Not checking for regressions in existing features
+- ❌ Forgetting to update documentation
+
+## Success Indicators
+
+### High-Quality Implementation
+- ✅ Follows all established patterns and conventions
+- ✅ Compiles without errors or warnings
+- ✅ Integrates seamlessly with existing functionality
+- ✅ Provides clear value to users
+- ✅ Is well-documented and maintainable
+
+### Efficient Process
+- ✅ Minimal back-and-forth with user during implementation
+- ✅ No major rework required after initial implementation
+- ✅ Clear, focused commits with good messages
+- ✅ Reusable patterns identified and documented
+
+## Workflow Customization
+
+### For Simple Features (< 2 hours)
+- Combine Phase 1 and 2 for efficiency
+- Focus on pattern reuse over custom solutions
+- Minimal documentation beyond code comments
+
+### For Complex Features (> 4 hours)
+- Add intermediate checkpoints within each phase
+- Create detailed implementation plan document
+- Consider breaking into multiple smaller features
+
+### For Experimental Features
+- Add explicit experimentation phase before Phase 1
+- Include rollback plan in initial planning
+- Document lessons learned for future reference
