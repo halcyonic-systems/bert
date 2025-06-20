@@ -26,21 +26,23 @@ Based on recent feature development with LLM assistance, this document provides 
   - `src/leptos_app/details.rs` (Modified)
 - **Status**: Feature complete, independent implementation
 
-#### **feature/image-export**
+#### **llm-chat** ✅
 - **Purpose**: Implements LLM chat integration with Ollama and OpenAI support
 - **Key Files**:
   - `.cursor/rules/*` (New development guidelines)
   - `src-tauri/src/chat_service.rs` (New file)
   - `src/leptos_app/components/chat.rs` (New file)
-- **Status**: Contains LLM chat feature (not image export) and cursor rules
+- **Status**: Contains LLM chat feature and cursor rules
+- **Note**: Kept this branch and deleted feature/image-export which was a duplicate
 
-#### **feature/image-export-clean**
+#### **feature/screenshot-export** ✅
 - **Purpose**: Implements professional image export system
 - **Key Files**:
   - `src/bevy_app/systems/screenshot.rs` (New file)
   - `src/bevy_app/events.rs` (Modified)
   - `src/bevy_app/mod.rs` (Modified)
 - **Status**: Feature partially complete (80%), focused implementation
+- **Note**: Renamed from feature/image-export-clean for clarity
 
 #### **feature/toggle-background-color**
 - **Purpose**: Implements background color toggle functionality
@@ -50,22 +52,16 @@ Based on recent feature development with LLM assistance, this document provides 
   - Multiple documentation files updated
 - **Status**: Feature complete, shares some code with controls-menu branch
 
-#### **llm-chat**
-- **Purpose**: Implements LLM chat integration with Ollama and OpenAI support
-- **Key Files**: 
-  - Same files as feature/image-export
-- **Status**: Duplicate of feature/image-export branch, identical changes
-
 ### **2. Branch Dependencies and Overlap**
 
 - **controls-menu + toggle-background-color**: Share UI modifications and documentation
-- **image-export + llm-chat**: Identical branches with different names
+- ✅ **llm-chat**: Branch with LLM chat functionality (feature/image-export branch has been deleted)
 - **field-distinction**: Independent implementation with minimal overlap
-- **image-export-clean**: Focused implementation of actual image export feature
+- ✅ **feature/screenshot-export**: Focused implementation of screenshot functionality (renamed from feature/image-export-clean)
 
 ### **3. Cursor Rules Distribution**
 
-- **Development Guidelines**: Only in `feature/image-export` and `llm-chat` branches
+✅ **Development Guidelines**: Now in `main` branch and `llm-chat` branch
 - **Critical Files**:
   - `.cursor/rules/debugging-patterns.mdc` - Debugging strategies
   - `.cursor/rules/feature-checklist.mdc` - Implementation checklists
@@ -74,6 +70,7 @@ Based on recent feature development with LLM assistance, this document provides 
   - `.cursor/rules/new-features.mdc` - Feature documentation templates
   - `.cursor/rules/styling-guidelines.mdc` - Rust coding standards
   - `.cursor/rules/project-structure.mdc` - Architecture documentation
+  - `.cursor/rules/commenting-guidelines.mdc` - Documentation standards
 
 ---
 
@@ -97,7 +94,7 @@ Current warnings during compilation:
 
 ### **3. Feature Isolation Issues**
 - Background toggle code exists in both `toggle-background-color` and `controls-menu` branches
-- LLM chat functionality exists in both `image-export` and `llm-chat` branches with identical code
+- ✅ LLM chat functionality now exists only in `llm-chat` branch (duplicate `feature/image-export` branch deleted)
 - Some features modify common files without proper isolation
 
 **Impact:** Merge conflicts, feature entanglement, technical debt
@@ -110,6 +107,7 @@ Current warnings during compilation:
 ✅ **Recently Improved:**
 - Added hybrid web/desktop architecture documentation
 - Enhanced cursor rules with development guidelines
+- ✅ Migrated cursor rules to main branch for standardization
 
 🔄 **Still Needed:**
 - Component interaction diagrams
@@ -135,10 +133,11 @@ Current warnings during compilation:
 
 ### **Phase 1: Branch Consolidation (1-2 sessions)**
 
+✅ **COMPLETED**
+
 #### **1. LLM Chat Branch Cleanup**
-1. **Delete Duplicate Branch**: Remove `llm-chat` branch (duplicate of `feature/image-export`)
-2. **Rename Feature Branch**: Rename `feature/image-export` to `feature/llm-chat` to match content
-3. **Rationale**: Branch contains LLM chat functionality, not image export
+1. ✅ **Decision Change**: Instead of deleting the `llm-chat` branch, we kept it and deleted `feature/image-export` which was the duplicate
+2. **Rationale**: The `llm-chat` branch name more accurately reflects its actual functionality
 
 #### **2. Controls & Background Toggle Integration**
 1. **Create Integration Branch**: `feature/ui-controls-integration`
@@ -148,9 +147,8 @@ Current warnings during compilation:
 5. **Rationale**: Features are related and have overlapping code changes
 
 #### **3. Image Export Branch Cleanup**
-1. **Keep Clean Version**: Continue work in `feature/image-export-clean`
-2. **Rename Branch**: Consider renaming to `feature/image-export` for clarity
-3. **Rationale**: Current branch has focused implementation of intended feature
+1. ✅ **Completed**: Renamed `feature/image-export-clean` to `feature/screenshot-export` for clarity
+2. **Rationale**: The new name better reflects the actual screenshot functionality
 
 #### **4. Field Distinction Branch**
 1. **Keep As-Is**: This branch is well-isolated and can remain separate
@@ -158,12 +156,14 @@ Current warnings during compilation:
 
 ### **Phase 2: Cursor Rules Standardization (1 session)**
 
+✅ **COMPLETED**
+
 #### **1. Add Cursor Rules to Main**
-1. **Checkout Main**: `git checkout main`
-2. **Create Directory**: `mkdir -p .cursor/rules`
-3. **Copy Files**: Copy all cursor rules from `feature/image-export` (soon to be `feature/llm-chat`)
-4. **Commit**: Commit cursor rules to main branch
-5. **Rationale**: Development standards should be shared across all branches
+1. ✅ **Checkout Main**: `git checkout main`
+2. ✅ **Directory Already Existed**: `.cursor/rules` was already present
+3. ✅ **Copy Files**: Copied development guidelines from `llm-chat` branch
+4. ✅ **Commit**: Committed cursor rules to main branch
+5. **Rationale**: Development standards are now shared across all branches
 
 #### **2. Update Branches with Rules**
 1. **Update Each Branch**: `git checkout <branch> && git merge main`
@@ -236,28 +236,27 @@ git checkout feature/controls-menu
 git reset --hard <commit-before-background-toggle-features>
 ```
 
-### **feature/image-export and llm-chat**
+### **llm-chat and feature/image-export** ✅
 ```bash
-# Delete duplicate branch
-git branch -D llm-chat
-
-# Rename to match content
-git checkout feature/image-export
-git branch -m feature/llm-chat
+# We made a slightly different decision here to keep llm-chat and delete feature/image-export
+# Decision was based on the branch name more accurately reflecting its actual functionality
+git branch -D feature/image-export  # We deleted this branch as it was the duplicate
 
 # Ensure cursor rules are committed
+git checkout llm-chat
 git status
 git add .cursor/rules/*
 git commit -m "Add development guidelines and cursor rules"
 ```
 
-### **feature/image-export-clean**
+### **feature/screenshot-export** ✅
 ```bash
-# Rename for clarity if needed
+# Renamed for clarity
 git checkout feature/image-export-clean
-git branch -m feature/image-export
+git branch -m feature/screenshot-export
 
 # Update with cursor rules from main
+git checkout feature/screenshot-export
 git merge main --no-commit
 git checkout --ours .cursor/rules/*
 git add .cursor/rules
