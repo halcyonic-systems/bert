@@ -1,0 +1,175 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Common Implementation Patterns
+
+This document captures proven implementation patterns for the BERT project to ensure consistency and accelerate development with LLM assistance.
+
+## Modal Components
+
+### Standard Modal Pattern
+```rust
+#[component]
+pub fn MyModal(
+    #[prop(into)] visible: Signal<bool>,
+    #[prop(into)] on_close: Callback<()>,
+) -> impl IntoView {
+    view! {
+        <Show when=move || visible.get()>
+            <div class="fixed inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center">
+                <div class="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-900">"Modal Title"</h2>
+                            <button
+                                class="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                                on:click=move |_| on_close.run(())
+                            >
+                                "×"
+                            </button>
+                        </div>
+                        // Modal content here
+                    </div>
+                </div>
+            </div>
+        </Show>
+    }
+}
+```
+
+### Modal Integration Pattern
+- Signal-based visibility management: `let (modal_visible, set_modal_visible) = signal(false);`
+- Callback-based close handlers: `on_close=Callback::new(move |_| set_modal_visible.set(false))`
+- Consistent z-index layering: `z-30` for modals, `z-20` for UI buttons
+- Tailwind overlay styling: `bg-black bg-opacity-50`
+
+## Button Groups
+
+### Standard Button Group Pattern
+```rust
+<div class="absolute top-4 left-4 z-20 flex gap-2">
+    <button
+        class="px-4 py-2 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow"
+        on:click=move |_| { /* action */ }
+    >
+        {"Button Text"}
+    </button>
+    // Additional buttons...
+</div>
+```
+
+### Button Styling Conventions
+- Base classes: `px-4 py-2 rounded-lg bg-white`
+- Shadow effects: `shadow-md hover:shadow-lg transition-shadow`
+- Spacing: `gap-2` for button groups
+- Positioning: `absolute top-4 left-4 z-20` for UI controls
+
+## Component Integration
+
+### File Structure Pattern
+1. **Create component**: `src/leptos_app/components/my_component.rs`
+2. **Export in mod.rs**: Add `mod my_component;` and `pub use my_component::*;`
+3. **Import in app**: `use crate::leptos_app::components::MyComponent;`
+
+### Signal Management Pattern
+```rust
+// In App component
+let (feature_visible, set_feature_visible) = signal(false);
+
+// In component usage
+<MyComponent 
+    visible=feature_visible 
+    on_close=Callback::new(move |_| set_feature_visible.set(false))
+/>
+```
+
+## Error Handling Patterns
+
+### Compilation Error Resolution
+1. **API Version Issues**: Check Leptos/Bevy version compatibility
+2. **Import Errors**: Verify module exports in `mod.rs` files
+3. **Callback Issues**: Use `.run()` method for Leptos 0.7+ callbacks
+
+### Common Fixes
+- Leptos Callbacks: `on_close.run(())` not `on_close(())`
+- Module Exports: Ensure both `mod declaration;` and `pub use declaration::*;`
+- Import Paths: Use `crate::leptos_app::components::ComponentName`
+
+## Styling Patterns
+
+### Layout Conventions
+- **Flexbox for groups**: `flex gap-2` for related elements
+- **Grid for content**: `grid md:grid-cols-2 gap-6` for organized content
+- **Responsive design**: Use `md:` prefixes for larger screens
+
+### Color Scheme
+- **Text colors**: `text-gray-900` for headers, `text-gray-700` for body
+- **Backgrounds**: `bg-white` for cards, `bg-gray-100` for code blocks
+- **Borders**: `border-gray-200` for subtle divisions
+
+### Interactive States
+- **Hover effects**: `hover:shadow-lg`, `hover:text-gray-600`
+- **Transitions**: `transition-shadow` for smooth effects
+- **Focus states**: Rely on Tailwind defaults
+
+## Documentation Patterns
+
+### Component Documentation
+```rust
+/// Modal component for displaying help information.
+///
+/// Provides a clean overlay interface with backdrop click-to-close
+/// and consistent styling with the rest of the application.
+///
+/// # Props
+/// - `visible`: Signal controlling modal visibility
+/// - `on_close`: Callback triggered when modal should close
+#[component]
+pub fn HelpModal(/* ... */) -> impl IntoView {
+    // Implementation
+}
+```
+
+### Helper Component Pattern
+```rust
+#[component]
+fn ItemDisplay(label: &'static str, value: &'static str) -> impl IntoView {
+    view! {
+        <div class="flex justify-between items-center py-1">
+            <span class="text-gray-700 text-sm">{label}</span>
+            <code class="bg-gray-100 px-2 py-1 rounded text-xs font-mono text-gray-800">
+                {value}
+            </code>
+        </div>
+    }
+}
+```
+
+## Testing Patterns
+
+### Manual Testing Checklist
+- [ ] Component renders correctly
+- [ ] Modal opens and closes properly
+- [ ] Styling matches existing components
+- [ ] No console errors
+- [ ] Responsive behavior works
+
+### Integration Testing
+- [ ] Signals update correctly
+- [ ] Callbacks execute as expected
+- [ ] Component integrates with existing UI
+- [ ] No conflicts with other features
+
+## Performance Patterns
+
+### Signal Optimization
+- Use `move || signal.get()` for reactive reads
+- Avoid unnecessary signal creation
+- Prefer `Signal<T>` over `ReadSignal<T>` for props
+
+### Rendering Optimization
+- Use `Show` component for conditional rendering
+- Minimize nested reactive contexts
+- Keep component hierarchies shallow when possible
