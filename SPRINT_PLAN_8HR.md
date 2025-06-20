@@ -240,5 +240,35 @@ cargo check --all-targets
 
 ---
 
+## 🛡️ Safety & Recovery
+
+### Backup Information
+- **Backup Tag:** `sprint-backup-20250620-1452`
+- **Backup Commit:** `994151e` (Sprint plan creation)
+- **Current Branch:** `main`
+
+### Recovery Options
+```bash
+# Option 1: Remove just the sprint plan
+git revert 994151e
+
+# Option 2: Full rollback to pre-sprint state  
+git reset --hard sprint-backup-20250620-1452
+
+# Option 3: Check what changed since backup
+git diff sprint-backup-20250620-1452
+
+# Option 4: List all changes since backup
+git log --oneline sprint-backup-20250620-1452..HEAD
+```
+
+### Safety Rules
+1. ✅ Only commit planning/documentation to main (not feature code)
+2. ✅ Do actual feature development on feature branches
+3. ✅ Keep commits atomic and easily revertible
+4. ✅ Backup current state before starting (tag created)
+
+---
+
 _Last Updated: [UPDATE TIMESTAMP]_
 _Updated By: [UPDATE AI/PERSON]_ 
