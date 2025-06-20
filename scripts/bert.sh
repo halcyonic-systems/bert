@@ -27,6 +27,7 @@ show_help() {
     echo -e "  ${YELLOW}lint${NC}       - Run linting tools"
     echo -e "  ${YELLOW}docs${NC}       - Generate documentation"
     echo -e "  ${YELLOW}test${NC}       - Run tests"
+    echo -e "  ${YELLOW}feature${NC}    - Generate or update feature documentation"
     echo -e "  ${YELLOW}help${NC}       - Show this help message"
 }
 
@@ -78,6 +79,18 @@ test_command() {
     cargo test
 }
 
+# Feature documentation command
+feature_command() {
+    if [ $# -eq 0 ]; then
+        echo -e "${RED}Error: Feature name is required${NC}"
+        echo -e "Usage: $0 feature \"Feature Name\""
+        exit 1
+    fi
+    
+    echo -e "${GREEN}Generating feature documentation for: $1${NC}"
+    ./scripts/gen-feature-docs.sh "$1" "${@:2}"
+}
+
 # Parse command line arguments
 if [ $# -eq 0 ]; then
     show_help
@@ -105,6 +118,9 @@ case "$1" in
         ;;
     test)
         test_command
+        ;;
+    feature)
+        feature_command "${@:2}"
         ;;
     help|--help|-h)
         show_help

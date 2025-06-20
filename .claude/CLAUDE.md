@@ -106,6 +106,11 @@ When encountering issues:
   - `docs/documentation-change` for documentation updates
 - Keep branches up-to-date with main
 - Follow cursor rules for consistent development
+- **Documentation requirements**:
+  - Generate feature documentation at branch creation
+  - Update documentation throughout development
+  - Reference documentation in commit messages
+  - Documentation must be complete before PR
 
 ## Code Style Requirements
 
@@ -129,22 +134,69 @@ When encountering issues:
 
 ## Feature Implementation Process
 
-1. **Analysis**: Understand existing patterns and component relationships
-2. **Planning**: Identify files requiring modification and integration points
-3. **Implementation**: Make incremental changes, testing compilation frequently
-4. **Integration**: Ensure proper styling, documentation, and testing
-5. **Review**: Verify changes work as expected with no regressions
+1. **Documentation Setup**: Generate feature documentation template
+   - Run `./scripts/bert.sh feature "Feature Name"` at the start of development
+   - This creates a standardized template in `docs/features/`
+   - Review the template and fill in the initial sections
+
+2. **Analysis**: Understand existing patterns and component relationships
+   - Document your findings in the feature documentation
+
+3. **Planning**: Identify files requiring modification and integration points
+   - Update the "Implementation Plan" section in the feature documentation
+
+4. **Implementation**: Make incremental changes, testing compilation frequently
+   - Update documentation as you implement each part of the feature
+   - Document API changes, design decisions, and technical approach
+
+5. **Integration**: Ensure proper styling, documentation, and testing
+   - Complete all sections of the feature documentation
+   - Include usage examples and testing approaches
+
+6. **Review**: Verify changes work as expected with no regressions
+   - Ensure documentation is complete before submitting PR
+   - Reference feature documentation in commit messages
 
 ## IMPORTANT REMINDERS
 
-1. **NEVER** use `.unwrap()` or `.expect()` in production code
-2. Use Leptos 0.7+ patterns (`.run()` method for callbacks)
-3. Follow proper module exports in `mod.rs` files
-4. Use absolute imports (`crate::module::Component`)
-5. Test compilation after each significant change
-6. Follow error handling patterns appropriate for context
-7. Maintain separation between Bevy, Leptos, and Tauri components
-8. Run commands from repository root to ensure proper execution
+1. **ALWAYS** document features using the standardized template
+   - Run `./scripts/bert.sh feature "Feature Name"` for new features
+   - Update documentation throughout development
+   - Complete documentation before submitting PR
+
+2. **NEVER** use `.unwrap()` or `.expect()` in production code
+3. Use Leptos 0.7+ patterns (`.run()` method for callbacks)
+4. Follow proper module exports in `mod.rs` files
+5. Use absolute imports (`crate::module::Component`)
+6. Test compilation after each significant change
+7. Follow error handling patterns appropriate for context
+8. Maintain separation between Bevy, Leptos, and Tauri components
+9. Run commands from repository root to ensure proper execution
+
+## Feature Documentation System
+
+BERT uses a standardized feature documentation system that must be followed for all feature development:
+
+1. **Documentation Generator**:
+   - Run `./scripts/bert.sh feature "Feature Name"` to generate template
+   - Script automatically detects modified files in your branch
+   - Documentation is stored in `docs/features/`
+
+2. **Documentation Template**:
+   - Located at `docs/contributing/feature-template.md`
+   - Includes sections for overview, implementation details, API changes, testing, and examples
+   - Must be fully completed before PR submission
+
+3. **Update Process**:
+   - Update documentation throughout development, not just at the end
+   - Document API changes as they are made
+   - Include usage examples for new functionality
+   - Record design decisions and alternatives considered
+
+4. **Reference Documentation**:
+   - In commit messages: "See docs/features/feature-name.md for details"
+   - In PR descriptions: Link to the feature documentation
+   - In code comments for complex implementations
 
 ## Testing Requirements
 
@@ -154,3 +206,4 @@ Before submitting changes:
 - Test component integration with UI
 - Verify responsive behavior
 - Test edge cases and error conditions
+- Ensure feature documentation is complete and accurate

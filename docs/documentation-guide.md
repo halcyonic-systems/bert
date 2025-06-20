@@ -4,7 +4,7 @@ This guide helps you navigate the various documentation resources available in t
 
 ## Documentation Structure
 
-BERT's documentation is organized into two distinct systems:
+BERT's documentation is organized into three distinct systems:
 
 ### 1. User Documentation (GitBook)
 
@@ -43,7 +43,20 @@ The developer and contributor documentation is maintained in the `docs/` directo
   - Implementation research
   - *Note: Research materials will be added to a dedicated repository in the future*
 
-### 3. Code Documentation
+### 3. Feature Documentation
+
+Feature documentation is stored in the `docs/features/` directory and provides:
+- Comprehensive documentation for individual features
+- Implementation details and technical approach
+- API changes and usage examples
+- Testing strategies and design decisions
+
+Feature documentation is generated and maintained using:
+- Template in [docs/contributing/feature-template.md](contributing/feature-template.md)
+- Documentation process in [docs/contributing/feature-documentation-process.md](contributing/feature-documentation-process.md)
+- Automated generation script: `./scripts/bert.sh feature "Feature Name"`
+
+### 4. Code Documentation
 
 - **Rust Documentation**: Generated from code comments
   - Run `cargo doc --open` to generate and view
@@ -56,6 +69,7 @@ The developer and contributor documentation is maintained in the `docs/` directo
 | Project Overview | README.md | Introduction and quick start | All users |
 | User Guides | gitbook/ | Complete user documentation | End users |
 | Developer Guides | docs/ | Implementation details | Contributors |
+| Feature Documentation | docs/features/ | Feature-specific documentation | Contributors |
 | API Documentation | Generated from code | Technical reference | Developers |
 
 ## Key Documentation Files
@@ -70,7 +84,10 @@ The developer and contributor documentation is maintained in the `docs/` directo
 
 - **docs/contributing/contributing.md**: How to contribute to BERT
 - **docs/contributing/directory-organization.md**: Repository structure guidelines
+- **docs/contributing/feature-documentation-process.md**: Feature documentation workflow
+- **docs/contributing/feature-template.md**: Template for feature documentation
 - **docs/architecture/comprehensive-architecture-overview.md**: Technical architecture
+- **docs/features/**: Feature-specific implementation documentation
 
 ### For Researchers
 
@@ -117,7 +134,11 @@ We welcome documentation improvements! If you'd like to contribute:
 
 1. Follow the guidelines in [docs/contributing/documentation-implementation-analysis.md](contributing/documentation-implementation-analysis.md)
 2. Ensure you're maintaining the existing structure
-3. Submit a pull request with your changes
+3. For feature documentation:
+   - Generate documentation using `./scripts/bert.sh feature "Feature Name"`
+   - Follow the process in [docs/contributing/feature-documentation-process.md](contributing/feature-documentation-process.md)
+   - Update documentation throughout development
+4. Submit a pull request with your changes
 
 ## Future Documentation Plans
 
