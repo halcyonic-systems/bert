@@ -14,6 +14,7 @@ Welcome to BERT development! This guide helps systems scientists, engineers, and
 - [Code Review Process](#code-review-process)
 - [Testing Requirements](#testing-requirements)
 - [Documentation Requirements](#documentation-requirements)
+  - [Feature Documentation Process](#feature-documentation-process)
 
 ## Quick Start
 
@@ -187,6 +188,8 @@ src/
 ```bash
 # Feature development
 git checkout -b feature/descriptive-name
+# Then generate feature documentation
+./scripts/bert.sh feature "Feature Name"
 
 # Bug fixes  
 git checkout -b fix/issue-description
@@ -194,6 +197,8 @@ git checkout -b fix/issue-description
 # Documentation updates
 git checkout -b docs/area-being-documented
 ```
+
+> **Note:** After creating a feature branch, immediately generate feature documentation using `./scripts/bert.sh feature "Feature Name"` to establish the documentation for your work.
 
 ### Commit Standards
 
@@ -210,11 +215,13 @@ refactor(systems): optimize flow rendering performance
 ### Pull Request Process
 
 1. **Create Feature Branch**: From latest `main`
-2. **Make Changes**: Following all standards and guidelines
-3. **Run Tests**: Ensure existing tests pass
-4. **Submit Pull Request**: With comprehensive description and testing notes
-5. **Address Reviews**: Respond to all feedback promptly
-6. **Merge**: Only after approval and all checks passing
+2. **Generate Documentation**: Run `./scripts/bert.sh feature "Feature Name"`
+3. **Make Changes**: Following all standards and guidelines
+4. **Update Documentation**: Complete all sections of feature documentation
+5. **Run Tests**: Ensure existing tests pass
+6. **Submit Pull Request**: With comprehensive description and link to feature documentation
+7. **Address Reviews**: Respond to all feedback promptly
+8. **Merge**: Only after approval and all checks passing
 
 ## Task Assignment Framework
 
@@ -511,7 +518,8 @@ Extend BERT's theoretical foundation to support [new systems concept]
 **All pull requests must meet:**
 
 #### Technical Standards
-- [ ] **Documentation**: 100% template compliance
+- [ ] **Feature Documentation**: Complete documentation in docs/features/
+- [ ] **Code Documentation**: 100% template compliance
 - [ ] **Testing**: Comprehensive coverage and passing tests
 - [ ] **Performance**: No regression, meets targets
 - [ ] **Architecture**: Follows established patterns
@@ -587,11 +595,20 @@ cargo tauri build                   # Full application build test
 
 **Every contribution MUST include:**
 
-1. **Code Documentation**: 100% template compliance
-2. **Architecture Documentation**: System integration patterns
-3. **Usage Examples**: Practical application demonstrations
-4. **Performance Documentation**: Characteristics and limitations
-5. **Systems Science Context**: Theoretical alignment explanation
+1. **Feature Documentation**: Complete feature documentation in docs/features/
+2. **Code Documentation**: 100% template compliance
+3. **Architecture Documentation**: System integration patterns
+4. **Usage Examples**: Practical application demonstrations
+5. **Performance Documentation**: Characteristics and limitations
+6. **Systems Science Context**: Theoretical alignment explanation
+
+### Feature Documentation Process
+
+1. **Generate Template**: Use `./scripts/bert.sh feature "Feature Name"` at the start of development
+2. **Fill Initial Sections**: Complete overview, goals, and requirements sections
+3. **Update Throughout Development**: Document design decisions and implementation details as you go
+4. **Complete Before PR**: Ensure documentation is complete with examples and testing approach
+5. **Reference in Commits**: Include references to feature documentation in commit messages
 
 ### Documentation Workflow
 
@@ -636,6 +653,8 @@ cargo tauri build                   # Full application build test
 
 - **Architecture Documentation**: [`docs/architecture/`](../architecture/)
 - **Development Standards**: [`rust-documentation-guidelines.md`](rust-documentation-guidelines.md)
+- **Feature Documentation**: [`docs/contributing/feature-documentation-process.md`](feature-documentation-process.md)
+- **Feature Template**: [`docs/contributing/feature-template.md`](feature-template.md)
 - **Current Status**: [`documentation-implementation-analysis.md`](documentation-implementation-analysis.md)
 - **Comprehensive Architecture**: [`docs/architecture/comprehensive-architecture-overview.md`](../architecture/comprehensive-architecture-overview.md)
 

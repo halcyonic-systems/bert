@@ -9,17 +9,25 @@ This document provides a comprehensive checklist for implementing features in th
 
 ## Pre-Implementation Checklist
 
+### Documentation Setup
+- [ ] Feature documentation template generated: `./scripts/bert.sh feature "Feature Name"`
+- [ ] Initial documentation sections filled in (Overview, Goals, Requirements)
+- [ ] Feature documentation reviewed for clarity and completeness
+- [ ] Documentation path noted for reference throughout development
+
 ### Requirements Analysis
 - [ ] User requirements clearly defined and understood
 - [ ] Success criteria established and measurable
 - [ ] Edge cases and error conditions identified
 - [ ] Integration points with existing features mapped
+- [ ] Requirements documented in feature documentation
 
 ### Technical Planning
 - [ ] Existing similar patterns identified in codebase
 - [ ] Component architecture planned and approved
 - [ ] File structure and naming conventions confirmed
 - [ ] Dependencies and version compatibility verified
+- [ ] Implementation plan added to feature documentation
 
 ### Design Consistency
 - [ ] UI/UX patterns align with existing application design
@@ -88,11 +96,21 @@ This document provides a comprehensive checklist for implementing features in th
 
 ## Documentation Checklist
 
+### Feature Documentation
+- [ ] Feature documentation template is complete with all sections filled in
+- [ ] Implementation details are fully documented
+- [ ] API changes are clearly documented
+- [ ] Testing approach is documented
+- [ ] Usage examples are included
+- [ ] Design decisions and alternatives considered are recorded
+- [ ] Documentation is up-to-date with final implementation
+
 ### Code Documentation
 - [ ] Component documentation follows `commenting-guidelines.mdc`
 - [ ] Complex logic is well-commented
 - [ ] Public API is documented with examples
 - [ ] Type definitions are clear and documented
+- [ ] References to feature documentation are included where appropriate
 
 ### User Documentation
 - [ ] Feature usage is documented (if user-facing)
@@ -136,9 +154,11 @@ This document provides a comprehensive checklist for implementing features in th
 
 ### Git Preparation
 - [ ] All changes committed with clear messages
+- [ ] Commit messages reference feature documentation
 - [ ] Commit history is clean and logical
 - [ ] Branch is up-to-date with main/develop
 - [ ] No merge conflicts exist
+- [ ] Feature documentation is complete and committed
 
 ### Release Readiness
 - [ ] Feature flags configured (if applicable)
