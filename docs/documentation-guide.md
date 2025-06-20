@@ -27,10 +27,11 @@ BERT's documentation is organized into several sections:
   - Documentation requirements
   - Directory organization guidance
 
-- **Research**: Background materials in [docs/research/](../research/)
+- **Research**: Background materials 
   - System language specifications
   - Field status audits
   - Implementation research
+  - *Note: Research materials will be added to a dedicated repository in the future*
 
 ### 3. Code Documentation
 
@@ -54,8 +55,9 @@ BERT's documentation is organized into several sections:
 
 ### For Researchers
 
-- **research/system language/specification.md**: System Language formal specification
-- **research/deep systems analysis/dsa.md**: Deep Systems Analysis methodology
+- **System Language Specification**: Formal specification for the System Language framework *(coming soon)*
+- **Deep Systems Analysis Methodology**: Documentation of the DSA approach *(coming soon)*
+- *Note: These materials will be available in the forthcoming research repository*
 
 ## Documentation Standards
 
