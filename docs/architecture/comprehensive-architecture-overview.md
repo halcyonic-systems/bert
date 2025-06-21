@@ -110,6 +110,81 @@ The architecture directly implements core systems science concepts:
 - **Tauri**: Desktop application framework for cross-platform deployment
 - **JSON**: Human-readable serialization format for data persistence
 
+## Hybrid Web/Desktop Architecture
+
+**BERT's Key Innovation**: True hybrid deployment with full feature parity across web and desktop environments.
+
+### Deployment Contexts
+
+BERT runs natively in both contexts with identical functionality:
+
+| Feature | Web Browser | Desktop App | Implementation |
+|---------|-------------|-------------|----------------|
+| **System Modeling** | ✅ Full support | ✅ Full support | Bevy/WASM rendering |
+| **File Loading** | ✅ Cmd+L works | ✅ Native dialogs | `use_file_dialog.rs` |
+| **File Saving** | ✅ Auto-download | ✅ Save dialogs | Hybrid pattern |
+| **JSON Export** | ✅ Browser download | ✅ File system | Platform detection |
+| **Screenshots** | ✅ PNG download | ✅ Save dialogs | Dual implementation |
+
+### Platform Detection Pattern
+
+**Standard Pattern**: All file system operations follow this detection pattern:
+
+```rust
+// Standard hybrid implementation pattern used throughout BERT
+let tauri_available = js_sys::Reflect::get(&web_sys::window().unwrap(), &"__TAURI__".into())
+    .ok()
+    .filter(|v| !v.is_undefined())
+    .is_some();
+
+if tauri_available {
+    // Desktop context: Use Tauri APIs for native OS integration
+    // - Native file dialogs with OS styling
+    // - Direct file system access
+    // - Integration with OS file associations
+} else {
+    // Web context: Use web APIs for browser functionality
+    // - HTML5 File API for loading
+    // - Automatic downloads for saving
+    // - Browser security constraints respected
+}
+```
+
+### Implementation Examples
+
+**File Loading** (`src/leptos_app/use_file_dialog.rs`):
+- **Web**: HTML5 file input with ArrayBuffer reading
+- **Desktop**: Tauri `pick_file` command with native dialogs
+- **Trigger**: Cmd+L works identically in both contexts
+
+**File Saving**:
+- **Web**: Creates download links with automatic downloads
+- **Desktop**: Native save dialogs with user-chosen locations
+- **Format**: Identical JSON/PNG outputs regardless of platform
+
+**Screenshot System** (`src/bevy_app/systems/screenshot.rs`):
+- **Web**: RGBA→PNG conversion with blob downloads
+- **Desktop**: Tauri file dialogs with direct file writing
+- **Quality**: Identical image capture and processing
+
+### Architecture Benefits
+
+1. **Development Efficiency**: Single codebase, dual deployment
+2. **User Choice**: Users can choose their preferred environment
+3. **Feature Parity**: No compromise on functionality
+4. **Platform Integration**: Native experience where appropriate
+5. **Web Accessibility**: No installation required for web version
+
+### Development Guidelines
+
+**When implementing new file system features**:
+
+1. **Always check existing patterns** in `src/leptos_app/use_file_dialog.rs`
+2. **Implement dual paths**: Both Tauri and Web API support required
+3. **Test both contexts**: Features must work identically in web and desktop
+4. **Follow detection pattern**: Use `__TAURI__` availability check
+5. **Maintain feature parity**: No platform-exclusive features
+
 ## Core Subsystems
 
 ### 1. Interaction System Architecture

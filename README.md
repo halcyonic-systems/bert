@@ -1,6 +1,8 @@
 <h1 align="center">BERT (Bounded Entity Reasoning Toolkit)</h1>
 
-<p align="center">A visual software tool that guides users through the rigorous analysis and decomposition of complex adaptive systems.</p>
+<p align="center">Rigorous Systems Science Visualization</p>
+
+<p align="center">A scientific tool that enables rigorous analysis and decomposition of complex adaptive systems based on systems theory principles.</p>
 
 <p align="center">
   <a href="https://bert.systems/">Website</a> •
@@ -11,115 +13,115 @@
 
 ![BERT Demo](https://bert.systems/demo.gif)
 
+---
+
+## What is BERT?
+
+BERT brings scientific rigor to systems analysis through a formal implementation of systems theory. Built on the System Language (SL) framework, it provides researchers and practitioners with a structured methodology for:
+
+- **Formalizing system boundaries** with mathematical precision
+- **Characterizing flows** through rigorous entity relationship mapping
+- **Modeling complex relationships** using systems science principles
+- **Documenting system interactions** with consistent scientific notation
+
+BERT transforms abstract systems concepts into concrete, analyzable models that bridge theoretical systems science with practical applications.
+
 ## 📑 Table of Contents
 
-- [📑 Table of Contents](#-table-of-contents)
-- [📖 Background](#-background)
+- [📖 Scientific Background](#-scientific-background)
 - [🚀 Getting Started](#-getting-started)
   - [Web Version](#web-version)
   - [Desktop Applications](#desktop-applications)
-- [🔧 Key Features](#-key-features)
-- [📚 Documentation](#-documentation)
-  - [For Systems Researchers](#for-systems-researchers)
-- [👨‍💻 Development](#-development)
-  - [Prerequisites](#prerequisites)
-  - [Run the Project](#run-the-project)
-  - [Project Structure](#project-structure)
-- [🔬 Research](#-research)
-- [🤝 Contributing](#-contributing)
+- [📊 Capabilities](#-capabilities)
+- [🔍 Applications](#-applications)
+- [👥 Contributing](#-contributing)
+- [📖 License](#-license)
 
-## 📖 Background
+## 📖 Scientific Background
 
-BERT implements ideas from [George Mobus's](https://directory.tacoma.uw.edu/employee/gmobus) [Systems Science: Theory, Analysis, Modeling and Design](https://link.springer.com/book/10.1007/978-3-030-93482-8). It was created to address key limitations in standard systems modeling frameworks like [Stella](https://www.iseesystems.com/store/products/stella-online.aspx) and [UML](https://www.uml.org/)/[SysML](https://sysml.org/).
+BERT implements the System Language (SL) framework for bounded entity reasoning, a formalized approach to systems analysis. It provides a rigorous methodology for modeling complex adaptive systems through precisely defined boundaries, flows, and relationships.
 
-BERT helps analysts develop detailed understanding of complex systems while preserving crucial details and meanings often lost through abstract modeling approaches. The tool implements a rigorous methodology called Deep Systems Analysis (DSA) and represents a first step toward developing a formal systems language, built specifically for modern systems scientists.
+The software bridges theoretical systems science with visualization technology, enabling researchers to apply systems theory principles to real-world complexity with mathematical precision. This approach allows for:
+
+- Consistent application of systems theory across domains
+- Standardized notation for system elements and relationships
+- Precise documentation of system boundaries and interfaces
+- Integration of qualitative and quantitative systems approaches
 
 ## 🚀 Getting Started
 
 ### Web Version
-- Visit [bert.systems](https://bert.systems/) to use BERT directly in your browser
+
+The easiest way to use BERT is through our web application:
+
+1. Visit [https://bert.systems](https://bert.systems)
+2. No installation required - works in your browser
+3. Your data remains local to your device
 
 ### Desktop Applications
-BERT is also available as a desktop application for macOS and Windows.
 
-- [MacOS Apple Silicon](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_aarch64.dmg)
-- [MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)
-- [Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)
+For the full scientific toolkit, download the desktop application:
 
-Once you've launched BERT, check out our [tutorials](https://bert.gitbook.io/bert-documentation) or see the [controls guide](https://github.com/halcyonic-systems/bert/blob/main/docs/getting-started/Controls.md) for navigation tips.
+#### Windows
+- Download the latest `.exe` installer from [Releases](https://github.com/halcyonic-systems/bert/releases)
+- Run the installer and follow on-screen instructions
 
-## 🔧 Key Features
+#### macOS
+- Download the latest `.dmg` file from [Releases](https://github.com/halcyonic-systems/bert/releases)
+- Open the DMG and drag BERT to your Applications folder
 
-- Guides systematic decomposition of complex systems using Deep Systems Analysis methodology
-- Visual system mapping that preserves critical flows, interfaces, and relationships
-- Structured knowledge capture in a standardized, computable format
-- Hierarchical modeling with unlimited decomposition levels
+#### Linux
+- Download the AppImage from [Releases](https://github.com/halcyonic-systems/bert/releases)
+- Make it executable: `chmod +x BERT-*.AppImage`
+- Run the AppImage
 
-## 📚 Documentation
+### Building from Source
 
-- [Written Tutorials](https://bert.gitbook.io/bert-documentation) - Comprehensive user guides
-- [Video Tutorials](https://github.com/halcyonic-systems/bert/blob/main/docs/getting-started/Tutorials.md) - Visual walkthroughs
-- [Architecture Overview](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/comprehensive-architecture-overview.md) - Understand how BERT works
-- Examples - Coming Soon
+For developers and researchers who want to build from source:
 
-### For Systems Researchers
-
-If you're a systems researcher interested in exploring how BERT implements key systems theoretical concepts:
-
-1. Start with [Getting Started for Systems Scientists](docs/getting-started/for-systems-scientists.md)
-2. Reference [comprehensive-architecture-overview.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/comprehensive-architecture-overview.md) for a high-level conceptual overview
-3. Use [Code Navigation Guide](docs/getting-started/code-navigation-guide.md) when exploring the code
-
-
-## 👨‍💻 Development
-
-BERT is a Rust-based project that uses:
-- [Leptos](https://leptos.dev/) for web UIs
-- [Bevy](https://bevyengine.org/) for creating and interacting with systems and their components
-- [Tauri](https://v2.tauri.app/) for building desktop applications
-
-### Prerequisites
-- **Rust**: Install using `rustup` ([installation instructions](https://www.rust-lang.org/tools/install))
-- **Tauri**: Install using `cargo install create-tauri-app --locked` ([installation instructions](https://v2.tauri.app/start/))
-
-### Run the Project
 ```bash
+# Clone the repository
+git clone https://github.com/halcyonic-systems/bert.git
+cd bert
+
+# Install dependencies
+npm install
+
+# Run in development mode
 cargo tauri dev
+
+# Build for production
+cargo tauri build
 ```
 
-### Project Structure
-- `src-tauri/src/main.rs`: Application entry point
-- `src-tauri/tauri.conf.json`: Tauri configuration
-- `src/bevy_app`: Bevy application and components
-- `src/leptos_app`: Leptos web UI components
+## 📊 Capabilities
 
-For more details, see [comprehensive-architecture-overview.md](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/comprehensive-architecture-overview.md).
+- **Formal System Element Definition**: Create precise system models with mathematically consistent elements
+- **Boundary Analysis**: Rigorously define and analyze system boundaries using systems theory
+- **Flow Characterization**: Document and analyze flows of energy, information, and matter
+- **Compositional Modeling**: Decompose systems into subsystems with formal relationship mapping
+- **Systems Notation**: Use standardized systems science notation across domains
+- **Theoretical Integration**: Bridge multiple systems theories through a common framework
 
-## 🔬 Research
+## 🔍 Applications
 
-BERT implements theoretical concepts from systems science and Deep Systems Analysis (DSA).
-If you're interested in:
+While BERT's foundation is in systems science, its rigorous approach enables applications across domains:
 
-- Systems Ontology and Foundations
-- System Language Research
-- Process Primitives
-- Applied Research (Cryptoeconomics, etc.)
-- Simulation Models
+- **Scientific Research**: Test and refine systems theory hypotheses with visual models
+- **Complex System Analysis**: Model ecological, social, or technological systems with theoretical consistency
+- **Organizational Systems**: Apply systems principles to organizational design and analysis
+- **Systems Education**: Teach systems thinking with interactive, visual examples
+- **Cross-Disciplinary Integration**: Create a common systems language across scientific domains
 
-Please visit the Halcyonic Systems **[Research](https://github.com/halcyonic-systems/research)**
-repository which contains all theoretical foundations and research materials supporting
-BERT.
+## 👥 Contributing
 
-The Research repository is the canonical source for theoretical content, while this
-repository focuses on the practical implementation and application of these concepts.
+We welcome contributions from systems scientists, theorists, and developers! See our [Contributing Guide](docs/contributing/contributing.md) for details on:
 
-## 🤝 Contributing
+- Development environment setup
+- Systems science integration
+- Coding standards
+- Documentation requirements
 
-Interested in contributing to BERT? We welcome contributions of all kinds:
+## 📖 License
 
-- Review and update documentation
-- Test the application and report issues
-- Implement new features or fix bugs
-- Share your experience using BERT
-
-For more information, see [Contributing Guidelines](docs/contributing/guidelines.md).
+BERT is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

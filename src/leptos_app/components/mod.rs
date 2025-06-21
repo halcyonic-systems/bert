@@ -1,5 +1,6 @@
 mod button;
 mod checkbox;
+mod controls_menu;
 mod divider;
 mod input_group;
 mod select_group;
@@ -8,6 +9,7 @@ mod text_area;
 
 pub use button::*;
 pub use checkbox::*;
+pub use controls_menu::*;
 pub use divider::*;
 pub use input_group::*;
 pub use select_group::*;

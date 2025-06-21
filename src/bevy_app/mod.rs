@@ -122,6 +122,7 @@ pub fn init_bevy_app(
     // .add_plugins(WorldInspectorPlugin::new())
     .insert_resource(StrokeTessellator::new())
     .init_resource::<CurrentFile>()
+    .init_resource::<Theme>()
     .init_resource::<Zoom>()
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .init_resource::<IsSameAsIdCounter>()
@@ -235,6 +236,7 @@ pub fn init_bevy_app(
                 update_interface_color_from_flow::<FlowStartInterfaceConnection>,
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
                 update_system_color_from_subsystem,
+                update_background_color_on_theme_change,
                 apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
                 update_is_same_as_id_label,
             ),
@@ -243,7 +245,7 @@ pub fn init_bevy_app(
         )
             .in_set(AllSet),
     )
-    .add_systems(Update, react_to_trigger_event)
+    .add_systems(Update, (react_to_trigger_event, toggle_theme_system))
     .add_systems(
         PostUpdate,
         (
@@ -345,6 +347,7 @@ pub fn init_bevy_app(
     .register_type::<SelectedHighlightHelperAdded>()
     .register_type::<NestingLevel>()
     .register_type::<FocusedSystem>()
+    .register_type::<Theme>()
     .register_type::<Zoom>();
 
     app.world_mut()
@@ -362,4 +365,40 @@ pub fn init_bevy_app(
 
     app.run();
     app
+}
+
+/// System to toggle between normal and black & white themes using Ctrl+Option+B (Mac) or Ctrl+Alt+B (other platforms)
+/// Also handles theme toggle events from the UI.
+pub fn toggle_theme_system(
+    input: Res<ButtonInput<KeyCode>>,
+    mut trigger_events: EventReader<TriggerEvent>,
+    mut theme: ResMut<Theme>,
+) {
+    let mut should_toggle = false;
+
+    // Check for keyboard shortcut
+    #[cfg(target_os = "macos")]
+    let shortcut_pressed = input.just_pressed(KeyCode::KeyB) 
+        && input.pressed(KeyCode::ControlLeft) 
+        && input.pressed(KeyCode::AltLeft); // AltLeft = Option key on Mac
+    
+    #[cfg(not(target_os = "macos"))]
+    let shortcut_pressed = input.just_pressed(KeyCode::KeyB) 
+        && input.pressed(KeyCode::ControlLeft) 
+        && input.pressed(KeyCode::AltLeft);
+
+    if shortcut_pressed {
+        should_toggle = true;
+    }
+
+    // Check for UI toggle events
+    for event in trigger_events.read() {
+        if matches!(event, TriggerEvent::ToggleTheme) {
+            should_toggle = true;
+        }
+    }
+
+    if should_toggle {
+        *theme = theme.toggle();
+    }
 }
