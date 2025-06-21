@@ -222,6 +222,7 @@ impl Plugin for LabelPlugin {
                 copy_name_to_label,
                 apply_text_color_contrast,
                 update_background_size_from_label.after(update_text2d_layout),
+                update_label_background_on_theme_change,
             ),
         )
         .register_type::<NameLabel>()
