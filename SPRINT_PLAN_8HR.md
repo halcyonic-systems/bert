@@ -186,6 +186,86 @@ error!("🔥 SCREENSHOT TRIGGERED! 🔥");
 - `Cmd+I` (Image)
 - `F12` (Function key)
 
+## 🧠 **ROOT CAUSE ANALYSIS: Why Screenshots Are Uniquely Difficult**
+
+### **Multi-Rendering System Complexity** 
+BERT's hybrid architecture creates unique challenges:
+```
+┌─ Bevy Renderer ──────┐  ← Main graphics (what we want to capture)
+├─ Tauri WebView ──────┤  ← Desktop wrapper  
+└─ Browser Canvas ─────┘  ← Web version
+```
+
+**Other features** (controls-menu, background-toggle) are **pure UI state** → work in all contexts
+**Screenshots require deep graphics pipeline access** → platform-specific complexity
+
+### **Cross-Platform Graphics Reality**
+- **Desktop:** Native window capture OR Bevy render pipeline access
+- **Web:** Canvas capture OR WebGL context access  
+- **Different APIs, permissions, security models for each**
+
+### **Why This Feature Was Inherently Hard**
+Screenshots sit at the intersection of:
+- ❌ Graphics rendering systems
+- ❌ Cross-platform compatibility  
+- ❌ Security permissions
+- ❌ Native vs web API differences
+
+**This explains the multiple failed approaches** - not implementation skill, but architectural complexity.
+
+## 🔍 **KEYBOARD SHORTCUT ISSUE: TOP 3 THEORIES**
+
+### **🎯 Theory #1: macOS Key Conflict (Primary Suspect)**
+**`Cmd+P` = System Print Dialog** 
+```bash
+# macOS intercepts Cmd+P before reaching BERT
+User: Cmd+P → macOS Print Dialog → Never reaches BERT
+```
+**Evidence:**
+- Working shortcuts use non-conflicting keys (`H`, `E`, `R`)
+- `Cmd+S` had browser conflicts (user mentioned `Ctrl+S` works instead)
+- System shortcuts take precedence over app shortcuts
+
+### **🔍 Theory #2: Desktop/WebView Focus Issues**
+**Input routing complexity in Tauri:**
+```
+User Input → Desktop Window → Tauri WebView → Bevy App
+                ↑ Focus could be lost here
+```
+**Evidence:**
+- User tested more in browser (`localhost:1320`) than desktop app
+- Browser extensions (Zotero) intercepted shortcuts  
+- Desktop app logs not visible (suggests input/focus disconnect)
+
+### **🐛 Theory #3: System Registration Edge Case**
+Despite identical pattern to working shortcuts, potential issues:
+- System execution order differences
+- Missing dependency in CameraControlSet
+- Conditional compilation affecting registration
+
+## 🧪 **VERIFICATION TESTS**
+
+### **Quick Key Conflict Test:**
+```rust
+// Replace KeyCode::KeyP with non-conflicting key
+take_screenshot.run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyK)))
+```
+**If `Cmd+K` works instantly** → **Key conflict confirmed**
+**If `Cmd+K` still doesn't work** → Deeper architectural issue
+
+### **Focus Test:**
+Ensure testing in **desktop app**, not web browser at `localhost:1320`
+
+### **Debug Logging Test:**
+```rust
+pub fn take_screenshot(mut commands: Commands) {
+    error!("🔥 SCREENSHOT SYSTEM CALLED! 🔥");
+    // ... rest of function
+}
+```
+**If log appears** → System works, screenshot logic issue
+**If no log** → Input not reaching system
+
 ---
 
 ## 🔄 Checkpoint Schedule
