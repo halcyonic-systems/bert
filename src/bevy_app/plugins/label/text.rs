@@ -2,6 +2,9 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::text::TextLayoutInfo;
 use bevy_prototype_lyon::prelude::*;
+use crate::bevy_app::resources::Theme;
+use crate::bevy_app::constants::CLEAR_COLOR;
+use crate::bevy_app::components::{Flow, NestingLevel};
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]
@@ -87,6 +90,36 @@ pub fn update_background_size_from_label(
                 text_layout.size
                     + vec2(background.padding_horizontal, background.padding_vertical) * 2.0,
             );
+        }
+    }
+}
+
+/// Update label background colors when theme changes to maintain contrast and visibility
+pub fn update_label_background_on_theme_change(
+    theme: Res<Theme>,
+    flow_query: Query<(&NameLabel, &NestingLevel), With<Flow>>,
+    mut sprite_query: Query<&mut Sprite, With<LabelContainer>>,
+) {
+    if !theme.is_changed() {
+        return;
+    }
+
+    for (name_label, nesting_level) in &flow_query {
+        if let Ok(mut sprite) = sprite_query.get_mut(name_label.label) {
+            sprite.color = match *theme {
+                Theme::Normal => {
+                    // Original behavior - beige for level 0, white for others
+                    if **nesting_level == 0 {
+                        CLEAR_COLOR
+                    } else {
+                        Color::WHITE
+                    }
+                }
+                Theme::White => {
+                    // White background theme - use light gray for all labels
+                    Color::srgb(0.95, 0.95, 0.95)
+                }
+            };
         }
     }
 }

@@ -51,4 +51,5 @@ pub struct TreeEvent {
 #[derive(Event, Debug, Clone)]
 pub enum TriggerEvent {
     ShowTree,
+    ToggleTheme,
 }

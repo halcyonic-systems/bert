@@ -1,0 +1,28 @@
+# BERT CODEOWNERS file
+#
+# This file defines ownership for different parts of the codebase.
+# GitHub will use this to automatically request reviews on PRs.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything
+* @halcyonic-systems/bert-maintainers
+
+# Bevy app source code
+/src/bevy_app/ @halcyonic-systems/bert-bevy-team
+
+# Leptos UI components
+/src/leptos_app/ @halcyonic-systems/bert-ui-team
+
+# Tauri desktop integration
+/src-tauri/ @halcyonic-systems/bert-desktop-team
+
+# Documentation
+/docs/ @halcyonic-systems/bert-docs-team
+/gitbook/ @halcyonic-systems/bert-docs-team
+
+# Build and deployment configuration
+/Trunk.toml @halcyonic-systems/bert-devops
+/deploy/ @halcyonic-systems/bert-devops
+
+# Scripts and tools
+/scripts/ @halcyonic-systems/bert-devops

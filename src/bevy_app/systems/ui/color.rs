@@ -3,12 +3,15 @@ use crate::bevy_app::components::{
     Connection, CreateButton, Flow, HasFlowOtherEndButton, TargetTypeConnection,
 };
 use crate::bevy_app::constants::HIDDING_TRANSPARENCY;
+use crate::bevy_app::constants::theme::*;
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
+use crate::bevy_app::resources::Theme;
 use crate::bevy_app::{Hidden, Interface, Subsystem};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 /// Update the color of a flow and it's connected external entities based on the flow substance type.
+/// Uses original BERT colors regardless of background theme.
 pub fn update_color_from_substance_type<C>(
     mut query: Query<
         (
@@ -28,7 +31,8 @@ pub fn update_color_from_substance_type<C>(
     C: Connection + TargetTypeConnection + Component,
 {
     for (flow, mut highlight, children, external_entity_connection) in &mut query {
-        let color = flow.substance_type.flow_color();
+        // Use original BERT colors - no theme dependency
+        let color = flow.substance_type.flow_color_default();
         highlight.idle.color = color;
         highlight.selected.color = color;
 
@@ -79,6 +83,7 @@ pub fn update_button_substance_type_from_flow(
 }
 
 /// Update the color of an interface based the flow substance type.
+/// Uses original BERT colors regardless of background theme.
 pub fn update_interface_color_from_flow<C>(
     mut query: Query<(&Flow, &C), Or<(Added<Flow>, Changed<Flow>)>>,
     mut interface_query: Query<(&mut Fill, Option<&Hidden>), (Without<Flow>, With<Interface>)>,
@@ -89,7 +94,8 @@ pub fn update_interface_color_from_flow<C>(
         if let Ok((mut interface_fill, hidden)) =
             interface_query.get_mut(interface_connection.target())
         {
-            interface_fill.color = flow.substance_type.interface_color();
+            // Use original BERT colors - no theme dependency
+            interface_fill.color = flow.substance_type.interface_color_default();
             if hidden.is_some() {
                 interface_fill.color.set_alpha(HIDDING_TRANSPARENCY);
             }
@@ -98,6 +104,7 @@ pub fn update_interface_color_from_flow<C>(
 }
 
 /// Update the color of a subsystem based on the color of the parent system.
+/// Uses original BERT colors regardless of background theme.
 pub fn update_system_color_from_subsystem(
     subsystem_query: Query<&Subsystem, Added<Subsystem>>,
     mut fill_query: Query<(&mut Fill, Option<&Hidden>)>,
@@ -107,10 +114,27 @@ pub fn update_system_color_from_subsystem(
             .get_mut(subsystem.parent_system)
             .expect("System should exist");
 
-        system_fill.color = Color::srgb(235.0, 231.0, 231.0);
+        // Use original BERT system color - no theme dependency
+        system_fill.color = Color::srgb(0.92, 0.91, 0.91);
 
         if hidden.is_some() {
             system_fill.color.set_alpha(HIDDING_TRANSPARENCY);
         }
     }
+}
+
+/// System to update background color when theme changes
+pub fn update_background_color_on_theme_change(
+    theme: Res<Theme>,
+    mut clear_color: ResMut<ClearColor>,
+) {
+    if !theme.is_changed() {
+        return;
+    }
+
+    // Update only the background color
+    clear_color.0 = match *theme {
+        Theme::Normal => NORMAL_BACKGROUND,
+        Theme::White => WHITE_BACKGROUND,
+    };
 }
