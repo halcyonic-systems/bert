@@ -62,7 +62,8 @@ BERT's interface is designed for intuitive system modeling with these main compo
 | What you want to do | How to do it | What happens |
 |---------------------|--------------|--------------|
 | **Select one element** | Left-click on it | 🟦 Element gets blue outline |
-| **Select multiple elements** | Hold `Shift` + click each one | 🟦 Multiple blue outlines |
+| **Select multiple elements** | Hold `Shift` + click each one | 🟦 Multiple blue outlines appear |
+| **Multi-select tip** | `Shift+Click` works for any number of elements | 💡 Great for moving related parts together |
 | **Deselect everything** | Press `Escape` or click empty space | ⚪ All outlines disappear |
 
 ### Working with Selected Elements
@@ -188,6 +189,9 @@ Understanding how elements connect helps you model systems accurately:
 | **Zoom in** | `=` | Navigation |
 | **Zoom out** | `-` | Navigation |
 | **Multi-select** | `Shift + Click` | Selection |
+
+### Advanced Shortcuts
+- **Apply Equivalence** (`E` key) - Automatically balance flows between connected interfaces
 
 ## Workflow Tips
 
