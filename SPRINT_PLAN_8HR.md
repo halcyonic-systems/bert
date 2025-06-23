@@ -59,18 +59,20 @@
 - **Blockers:** None
 - **Last Updated:** 15:30 Phase 1 Assessment
 
-### 🎯 Priority 3: screenshot-export 🔄 EXTENSIVE RESEARCH & MULTIPLE APPROACHES TESTED
-- **Current Status:** 85% complete - Implementation ready, keyboard shortcut needs debugging
+### 🎯 Priority 3: screenshot-export 🚨 BLOCKED BY DEBUGGING INFRASTRUCTURE
+- **Current Status:** 75% complete - Implementation exists but cannot be verified due to debugging limitations
 - **Approaches Tested:** 
   1. ❌ tauri-plugin-screenshots (WASM compilation failures)
-  2. ✅ Bevy native screenshots (successful desktop implementation)
-  3. ✅ Direct keyboard shortcut pattern (following BERT's working shortcuts)
-- **Key Discovery:** BERT keyboard shortcuts work via direct system calls, not events
-- **Current Implementation:** `Cmd+P` → `take_screenshot()` using Bevy's native `Screenshot::primary_window()`
-- **Blockers:** Keyboard shortcut not responding (needs desktop app testing verification)
-- **Next Steps:** Debug why `Cmd+P` not triggering in desktop app vs working shortcuts like `Cmd+S`
-- **Estimated Completion:** 30-60 minutes (debugging keyboard input)
-- **Last Updated:** 22:08 - Awaiting keyboard shortcut verification
+  2. ✅ Bevy native screenshots (desktop implementation created)
+  3. ❌ Direct keyboard shortcut pattern (system registration unknown)
+  4. ❌ Key conflict theory (Cmd+P → Cmd+K, no change)
+  5. ❌ System execution context (CameraControlSet → AppState::Normal, no change)
+- **Critical Discovery:** Desktop BERT has **NO terminal output** - cannot debug any desktop features
+- **Current Implementation:** `take_screenshot()` system exists, keyboard triggers unknown
+- **Major Blocker:** Cannot verify if keyboard input reaches systems or if systems execute
+- **Required Infrastructure:** Desktop debugging capability before feature completion
+- **Estimated Completion:** 2-4 hours (1-2 hours debugging setup + 1-2 hours feature completion)
+- **Last Updated:** 22:20 - BLOCKED by desktop debugging infrastructure
 
 ---
 
@@ -266,6 +268,58 @@ pub fn take_screenshot(mut commands: Commands) {
 **If log appears** → System works, screenshot logic issue
 **If no log** → Input not reaching system
 
+## 🚨 **CRITICAL DEBUGGING LIMITATION DISCOVERED**
+
+### **Desktop App Logging Issue**
+**Problem:** Desktop version of BERT shows **NO terminal output whatsoever**
+- ❌ `error!()` messages not visible
+- ❌ `println!()` messages not visible  
+- ❌ Cannot verify if systems are executing
+- ❌ Cannot debug keyboard input reception
+
+**Impact:** Makes debugging **any** desktop-specific feature extremely difficult
+
+### **Failed Test Results**
+#### ❌ Test 1: Key Conflict Theory (`Cmd+P` → `Cmd+K`)
+- **Result:** No PNG files created, no terminal output
+- **Conclusion:** Not a macOS key conflict issue
+
+#### ❌ Test 2: System Execution Context (`MODIFIER+K` → `K`)
+- **Moved from:** `CameraControlSet` with `input_pressed(MODIFIER)`
+- **Moved to:** `AppState::Normal` with `input_just_pressed(KeyCode::KeyK)` (same as working H, U, E)
+- **Result:** Still no PNG files created
+- **Conclusion:** Deeper system registration or input handling issue
+
+#### ❌ Test 3: Working Shortcuts Verification
+- **Need to test:** H, U, E keys to confirm basic input system works
+- **Blocker:** Cannot verify due to no terminal output
+
+## 🔧 **REQUIRED INFRASTRUCTURE FIXES**
+
+### **Priority 1: Desktop App Debugging**
+Before any desktop feature can be properly debugged, need:
+1. **Terminal output visibility** from desktop app
+2. **Debug logging system** that works in Tauri context
+3. **Alternative debugging methods** (file output, visual indicators)
+
+### **Potential Solutions:**
+1. **File-based logging:** Write debug info to `debug.log` file
+2. **Visual debug indicators:** UI elements that show system state
+3. **Tauri DevTools:** Enable proper debug console
+4. **RUST_LOG configuration:** Ensure proper logging levels
+
+### **Screenshot Debugging Strategy:**
+```rust
+// Instead of terminal logging, use file output
+std::fs::write("debug_screenshot.txt", "Screenshot system called!");
+
+// Or visual confirmation
+commands.spawn(TextBundle {
+    text: Text::from_section("Screenshot taken!", TextStyle::default()),
+    // ... position in corner as confirmation
+});
+```
+
 ---
 
 ## 🔄 Checkpoint Schedule
@@ -300,10 +354,11 @@ pub fn take_screenshot(mut commands: Commands) {
 - Documentation complete for 2 features
 - Compilation verification and AI role assignments
 
-### In Progress 🔄
-- **SCREENSHOT DEBUGGING:** Keyboard shortcut not responding (`Cmd+P` implemented but not triggering)
-- **Implementation:** 85% complete - system exists, follows BERT patterns, just needs keyboard input fix
-- **Estimated Duration:** 30-60 minutes (focused debugging of keyboard input)
+### Blocked 🚨
+- **SCREENSHOT FEATURE:** Cannot debug due to no terminal output from desktop app
+- **Implementation:** 75% complete - system exists but verification impossible
+- **Infrastructure Needed:** Desktop app debugging capability
+- **Required Before Completion:** File-based logging, visual debug indicators, or Tauri DevTools
 
 ### Blocked/Issues 🚫
 - **RESOLVED:** Screenshot export critical issues (solved by complete reset)
