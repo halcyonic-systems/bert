@@ -108,7 +108,7 @@ pub fn spawn_external_entity_only(
     meshes: &mut ResMut<Assets<Mesh>>,
     tess: &mut ResMut<StrokeTessellator>,
 ) -> Entity {
-    let color = substance_type.flow_color();
+    let color = substance_type.flow_color_default();
 
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
