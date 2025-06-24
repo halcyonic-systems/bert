@@ -47,6 +47,7 @@
 
 * [Contributing](for-developers/contributing.md)
 * [Architecture](for-developers/architecture.md)
+* [Visual Architecture Guide](for-developers/visual-architecture.md)
 
 ## Roadmap
 

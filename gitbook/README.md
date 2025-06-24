@@ -12,13 +12,29 @@ For desktop applications with offline capabilities, download the version for you
 * ​[MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)​
 * ​[Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)​
 
+## How BERT Works
+
+BERT combines rigorous systems science with modern software architecture:
+
+```mermaid
+graph LR
+    A["📊 Systems Science<br/>Theory & Method"] --> B["🎨 Interactive Interface<br/>Real-time Modeling"]
+    B --> C["🔍 Deep Analysis<br/>System Understanding"]
+    
+    style A fill:#e1f5fe
+    style B fill:#e8f5e8
+    style C fill:#fff3e0
+```
+
+**Web & Desktop:** BERT runs identically in your browser or as a desktop app, with full feature parity across platforms.
+
 ## Learning Path <a href="#learning-path" id="learning-path"></a>
 
 If you're new to BERT, we recommend following this learning path:
 
-1. Start with the Creating Your First System tutorial
-2. Learn about the Core System Elements
-3. Learn the Essential Keyboard Shortcuts (Ctrl+S to save, Ctrl+L to open)
-4. Explore System Decomposition
-5. Practice with our Example Analyses
+1. Start with the [Creating Your First System](getting-started/creating-your-first-system/) tutorial
+2. Learn about the [Core System Elements](getting-started/creating-your-first-system/system-elements.md)
+3. Learn the Essential [Controls and Interface](getting-started/controls-and-interface.md)
+4. Explore [System Decomposition](getting-started/creating-your-first-system/step-11-system-decomposition.md)
+5. Practice with our [Example Analyses](getting-started/examples/)
 

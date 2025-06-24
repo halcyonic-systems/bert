@@ -2,6 +2,8 @@
 
 BERT implements a sophisticated **Layer 4 System Language** architecture that bridges systems science theory with modern software engineering practices.
 
+> 💡 **Looking for visual diagrams?** Check out the [Visual Architecture Guide](visual-architecture.md) for simple, illustrated explanations of these concepts.
+
 ## Architecture Overview
 
 BERT uses a **component-based ECS (Entity-Component-System) architecture** built on the Bevy game engine, with a reactive web UI layer powered by Leptos. This creates a powerful combination of real-time visualization and intuitive user interaction.
