@@ -211,20 +211,4 @@ graph TD
 
 ---
 
-💡 **Next Steps:** Ready to dive deeper? Check out the [detailed architecture documentation](architecture.md) or explore the [component definitions in the codebase](https://github.com/your-repo/tree/main/src/bevy_app/components).
-
-## 🧪 Test: Auto-Rendering New Diagrams
-
-This section tests if new Mermaid diagrams auto-render in GitBook after integration:
-
-```mermaid
-graph TD
-    A["🧪 Test Node"] --> B["✅ Should Auto-Render"]
-    B --> C["🎉 Success!"]
-    
-    style A fill:#e1f5fe
-    style B fill:#e8f5e8  
-    style C fill:#fff3e0
-```
-
-**Test Result:** If you see a diagram above (not code text), then new Mermaid content automatically renders without manual conversion! 
+💡 **Next Steps:** Ready to dive deeper? Check out the [detailed architecture documentation](architecture.md) or explore the [component definitions in the codebase](https://github.com/your-repo/tree/main/src/bevy_app/components). 
