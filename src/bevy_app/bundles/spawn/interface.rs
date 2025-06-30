@@ -93,7 +93,7 @@ pub fn spawn_interface_only(
         .spawn((
             Interface { protocol },
             transform,
-            Fill::color(substance_type.interface_color()),
+            Fill::color(substance_type.interface_color_default()),
             PickingBehavior::default(),
             RayCastPickable::default(),
             PickSelection { is_selected },

@@ -47,6 +47,12 @@ This document provides a comprehensive reference for all keyboard and mouse cont
 |--------|---------|
 | **Apply Sink/Source Equivalence** | Press `E` |
 
+## View Controls
+
+| Action | Control |
+|--------|---------|
+| **Toggle Background Theme** | Press `Ctrl+Alt+B` (Switch between normal beige and clean white background for screenshots and presentations) |
+
 ## System Creation and Editing
 
 ### Creating Elements

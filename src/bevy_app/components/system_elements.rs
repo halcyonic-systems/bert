@@ -34,6 +34,7 @@
 //! structured component definitions.
 
 use crate::bevy_app::data_model::Complexity;
+
 use bevy::prelude::*;
 use enum_iterator::Sequence;
 use rust_decimal::Decimal;
@@ -746,7 +747,7 @@ impl core::fmt::Display for InteractionUsability {
 /// # Examples
 ///
 /// ```rust
-/// use bert::SubstanceType;
+/// use bert::{SubstanceType, Theme};
 /// use bevy::prelude::Color;
 ///
 /// // Different substance types for modeling flows
@@ -755,8 +756,8 @@ impl core::fmt::Display for InteractionUsability {
 /// let control_signals = SubstanceType::Message;
 ///
 /// // Each type has distinct visual representation
-/// assert_ne!(electricity.flow_color(), raw_materials.flow_color());
-/// assert_ne!(electricity.interface_color(), control_signals.interface_color());
+/// assert_ne!(electricity.flow_color(Theme::Normal), raw_materials.flow_color(Theme::Normal));
+/// assert_ne!(electricity.interface_color(Theme::Normal), control_signals.interface_color(Theme::Normal));
 /// ```
 ///
 /// # See Also
@@ -788,6 +789,8 @@ pub enum SubstanceType {
 impl SubstanceType {
     /// Returns the color used for visual representation of flows of this substance type.
     ///
+    /// Uses the original BERT colors regardless of background theme.
+    ///
     /// # Returns
     ///
     /// A [`Color`] value appropriate for rendering flow connections in the diagram.
@@ -801,9 +804,8 @@ impl SubstanceType {
     ///
     /// let energy_color = SubstanceType::Energy.flow_color();
     /// let material_color = SubstanceType::Material.flow_color();
-    /// let message_color = SubstanceType::Message.flow_color();
     ///
-    /// // Colors are distinct for each substance type
+    /// // Colors are different for each substance type
     /// assert_ne!(energy_color, material_color);
     /// ```
     pub fn flow_color(&self) -> Color {
@@ -863,6 +865,42 @@ impl SubstanceType {
         let g = srgb.green;
         let b = srgb.blue;
         format!("rgb({}, {}, {})", r * 255.0, g * 255.0, b * 255.0)
+    }
+
+    /// Convenience method for frontend usage - same as to_rgb_string().
+    ///
+    /// # Returns
+    ///
+    /// A string in the format "rgb(r, g, b)".
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bert::SubstanceType;
+    ///
+    /// let energy_rgb = SubstanceType::Energy.to_rgb_string_default();
+    /// assert!(energy_rgb.starts_with("rgb("));
+    /// ```
+    pub fn to_rgb_string_default(&self) -> String {
+        self.to_rgb_string()
+    }
+
+    /// Convenience method for getting flow color - same as flow_color().
+    ///
+    /// # Returns
+    ///
+    /// A [`Color`] value.
+    pub fn flow_color_default(&self) -> Color {
+        self.flow_color()
+    }
+
+    /// Convenience method for getting interface color - same as interface_color().
+    ///
+    /// # Returns
+    ///
+    /// A [`Color`] value.
+    pub fn interface_color_default(&self) -> Color {
+        self.interface_color()
     }
 }
 

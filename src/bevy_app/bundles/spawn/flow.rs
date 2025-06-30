@@ -6,7 +6,7 @@ use crate::bevy_app::plugins::label::{add_name_label, BackgroundArgs};
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::plugins::mouse_interaction::PickSelection;
 use crate::bevy_app::resources::{
-    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator,
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Theme,
 };
 use crate::bevy_app::systems::{
     create_aabb_from_flow_curve, create_path_from_flow_curve, tessellate_simplified_mesh,
@@ -162,7 +162,7 @@ pub fn spawn_interaction_only(
 
     let aabb = create_aabb_from_flow_curve(&flow_curve);
 
-    let color = flow.substance_type.flow_color();
+    let color = flow.substance_type.flow_color_default();
 
     let flow_entity = commands
         .spawn((
@@ -325,12 +325,22 @@ pub fn auto_spawn_flow_label(
     flow_query: Query<(Entity, &NestingLevel), Added<Flow>>,
     name_query: Query<&Name>,
     asset_server: Res<AssetServer>,
+    theme: Res<Theme>,
 ) {
     for (flow_entity, nesting_level) in flow_query.iter() {
-        let color = if **nesting_level == 0 {
-            CLEAR_COLOR
-        } else {
-            Color::WHITE
+        let color = match *theme {
+            Theme::Normal => {
+                // Original behavior - beige for level 0, white for others
+                if **nesting_level == 0 {
+                    CLEAR_COLOR
+                } else {
+                    Color::WHITE
+                }
+            }
+            Theme::White => {
+                // White background theme - use light gray for all labels
+                Color::srgb(0.95, 0.95, 0.95)
+            }
         };
 
         add_name_label(

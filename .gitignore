@@ -45,3 +45,4 @@ Thumbs.db
 
 # Claude specific
 **/.claude/settings.local.json
+private-dev/
