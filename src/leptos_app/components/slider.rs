@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use web_sys::Event;
+use crate::leptos_app::components::FieldTooltip;
 
 #[component]
 pub fn Slider(
@@ -9,6 +10,7 @@ pub fn Slider(
     #[prop(into, default = 0.0.into())] min: Signal<f64>,
     #[prop(into, default = 1.0.into())] max: Signal<f64>,
     #[prop(into, default = 1.0.into())] step: Signal<f64>,
+    #[prop(optional, default = true)] show_help: bool,
     // #[prop(into, optional)] show_steps: Signal<bool>,
     on_input: impl Fn(f64) + 'static + Clone,
 ) -> impl IntoView {
@@ -45,9 +47,11 @@ pub fn Slider(
 
     view! {
         <div class="mb-2">
-            <label for=id class="block font-medium text-gray-900 text-sm/6">
-                {label}
-            </label>
+            <FieldTooltip field_id=id.to_string() show_help=show_help>
+                <label for=id class="block font-medium text-gray-900 text-sm/6">
+                    {label}
+                </label>
+            </FieldTooltip>
             <div class="flex relative items-center rounded-md">
                 <input
                     id=id

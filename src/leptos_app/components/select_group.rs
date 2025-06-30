@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use std::fmt::Display;
+use crate::leptos_app::components::FieldTooltip;
 
 #[component]
 pub fn SelectGroup<Opt, F>(
@@ -9,6 +10,7 @@ pub fn SelectGroup<Opt, F>(
     #[prop(into)] selected_option: Signal<Option<Opt>>,
     on_change: F,
     #[prop(into, optional)] disabled: Signal<bool>,
+    #[prop(optional, default = true)] show_help: bool,
 ) -> impl IntoView
 where
     Opt: Display + Sync + Send + Clone + PartialEq + Eq + 'static,
@@ -25,11 +27,16 @@ where
         }
     };
 
+    let id_clone = id.clone();
+    let label_clone = label.clone();
+
     view! {
         <div class="mb-2">
-            <label for=id.clone() class="block font-medium text-gray-900 text-sm/6">
-                {label.clone()}
-            </label>
+            <FieldTooltip field_id=id_clone.clone() show_help=show_help>
+                <label for=id_clone.clone() class="block font-medium text-gray-900 text-sm/6">
+                    {label_clone.clone()}
+                </label>
+            </FieldTooltip>
             <div class="grid grid-cols-1 mt-2">
                 <select
                     prop:disabled=disabled
