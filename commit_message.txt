@@ -1,0 +1,5 @@
+feat: Implement LLM chat integration with Ollama and OpenAI support
+
+Add complete chat UI with environment detection, MinimalLLMService with multiple providers (Ollama/OpenAI/Mock), automatic model context loading from JSON files, Tauri command integration, enhanced factual response system, comprehensive documentation, graceful fallback handling, and targeted improvement roadmap.
+
+Core: chat.rs, chat_service.rs, CHAT_SETUP.md | Deps: ollama-rs, async-openai, tokio | Features: local-llm, cloud-api 

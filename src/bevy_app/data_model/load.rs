@@ -11,7 +11,6 @@ use crate::LoadFileEvent;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use rust_decimal_macros::dec;
-
 fn load_from_bytes(bytes: &[u8]) -> WorldModel {
     serde_json::from_slice(bytes).expect("This shouldn't fail")
 }

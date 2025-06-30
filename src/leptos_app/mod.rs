@@ -10,12 +10,13 @@ use crate::bevy_app::{
     Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
 use crate::leptos_app::details::Details;
+use crate::leptos_app::components::ChatPanel;
 use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::{event_l2b, single_query_signal, BevyCanvas};
 use leptos_meta::*;
-use use_file_dialog::*;
+use use_file_dialog::generate_file_loader;
 
 pub type InterfaceQuery = (Name, ElementDescription, Interface);
 pub type InteractionQuery = (Name, ElementDescription, Flow);
@@ -121,6 +122,7 @@ pub fn App() -> impl IntoView {
             is_same_as_id
             detach_event_sender
         />
+        <ChatPanel />
     }
 }
 

@@ -18,11 +18,28 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-tauri-plugin-dialog = "2"
-tauri-plugin-fs = "2"
+tauri = { version = "2.2", features = [] }
+tauri-plugin-fs = "2.2"
+tauri-plugin-dialog = "2.2"
+tauri-plugin-opener = "2.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+dirs = "5.0"
+tokio = { version = "1.0", features = ["full"] }
+
+# Minimal LLM chat dependencies
 leptos = { version = "0.7", features = ["csr"] }
+
+# LLM Providers (all optional, but ollama is default)
+ollama-rs = { version = "0.2", optional = true }
+reqwest = { version = "0.12", features = ["json"], optional = true }
+async-openai = { version = "0.28", optional = true }
+anthropic = { version = "0.0.8", optional = true }
+
+[features]
+default = ["local-llm"]
+local-llm = ["ollama-rs"]
+cloud-api = ["reqwest", "async-openai", "anthropic"]
+all-providers = ["local-llm", "cloud-api"]
 
