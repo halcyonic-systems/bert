@@ -10,7 +10,8 @@ use crate::bevy_app::{
     Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
 use crate::leptos_app::details::Details;
-use crate::leptos_app::components::ControlsMenu;
+use crate::leptos_app::components::{ControlsMenu, ModelBrowser};
+use crate::LoadFileEvent;
 use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
 use leptos::prelude::*;
@@ -38,6 +39,8 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     let load_file_event_receiver = generate_file_loader();
+    // For MVP: Temporarily disable model loading functionality
+    // let (load_file_writer, _) = event_l2b::<LoadFileEvent>();
 
     let (selected_details, selected_details_query) =
         single_query_signal::<(SystemElement,), With<SelectedHighlightHelperAdded>>();
@@ -67,6 +70,7 @@ pub fn App() -> impl IntoView {
 
     let (tree_visible, set_tree_visible) = signal(false);
     let (controls_visible, set_controls_visible) = signal(false);
+    let (model_browser_visible, set_model_browser_visible) = signal(false);
 
     view! {
         <Show
@@ -91,6 +95,14 @@ pub fn App() -> impl IntoView {
                             }
                         >
                             {"Controls"}
+                        </button>
+                        <button
+                            class="px-4 py-2 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow"
+                            on:click=move |_| {
+                                set_model_browser_visible.set(true);
+                            }
+                        >
+                            {"Model Browser"}
                         </button>
                     </div>
                 }
@@ -119,6 +131,14 @@ pub fn App() -> impl IntoView {
         <ControlsMenu 
             visible=controls_visible 
             on_close=Callback::new(move |_| set_controls_visible.set(false))
+        />
+        <ModelBrowser 
+            visible=model_browser_visible
+            on_close=Callback::new(move |_| set_model_browser_visible.set(false))
+            on_load=Callback::new(move |_event: LoadFileEvent| {
+                // For MVP: Just close the modal, file loading disabled temporarily
+                // load_file_writer.send(event).ok();
+            })
         />
         <div class="h-screen">
             <BevyCanvas init=move || {
