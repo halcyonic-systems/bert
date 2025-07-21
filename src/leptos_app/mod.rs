@@ -125,6 +125,14 @@ pub fn App() -> impl IntoView {
                 >
                     {"Controls"}
                 </button>
+                <button
+                    class="px-4 py-2 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow"
+                    on:click=move |_| {
+                        set_model_browser_visible.set(true);
+                    }
+                >
+                    {"Model Browser"}
+                </button>
             </div>
         </Show>
         <Tree visible=tree_visible event_receiver=tree_event_receiver />
