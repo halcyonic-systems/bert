@@ -10,45 +10,59 @@
 
 ## Description
 
-[Provide a brief description of what this feature does and why it's valuable]
+The Model Browser provides a user-friendly interface for browsing and loading pre-built BERT models directly from the application. This feature makes it easier for new users to explore BERT's capabilities and for experienced users to quickly access common system templates.
 
 ## Implemented Functionality
 
-- [List specific capabilities implemented]
-- [Be specific about what users can now do]
-- [Include any limitations or constraints]
+- Modal dialog interface that matches existing UI patterns
+- "Model Browser" button in main toolbar (visible in both tree states)
+- Grid layout displaying 3 placeholder models
+- Responsive design that works on desktop and web
+- Clean close functionality with overlay click or X button
+- Placeholder slots for example models (not yet populated)
 
 ## Technical Implementation
 
 ### Components Added
 
-- ``: [Describe purpose]\n
+- `src/leptos_app/components/model_browser.rs`: Modal component for browsing and selecting models
 
 ### Components Modified
 
-[No existing components modified]
+- `src/leptos_app/components/mod.rs`: Added model_browser module export
+- `src/leptos_app/mod.rs`: Added Model Browser button and state management
 
 ### Architecture Decisions
 
-[Brief explanation of key architectural decisions, patterns used, and their rationale]
+- Followed existing modal pattern from ControlsMenu component for consistency
+- Used Leptos signals for state management (visibility toggle)
+- Implemented as a separate component for modularity
+- Temporarily disabled file loading to get UI working first (MVP approach)
+- Prepared for future integration with include_str! for bundled models
 
 ## Usage Examples
 
-```rust
-// Simple code example showing how to use the feature
-let example = Feature::new();
-example.demonstrate();
-```
+1. Click the "Model Browser" button in the top toolbar
+2. Browse available models in the modal dialog
+3. Click on a model to load it (currently disabled)
+4. Close the browser with the X button or by clicking outside
 
 ## Testing Strategy
 
-[Describe how this feature has been tested]
+- Manually tested UI in both desktop (Tauri) and web environments
+- Verified button appears in both tree visible/hidden states
+- Tested modal open/close functionality
+- Confirmed responsive grid layout works at different screen sizes
 
 ## Future Improvements
 
-- [Potential enhancements identified during implementation]
-- [Known limitations that could be addressed]
-- [Ideas for extending the feature]
+- Implement actual model loading functionality
+- Add real example models (cell, organization, circuit)
+- Add search/filter capabilities for larger model libraries
+- Include model previews or thumbnails
+- Add categories for organizing models
+- Support for user-created model libraries
+- Integration with remote model repositories
 
 ## Related Documentation
 
