@@ -3,6 +3,8 @@ use crate::LoadFileEvent;
 
 // Embedded model data
 const CELL_MODEL_JSON: &str = include_str!("../../../assets/models/cell.json");
+const ORGANIZATION_MODEL_JSON: &str = include_str!("../../../assets/models/organization.json");
+const SOLAR_PANEL_MODEL_JSON: &str = include_str!("../../../assets/models/solar-panel.json");
 
 #[component]
 pub fn ModelBrowser(
@@ -43,20 +45,34 @@ pub fn ModelBrowser(
                         
                         // Organization Model
                         <button
-                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors disabled:opacity-50 cursor-not-allowed"
-                            disabled=true
+                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                            on:click=move |_| {
+                                leptos::logging::log!("Loading organization model, data length: {}", ORGANIZATION_MODEL_JSON.len());
+                                on_load.run(LoadFileEvent {
+                                    file_path: "organization.json".to_string(),
+                                    data: ORGANIZATION_MODEL_JSON.as_bytes().to_vec(),
+                                });
+                                on_close.run(());
+                            }
                         >
                             <h3 class="font-semibold text-gray-800">"Organization"</h3>
-                            <p class="text-sm text-gray-600 mt-1">"Basic organization structure model (coming soon)"</p>
+                            <p class="text-sm text-gray-600 mt-1">"Organizational structure with human capital, financial flows, and waste"</p>
                         </button>
                         
-                        // Circuit Model  
+                        // Solar Panel Model  
                         <button
-                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors disabled:opacity-50 cursor-not-allowed"
-                            disabled=true
+                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                            on:click=move |_| {
+                                leptos::logging::log!("Loading solar panel model, data length: {}", SOLAR_PANEL_MODEL_JSON.len());
+                                on_load.run(LoadFileEvent {
+                                    file_path: "solar-panel.json".to_string(),
+                                    data: SOLAR_PANEL_MODEL_JSON.as_bytes().to_vec(),
+                                });
+                                on_close.run(());
+                            }
                         >
-                            <h3 class="font-semibold text-gray-800">"Circuit"</h3>
-                            <p class="text-sm text-gray-600 mt-1">"Simple electrical circuit example (coming soon)"</p>
+                            <h3 class="font-semibold text-gray-800">"Solar Panel"</h3>
+                            <p class="text-sm text-gray-600 mt-1">"Photovoltaic system converting sunlight to electricity with thermal waste"</p>
                         </button>
                     </div>
                     

@@ -17,7 +17,7 @@ use bevy::prelude::{Name, With};
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::{event_l2b, single_query_signal, BevyCanvas};
 use leptos_meta::*;
-use use_file_dialog::*;
+use use_file_dialog::use_file_dialog_with_options;
 
 pub type InterfaceQuery = (Name, ElementDescription, Interface);
 pub type InteractionQuery = (Name, ElementDescription, Flow);
@@ -38,7 +38,63 @@ use leptos_bevy_canvas::prelude::*;
 pub fn App() -> impl IntoView {
     provide_meta_context();
 
+    // Unified LoadFileEvent system for both Ctrl+L file dialog and Model Browser
     let (load_file_writer, load_file_event_receiver) = event_l2b::<LoadFileEvent>();
+    
+    // Set up file dialog with the shared event writer
+    let file_dialog_signal = RwSignal::new(None::<crate::leptos_app::use_file_dialog::UseFile>);
+    let _ = use_file_dialog_with_options(crate::leptos_app::use_file_dialog::UseFileDialogOptions {
+        initial_file: file_dialog_signal,
+        extensions: vec!["application/json".to_string()].into(),
+        additional_behavior: move || {
+            // Check if Tauri is available for desktop file dialogs
+            let tauri_exists = leptos_use::js! {
+                "__TAURI__" in &window()
+            };
+            
+            if tauri_exists {
+                use leptos::task::spawn_local;
+                use serde::{Serialize, Deserialize};
+                use std::path::PathBuf;
+                use tauri_sys::core::invoke;
+                
+                #[derive(Serialize, Deserialize, Debug, Clone)]
+                struct Args {
+                    pb: PathBuf,
+                }
+                
+                spawn_local({
+                    let file_signal = file_dialog_signal;
+                    async move {
+                        let file_path = invoke::<Option<PathBuf>>("pick_file", ()).await;
+                        if let Some(path) = file_path {
+                            let file_data = invoke::<crate::leptos_app::use_file_dialog::UseFile>("load_file", &Args { pb: path }).await;
+                            file_signal.update(|file| {
+                                *file = Some(file_data);
+                            });
+                        }
+                    }
+                });
+            }
+            
+            !tauri_exists // Return true for web file dialog if Tauri not available
+        },
+    });
+    
+    // Connect file dialog signal to LoadFileEvent stream
+    Effect::new({
+        let load_file_writer = load_file_writer.clone();
+        move |_| {
+            if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) = file_dialog_signal.get() {
+                load_file_writer
+                    .send(LoadFileEvent {
+                        file_path: path,
+                        data,
+                    })
+                    .ok();
+            }
+        }
+    });
 
     let (selected_details, selected_details_query) =
         single_query_signal::<(SystemElement,), With<SelectedHighlightHelperAdded>>();
