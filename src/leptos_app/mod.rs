@@ -38,9 +38,7 @@ use leptos_bevy_canvas::prelude::*;
 pub fn App() -> impl IntoView {
     provide_meta_context();
 
-    let load_file_event_receiver = generate_file_loader();
-    // For MVP: Temporarily disable model loading functionality
-    // let (load_file_writer, _) = event_l2b::<LoadFileEvent>();
+    let (load_file_writer, load_file_event_receiver) = event_l2b::<LoadFileEvent>();
 
     let (selected_details, selected_details_query) =
         single_query_signal::<(SystemElement,), With<SelectedHighlightHelperAdded>>();
@@ -143,9 +141,11 @@ pub fn App() -> impl IntoView {
         <ModelBrowser 
             visible=model_browser_visible
             on_close=Callback::new(move |_| set_model_browser_visible.set(false))
-            on_load=Callback::new(move |_event: LoadFileEvent| {
-                // For MVP: Just close the modal, file loading disabled temporarily
-                // load_file_writer.send(event).ok();
+            on_load=Callback::new(move |event: LoadFileEvent| {
+                // Send the load file event to Bevy
+                leptos::logging::log!("Sending LoadFileEvent: {} with {} bytes", event.file_path, event.data.len());
+                load_file_writer.send(event).ok();
+                set_model_browser_visible.set(false);
             })
         />
         <div class="h-screen">

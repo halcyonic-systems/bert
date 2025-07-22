@@ -1,6 +1,9 @@
 use leptos::prelude::*;
 use crate::LoadFileEvent;
 
+// Embedded model data
+const CELL_MODEL_JSON: &str = include_str!("../../../assets/models/cell.json");
+
 #[component]
 pub fn ModelBrowser(
     #[prop(into)] visible: Signal<bool>,
@@ -24,53 +27,36 @@ pub fn ModelBrowser(
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         // Simple Cell Model
                         <button
-                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors disabled:opacity-50"
+                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
                             on:click=move |_| {
-                                // TODO: Load actual model data
+                                leptos::logging::log!("Loading cell model, data length: {}", CELL_MODEL_JSON.len());
                                 on_load.run(LoadFileEvent {
                                     file_path: "cell.json".to_string(),
-                                    data: vec![], // Empty for now
+                                    data: CELL_MODEL_JSON.as_bytes().to_vec(),
                                 });
                                 on_close.run(());
                             }
-                            disabled=true
                         >
                             <h3 class="font-semibold text-gray-800">"Simple Cell"</h3>
-                            <p class="text-sm text-gray-600 mt-1">"Coming soon..."</p>
+                            <p class="text-sm text-gray-600 mt-1">"A biological cell with ATP production and CO2 waste pathways"</p>
                         </button>
                         
                         // Organization Model
                         <button
-                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors disabled:opacity-50"
-                            on:click=move |_| {
-                                // TODO: Load actual model data
-                                on_load.run(LoadFileEvent {
-                                    file_path: "organization.json".to_string(),
-                                    data: vec![], // Empty for now
-                                });
-                                on_close.run(());
-                            }
+                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors disabled:opacity-50 cursor-not-allowed"
                             disabled=true
                         >
                             <h3 class="font-semibold text-gray-800">"Organization"</h3>
-                            <p class="text-sm text-gray-600 mt-1">"Coming soon..."</p>
+                            <p class="text-sm text-gray-600 mt-1">"Basic organization structure model (coming soon)"</p>
                         </button>
                         
                         // Circuit Model  
                         <button
-                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors disabled:opacity-50"
-                            on:click=move |_| {
-                                // TODO: Load actual model data  
-                                on_load.run(LoadFileEvent {
-                                    file_path: "circuit.json".to_string(),
-                                    data: vec![], // Empty for now
-                                });
-                                on_close.run(());
-                            }
+                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors disabled:opacity-50 cursor-not-allowed"
                             disabled=true
                         >
                             <h3 class="font-semibold text-gray-800">"Circuit"</h3>
-                            <p class="text-sm text-gray-600 mt-1">"Coming soon..."</p>
+                            <p class="text-sm text-gray-600 mt-1">"Simple electrical circuit example (coming soon)"</p>
                         </button>
                     </div>
                     

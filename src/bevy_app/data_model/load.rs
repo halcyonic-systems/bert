@@ -54,6 +54,9 @@ pub fn load_world(
     mut is_same_as_id_counter: ResMut<IsSameAsIdCounter>,
 ) {
     for event in file_event_reader.read() {
+        info!("load_world: Received LoadFileEvent for {}", event.file_path);
+        info!("load_world: Data size: {} bytes", event.data.len());
+        
         *current_file = CurrentFile(Some(event.file_path.clone()));
 
         // clear the scene first
@@ -62,6 +65,7 @@ pub fn load_world(
         }
 
         let world_model = load_from_bytes(event.data.as_slice());
+        info!("load_world: Parsed model with {} systems", world_model.systems.len());
 
         let mut ctx = Context::new();
 
