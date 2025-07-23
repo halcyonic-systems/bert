@@ -89,7 +89,7 @@ pub fn add_inflow_create_button(
 
         let is_not_interface_subsystem = not_interface_subsystem_query.get(focused_system).is_ok();
 
-        if outflow_usabilities.len() > 1
+        if !outflow_usabilities.is_empty()
             || is_export_subsystem
             || is_completed_import_subsystem
             || is_not_interface_subsystem
