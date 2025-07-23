@@ -60,7 +60,7 @@
 - **Reduced friction**: No need to create files before experiencing BERT
 - **Better demos**: Easy to show BERT's capabilities to others
 
-## Business Impact
+## Impact on Adoption
 
 ### Current State
 - Users abandon before seeing BERT's value
