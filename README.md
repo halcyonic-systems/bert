@@ -1,4 +1,4 @@
-<h1 align="center">BERT (Bounded Entity Reasoning Toolkit)</h1>
+-<h1 align="center">BERT (Bounded Entity Reasoning Toolkit)</h1>
 
 <p align="center">Rigorous Systems Science Visualization</p>
 
