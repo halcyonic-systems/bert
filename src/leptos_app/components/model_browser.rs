@@ -1,11 +1,44 @@
+//! # Model Browser Component
+//!
+//! Provides a modal interface for browsing and loading pre-built BERT models.
+//! This component displays example models across different domains (biological,
+//! organizational, technical) to help users understand BERT's capabilities.
+
 use leptos::prelude::*;
 use crate::LoadFileEvent;
 
-// Embedded model data
+// Embedded model data - These JSON files contain complete BERT model definitions
+// with boundaries, interfaces, flows, and system elements properly configured.
 const CELL_MODEL_JSON: &str = include_str!("../../../assets/models/cell.json");
 const ORGANIZATION_MODEL_JSON: &str = include_str!("../../../assets/models/organization.json");
 const SOLAR_PANEL_MODEL_JSON: &str = include_str!("../../../assets/models/solar-panel.json");
 
+/// Modal component for browsing and loading example BERT models.
+///
+/// Displays a grid of available example models with descriptions, allowing users
+/// to quickly load pre-built models for exploration or as starting points for
+/// their own system analysis.
+///
+/// # Parameters
+///
+/// - `visible`: Signal controlling modal visibility
+/// - `on_close`: Callback triggered when modal should be closed
+/// - `on_load`: Callback triggered when a model is selected for loading
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// // Usage in parent component
+/// let (show_browser, set_show_browser) = signal(false);
+/// 
+/// view! {
+///     <ModelBrowser
+///         visible=show_browser
+///         on_close=move |_| set_show_browser.set(false)
+///         on_load=handle_model_load
+///     />
+/// }
+/// ```
 #[component]
 pub fn ModelBrowser(
     #[prop(into)] visible: Signal<bool>,
