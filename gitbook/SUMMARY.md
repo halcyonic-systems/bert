@@ -24,9 +24,9 @@
 * [Controls and Interface](getting-started/controls-and-interface.md)
 * [Glossary](getting-started/glossary.md)
 * [Examples](getting-started/examples/README.md)
-  * [A Home](getting-started/examples/a-home.md)
   * [A Cell](getting-started/examples/a-cell.md)
-  * [An LLM](getting-started/examples/an-llm.md)
+  * [An Organization](getting-started/examples/an-organization.md)
+  * [A Solar Panel](getting-started/examples/a-solar-panel.md)
 
 ## Case Studies
 

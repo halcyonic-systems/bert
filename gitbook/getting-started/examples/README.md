@@ -1,67 +1,66 @@
 # Examples
 
+## Quick Start with Model Browser
+
+BERT includes a Model Browser with three ready-to-explore examples. Click the Model Browser button in the top toolbar to load any of these models instantly:
+
+### 🧬 [A Cell](a-cell.md)
+Explore how biological systems transform inputs into outputs through specialized interfaces. This model demonstrates cellular respiration with glucose/oxygen inputs and ATP/CO2 outputs.
+
+### 🏢 [An Organization](an-organization.md)  
+See how business systems decompose into functional departments. This model shows HR, Finance, and Sales as subsystems with their own inputs, outputs, and processes.
+
+### ⚡ [A Solar Panel](a-solar-panel.md)
+Understand energy transformation systems. This model illustrates how solar radiation becomes electricity, with waste heat as a byproduct.
+
+## Learning from Examples
+
+Each example model teaches different BERT concepts:
+
+1. **System Boundaries** - How to define what's inside vs. outside your system
+2. **Input/Output Flows** - Modeling resource transformation and waste products  
+3. **Interfaces** - Specific mechanisms that enable flows across boundaries
+4. **Subsystems** - Hierarchical decomposition of complex systems
+5. **Complexity Types** - When systems are adaptable vs. evolveable
+
 ## Basic Tutorials
 
-This section provides step-by-step guides to help you start using BERT effectively.
+After exploring the example models, follow these tutorials to create your own:
 
-### Creating Your First System
+### [Creating Your First System](../creating-your-first-system/)
 
 A complete walkthrough of starting a new project in BERT:
-
 * Starting a new project
 * Setting up the main system boundary
 * Defining the system of interest
 * Saving and reopening projects
 
-View the complete tutorial
-
 ### Building System Structure
 
 Learn how to create and organize system elements:
-
 * Adding external entities
 * Creating interfaces
 * Establishing subsystems
 * Organizing layout for clarity
 
-_Detailed tutorial coming soon..._
-
 ### Defining Flows
 
 Connect elements with flows to represent system interactions:
-
 * Connecting elements with flows
 * Setting flow properties
 * Flow types and distinctions
 * Visualizing system dynamics
 
-_Detailed tutorial coming soon..._
+## Next Steps
 
-### Element Management
+1. **Load an Example** - Use the Model Browser to explore a pre-built model
+2. **Modify It** - Try changing flow rates, adding new interfaces, or creating subsystems
+3. **Build Your Own** - Apply the patterns to model a system from your domain
+4. **Share Your Work** - Export your model as JSON to collaborate with others
 
-Master the basics of working with system elements:
-
-* Selection techniques
-* Moving and arranging elements
-* Deleting elements safely
-* Working with multiple elements
-
-_Detailed tutorial coming soon..._
-
-### Hierarchy Navigation
-
-Navigate complex systems with multiple levels:
-
-* Zooming and panning
-* Navigating between system levels
-* Managing complex visualizations
-* Focus techniques for large systems
-
-_Detailed tutorial coming soon..._
-
-***
+---
 
 **Related Sections:**
-
-* Core Concepts
-* Advanced Features
+* [Why BERT?](../why-bert.md) - Understand the philosophy behind BERT
+* [Controls and Interface](../controls-and-interface.md) - Master the BERT interface
+* [System Language](../../for-researchers/system-language.md) - Deep dive into systems theory
