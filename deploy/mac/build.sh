@@ -4,7 +4,7 @@ mkdir -p ${APP_FOLDER}
 # set the name of the Mac App
 APP_NAME="DeepSystemsAnalysis"
 # set the name of your rust crate
-RUST_CRATE_NAME="deep-systems-analysis"
+RUST_CRATE_NAME="bert"
 # create the folder structure
 mkdir -p "${APP_FOLDER}/${APP_NAME}.app/Contents/MacOS"
 mkdir -p "${APP_FOLDER}/${APP_NAME}.app/Contents/Resources"
