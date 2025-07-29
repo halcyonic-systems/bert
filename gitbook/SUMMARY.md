@@ -3,7 +3,6 @@
 ## Getting Started
 
 * [Get Started with BERT](README.md)
-* [Why BERT?](getting-started/why-bert.md)
 * [Creating Your First System](getting-started/creating-your-first-system/README.md)
   * [Step 1: Starting a New Project](getting-started/creating-your-first-system/step-1-starting-a-new-project.md)
   * [Step 2: Define Your System of Interest](getting-started/creating-your-first-system/step-2-define-your-system-of-interest.md)
@@ -23,37 +22,40 @@
   * [Video Tutorial](getting-started/creating-your-first-system/video-tutorial.md)
 * [Controls and Interface](getting-started/controls-and-interface.md)
 * [Glossary](getting-started/glossary.md)
-* [Examples](getting-started/examples/README.md)
-  * [A Cell](getting-started/examples/a-cell.md)
-  * [An Organization](getting-started/examples/an-organization.md)
-  * [A Solar Panel](getting-started/examples/a-solar-panel.md)
 
-## Case Studies
+## Examples
 
-* [Bitcoin](case-studies/bitcoin.md)
-
-## Analysis, Modeling and Simulation
-
-* [Deep Systems Analysis](analysis-modeling-and-simulation/deep-systems-analysis.md)
-* [Modeling](analysis-modeling-and-simulation/modeling.md)
-* [Simulation](analysis-modeling-and-simulation/simulation.md)
+* [Overview](examples/README.md)
+* [Biological Systems](examples/biological-systems/README.md)
+  * [A Cell](examples/biological-systems/a-cell.md)
+* [Social Systems](examples/social-systems/README.md)
+  * [An Organization](examples/social-systems/an-organization.md)
+* [Technological Systems](examples/technological-systems/README.md)
+  * [A Solar Panel](examples/technological-systems/a-solar-panel.md)
+* [Cryptoeconomic Systems](examples/cryptoeconomic-systems/README.md)
 
 ## For Researchers
 
+* [Methodology](for-researchers/methodology/README.md)
+  * [Deep Systems Analysis](for-researchers/methodology/deep-systems-analysis.md)
+  * [System Modeling](for-researchers/methodology/system-modeling.md)
+  * [System Simulation](for-researchers/methodology/system-simulation.md)
 * [System Ontology](for-researchers/system-ontology.md)
 * [System Language](for-researchers/system-language.md)
 
 ## For Developers
 
-* [Contributing](for-developers/contributing.md)
+* [Overview](for-developers/README.md)
+* [Getting Started](for-developers/getting-started.md)
 * [Architecture](for-developers/architecture.md)
-* [Visual Architecture Guide](for-developers/visual-architecture.md)
+* [Current Features](for-developers/current-features.md)
+* [Contributing](for-developers/contributing.md)
 
-## Roadmap
+## Releases
 
-* [Alpha](roadmap/alpha.md)
-
-***
-
-* [Beta](beta.md)
-* [1.0](1.0.md)
+* [Overview](releases/README.md)
+* [v0.1.0 - Foundation](releases/v0.1.0.md)
+* [v0.2.0 - Model Browser](releases/v0.2.0.md)
+* [v0.3.0 - Agent Archetype](releases/v0.3.0.md)
+* [v0.4.0 - Simulation Bridge](releases/v0.4.0.md)
+* [v1.0 - Production Ready](releases/v1.0.md)

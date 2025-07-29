@@ -2,6 +2,15 @@
 
 **BERT** (Bounded Entity Reasoning Toolkit) is a visual software tool that guides analysts through the rigorous decomposition and analysis of complex adaptive systems.
 
+Modern systems are increasingly interconnected and difficult to understand through conventional analysis. BERT implements Deep Systems Analysis (DSA) methodology to:
+
+* Systematically decompose complex systems into manageable components
+* Preserve critical flows, interfaces, and relationships between components  
+* Capture knowledge in a standardized, computable format
+* Build hierarchical models with unlimited decomposition levels
+
+Unlike traditional diagramming tools, BERT enforces methodological rigor based on systems science principles.
+
 ## Getting Started <a href="#getting-started" id="getting-started"></a>
 
 The fastest way to start using BERT is through our web application: 🌐 [bert.systems](https://bert.systems/)​
@@ -12,21 +21,6 @@ For desktop applications with offline capabilities, download the version for you
 * ​[MacOS Intel](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert_0.1.0_x64.dmg)​
 * ​[Windows](https://github.com/halcyonic-systems/bert/releases/download/v0.1.0-beta/bert.exe)​
 
-## How BERT Works
-
-BERT combines rigorous systems science with modern software architecture:
-
-```mermaid
-graph LR
-    A["📊 Systems Science<br/>Theory & Method"] --> B["🎨 Interactive Interface<br/>Real-time Modeling"]
-    B --> C["🔍 Deep Analysis<br/>System Understanding"]
-    
-    style A fill:#e1f5fe
-    style B fill:#e8f5e8
-    style C fill:#fff3e0
-```
-
-**Web & Desktop:** BERT runs identically in your browser or as a desktop app, with full feature parity across platforms.
 
 ## Learning Path <a href="#learning-path" id="learning-path"></a>
 
