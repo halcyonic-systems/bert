@@ -3,6 +3,7 @@ mod external_entity;
 mod flow;
 mod interface;
 mod main_system;
+mod spatial_interaction;
 mod subsystem;
 
 pub use create_button::*;
@@ -10,4 +11,5 @@ pub use external_entity::*;
 pub use flow::*;
 pub use interface::*;
 pub use main_system::*;
+pub use spatial_interaction::*;
 pub use subsystem::*;

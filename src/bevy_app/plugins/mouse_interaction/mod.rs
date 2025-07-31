@@ -191,7 +191,7 @@ impl Plugin for MouseInteractionPlugin {
         {
             app.init_resource::<debug::SelectedEntities>()
                 .register_type::<debug::SelectedEntities>()
-                .add_systems(Update, debug::debug_selection);
+                .add_systems(Update, (debug::debug_selection, debug::debug_spatial_clicks));
         }
     }
 }

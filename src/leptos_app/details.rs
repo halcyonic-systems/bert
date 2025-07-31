@@ -152,10 +152,7 @@ pub fn Details(
                                         />
                                     </Show>
                                     <Show when=move || { system_details.get().is_some() }>
-                                        <SimplifiedSystemDetails 
-                                            system_query=system_details 
-                                            panel_mode=panel_mode
-                                        />
+                                        <SystemDetails system_query=system_details />
                                     </Show>
                                     <Show when=move || { sub_system_details.get().is_some() }>
                                         <SubSystemDetails sub_system_query=sub_system_details />

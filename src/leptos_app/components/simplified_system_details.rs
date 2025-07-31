@@ -197,15 +197,23 @@ pub fn SimplifiedSystemDetails(
                 <div class="space-y-2">
                     <div class="flex items-center gap-2">
                         <label class="block font-medium text-gray-900 text-sm">Complexity</label>
-                        <button 
-                            type="button"
-                            class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                            title="Mobus: Adaptable systems can adjust their behavior in response to environmental changes. Evolveable systems can change their structure and create new behaviors."
-                        >
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                            </svg>
-                        </button>
+                        <div class="relative group">
+                            <button 
+                                type="button"
+                                class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                            >
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                            <div class="absolute left-6 top-0 invisible group-hover:visible bg-gray-800 text-white text-sm p-3 rounded-lg shadow-lg z-10 w-80 transition-opacity">
+                                <div class="font-medium mb-1">Mobus on System Complexity:</div>
+                                <div>
+                                    "\"" <strong>"Adaptable"</strong> " systems can adjust their behavior in response to environmental changes. " <strong>"Evolveable"</strong> " systems can change their structure and create new behaviors.\""
+                                </div>
+                                <div class="absolute -left-1 top-3 w-2 h-2 bg-gray-800 rotate-45"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex gap-6">
                         <Checkbox
@@ -242,15 +250,23 @@ pub fn SimplifiedSystemDetails(
                         <div>
                             <div class="flex items-center gap-2 mb-2">
                                 <label class="block font-medium text-gray-700 text-sm">Equivalence</label>
-                                <button 
-                                    type="button"
-                                    class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                                    title="Mathematical relationship describing how this system relates to others. See Model Browser examples for conceptual approaches."
-                                >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                                    </svg>
-                                </button>
+                                <div class="relative group">
+                                    <button 
+                                        type="button"
+                                        class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                                    >
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                    <div class="absolute left-6 top-0 invisible group-hover:visible bg-gray-800 text-white text-sm p-3 rounded-lg shadow-lg z-10 w-72 transition-opacity">
+                                        <div class="font-medium mb-1">System Equivalence:</div>
+                                        <div>
+                                            "Mathematical relationship describing how this system relates to others. See " <strong>"Model Browser"</strong> " examples for conceptual approaches."
+                                        </div>
+                                        <div class="absolute -left-1 top-3 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                    </div>
+                                </div>
                             </div>
                             <InputGroup
                                 id="system-equivalence"
@@ -266,15 +282,23 @@ pub fn SimplifiedSystemDetails(
                         <div>
                             <div class="flex items-center gap-2 mb-2">
                                 <label class="block font-medium text-gray-700 text-sm">Time Unit</label>
-                                <button 
-                                    type="button"
-                                    class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                                    title="Fundamental time scale for system dynamics and modeling. Important for systems scientists building simulations."
-                                >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                                    </svg>
-                                </button>
+                                <div class="relative group">
+                                    <button 
+                                        type="button"
+                                        class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                                    >
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                    <div class="absolute left-6 top-0 invisible group-hover:visible bg-gray-800 text-white text-sm p-3 rounded-lg shadow-lg z-10 w-72 transition-opacity">
+                                        <div class="font-medium mb-1">System Time Unit:</div>
+                                        <div>
+                                            "Fundamental time scale for system dynamics and modeling. " <strong>"Important"</strong> " for systems scientists building simulations."
+                                        </div>
+                                        <div class="absolute -left-1 top-3 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                    </div>
+                                </div>
                             </div>
                             <InputGroup
                                 id="system-time-unit"
@@ -290,15 +314,23 @@ pub fn SimplifiedSystemDetails(
                         <div>
                             <div class="flex items-center gap-2 mb-2">
                                 <label class="block font-medium text-gray-700 text-sm">Transformation Functions</label>
-                                <button 
-                                    type="button"
-                                    class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                                    title="Mathematical equations derived through measurement. In future versions, these will be visual equation builders rather than text."
-                                >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                                    </svg>
-                                </button>
+                                <div class="relative group">
+                                    <button 
+                                        type="button"
+                                        class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                                    >
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                    <div class="absolute left-6 top-0 invisible group-hover:visible bg-gray-800 text-white text-sm p-3 rounded-lg shadow-lg z-10 w-80 transition-opacity">
+                                        <div class="font-medium mb-1">Transformation Functions:</div>
+                                        <div>
+                                            "Mathematical equations derived through measurement. In " <strong>"future versions"</strong> ", these will be visual equation builders rather than text."
+                                        </div>
+                                        <div class="absolute -left-1 top-3 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                    </div>
+                                </div>
                             </div>
                             <TextArea
                                 id="transformation"
@@ -351,15 +383,23 @@ pub fn SimplifiedSystemDetails(
                     <div>
                         <div class="flex items-center gap-2 mb-2">
                             <label class="block font-medium text-gray-700 text-sm">Porosity</label>
-                            <button 
-                                type="button"
-                                class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                                title="How permeable the boundary is to flows. 0 = completely closed, 1 = completely open."
-                            >
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                                </svg>
-                            </button>
+                            <div class="relative group">
+                                <button 
+                                    type="button"
+                                    class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                                >
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <div class="absolute left-6 top-0 invisible group-hover:visible bg-gray-800 text-white text-sm p-3 rounded-lg shadow-lg z-10 w-64 transition-opacity">
+                                    <div class="font-medium mb-1">Boundary Porosity:</div>
+                                    <div>
+                                        "How permeable the boundary is to flows. " <strong>"0"</strong> " = completely closed, " <strong>"1"</strong> " = completely open."
+                                    </div>
+                                    <div class="absolute -left-1 top-3 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                </div>
+                            </div>
                         </div>
                         <input
                             type="range"
@@ -379,15 +419,23 @@ pub fn SimplifiedSystemDetails(
                     <div>
                         <div class="flex items-center gap-2 mb-2">
                             <label class="block font-medium text-gray-700 text-sm">Perceptive Fuzziness</label>
-                            <button 
-                                type="button"
-                                class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                                title="How clearly the boundary can be distinguished. 0 = sharp boundary, 1 = very fuzzy boundary."
-                            >
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                                </svg>
-                            </button>
+                            <div class="relative group">
+                                <button 
+                                    type="button"
+                                    class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                                >
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <div class="absolute left-6 top-0 invisible group-hover:visible bg-gray-800 text-white text-sm p-3 rounded-lg shadow-lg z-10 w-64 transition-opacity">
+                                    <div class="font-medium mb-1">Perceptive Fuzziness:</div>
+                                    <div>
+                                        "How clearly the boundary can be distinguished. " <strong>"0"</strong> " = sharp boundary, " <strong>"1"</strong> " = very fuzzy boundary."
+                                    </div>
+                                    <div class="absolute -left-1 top-3 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                </div>
+                            </div>
                         </div>
                         <input
                             type="range"
