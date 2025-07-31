@@ -787,84 +787,86 @@ pub fn SystemDetails(
             }
         />
         
-        // Conditional content based on spatial mode
-        { move || match spatial_mode.get() {
-            SpatialDetailPanelMode::System => view! {
-                <div class="mb-2">
-                    <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
-                        Complexity
-                    </label>
-                </div>
-                <div class="flex justify-evenly">
-                    <Checkbox
-                        id="system-adaptable"
-                        label="Adaptable"
-                        checked=adaptable
-                        on_toggle=move |value: bool| {
-                            system_query
-                                .write()
-                                .as_mut()
-                                .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
-                        }
-                    />
-
-                    <Checkbox
-                        id="system-evolveable"
-                        label="Evolveable"
-                        checked=evolveable
-                        on_toggle=move |value: bool| {
-                            system_query
-                                .write()
-                                .as_mut()
-                                .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
-                        }
-                    />
-                </div>
-
-                <InputGroup
-                    id="system-equivalence"
-                    label="Equivalence"
-                    value=equivalence
-                    on_input=move |value: String| {
-                        system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
-                    }
-                />
-            }.into_any(),
-            SpatialDetailPanelMode::Boundary => view! {
-                <Divider name="Boundary" />
-                <InputGroup
-                    id="boundary-name"
-                    label="Name"
-                    value=boundary_name
-                    on_input=move |value| {
-                        system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
-                    }
-                />
-                <Slider
-                    id="boundary-porosity"
-                    label="Porosity"
-                    value=boundary_porosity
-                    step=0.01
-                    on_input=move |value: f64| {
+        // System Mode Content
+        <Show when=move || matches!(spatial_mode.get(), SpatialDetailPanelMode::System)>
+            <div class="mb-2">
+                <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
+                    Complexity
+                </label>
+            </div>
+            <div class="flex justify-evenly">
+                <Checkbox
+                    id="system-adaptable"
+                    label="Adaptable"
+                    checked=adaptable
+                    on_toggle=move |value: bool| {
                         system_query
                             .write()
                             .as_mut()
-                            .map(|(_, _, system, _)| system.boundary.porosity = value as f32);
+                            .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
                     }
                 />
-            }.into_any(),
-            SpatialDetailPanelMode::Environment => view! {
-                <Divider name="Environment" />
-                <InputGroup
-                    id="environment-name"
-                    label="Name"
-                    value=environment_name
-                    on_input=move |value: String| {
-                        system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
+
+                <Checkbox
+                    id="system-evolveable"
+                    label="Evolveable"
+                    checked=evolveable
+                    on_toggle=move |value: bool| {
+                        system_query
+                            .write()
+                            .as_mut()
+                            .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
                     }
                 />
-            }.into_any(),
-        }}
+            </div>
+
+            <InputGroup
+                id="system-equivalence"
+                label="Equivalence"
+                value=equivalence
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
+                }
+            />
+        </Show>
+
+        // Boundary Mode Content
+        <Show when=move || matches!(spatial_mode.get(), SpatialDetailPanelMode::Boundary)>
+            <Divider name="Boundary" />
+            <InputGroup
+                id="boundary-name"
+                label="Name"
+                value=boundary_name
+                on_input=move |value| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
+                }
+            />
+            <Slider
+                id="boundary-porosity"
+                label="Porosity"
+                value=boundary_porosity
+                step=0.01
+                on_input=move |value: f64| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.boundary.porosity = value as f32);
+                }
+            />
+        </Show>
+
+        // Environment Mode Content
+        <Show when=move || matches!(spatial_mode.get(), SpatialDetailPanelMode::Environment)>
+            <Divider name="Environment" />
+            <InputGroup
+                id="environment-name"
+                label="Name"
+                value=environment_name
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
+                }
+            />
+        </Show>
     }
 }
 
