@@ -1,6 +1,6 @@
 use crate::bevy_app::data_model::Complexity;
 use crate::leptos_app::components::{
-    Button, Checkbox, Divider, InputGroup, SelectGroup, Slider, TextArea,
+    Button, Checkbox, Divider, InputGroup, SelectGroup, SimplifiedSystemDetails, DetailsPanelMode, Slider, TextArea,
 };
 use crate::{
     DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
@@ -83,6 +83,8 @@ pub fn Details(
     is_same_as_id: RwSignalSynced<Option<IsSameAsIdQuery>>,
     detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
 ) -> impl IntoView {
+    // Panel mode signal for simplified system details
+    let panel_mode = RwSignal::new(DetailsPanelMode::System);
     view! {
         <div
             class="relative z-10"
@@ -150,7 +152,10 @@ pub fn Details(
                                         />
                                     </Show>
                                     <Show when=move || { system_details.get().is_some() }>
-                                        <SystemDetails system_query=system_details />
+                                        <SimplifiedSystemDetails 
+                                            system_query=system_details 
+                                            panel_mode=panel_mode
+                                        />
                                     </Show>
                                     <Show when=move || { sub_system_details.get().is_some() }>
                                         <SubSystemDetails sub_system_query=sub_system_details />

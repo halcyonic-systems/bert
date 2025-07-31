@@ -5,6 +5,7 @@ mod divider;
 mod input_group;
 mod model_browser;
 mod select_group;
+mod simplified_system_details;
 mod slider;
 mod text_area;
 
@@ -15,5 +16,6 @@ pub use divider::*;
 pub use input_group::*;
 pub use model_browser::*;
 pub use select_group::*;
+pub use simplified_system_details::*;
 pub use slider::*;
 pub use text_area::*;
