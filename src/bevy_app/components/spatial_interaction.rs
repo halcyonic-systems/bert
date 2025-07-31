@@ -30,7 +30,8 @@ pub struct EnvironmentRegion {
 /// Updated by mouse interaction events when users click on different spatial regions
 /// (system interior, boundary ring, environment area) to switch between contextually
 /// appropriate property panels.
-#[derive(Resource, Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Resource, Debug, Clone, PartialEq, Eq, Default, Reflect)]
+#[reflect(Resource)]
 pub enum SpatialDetailPanelMode {
     /// Show system-specific properties (name, description, complexity, etc.)
     #[default]

@@ -73,11 +73,45 @@
 #[cfg(feature = "debug_selection")]
 pub mod debug;
 
+use crate::bevy_app::components::{BoundaryRegion, EnvironmentRegion, SpatialDetailPanelMode};
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 use bevy::window::PrimaryWindow;
+use bevy_picking::events::{Click, Pointer};
 use bevy_picking::focus::PickingInteraction;
+
+/// Handles spatial interaction panel switching based on which region was clicked.
+///
+/// This system detects clicks on BoundaryRegion and EnvironmentRegion entities and updates
+/// the SpatialDetailPanelMode resource accordingly, enabling contextual property panels.
+/// 
+/// - System interior clicks → SpatialDetailPanelMode::System
+/// - Boundary ring clicks → SpatialDetailPanelMode::Boundary  
+/// - Environment area clicks → SpatialDetailPanelMode::Environment
+///
+/// This implements the core spatial interaction UX where users click WHERE they want to edit.
+fn handle_spatial_panel_switching(
+    mut click_events: EventReader<Pointer<Click>>,
+    mut panel_mode: ResMut<SpatialDetailPanelMode>,
+    boundary_query: Query<&BoundaryRegion>,
+    environment_query: Query<&EnvironmentRegion>,
+    system_query: Query<Entity, With<crate::bevy_app::components::System>>,
+) {
+    for event in click_events.read() {
+        // Check what type of entity was clicked and update panel mode accordingly
+        if boundary_query.get(event.target).is_ok() {
+            *panel_mode = SpatialDetailPanelMode::Boundary;
+            info!("🎯 Switched to BOUNDARY panel mode");
+        } else if environment_query.get(event.target).is_ok() {
+            *panel_mode = SpatialDetailPanelMode::Environment;
+            info!("🌍 Switched to ENVIRONMENT panel mode");
+        } else if system_query.get(event.target).is_ok() {
+            *panel_mode = SpatialDetailPanelMode::System;
+            info!("⚙️ Switched to SYSTEM panel mode");
+        }
+    }
+}
 
 /// Minimum distance squared (in pixels) the mouse must move to initiate a drag operation.
 ///
@@ -168,8 +202,10 @@ impl Plugin for MouseInteractionPlugin {
             .init_resource::<Selection>()
             .init_resource::<MouseWorldPosition>()
             .init_resource::<SelectionEnabled>()
+            .init_resource::<SpatialDetailPanelMode>()
             .add_event::<DragPosition>()
             .register_type::<PickSelection>()
+            .register_type::<SpatialDetailPanelMode>()
             .add_systems(PreUpdate, mouse_screen_to_world_position)
             .add_systems(
                 Update,
@@ -182,6 +218,7 @@ impl Plugin for MouseInteractionPlugin {
                             .after(handle_mouse_down),
                     )
                         .in_set(MouseInteractionSet),
+                    handle_spatial_panel_switching,
                     deselect_when_invisible,
                     deselect_all.run_if(input_just_pressed(KeyCode::Escape)),
                 ),

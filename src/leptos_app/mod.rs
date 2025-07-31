@@ -15,7 +15,7 @@ use crate::LoadFileEvent;
 use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
 use leptos::prelude::*;
-use leptos_bevy_canvas::prelude::{event_l2b, single_query_signal, BevyCanvas};
+use leptos_bevy_canvas::prelude::{event_l2b, event_b2l, single_query_signal, signal_synced, BevyCanvas};
 use leptos_meta::*;
 use use_file_dialog::use_file_dialog_with_options;
 
@@ -117,6 +117,10 @@ pub fn App() -> impl IntoView {
     let (is_same_as_id, is_same_as_id_query) =
         single_query_signal::<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>();
 
+    // Resource signal for spatial detail panel mode
+    let (spatial_mode, spatial_mode_duplex) = 
+        signal_synced(crate::bevy_app::components::SpatialDetailPanelMode::default());
+
     let (detach_event_sender, detach_event_receiver) = event_l2b::<DetachMarkerLabelEvent>();
 
     let (tree_event_receiver, tree_event_sender) = event_b2l::<TreeEvent>();
@@ -214,6 +218,7 @@ pub fn App() -> impl IntoView {
                     system_details_query,
                     sub_system_details_query,
                     is_same_as_id_query,
+                    spatial_mode_duplex,
                     detach_event_receiver,
                     load_file_event_receiver,
                     tree_event_sender,
@@ -229,6 +234,7 @@ pub fn App() -> impl IntoView {
             system_details
             sub_system_details
             is_same_as_id
+            spatial_mode
             detach_event_sender
         />
     }

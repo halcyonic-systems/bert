@@ -50,6 +50,6 @@ opt-level = 1
 opt-level = 3
 
 [features]
-default = []
+default = ["debug_selection"]
 init_complete_system = []
 debug_selection = []

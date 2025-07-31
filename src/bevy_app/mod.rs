@@ -88,6 +88,7 @@ pub fn init_bevy_app(
         (SelectionFilter, crate::SubSystemFilter),
     >,
     is_same_as_id_query: BevyQueryDuplex<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>,
+    spatial_mode_duplex: BevyEventDuplex<SpatialDetailPanelMode>,
     detach_event_receiver: BevyEventReceiver<DetachMarkerLabelEvent>,
     load_file_event_sender: BevyEventReceiver<LoadFileEvent>,
     tree_event_sender: BevyEventSender<TreeEvent>,
@@ -140,6 +141,7 @@ pub fn init_bevy_app(
     .sync_leptos_signal_with_query(system_details_query)
     .sync_leptos_signal_with_query(sub_system_details_query)
     .sync_leptos_signal_with_query(is_same_as_id_query)
+    .sync_leptos_signal_with_resource(spatial_mode_duplex)
     .import_event_from_leptos(detach_event_receiver)
     .import_event_from_leptos(load_file_event_sender)
     .import_event_from_leptos(trigger_event_receiver)

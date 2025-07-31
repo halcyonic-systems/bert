@@ -1,12 +1,13 @@
 use crate::bevy_app::data_model::Complexity;
 use crate::leptos_app::components::{
-    Button, Checkbox, Divider, InputGroup, SelectGroup, SimplifiedSystemDetails, DetailsPanelMode, Slider, TextArea,
+    Button, Checkbox, Divider, InputGroup, SelectGroup, DetailsPanelMode, Slider, TextArea,
 };
 use crate::{
     DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
     InteractionUsability, InterfaceQuery, IsSameAsIdQuery, Parameter, SubSystemQuery,
     SubstanceType, SystemElement, SystemQuery,
 };
+use crate::bevy_app::components::SpatialDetailPanelMode;
 use enum_iterator::all;
 use leptos::prelude::*;
 use leptos::tachys::html::property::IntoProperty;
@@ -81,10 +82,12 @@ pub fn Details(
     system_details: RwSignalSynced<Option<SystemQuery>>,
     sub_system_details: RwSignalSynced<Option<SubSystemQuery>>,
     is_same_as_id: RwSignalSynced<Option<IsSameAsIdQuery>>,
+    spatial_mode: RwSignalSynced<SpatialDetailPanelMode>,
     detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
 ) -> impl IntoView {
     // Panel mode signal for simplified system details
-    let panel_mode = RwSignal::new(DetailsPanelMode::System);
+    let _panel_mode = RwSignal::new(DetailsPanelMode::System);
+    
     view! {
         <div
             class="relative z-10"
@@ -111,6 +114,9 @@ pub fn Details(
                                         >
                                             Element Details
                                         </h2>
+                                        <div class="text-sm text-gray-500 mt-1">
+                                            Mode: {move || format!("{:?}", spatial_mode.get())}
+                                        </div>
                                         <div class="flex items-center ml-3 h-7">
                                             <button
                                                 type="button"

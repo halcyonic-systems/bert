@@ -70,11 +70,11 @@ use bevy_prototype_lyon::prelude::*;
 ///     radius: f32,
 ///     position: Vec2,
 /// ) {
-///     // Spawn boundary ring with slight margin for easier clicking
+///     // Spawn boundary ring with larger margin for easier clicking
 ///     let boundary_entity = spawn_boundary_ring(
 ///         &mut commands,
 ///         system_entity,
-///         radius + 3.0, // 3px margin for click area
+///         radius + 8.0, // 8px margin for click area
 ///         position,
 ///         0.1, // Slightly above system
 ///     );
@@ -110,9 +110,11 @@ pub fn spawn_boundary_ring(
     position: Vec2,
     z_order: f32,
 ) -> Entity {
+    // Create a filled circle positioned around the system boundary
+    // This overlaps the system but picking priority is managed by z-order
     let ring_path = GeometryBuilder::build_as(&shapes::Circle {
-        radius,
-        ..default()
+        radius: radius + 8.0, // Extend beyond system for easier clicking
+        ..default()  
     });
 
     let boundary_entity = commands
@@ -123,7 +125,7 @@ pub fn spawn_boundary_ring(
                 transform: Transform::from_translation(position.extend(z_order)),
                 ..default()
             },
-            Stroke::new(Color::srgba(0.0, 0.0, 0.0, 0.0), 4.0), // Invisible but clickable stroke
+            Fill::color(Color::srgba(0.0, 0.0, 0.0, 0.0)), // Invisible but clickable
             PickSelection::default(),
             PickTarget {
                 target: system_entity,
@@ -306,13 +308,13 @@ pub fn spawn_environment_region(
 /// Automatically manages z-ordering to ensure proper click priority:
 /// - Environment: -0.1 (behind everything)
 /// - System: 0.0 (middle layer)  
-/// - Boundary: 0.1 (front layer)
+/// - Boundary: 0.5 (front layer, well above system)
 /// - UI: 1.0+ (above all spatial elements)
 ///
 /// # Click Area Sizing
 ///
 /// Uses intelligent sizing for optimal user experience:
-/// - Boundary ring: system radius + 3px margin for easier clicking
+/// - Boundary ring: system radius + 8px margin with 10px stroke width for easier clicking
 /// - Environment region: system radius * 3.0 for generous click area
 ///
 /// # See Also
@@ -326,22 +328,22 @@ pub fn spawn_system_with_spatial_regions(
     system_radius: f32,
     position: Vec2,
 ) -> (Entity, Entity) {
-    // Spawn boundary ring with margin for easier clicking
-    let boundary_entity = spawn_boundary_ring(
-        commands,
-        system_entity,
-        system_radius + 3.0, // 3px margin for click area
-        position,
-        0.1, // Above system for click priority
-    );
-
-    // Spawn environment region with large capture area
+    // Spawn environment region first (largest area, behind everything)
     let environment_entity = spawn_environment_region(
         commands,
         system_entity,
         system_radius * 3.0, // Large surrounding area
         position,
-        -0.1, // Behind system for click priority
+        -0.2, // Behind everything
+    );
+
+    // Spawn boundary ring (larger circle behind system)
+    let boundary_entity = spawn_boundary_ring(
+        commands,
+        system_entity,
+        system_radius + 8.0, // Larger than system 
+        position,
+        -0.1, // Behind system so system can be clicked
     );
 
     (boundary_entity, environment_entity)
