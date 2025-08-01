@@ -696,6 +696,12 @@ pub fn SystemDetails(
         .as_ref()
         .map(|(_, _, _, system_env)| system_env.description.clone())
         .unwrap_or_default());
+        
+    let system_time_unit = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.time_unit.clone())
+        .unwrap_or_default());
 
     view! {
         // System Mode Content
@@ -725,9 +731,31 @@ pub fn SystemDetails(
                 }
             />
             
+            <div class="mb-4">
+                <label class="flex items-center mb-2">
+                    <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                          title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
+                        ?
+                    </span>
+                </label>
+                <InputGroup
+                    id="system-time-unit"
+                    placeholder="e.g., Second, Minute, Year"
+                    value=system_time_unit
+                    on_input=move |value: String| {
+                        system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
+                    }
+                />
+            </div>
+            
             <div class="mb-2">
-                <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
-                    Complexity
+                <label for="complexity" class="flex items-center font-medium text-gray-900 text-sm/6">
+                    <span>Complexity</span>
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                          title="System behavior type: Simple (predictable), Adaptive (responds to environment), Evolveable (can fundamentally change structure)">
+                        ?
+                    </span>
                 </label>
             </div>
             <div class="flex justify-evenly">
@@ -756,14 +784,23 @@ pub fn SystemDetails(
                 />
             </div>
 
-            <InputGroup
-                id="system-equivalence"
-                label="Equivalence"
-                value=system_equivalence
-                on_input=move |value: String| {
-                    system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
-                }
-            />
+            <div class="mb-4">
+                <label class="flex items-center mb-2">
+                    <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                          title="Grouping for similar systems (e.g., 'Living Cell', 'Social Organization', 'Economic Market')">
+                        ?
+                    </span>
+                </label>
+                <InputGroup
+                    id="system-equivalence"
+                    placeholder="Equivalence"
+                    value=system_equivalence
+                    on_input=move |value: String| {
+                        system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
+                    }
+                />
+            </div>
         </div>
 
         // Boundary Mode Content
