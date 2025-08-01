@@ -114,9 +114,6 @@ pub fn Details(
                                         >
                                             Element Details
                                         </h2>
-                                        <div class="text-sm text-gray-500 mt-1">
-                                            Mode: {move || format!("{:?}", spatial_mode.get())}
-                                        </div>
                                         <div class="flex items-center ml-3 h-7">
                                             <button
                                                 type="button"
@@ -693,76 +690,72 @@ pub fn SystemDetails(
         .as_ref()
         .map(|(_, _, _, system_env)| system_env.name.clone())
         .unwrap_or_default());
+        
+    let environment_description = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, _, system_env)| system_env.description.clone())
+        .unwrap_or_default());
 
     view! {
-        // Debug: Show current spatial mode
-        <div class="mb-4 p-2 bg-gray-100 rounded">
-            "Current Mode: " { move || format!("{:?}", spatial_mode.get()) }
-        </div>
-        
-        // Always show system name/description first
-        <InputGroup
-            id="system-name"
-            label="Name"
-            placeholder="External Entity Name"
-            value=system_name
-            on_input=move |value: String| {
-                system_query.write().as_mut().map(|(name, _, _, _)| name.set(value));
-            }
-        />
-
-        <TextArea
-            id="system-description"
-            label="Description"
-            placeholder="Add a description"
-            text=system_description
-            on_input=move |value: String| {
-                system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, description, _, _)| description.text = value);
-            }
-        />
-        
-        // System Mode Content - Use CSS visibility instead of Show components
-        <div 
-            class="mb-2"
-            class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::System)
-        >
-            <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
-                Complexity
-            </label>
-        </div>
-        <div 
-            class="flex justify-evenly"
-            class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::System)
-        >
-            <Checkbox
-                id="system-adaptable"
-                label="Adaptable"
-                checked=system_adaptable
-                on_toggle=move |value: bool| {
-                    system_query
-                        .write()
-                        .as_mut()
-                        .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
-                }
-            />
-
-            <Checkbox
-                id="system-evolveable"
-                label="Evolveable"
-                checked=system_evolveable
-                on_toggle=move |value: bool| {
-                    system_query
-                        .write()
-                        .as_mut()
-                        .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
-                }
-            />
-        </div>
-
+        // System Mode Content
         <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::System)>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">System</h3>
+            
+            <InputGroup
+                id="system-name"
+                label="Name"
+                placeholder="External Entity Name"
+                value=system_name
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(name, _, _, _)| name.set(value));
+                }
+            />
+
+            <TextArea
+                id="system-description"
+                label="Description"
+                placeholder="Add a description"
+                text=system_description
+                on_input=move |value: String| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, description, _, _)| description.text = value);
+                }
+            />
+            
+            <div class="mb-2">
+                <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
+                    Complexity
+                </label>
+            </div>
+            <div class="flex justify-evenly">
+                <Checkbox
+                    id="system-adaptable"
+                    label="Adaptable"
+                    checked=system_adaptable
+                    on_toggle=move |value: bool| {
+                        system_query
+                            .write()
+                            .as_mut()
+                            .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
+                    }
+                />
+
+                <Checkbox
+                    id="system-evolveable"
+                    label="Evolveable"
+                    checked=system_evolveable
+                    on_toggle=move |value: bool| {
+                        system_query
+                            .write()
+                            .as_mut()
+                            .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
+                    }
+                />
+            </div>
+
             <InputGroup
                 id="system-equivalence"
                 label="Equivalence"
@@ -773,9 +766,24 @@ pub fn SystemDetails(
             />
         </div>
 
-        // Boundary Mode Content - Use CSS visibility instead of Show components
+        // Boundary Mode Content
         <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::Boundary)>
-            <Divider name="Boundary" />
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Boundary</h3>
+            
+            <TextArea
+                id="boundary-description"
+                label="Description"
+                placeholder="Add a description"
+                text=Memo::new(move |_| system_query
+                    .read()
+                    .as_ref()
+                    .map(|(_, _, system, _)| system.boundary.description.clone())
+                    .unwrap_or_default())
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.description = value);
+                }
+            />
+            
             <InputGroup
                 id="boundary-name"
                 label="Name"
@@ -784,6 +792,7 @@ pub fn SystemDetails(
                     system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
                 }
             />
+            
             <Slider
                 id="boundary-porosity"
                 label="Porosity"
@@ -796,11 +805,29 @@ pub fn SystemDetails(
                         .map(|(_, _, system, _)| system.boundary.porosity = value as f32);
                 }
             />
+            
+            <Slider
+                id="boundary-perceptive-fuzziness"
+                label="Perceptive Fuzziness"
+                value=Memo::new(move |_| system_query
+                    .read()
+                    .as_ref()
+                    .map(|(_, _, system, _)| system.boundary.perceptive_fuzziness as f64)
+                    .unwrap_or_default())
+                step=0.01
+                on_input=move |value: f64| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.boundary.perceptive_fuzziness = value as f32);
+                }
+            />
         </div>
 
-        // Environment Mode Content - Use CSS visibility instead of Show components  
+        // Environment Mode Content
         <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::Environment)>
-            <Divider name="Environment" />
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Environment</h3>
+            
             <InputGroup
                 id="environment-name"
                 label="Name"
@@ -809,6 +836,17 @@ pub fn SystemDetails(
                     system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
                 }
             />
+            
+            <TextArea
+                id="environment-description"
+                label="Description"
+                placeholder="Add a description"
+                text=environment_description
+                on_input=move |value: String| {
+                    system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.description = value);
+                }
+            />
+            
         </div>
     }
 }
