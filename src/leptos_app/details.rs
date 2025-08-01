@@ -108,12 +108,17 @@ pub fn Details(
                             <div class="flex overflow-y-scroll flex-col py-6 h-full bg-white shadow-xl">
                                 <div class="px-4 sm:px-6">
                                     <div class="flex justify-between items-start">
-                                        <h2
-                                            class="text-base font-semibold text-gray-900"
-                                            id="slide-over-title"
-                                        >
-                                            Element Details
-                                        </h2>
+                                        <div class="flex items-center space-x-2">
+                                            <h2
+                                                class="text-base font-semibold text-gray-900"
+                                                id="slide-over-title"
+                                            >
+                                                Element Details
+                                            </h2>
+                                            <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                Structural Analysis Mode
+                                            </span>
+                                        </div>
                                         <div class="flex items-center ml-3 h-7">
                                             <button
                                                 type="button"
@@ -702,6 +707,20 @@ pub fn SystemDetails(
         .as_ref()
         .map(|(_, _, system, _)| system.time_unit.clone())
         .unwrap_or_default());
+        
+    // Dynamic fields - will be hidden for v0.2.0 "Structural Analysis" focus
+    // Preserved for consistent pattern with SubSystemDetails and easier v0.3.0 restoration
+    let _system_history = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.history.clone())
+        .unwrap_or_default());
+
+    let _system_transformation = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.transformation.clone())
+        .unwrap_or_default());
 
     view! {
         // System Mode Content
@@ -801,6 +820,44 @@ pub fn SystemDetails(
                     }
                 />
             </div>
+            
+            // HIDDEN for v0.2.0 "Structural Analysis Mode" - Dynamic modeling features
+            // Preserved for consistency with SubSystemDetails and easier v0.3.0 restoration
+            // <div class="mb-4">
+            //     <label class="flex items-center mb-2">
+            //         <span class="block text-sm font-medium leading-6 text-gray-900">History</span>
+            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+            //               title="System state changes over time (requires temporal data collection)">
+            //             ?
+            //         </span>
+            //     </label>
+            //     <InputGroup
+            //         id="system-history"
+            //         placeholder="History"
+            //         value=_system_history
+            //         on_input=move |value: String| {
+            //             system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
+            //         }
+            //     />
+            // </div>
+            
+            // <div class="mb-4">
+            //     <label class="flex items-center mb-2">
+            //         <span class="block text-sm font-medium leading-6 text-gray-900">Transformation</span>
+            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+            //               title="Rules for system state transitions (requires behavioral modeling)">
+            //             ?
+            //         </span>
+            //     </label>
+            //     <InputGroup
+            //         id="system-transformation"
+            //         placeholder="Transformation"
+            //         value=_system_transformation
+            //         on_input=move |value: String| {
+            //             system_query.write().as_mut().map(|(_, _, system, _)| system.transformation = value);
+            //         }
+            //     />
+            // </div>
         </div>
 
         // Boundary Mode Content
@@ -890,21 +947,18 @@ pub fn SystemDetails(
 
 #[component]
 pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>) -> impl IntoView {
-    let name = Signal::derive(move || {
-        sub_system_query
-            .read()
-            .as_ref()
-            .map(|(name, _, _, _)| name.to_string())
-            .unwrap_or_default()
-    });
+    // Use Memo::new pattern for consistency with SystemDetails (prevents potential lifecycle issues)
+    let name = Memo::new(move |_| sub_system_query
+        .read()
+        .as_ref()
+        .map(|(name, _, _, _)| name.to_string())
+        .unwrap_or_default());
 
-    let description = Signal::derive(move || {
-        sub_system_query
-            .read()
-            .as_ref()
-            .map(|(_, description, _, _)| description.text.clone())
-            .unwrap_or_default()
-    });
+    let description = Memo::new(move |_| sub_system_query
+        .read()
+        .as_ref()
+        .map(|(_, description, _, _)| description.text.clone())
+        .unwrap_or_default());
 
     let complexity_types = vec![
         Complexity::Complex {
@@ -946,37 +1000,30 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or_default()
     });
 
-    let equivalence = Signal::derive(move || {
-        sub_system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.equivalence.clone())
-            .unwrap_or_default()
-    });
+    let equivalence = Memo::new(move |_| sub_system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.equivalence.clone())
+        .unwrap_or_default());
 
-    let time_unit = Signal::derive(move || {
-        sub_system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.time_unit.clone())
-            .unwrap_or_default()
-    });
+    let time_unit = Memo::new(move |_| sub_system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.time_unit.clone())
+        .unwrap_or_default());
 
-    let history = Signal::derive(move || {
-        sub_system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.history.clone())
-            .unwrap_or_default()
-    });
+    // Dynamic fields - will be hidden for v0.2.0 "Structural Analysis" focus
+    let _history = Memo::new(move |_| sub_system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.history.clone())
+        .unwrap_or_default());
 
-    let transformation = Signal::derive(move || {
-        sub_system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.transformation.clone())
-            .unwrap_or_default()
-    });
+    let _transformation = Memo::new(move |_| sub_system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.transformation.clone())
+        .unwrap_or_default());
 
     let boundary_name = Signal::derive(move || {
         sub_system_query
@@ -1050,18 +1097,45 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             }
         />
 
-        <SelectGroup
-            id="system-complexity"
-            label="Complexity"
-            options=complexity_types
-            selected_option=complexity
-            on_change=move |value| {
+        <div class="mb-4">
+            <label class="flex items-center mb-2">
+                <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                      title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
+                    ?
+                </span>
+            </label>
+            <InputGroup
+                id="system-time-unit"
+                placeholder="e.g., Second, Minute, Year"
+                value=time_unit
+                on_input=move |value: String| {
+                    sub_system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
+                }
+            />
+        </div>
+
+        <div class="mb-4">
+            <label class="flex items-center mb-2">
+                <span class="block text-sm font-medium leading-6 text-gray-900">Complexity</span>
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                      title="System behavior type: Simple (predictable), Adaptive (responds to environment), Evolveable (can fundamentally change structure)">
+                    ?
+                </span>
+            </label>
+            <SelectGroup
+                id="system-complexity"
+                label=""
+                options=complexity_types
+                selected_option=complexity
+                on_change=move |value| {
                 sub_system_query
                     .write()
                     .as_mut()
                     .map(|(_, _, system, _)| system.complexity = value.unwrap_or_default());
             }
         />
+        </div>
 
         <Show when=move || {
             sub_system_query
@@ -1118,47 +1192,50 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             />
         </Show>
 
-        <InputGroup
-            id="system-equivalence"
-            label="Equivalence"
-            value=equivalence
-            on_input=move |value: String| {
-                sub_system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.equivalence = value);
-            }
-        />
+        <div class="mb-4">
+            <label class="flex items-center mb-2">
+                <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                      title="Grouping for similar systems (e.g., 'Living Cell', 'Social Organization', 'Economic Market')">
+                    ?
+                </span>
+            </label>
+            <InputGroup
+                id="system-equivalence"
+                placeholder="Equivalence"
+                value=equivalence
+                on_input=move |value: String| {
+                    sub_system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.equivalence = value);
+                }
+            />
+        </div>
 
-        <InputGroup
-            id="system-time-unit"
-            label="Time Unit"
-            value=time_unit
-            on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
-            }
-        />
 
-        <InputGroup
-            id="system-history"
-            label="History"
-            value=history
-            on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
-            }
-        />
+        // HIDDEN for v0.2.0 "Structural Analysis Mode" - History is dynamic modeling feature
+        // <InputGroup
+        //     id="system-history"
+        //     label="History"
+        //     value=history
+        //     on_input=move |value: String| {
+        //         sub_system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
+        //     }
+        // />
 
-        <InputGroup
-            id="transformation"
-            label="Transformation"
-            value=transformation
-            on_input=move |value: String| {
-                sub_system_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, system, _)| system.transformation = value);
-            }
-        />
+        // HIDDEN for v0.2.0 "Structural Analysis Mode" - Transformation is dynamic modeling feature  
+        // <InputGroup
+        //     id="transformation"
+        //     label="Transformation"
+        //     value=transformation
+        //     on_input=move |value: String| {
+        //         sub_system_query
+        //             .write()
+        //             .as_mut()
+        //             .map(|(_, _, system, _)| system.transformation = value);
+        //     }
+        // />
 
         <Divider name="Boundary" />
 
