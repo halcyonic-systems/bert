@@ -1,5 +1,5 @@
 [package]
-name = "bert"
+name = "bert-tauri"
 version = "0.1.0"
 description = "Tool for deep systems analysis"
 authors = ["Joseph Ensminger <?>", "Marc-Stefan Cassola <maccesch@synphonyte.com>", "Joel Beicher <joel@synphonyte.com>"]
