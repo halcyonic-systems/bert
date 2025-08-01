@@ -4,7 +4,7 @@ use crate::leptos_app::components::{
 };
 use crate::{
     DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
-    InteractionUsability, InterfaceQuery, IsSameAsIdQuery, Parameter, SubSystemQuery,
+    InteractionUsability, InterfaceQuery, IsSameAsIdQuery, SubSystemQuery,
     SubstanceType, SystemElement, SystemQuery,
 };
 use crate::bevy_app::components::SpatialDetailPanelMode;
@@ -241,74 +241,57 @@ pub fn InterfaceDetails(interface_query: RwSignalSynced<Option<InterfaceQuery>>)
 pub fn InteractionDetails(
     interaction_query: RwSignalSynced<Option<InteractionQuery>>,
 ) -> impl IntoView {
-    let name = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(name, _, _)| name.to_string())
-            .unwrap_or_default()
-    });
+    let name = Memo::new(move |_| interaction_query
+        .read()
+        .as_ref()
+        .map(|(name, _, _)| name.to_string())
+        .unwrap_or_default());
 
-    let description = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, el_desc, _)| el_desc.text.clone())
-            .unwrap_or_default()
-    });
+    let description = Memo::new(move |_| interaction_query
+        .read()
+        .as_ref()
+        .map(|(_, el_desc, _)| el_desc.text.clone())
+        .unwrap_or_default());
 
-    let usability = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, _, interaction)| interaction.usability)
-    });
+    let usability = Memo::new(move |_| interaction_query
+        .read()
+        .as_ref()
+        .map(|(_, _, interaction)| interaction.usability));
 
-    let interaction_type = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, _, interaction)| interaction.interaction_type)
-    });
+    let interaction_type = Memo::new(move |_| interaction_query
+        .read()
+        .as_ref()
+        .map(|(_, _, interaction)| interaction.interaction_type));
 
-    let substance_type = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, _, interaction)| interaction.substance_type)
-    });
+    let substance_type = Memo::new(move |_| interaction_query
+        .read()
+        .as_ref()
+        .map(|(_, _, interaction)| interaction.substance_type));
 
-    let substance_sub_type = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, _, interaction)| interaction.substance_sub_type.clone())
-            .unwrap_or_default()
-    });
+    // Hidden dynamic fields for v0.2.0 - too complex for structural analysis focus
+    // let substance_sub_type = Memo::new(move |_| interaction_query
+    //     .read()
+    //     .as_ref()
+    //     .map(|(_, _, interaction)| interaction.substance_sub_type.clone())
+    //     .unwrap_or_default());
 
-    let substance_unit = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, _, interaction)| interaction.unit.clone())
-            .unwrap_or_default()
-    });
+    // let substance_unit = Memo::new(move |_| interaction_query
+    //     .read()
+    //     .as_ref()
+    //     .map(|(_, _, interaction)| interaction.unit.clone())
+    //     .unwrap_or_default());
 
-    let substance_amount = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, _, interaction)| DecimalWrapper(interaction.amount))
-            .unwrap_or_default()
-    });
+    // let substance_amount = Memo::new(move |_| interaction_query
+    //     .read()
+    //     .as_ref()
+    //     .map(|(_, _, interaction)| DecimalWrapper(interaction.amount))
+    //     .unwrap_or_default());
 
-    let parameters = Signal::derive(move || {
-        interaction_query
-            .read()
-            .as_ref()
-            .map(|(_, _, interaction)| interaction.parameters.clone())
-            .unwrap_or(Vec::new())
-    });
+    // let parameters = Memo::new(move |_| interaction_query
+    //     .read()
+    //     .as_ref()
+    //     .map(|(_, _, interaction)| interaction.parameters.clone())
+    //     .unwrap_or(Vec::new()));
 
     let usability_types = all::<InteractionUsability>().collect::<Vec<_>>();
     let interaction_types = all::<InteractionType>().collect::<Vec<_>>();
@@ -332,19 +315,6 @@ pub fn InteractionDetails(
             text=description
             on_input=move |value: String| {
                 interaction_query.write().as_mut().map(|(_, el_desc, _)| el_desc.text = value);
-            }
-        />
-
-        <SelectGroup
-            id="interaction-usability"
-            label="Interaction Usability"
-            options=usability_types
-            selected_option=usability
-            on_change=move |value| {
-                interaction_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interaction)| value.map(|u| interaction.usability = u));
             }
         />
 
@@ -374,163 +344,178 @@ pub fn InteractionDetails(
             }
         />
 
-        <InputGroup
-            id="substance-sub-type"
-            label="Substance Sub Type"
-            placeholder=""
-            value=substance_sub_type
-            on_input=move |value: String| {
+        <SelectGroup
+            id="interaction-usability"
+            label="Interaction Usability"
+            options=usability_types
+            selected_option=usability
+            on_change=move |value| {
                 interaction_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, interaction)| interaction.substance_sub_type = value);
+                    .map(|(_, _, interaction)| value.map(|u| interaction.usability = u));
             }
         />
 
-        <InputGroup
-            id="substance-unit"
-            label="Substance Unit"
-            placeholder=""
-            value=substance_unit
-            on_input=move |value: String| {
-                interaction_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interaction)| interaction.unit = value);
-            }
-        />
+        // Hidden dynamic fields for v0.2.0 - focus on structural analysis
+        // <InputGroup
+        //     id="substance-sub-type"
+        //     label="Substance Sub Type"
+        //     placeholder=""
+        //     value=substance_sub_type
+        //     on_input=move |value: String| {
+        //         interaction_query
+        //             .write()
+        //             .as_mut()
+        //             .map(|(_, _, interaction)| interaction.substance_sub_type = value);
+        //     }
+        // />
 
-        <InputGroup
-            id="substance-amount"
-            label="Substance Amount"
-            placeholder=""
-            type_="text"
-            value=substance_amount
-            on_input=move |value: DecimalWrapper| {
-                interaction_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interaction)| interaction.amount = value.0);
-            }
-        />
+        // <InputGroup
+        //     id="substance-unit"
+        //     label="Substance Unit"
+        //     placeholder=""
+        //     value=substance_unit
+        //     on_input=move |value: String| {
+        //         interaction_query
+        //             .write()
+        //             .as_mut()
+        //             .map(|(_, _, interaction)| interaction.unit = value);
+        //     }
+        // />
 
-        <Divider name="Parameters" />
+        // <InputGroup
+        //     id="substance-amount"
+        //     label="Substance Amount"
+        //     placeholder=""
+        //     type_="text"
+        //     value=substance_amount
+        //     on_input=move |value: DecimalWrapper| {
+        //         interaction_query
+        //             .write()
+        //             .as_mut()
+        //             .map(|(_, _, interaction)| interaction.amount = value.0);
+        //     }
+        // />
 
-        <button
-            type="button"
-            on:click=move |_| {
-                interaction_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interaction)| interaction.parameters.push(Parameter::default()));
-            }
-            class="py-1.5 px-3 w-full text-sm font-semibold text-white rounded-full shadow-sm hover:bg-cyan-800 bg-cyan-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-900"
-        >
-            Add
-        </button>
+        // Parameters section - too dynamic for v0.2.0 structural analysis focus
+        // <Divider name="Parameters" />
 
-        <div class="grid grid-cols-7 gap-x-4 mt-3">
-            <Show when=move || { parameters.get().len() > 0 }>
-                <div class="flex col-span-2 justify-self-center text-center item-center">Name</div>
-                <div class="flex col-span-2 justify-self-center text-center item-center">Value</div>
-                <div class="flex col-span-2 justify-self-center text-center item-center">Unit</div>
-                <div class="flex justify-self-center item-center"></div>
-            </Show>
-            <For
-                each=move || parameters.get()
-                key=|param| param.id.clone()
-                let(Parameter { id, name, value, unit })
-            >
-                <InputGroup
-                    id="name"
-                    placeholder="Name"
-                    value=name
-                    label_class="self-center"
-                    input_class="ml-2"
-                    on_input=move |val| {
-                        interaction_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, interaction)| {
-                                let mut param = interaction
-                                    .parameters
-                                    .iter_mut()
-                                    .find(|param| param.id == id)
-                                    .expect("id to exist in parameters");
-                                param.name = val;
-                            });
-                    }
-                    {..}
-                    class="flex col-span-2 justify-self-center item-center"
-                />
-                <InputGroup
-                    id="value"
-                    placeholder="Value"
-                    value=value
-                    label_class="self-center"
-                    input_class="ml-2"
-                    on_input=move |val| {
-                        interaction_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, interaction)| {
-                                let mut param = interaction
-                                    .parameters
-                                    .iter_mut()
-                                    .find(|param| param.id == id)
-                                    .expect("id to exist in parameters");
-                                param.value = val;
-                            });
-                    }
-                    {..}
-                    class="flex col-span-2 justify-self-center item-center"
-                />
-                <InputGroup
-                    id="value"
-                    placeholder="Unit"
-                    value=unit
-                    label_class="self-center"
-                    input_class="ml-2"
-                    on_input=move |val| {
-                        interaction_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, interaction)| {
-                                let mut param = interaction
-                                    .parameters
-                                    .iter_mut()
-                                    .find(|param| param.id == id)
-                                    .expect("id to exist in parameters");
-                                param.unit = val;
-                            });
-                    }
-                    {..}
-                    class="flex col-span-2 justify-self-center item-center"
-                />
-                <button
-                    type="button"
-                    on:click=move |_| {
-                        interaction_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, interaction)| {
-                                interaction.parameters.retain(|param| param.id != id);
-                            });
-                    }
-                    class="justify-self-center self-center text-sm font-semibold text-white rounded-full shadow-sm hover:bg-cyan-800 w-fit bg-cyan-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-900"
-                >
-                    <svg
-                        class="w-5 rotate-45"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                        data-slot="icon"
-                    >
-                        <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-                    </svg>
-                </button>
-            </For>
-        </div>
+        // <button
+        //     type="button"
+        //     on:click=move |_| {
+        //         interaction_query
+        //             .write()
+        //             .as_mut()
+        //             .map(|(_, _, interaction)| interaction.parameters.push(Parameter::default()));
+        //     }
+        //     class="py-1.5 px-3 w-full text-sm font-semibold text-white rounded-full shadow-sm hover:bg-cyan-800 bg-cyan-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-900"
+        // >
+        //     Add
+        // </button>
+
+        // <div class="grid grid-cols-7 gap-x-4 mt-3">
+        //     <Show when=move || { parameters.get().len() > 0 }>
+        //         <div class="flex col-span-2 justify-self-center text-center item-center">Name</div>
+        //         <div class="flex col-span-2 justify-self-center text-center item-center">Value</div>
+        //         <div class="flex col-span-2 justify-self-center text-center item-center">Unit</div>
+        //         <div class="flex justify-self-center item-center"></div>
+        //     </Show>
+        //     <For
+        //         each=move || parameters.get()
+        //         key=|param| param.id.clone()
+        //         let(Parameter { id, name, value, unit })
+        //     >
+        //         <InputGroup
+        //             id="name"
+        //             placeholder="Name"
+        //             value=name
+        //             label_class="self-center"
+        //             input_class="ml-2"
+        //             on_input=move |val| {
+        //                 interaction_query
+        //                     .write()
+        //                     .as_mut()
+        //                     .map(|(_, _, interaction)| {
+        //                         let mut param = interaction
+        //                             .parameters
+        //                             .iter_mut()
+        //                             .find(|param| param.id == id)
+        //                             .expect("id to exist in parameters");
+        //                         param.name = val;
+        //                     });
+        //             }
+        //             {..}
+        //             class="flex col-span-2 justify-self-center item-center"
+        //         />
+        //         <InputGroup
+        //             id="value"
+        //             placeholder="Value"
+        //             value=value
+        //             label_class="self-center"
+        //             input_class="ml-2"
+        //             on_input=move |val| {
+        //                 interaction_query
+        //                     .write()
+        //                     .as_mut()
+        //                     .map(|(_, _, interaction)| {
+        //                         let mut param = interaction
+        //                             .parameters
+        //                             .iter_mut()
+        //                             .find(|param| param.id == id)
+        //                             .expect("id to exist in parameters");
+        //                         param.value = val;
+        //                     });
+        //             }
+        //             {..}
+        //             class="flex col-span-2 justify-self-center item-center"
+        //         />
+        //         <InputGroup
+        //             id="value"
+        //             placeholder="Unit"
+        //             value=unit
+        //             label_class="self-center"
+        //             input_class="ml-2"
+        //             on_input=move |val| {
+        //                 interaction_query
+        //                     .write()
+        //                     .as_mut()
+        //                     .map(|(_, _, interaction)| {
+        //                         let mut param = interaction
+        //                             .parameters
+        //                             .iter_mut()
+        //                             .find(|param| param.id == id)
+        //                             .expect("id to exist in parameters");
+        //                         param.unit = val;
+        //                     });
+        //             }
+        //             {..}
+        //             class="flex col-span-2 justify-self-center item-center"
+        //         />
+        //         <button
+        //             type="button"
+        //             on:click=move |_| {
+        //                 interaction_query
+        //                     .write()
+        //                     .as_mut()
+        //                     .map(|(_, _, interaction)| {
+        //                         interaction.parameters.retain(|param| param.id != id);
+        //                     });
+        //             }
+        //             class="justify-self-center self-center text-sm font-semibold text-white rounded-full shadow-sm hover:bg-cyan-800 w-fit bg-cyan-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-900"
+        //         >
+        //             <svg
+        //                 class="w-5 rotate-45"
+        //                 viewBox="0 0 20 20"
+        //                 fill="currentColor"
+        //                 aria-hidden="true"
+        //                 data-slot="icon"
+        //             >
+        //                 <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+        //             </svg>
+        //         </button>
+        //     </For>
+        // </div>
     }
 }
 
