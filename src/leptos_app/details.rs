@@ -645,6 +645,54 @@ pub fn SystemDetails(
     system_query: RwSignalSynced<Option<SystemQuery>>,
     spatial_mode: RwSignalSynced<SpatialDetailPanelMode>,
 ) -> impl IntoView {
+    // Use Memo::new instead of Signal::derive to prevent disposal issues
+    let system_name = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(name, _, _, _)| name.to_string())
+        .unwrap_or_default());
+    
+    let system_description = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, description, _, _)| description.text.clone())
+        .unwrap_or_default());
+    
+    let system_adaptable = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.complexity.is_adaptable())
+        .unwrap_or_default());
+    
+    let system_evolveable = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.complexity.is_evolveable())
+        .unwrap_or_default());
+    
+    let system_equivalence = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.equivalence.clone())
+        .unwrap_or_default());
+    
+    let boundary_name = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.boundary.name.clone())
+        .unwrap_or_default());
+    
+    let boundary_porosity = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, system, _)| system.boundary.porosity as f64)
+        .unwrap_or_default());
+    
+    let environment_name = Memo::new(move |_| system_query
+        .read()
+        .as_ref()
+        .map(|(_, _, _, system_env)| system_env.name.clone())
+        .unwrap_or_default());
 
     view! {
         // Debug: Show current spatial mode
@@ -657,11 +705,7 @@ pub fn SystemDetails(
             id="system-name"
             label="Name"
             placeholder="External Entity Name"
-            value=Signal::derive(move || system_query
-                .read()
-                .as_ref()
-                .map(|(name, _, _, _)| name.to_string())
-                .unwrap_or_default())
+            value=system_name
             on_input=move |value: String| {
                 system_query.write().as_mut().map(|(name, _, _, _)| name.set(value));
             }
@@ -671,11 +715,7 @@ pub fn SystemDetails(
             id="system-description"
             label="Description"
             placeholder="Add a description"
-            text=Signal::derive(move || system_query
-                .read()
-                .as_ref()
-                .map(|(_, description, _, _)| description.text.clone())
-                .unwrap_or_default())
+            text=system_description
             on_input=move |value: String| {
                 system_query
                     .write()
@@ -684,72 +724,62 @@ pub fn SystemDetails(
             }
         />
         
-        // System Mode Content
-        <Show when=move || matches!(spatial_mode.get(), SpatialDetailPanelMode::System)>
-            <div class="mb-2">
-                <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
-                    Complexity
-                </label>
-            </div>
-            <div class="flex justify-evenly">
-                <Checkbox
-                    id="system-adaptable"
-                    label="Adaptable"
-                    checked=Signal::derive(move || system_query
-                        .read()
-                        .as_ref()
-                        .map(|(_, _, system, _)| system.complexity.is_adaptable())
-                        .unwrap_or_default())
-                    on_toggle=move |value: bool| {
-                        system_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
-                    }
-                />
+        // System Mode Content - Use CSS visibility instead of Show components
+        <div 
+            class="mb-2"
+            class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::System)
+        >
+            <label for="complexity" class="block font-medium text-gray-900 text-sm/6">
+                Complexity
+            </label>
+        </div>
+        <div 
+            class="flex justify-evenly"
+            class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::System)
+        >
+            <Checkbox
+                id="system-adaptable"
+                label="Adaptable"
+                checked=system_adaptable
+                on_toggle=move |value: bool| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
+                }
+            />
 
-                <Checkbox
-                    id="system-evolveable"
-                    label="Evolveable"
-                    checked=Signal::derive(move || system_query
-                        .read()
-                        .as_ref()
-                        .map(|(_, _, system, _)| system.complexity.is_evolveable())
-                        .unwrap_or_default())
-                    on_toggle=move |value: bool| {
-                        system_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
-                    }
-                />
-            </div>
+            <Checkbox
+                id="system-evolveable"
+                label="Evolveable"
+                checked=system_evolveable
+                on_toggle=move |value: bool| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
+                }
+            />
+        </div>
 
+        <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::System)>
             <InputGroup
                 id="system-equivalence"
                 label="Equivalence"
-                value=Signal::derive(move || system_query
-                    .read()
-                    .as_ref()
-                    .map(|(_, _, system, _)| system.equivalence.clone())
-                    .unwrap_or_default())
+                value=system_equivalence
                 on_input=move |value: String| {
                     system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
                 }
             />
-        </Show>
+        </div>
 
-        // Boundary Mode Content
-        <Show when=move || matches!(spatial_mode.get(), SpatialDetailPanelMode::Boundary)>
+        // Boundary Mode Content - Use CSS visibility instead of Show components
+        <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::Boundary)>
             <Divider name="Boundary" />
             <InputGroup
                 id="boundary-name"
                 label="Name"
-                value=Signal::derive(move || system_query
-                    .read()
-                    .as_ref()
-                    .map(|(_, _, system, _)| system.boundary.name.clone())
-                    .unwrap_or_default())
+                value=boundary_name
                 on_input=move |value| {
                     system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
                 }
@@ -757,11 +787,7 @@ pub fn SystemDetails(
             <Slider
                 id="boundary-porosity"
                 label="Porosity"
-                value=Signal::derive(move || system_query
-                    .read()
-                    .as_ref()
-                    .map(|(_, _, system, _)| system.boundary.porosity as f64)
-                    .unwrap_or_default())
+                value=boundary_porosity
                 step=0.01
                 on_input=move |value: f64| {
                     system_query
@@ -770,24 +796,20 @@ pub fn SystemDetails(
                         .map(|(_, _, system, _)| system.boundary.porosity = value as f32);
                 }
             />
-        </Show>
+        </div>
 
-        // Environment Mode Content
-        <Show when=move || matches!(spatial_mode.get(), SpatialDetailPanelMode::Environment)>
+        // Environment Mode Content - Use CSS visibility instead of Show components  
+        <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::Environment)>
             <Divider name="Environment" />
             <InputGroup
                 id="environment-name"
                 label="Name"
-                value=Signal::derive(move || system_query
-                    .read()
-                    .as_ref()
-                    .map(|(_, _, _, system_env)| system_env.name.clone())
-                    .unwrap_or_default())
+                value=environment_name
                 on_input=move |value: String| {
                     system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
                 }
             />
-        </Show>
+        </div>
     }
 }
 
