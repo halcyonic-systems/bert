@@ -645,117 +645,6 @@ pub fn SystemDetails(
     system_query: RwSignalSynced<Option<SystemQuery>>,
     spatial_mode: RwSignalSynced<SpatialDetailPanelMode>,
 ) -> impl IntoView {
-    let name = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(name, _, _, _)| name.to_string())
-            .unwrap_or_default()
-    });
-
-    let description = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, description, _, _)| description.text.clone())
-            .unwrap_or_default()
-    });
-
-    let adaptable = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.complexity.is_adaptable())
-            .unwrap_or_default()
-    });
-
-    let evolveable = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.complexity.is_evolveable())
-            .unwrap_or_default()
-    });
-
-    let equivalence = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.equivalence.clone())
-            .unwrap_or_default()
-    });
-
-    let time_unit = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.time_unit.clone())
-            .unwrap_or_default()
-    });
-
-    let history = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.history.clone())
-            .unwrap_or_default()
-    });
-
-    let transformation = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.transformation.clone())
-            .unwrap_or_default()
-    });
-
-    let boundary_name = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.boundary.name.clone())
-            .unwrap_or_default()
-    });
-
-    let boundary_description = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.boundary.description.clone())
-            .unwrap_or_default()
-    });
-
-    let boundary_porosity = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.boundary.porosity as f64)
-            .unwrap_or_default()
-    });
-
-    let perceptive_fuzziness = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.boundary.perceptive_fuzziness as f64)
-            .unwrap_or_default()
-    });
-
-    let environment_name = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, _, system_env)| system_env.name.clone())
-            .unwrap_or_default()
-    });
-
-    let environment_description = Signal::derive(move || {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, _, system_env)| system_env.description.clone())
-            .unwrap_or_default()
-    });
 
     view! {
         // Debug: Show current spatial mode
@@ -763,12 +652,16 @@ pub fn SystemDetails(
             "Current Mode: " { move || format!("{:?}", spatial_mode.get()) }
         </div>
         
-        // Always show system name/description first for now
+        // Always show system name/description first
         <InputGroup
             id="system-name"
             label="Name"
             placeholder="External Entity Name"
-            value=name
+            value=Signal::derive(move || system_query
+                .read()
+                .as_ref()
+                .map(|(name, _, _, _)| name.to_string())
+                .unwrap_or_default())
             on_input=move |value: String| {
                 system_query.write().as_mut().map(|(name, _, _, _)| name.set(value));
             }
@@ -778,7 +671,11 @@ pub fn SystemDetails(
             id="system-description"
             label="Description"
             placeholder="Add a description"
-            text=description
+            text=Signal::derive(move || system_query
+                .read()
+                .as_ref()
+                .map(|(_, description, _, _)| description.text.clone())
+                .unwrap_or_default())
             on_input=move |value: String| {
                 system_query
                     .write()
@@ -798,7 +695,11 @@ pub fn SystemDetails(
                 <Checkbox
                     id="system-adaptable"
                     label="Adaptable"
-                    checked=adaptable
+                    checked=Signal::derive(move || system_query
+                        .read()
+                        .as_ref()
+                        .map(|(_, _, system, _)| system.complexity.is_adaptable())
+                        .unwrap_or_default())
                     on_toggle=move |value: bool| {
                         system_query
                             .write()
@@ -810,7 +711,11 @@ pub fn SystemDetails(
                 <Checkbox
                     id="system-evolveable"
                     label="Evolveable"
-                    checked=evolveable
+                    checked=Signal::derive(move || system_query
+                        .read()
+                        .as_ref()
+                        .map(|(_, _, system, _)| system.complexity.is_evolveable())
+                        .unwrap_or_default())
                     on_toggle=move |value: bool| {
                         system_query
                             .write()
@@ -823,7 +728,11 @@ pub fn SystemDetails(
             <InputGroup
                 id="system-equivalence"
                 label="Equivalence"
-                value=equivalence
+                value=Signal::derive(move || system_query
+                    .read()
+                    .as_ref()
+                    .map(|(_, _, system, _)| system.equivalence.clone())
+                    .unwrap_or_default())
                 on_input=move |value: String| {
                     system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
                 }
@@ -836,7 +745,11 @@ pub fn SystemDetails(
             <InputGroup
                 id="boundary-name"
                 label="Name"
-                value=boundary_name
+                value=Signal::derive(move || system_query
+                    .read()
+                    .as_ref()
+                    .map(|(_, _, system, _)| system.boundary.name.clone())
+                    .unwrap_or_default())
                 on_input=move |value| {
                     system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
                 }
@@ -844,7 +757,11 @@ pub fn SystemDetails(
             <Slider
                 id="boundary-porosity"
                 label="Porosity"
-                value=boundary_porosity
+                value=Signal::derive(move || system_query
+                    .read()
+                    .as_ref()
+                    .map(|(_, _, system, _)| system.boundary.porosity as f64)
+                    .unwrap_or_default())
                 step=0.01
                 on_input=move |value: f64| {
                     system_query
@@ -861,7 +778,11 @@ pub fn SystemDetails(
             <InputGroup
                 id="environment-name"
                 label="Name"
-                value=environment_name
+                value=Signal::derive(move || system_query
+                    .read()
+                    .as_ref()
+                    .map(|(_, _, _, system_env)| system_env.name.clone())
+                    .unwrap_or_default())
                 on_input=move |value: String| {
                     system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
                 }
