@@ -26,7 +26,7 @@ use bundles::{auto_spawn_interface_label, auto_spawn_subsystem_label};
 pub use components::*;
 use constants::{MODIFIER, WHITE_COLOR_MATERIAL_HANDLE};
 use data_model::load::load_world;
-use data_model::save::{save_world, serialize_world};
+use data_model::save::{save_world, save_world_as, serialize_world};
 pub use events::*;
 use leptos_bevy_canvas::prelude::*;
 use plugins::label::{
@@ -190,6 +190,9 @@ pub fn init_bevy_app(
                 serialize_world
                     .pipe(save_world)
                     .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyS))),
+                serialize_world
+                    .pipe(save_world_as)
+                    .run_if(input_pressed(MODIFIER).and(input_pressed(KeyCode::ShiftLeft).or(input_pressed(KeyCode::ShiftRight))).and(input_just_pressed(KeyCode::KeyS))),
             ),
             (
                 hide_selected

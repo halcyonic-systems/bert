@@ -66,7 +66,7 @@ pub fn ModelBrowser(
                             on:click=move |_| {
                                 leptos::logging::log!("Loading cell model, data length: {}", CELL_MODEL_JSON.len());
                                 on_load.run(LoadFileEvent {
-                                    file_path: "cell.json".to_string(),
+                                    file_path: "template:cell.json".to_string(),
                                     data: CELL_MODEL_JSON.as_bytes().to_vec(),
                                 });
                                 on_close.run(());
@@ -82,7 +82,7 @@ pub fn ModelBrowser(
                             on:click=move |_| {
                                 leptos::logging::log!("Loading organization model, data length: {}", ORGANIZATION_MODEL_JSON.len());
                                 on_load.run(LoadFileEvent {
-                                    file_path: "organization.json".to_string(),
+                                    file_path: "template:organization.json".to_string(),
                                     data: ORGANIZATION_MODEL_JSON.as_bytes().to_vec(),
                                 });
                                 on_close.run(());
@@ -98,7 +98,7 @@ pub fn ModelBrowser(
                             on:click=move |_| {
                                 leptos::logging::log!("Loading solar panel model, data length: {}", SOLAR_PANEL_MODEL_JSON.len());
                                 on_load.run(LoadFileEvent {
-                                    file_path: "solar-panel.json".to_string(),
+                                    file_path: "template:solar-panel.json".to_string(),
                                     data: SOLAR_PANEL_MODEL_JSON.as_bytes().to_vec(),
                                 });
                                 on_close.run(());

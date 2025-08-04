@@ -35,7 +35,18 @@ fn save_with_dialog(app_handle: AppHandle, data: &str, path: &str) {
         .add_filter("valid_formats", &["json"])
         .set_file_name(path)
         .save_file(move |file_path| {
-            std::fs::write(file_path.unwrap().into_path().unwrap(), data.clone()).unwrap();
+            if let Some(path) = file_path {
+                match path.into_path() {
+                    Ok(path_buf) => {
+                        if let Err(e) = std::fs::write(&path_buf, data.clone()) {
+                            eprintln!("Failed to save file: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to get file path: {:?}", e);
+                    }
+                }
+            }
         });
 }
 

@@ -58,6 +58,7 @@ pub fn ControlsMenu(
                                 <div class="space-y-2">
                                     <ControlItem action="Open File" control="Ctrl+L" />
                                     <ControlItem action="Save" control="Ctrl+S" />
+                                    <ControlItem action="Save As..." control="Ctrl+Shift+S" />
                                 </div>
 
                                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Advanced"</h3>

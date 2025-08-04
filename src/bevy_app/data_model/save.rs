@@ -83,34 +83,63 @@ pub fn save_world(
         let task = AsyncComputeTaskPool::get().spawn_local({
             let model = world_model.clone();
             async move {
-                if let Some(file_name) = file_name {
+                // Determine if we should use save dialog
+                let should_use_dialog = file_name.as_ref().map_or(true, |name| {
+                    // Always use dialog for:
+                    // 1. No file loaded (new model)
+                    // 2. Template files from Model Browser
+                    // 3. Files in protected directories (src-tauri, assets)
+                    name.starts_with("template:") || 
+                    name.contains("src-tauri") || 
+                    name.contains("assets/models")
+                });
+                
+                if should_use_dialog {
+                    // Generate smart default name based on context
+                    let suggested_name = file_name.as_ref()
+                        .and_then(|name| {
+                            if name.starts_with("template:") {
+                                // For Model Browser templates
+                                name.strip_prefix("template:")
+                                    .map(|n| format!("enhanced-{}", n))
+                            } else if name.contains("assets/models/") {
+                                // For files loaded via Ctrl+L from assets
+                                name.split('/').last()
+                                    .map(|n| format!("my-{}", n))
+                            } else {
+                                // For other cases, suggest based on filename
+                                name.split('/').last()
+                                    .map(|n| n.to_string())
+                            }
+                        })
+                        .unwrap_or_else(|| "untitled.json".to_string());
+                    
                     invoke::<()>(
-                        "save_to_file",
+                        "save_with_dialog",
                         &Args {
-                            data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
-                            path: file_name.clone(),
+                            data: serde_json::to_string(&model).expect("This shouldn't fail"),
+                            path: suggested_name,
                         },
                     )
                         .await;
                 } else {
+                    // Direct save for user files in safe locations
                     invoke::<()>(
-                        "save_with_dialog",
+                        "save_to_file",
                         &Args {
-                            data: serde_json::to_string(&model.clone()).expect("This shouldn't fail"),
-                            path: "untitled.json".to_string(),
+                            data: serde_json::to_string(&model).expect("This shouldn't fail"),
+                            path: file_name.unwrap(),
                         },
                     )
                         .await;
-
                 }
-
             }
         });
 
         task.detach();
 
     } else {
-
+        // Web version - always use download
         let array = Array::new();
         let uint8_array = Uint8Array::from(serde_json::to_string(&world_model)
                     .expect("This shouldn't fail").as_bytes());
@@ -123,7 +152,21 @@ pub fn save_world(
         let document = window.document().unwrap();
         let a = document.create_element("a").unwrap().dyn_into::<HtmlAnchorElement>().unwrap();
         a.set_href(&url);
-        a.set_download(&file_name.unwrap_or("untitled.json".to_string()));
+        
+        // Generate smart filename for web version too
+        let download_name = file_name.as_ref()
+            .and_then(|name| {
+                if name.starts_with("template:") {
+                    name.strip_prefix("template:")
+                        .map(|n| format!("enhanced-{}", n))
+                } else {
+                    name.split('/').last()
+                        .map(|n| n.to_string())
+                }
+            })
+            .unwrap_or_else(|| "untitled.json".to_string());
+        
+        a.set_download(&download_name);
 
         // Append to the document, trigger click, and remove
         document.body().unwrap().append_child(&a).unwrap();
@@ -132,6 +175,61 @@ pub fn save_world(
 
         // Revoke the object URL
         Url::revoke_object_url(&url).unwrap();
+    }
+}
+
+/// Force save with dialog regardless of current file state
+pub fn save_world_as(
+    In(world_model): In<WorldModel>,
+    current_file: Res<CurrentFile>
+) {
+    #[derive(serde::Serialize)]
+    struct Args {
+        data: String,
+        path: String
+    }
+
+    let file_name = (*current_file).clone();
+
+    let window = web_sys::window().expect("window should exist");
+
+    let tauri_exists = leptos_use::js! {
+        "__TAURI__" in &window
+    };
+
+    if tauri_exists {
+        let task = AsyncComputeTaskPool::get().spawn_local({
+            let model = world_model.clone();
+            async move {
+                // Always show dialog for Save As
+                let suggested_name = file_name.as_ref()
+                    .and_then(|name| {
+                        if name.starts_with("template:") {
+                            name.strip_prefix("template:")
+                                .map(|n| format!("enhanced-{}", n))
+                        } else {
+                            name.split('/').last()
+                                .map(|n| n.to_string())
+                        }
+                    })
+                    .unwrap_or_else(|| "untitled.json".to_string());
+                
+                invoke::<()>(
+                    "save_with_dialog",
+                    &Args {
+                        data: serde_json::to_string(&model).expect("This shouldn't fail"),
+                        path: suggested_name,
+                    },
+                )
+                    .await;
+            }
+        });
+
+        task.detach();
+
+    } else {
+        // Web version - same as regular save (always downloads)
+        save_world(In(world_model), current_file);
     }
 }
 

@@ -397,9 +397,64 @@ As we proceed with the modeling, this document will capture:
    - API requirements for programmatic model creation
    - Enhanced collaborative features needed
 
+## Model Library Update Insights (August 2025)
+
+### Critical Discoveries from Cell Model Enhancement Session
+
+1. **Subsystem Attachment Requirements**:
+   - BERT enforces that subsystems MUST attach to existing interfaces
+   - Cannot create "floating" subsystems in the center without connections
+   - This constraint shapes modeling decisions significantly
+
+2. **Internal Subsystem Creation Pattern**:
+   - Internal subsystems (like Nucleus) can be created at center through flows
+   - Create flows from interface-attached subsystems toward center
+   - BERT spawns the internal subsystem at flow intersection
+   - Creates elegant hub-and-spoke patterns
+
+3. **Simplified Flow vs Complex Flow**:
+   - Original models used complex flow with sub-types
+   - New simplified flow eliminated sub-types for cleaner structural analysis
+   - Substance types: Material, Energy, Message (not Information)
+   - Focus on structural relationships over detailed parameters
+
+4. **Equivalence Class Best Practices**:
+   - Use functional role descriptors (e.g., "Power Plant" not "Organelle")
+   - Enable cross-domain pattern recognition
+   - Examples: Control Center, Manufacturing Hub, Shipping Center
+   - Supports BERT's systems analysis across domains
+
+5. **Usability Type Limitation**:
+   - Current options: Product, Waste, Resource, Disruption
+   - **Missing: "Signal" or "Control" usability type for regulatory flows**
+   - Workaround: Use "Resource" for control/feedback signals
+   - Critical for modeling biological signaling, control systems, feedback loops
+
+6. **Model Browser Save System Enhancement**:
+   - Fixed critical save location bug (was saving to src-tauri/ instead of assets/models/)
+   - Added smart filename suggestions and template detection
+   - Professional save dialog behavior for protected directories
+
+### Recommended BERT Enhancements
+
+1. **Add Signal/Control Usability Type**:
+   - For regulatory messages and feedback loops
+   - Essential for accurate systems modeling
+   - Would benefit biological, engineering, and organizational models
+
+2. **Improve Internal Subsystem Creation**:
+   - Make it clearer that flows can create central subsystems
+   - Visual indicators for where subsystems can be created
+   - Guide users toward hub-and-spoke patterns
+
+3. **Simplified vs Complex Flow Toggle**:
+   - Allow users to switch between structural and detailed modeling
+   - Hide/show advanced fields based on analysis mode
+   - Support both high-level and detailed analysis workflows
+
 ## Future Enhancement Opportunities
 
-Based on initial observations:
+Based on initial observations and recent modeling sessions:
 
 1. **LLM Integration Points**:
    - Natural language to system property mapping
@@ -419,6 +474,29 @@ Based on initial observations:
    - Model completeness indicators
    - Export to multiple formats
 
+### Critical BERT Workflow: Creating External Entity Chains
+
+**The correct sequence for creating flows is:**
+1. **Click green arrow button** → Creates flow (red arrow appears)
+2. **Click the flow** → Name and configure flow properties
+3. **Click green rectangle button** → Creates interface on boundary
+4. **Click the interface** → Name and configure interface
+5. **Click green sink/source button** → Creates external entity
+6. **Click the sink/source** → Name and configure external entity
+
+**Important**: This sequence must be followed in order. The buttons appear sequentially as you complete each step. Save after completing each full chain!
+
+### Workflow Best Practices for Model Library Updates
+
+1. **Save Frequently**: After each complete subsystem or flow chain
+2. **Close Files in Other Editors**: Prevent file lock conflicts
+3. **Use Model Browser**: Load existing models as templates
+4. **Follow Naming Conventions**: Use domain-specific accurate terminology
+5. **Document Equivalence Classes**: Enable cross-domain analysis
+6. **Work with Constraints**: Use interface attachment requirements creatively
+
 ---
 
 *This document will be continuously updated throughout the modeling session to capture all insights and patterns discovered during the collaborative process.*
+
+*Last Updated: August 2025 - Added Model Library Update Insights from Cell enhancement session*
