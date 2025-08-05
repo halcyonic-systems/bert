@@ -59,6 +59,8 @@ pub fn spawn_external_entity(
         is_selected,
         name,
         description,
+        "",
+        "",
         transform,
         initial_position,
         nesting_level,
@@ -100,6 +102,8 @@ pub fn spawn_external_entity_only(
     is_selected: bool,
     name: &str,
     description: &str,
+    equivalence: &str,
+    model: &str,
     transform: Transform,
     initial_position: InitialPosition,
     nesting_level: u16,
@@ -115,8 +119,8 @@ pub fn spawn_external_entity_only(
     commands
         .spawn((
             ExternalEntity {
-                equivalence: "".to_string(),
-                model: "".to_string(),
+                equivalence: equivalence.to_string(),
+                model: model.to_string(),
             },
             transform,
             HighlightBundles {

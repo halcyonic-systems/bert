@@ -40,6 +40,8 @@ pub fn setup(
         **zoom,
         "System",
         "",
+        "",
+        "Second",
         &mut meshes,
     );
 

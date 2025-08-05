@@ -187,6 +187,8 @@ fn spawn_subsystem_common(
                     nesting_level,
                     name,
                     description,
+                    "",
+                    "Second",
                 ),
             ))
             .observe(

@@ -252,6 +252,8 @@ fn spawn_systems_interfaces_and_external_entities(
                 zoom,
                 &system.info.name,
                 &system.info.description,
+                &system.equivalence,
+                &system.time_constant,
                 meshes,
             );
 
@@ -340,6 +342,8 @@ fn spawn_external_entities<S: HasSourcesAndSinks + HasInfo>(
             false,
             &ext_entity.info.name,
             &ext_entity.info.description,
+            &ext_entity.equivalence,
+            &ext_entity.model,
             transform,
             initial_position,
             (sources_and_sinks.info().level + 1) as u16,
@@ -530,6 +534,8 @@ fn spawn_loaded_subsystem(
                 nesting_level,
                 &system.info.name,
                 &system.info.description,
+                &system.equivalence,
+                &system.time_constant,
             ),
         ))
         .observe(

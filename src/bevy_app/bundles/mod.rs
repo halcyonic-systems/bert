@@ -57,22 +57,23 @@ impl SystemBundle {
         nesting_level: u16,
         name: &str,
         description: &str,
+        equivalence: &str,
+        time_unit: &str,
     ) -> Self {
         let zoomed_radius = radius * zoom;
 
         let (simplified_mesh, path) = get_system_geometry_from_radius(zoomed_radius);
         let scale = NestingLevel::compute_scale(nesting_level, zoom);
-        let time_unit = "Second".to_string();
         Self {
             system: System {
                 radius,
                 complexity,
                 membership: 1.0,
-                equivalence: "".to_string(),
+                equivalence: equivalence.to_string(),
                 transformation: "".to_string(),
                 history: "".to_string(),
                 boundary,
-                time_unit,
+                time_unit: time_unit.to_string(),
             },
             name: Name::new(name.to_string()),
             description: ElementDescription::new(description),

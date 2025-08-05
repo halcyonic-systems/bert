@@ -19,6 +19,8 @@ pub fn spawn_main_system(
     zoom: f32,
     name: &str,
     description: &str,
+    equivalence: &str,
+    time_unit: &str,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) -> Entity {
     let system_entity = commands
@@ -35,6 +37,8 @@ pub fn spawn_main_system(
                 0,
                 name,
                 description,
+                equivalence,
+                time_unit,
             ),
             SystemEnvironment::default(),
         ))
