@@ -20,6 +20,7 @@ use crate::bevy_app::systems::tessellate_simplified_mesh;
 use bevy::math::vec3;
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
+use bevy::input::mouse::{MouseWheel, MouseScrollUnit};
 use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 
@@ -29,6 +30,9 @@ pub fn apply_zoom(
     mut query: Query<(&mut Transform, &InitialPosition), Without<Camera>>,
     zoom: Res<Zoom>,
 ) {
+    if zoom.is_changed() {
+        info!("apply_zoom: Zoom changed to {}", **zoom);
+    }
     for (mut transform, initial_position) in &mut query {
         transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
     }
@@ -118,35 +122,94 @@ pub fn apply_zoom_to_incomplete_flows(
     **prev_zoom = **zoom;
 }
 
+/// Timer resource to throttle zoom operations
+#[derive(Resource, Default)]
+pub struct ZoomTimer(pub f32);
+
 /// Adjusts the 'Zoom' level based on keyboard input.
 ///
 /// Press the minus (-) key to zoom in, or press the equals (=) key to zoom out.
-pub fn control_zoom_from_keyboard(input: Res<ButtonInput<KeyCode>>, mut zoom: ResMut<Zoom>) {
-    if input.just_pressed(KeyCode::Minus) {
+pub fn control_zoom_from_keyboard(
+    input: Res<ButtonInput<KeyCode>>, 
+    mut zoom: ResMut<Zoom>,
+    time: Res<Time>,
+    mut zoom_timer: Local<ZoomTimer>,
+) {
+    // Update the timer
+    zoom_timer.0 -= time.delta_secs();
+    
+    // Only process zoom if enough time has passed (throttle to prevent stuck keys)
+    if zoom_timer.0 > 0.0 {
+        return;
+    }
+    
+    // Check for zoom in (minus key or numpad minus) - using pressed() instead of just_pressed()
+    if input.pressed(KeyCode::Minus) || input.pressed(KeyCode::NumpadSubtract) {
+        info!("Zoom in key pressed, current zoom: {}, new zoom: {}", **zoom, **zoom * 1.2);
         zoom.mul(1.2);
+        zoom.set_changed();
+        zoom_timer.0 = 0.1; // 100ms cooldown
     }
 
-    if input.just_pressed(KeyCode::Equal) {
+    // Check for zoom out (equal key, plus key, or numpad plus)
+    if input.pressed(KeyCode::Equal) || input.pressed(KeyCode::NumpadAdd) {
+        info!("Zoom out key pressed, current zoom: {}, new zoom: {}", **zoom, **zoom * 0.8);
         zoom.mul(0.8);
+        zoom.set_changed();
+        zoom_timer.0 = 0.1; // 100ms cooldown
     }
 }
 
-// TODO
-// pub fn control_zoom_from_mouse_wheel(
-//     mut scroll_events: EventReader<MouseWheel>,
-//     mut zoom: ResMut<Zoom>,
-// ) {
-//     for event in scroll_events.read() {
-//         match event.unit {
-//             MouseScrollUnit::Line => {
-//                 zoom.mul(1.0 + event.y * 0.01);
-//             }
-//             MouseScrollUnit::Pixel => {
-//                 zoom.mul(1.0 + event.y * 0.001);
-//             }
-//         }
-//     }
-// }
+/// Handles zoom events sent from JavaScript/Leptos
+pub fn handle_zoom_events(
+    mut zoom_events: EventReader<crate::bevy_app::events::ZoomEvent>,
+    mut zoom: ResMut<Zoom>,
+) {
+    for event in zoom_events.read() {
+        match event {
+            crate::bevy_app::events::ZoomEvent::ZoomIn => {
+                info!("JavaScript zoom in event received, current zoom: {}, new zoom: {}", **zoom, **zoom * 1.2);
+                zoom.mul(1.2);
+                zoom.set_changed();
+            }
+            crate::bevy_app::events::ZoomEvent::ZoomOut => {
+                info!("JavaScript zoom out event received, current zoom: {}, new zoom: {}", **zoom, **zoom * 0.8);
+                zoom.mul(0.8);
+                zoom.set_changed();
+            }
+        }
+    }
+}
+
+/// Handles deselect events sent from Leptos (e.g., close button clicks)
+pub fn handle_deselect_events(
+    mut deselect_events: EventReader<crate::bevy_app::events::DeselectAllEvent>,
+    mut pick_selection_query: Query<&mut crate::bevy_app::plugins::mouse_interaction::PickSelection>,
+) {
+    for _event in deselect_events.read() {
+        info!("Deselect event received - clearing all Bevy selection state");
+        crate::bevy_app::plugins::mouse_interaction::do_deselect_all(&mut pick_selection_query);
+    }
+}
+
+/// Controls zoom using the mouse wheel.
+pub fn control_zoom_from_mouse_wheel(
+    mut scroll_events: EventReader<MouseWheel>,
+    mut zoom: ResMut<Zoom>,
+) {
+    for event in scroll_events.read() {
+        match event.unit {
+            MouseScrollUnit::Line => {
+                // Invert the direction: positive y (scroll up) = zoom in
+                zoom.mul(1.0 - event.y * 0.1);
+            }
+            MouseScrollUnit::Pixel => {
+                // Invert the direction: positive y (scroll up) = zoom in
+                zoom.mul(1.0 - event.y * 0.001);
+            }
+        }
+    }
+}
 
 //noinspection ALL
 pub fn apply_zoom_to_system_geometries(

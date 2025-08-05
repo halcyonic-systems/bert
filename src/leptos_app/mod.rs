@@ -30,7 +30,7 @@ pub type IsSameAsIdQuery = (IsSameAsId,);
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
-use crate::events::{TreeEvent, TriggerEvent};
+use crate::events::{TreeEvent, TriggerEvent, ZoomEvent, DeselectAllEvent};
 use crate::leptos_app::tree::Tree;
 use leptos_bevy_canvas::prelude::*;
 
@@ -40,6 +40,12 @@ pub fn App() -> impl IntoView {
 
     // Unified LoadFileEvent system for both Ctrl+L file dialog and Model Browser
     let (load_file_writer, load_file_event_receiver) = event_l2b::<LoadFileEvent>();
+    
+    // Zoom event system for JavaScript to Bevy communication
+    let (zoom_event_writer, zoom_event_receiver) = event_l2b::<ZoomEvent>();
+    
+    // Deselect event system for close button functionality
+    let (deselect_event_writer, deselect_event_receiver) = event_l2b::<DeselectAllEvent>();
     
     // Set up file dialog with the shared event writer
     let file_dialog_signal = RwSignal::new(None::<crate::leptos_app::use_file_dialog::UseFile>);
@@ -208,7 +214,27 @@ pub fn App() -> impl IntoView {
                 set_model_browser_visible.set(false);
             })
         />
-        <div class="h-screen">
+        <div class="h-screen" 
+             tabindex="0"
+             id="bevy-container"
+             on:click=move |_| {
+                 leptos::logging::log!("🎯 Container clicked - should be focused for key events");
+             }
+             on:keydown=move |ev| {
+                 // Log all key presses for debugging
+                 leptos::logging::log!("Key pressed: {} (code: {})", ev.key(), ev.code());
+                 
+                 // Handle zoom keys directly in JavaScript to bypass Bevy keyboard focus issues
+                 if ev.key() == "-" || ev.key() == "_" {
+                     ev.prevent_default();
+                     leptos::logging::log!("🔍 ZOOM IN detected via JavaScript - sending to Bevy");
+                     zoom_event_writer.send(ZoomEvent::ZoomIn).ok();
+                 } else if ev.key() == "=" || ev.key() == "+" {
+                     ev.prevent_default();
+                     leptos::logging::log!("🔍 ZOOM OUT detected via JavaScript - sending to Bevy");
+                     zoom_event_writer.send(ZoomEvent::ZoomOut).ok();
+                 }
+             }>
             <BevyCanvas init=move || {
                 init_bevy_app(
                     selected_details_query,
@@ -222,6 +248,8 @@ pub fn App() -> impl IntoView {
                     detach_event_receiver,
                     load_file_event_receiver,
                     tree_event_sender,
+                    zoom_event_receiver,
+                    deselect_event_receiver,
                     trigger_event_receiver,
                 )
             } />
@@ -236,6 +264,7 @@ pub fn App() -> impl IntoView {
             is_same_as_id
             spatial_mode
             detach_event_sender
+            deselect_event_sender=deselect_event_writer
         />
     }
 }

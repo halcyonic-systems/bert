@@ -53,3 +53,14 @@ pub enum TriggerEvent {
     ShowTree,
     ToggleTheme,
 }
+
+/// Fires from JavaScript/Leptos to Bevy to control zoom when Bevy keyboard handling fails
+#[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum ZoomEvent {
+    ZoomIn,
+    ZoomOut,
+}
+
+/// Fires from Leptos to Bevy to deselect all elements (clear selection state)
+#[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct DeselectAllEvent;

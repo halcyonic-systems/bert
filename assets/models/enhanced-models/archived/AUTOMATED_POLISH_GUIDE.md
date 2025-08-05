@@ -16,9 +16,15 @@
 4. **Equivalence fields** - Can add cross-domain metaphors
 5. **Legacy fields** - substance.sub_type, parameters (BERT ignores gracefully)
 
-### What MUST Stay Unchanged:
+### ⚠️ CRITICAL: What MUST Stay Unchanged:
+
+**NEVER MODIFY COORDINATES** - This will break visual layout!
+
 1. **All IDs** - System, component, interface, flow IDs
 2. **Coordinates** - transform.translation, transform.rotation, angle values
+   - Controls component position and orientation
+   - Changing these bunches components in center
+   - If layout appears broken, test original first
 3. **Relationships** - exports_to, receives_from arrays
 4. **Structure** - JSON hierarchy and field order
 5. **Type values** - Import/Export, Source/Sink designations
@@ -108,6 +114,49 @@ Use template:
 - Pure systems science language
 
 ---
+
+## 🔧 Coordinate Debugging Protocol
+
+**If ecosystem/model layout appears broken (components bunched in center):**
+
+1. **Test Original First**: Load original .json file in BERT
+2. **If original displays correctly**: Coordinates are correct, polish process is fine
+3. **If original is also broken**: Report to user - don't attempt manual coordinate fixes
+4. **Root cause**: Usually overlapping coordinates in original, not polish error
+5. **Solution**: Only enhance text descriptions, never touch coordinates
+
+**Visual Layout Warning Signs:**
+- All components stacked in center
+- Components overlapping completely
+- Interfaces not connecting properly
+
+**Remember**: Polish process only changes text - layout issues indicate coordinate problems in original file
+
+## 🐛 Intermittent Loading Issues
+
+**Complex Model Loading Problem**: Some polished models (particularly system-polished.json) may fail to load on first attempt but work fine on subsequent loads.
+
+**Symptoms**:
+- Model appears to fail loading initially
+- Same model loads successfully when tried again
+- No permanent corruption - file is valid JSON
+- More common with models having complex interconnections
+
+**Potential Causes**:
+- JSON parsing race condition in BERT
+- File system caching/sync delays  
+- Complex relationship parsing timing issues
+- BERT internal state conflicts
+
+**Workarounds**:
+1. **Try loading 2-3 times** if first attempt fails
+2. **Restart BERT** (`cargo tauri dev`) if persistent
+3. **Wait a few seconds** between load attempts
+4. **Check file exists** and is complete before loading
+
+**When to Worry**: Only if model never loads after multiple attempts and BERT restart
+
+**Note**: This appears related to model complexity (number of interconnections) rather than polish quality. The System template has the most complex internal relationships which may stress BERT's loading system.
 
 ## 🚀 Automation Strategy
 

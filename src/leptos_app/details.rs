@@ -3,7 +3,7 @@ use crate::leptos_app::components::{
     Button, Checkbox, Divider, InputGroup, SelectGroup, DetailsPanelMode, Slider, TextArea,
 };
 use crate::{
-    DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
+    DetachMarkerLabelEvent, DeselectAllEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
     InteractionUsability, InterfaceQuery, IsSameAsIdQuery, SubSystemQuery,
     SubstanceType, SystemElement, SystemQuery,
 };
@@ -84,6 +84,7 @@ pub fn Details(
     is_same_as_id: RwSignalSynced<Option<IsSameAsIdQuery>>,
     spatial_mode: RwSignalSynced<SpatialDetailPanelMode>,
     detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
+    deselect_event_sender: LeptosEventSender<DeselectAllEvent>,
 ) -> impl IntoView {
     // Panel mode signal for simplified system details
     let _panel_mode = RwSignal::new(DetailsPanelMode::System);
@@ -122,18 +123,32 @@ pub fn Details(
                                         <div class="flex items-center ml-3 h-7">
                                             <button
                                                 type="button"
-                                                class="relative text-gray-400 bg-white rounded-md hover:text-gray-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:outline-hidden"
+                                                class="relative p-2 text-gray-400 bg-white rounded-md hover:text-gray-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:outline-none"
+                                                on:click=move |_| {
+                                                    // Clear selection to close the details panel
+                                                    leptos::logging::log!("🔽 Close button clicked - clearing both Leptos and Bevy selection");
+                                                    
+                                                    // Clear all Leptos selection signals
+                                                    selected.update(|s| *s = None);
+                                                    interaction_details.update(|s| *s = None);
+                                                    interface_details.update(|s| *s = None);
+                                                    external_entity_details.update(|s| *s = None);
+                                                    system_details.update(|s| *s = None);
+                                                    sub_system_details.update(|s| *s = None);
+                                                    is_same_as_id.update(|s| *s = None);
+                                                    
+                                                    // Also clear Bevy selection state so elements can be re-selected
+                                                    deselect_event_sender.send(DeselectAllEvent).ok();
+                                                }
                                             >
-                                                <span class="absolute -inset-2.5"></span>
                                                 <span class="sr-only">Close panel</span>
                                                 <svg
-                                                    class="size-6"
+                                                    class="w-6 h-6"
                                                     fill="none"
                                                     viewBox="0 0 24 24"
                                                     stroke-width="1.5"
                                                     stroke="currentColor"
                                                     aria-hidden="true"
-                                                    data-slot="icon"
                                                 >
                                                     <path
                                                         stroke-linecap="round"

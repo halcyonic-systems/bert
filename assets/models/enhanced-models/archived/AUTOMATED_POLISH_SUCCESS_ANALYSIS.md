@@ -26,19 +26,27 @@
 - Maintained exact structure from original
 - No partial updates or field-by-field modifications
 
-### 4. **Structural Integrity Preservation**
+### 4. **⚠️ CRITICAL: Structural Integrity Preservation**
+
+**NEVER MODIFY COORDINATES** - This breaks visual layout!
+
 Critical elements kept EXACTLY the same:
 ```json
 {
   "id": "C0.5",              // ✅ Unchanged
   "transform": {
-    "translation": [-56.25, 0.0],  // ✅ Exact coordinates
-    "rotation": -3.1415925         // ✅ Exact rotation
+    "translation": [-56.25, 0.0],  // ✅ Exact coordinates (layout control)
+    "rotation": -3.1415925         // ✅ Exact rotation (orientation control)
   },
   "exports_to": ["C0.6"],    // ✅ Exact relationships
-  "angle": 0.0               // ✅ Exact interface angles
+  "angle": 0.0               // ✅ Exact interface angles (connection control)
 }
 ```
+
+**Coordinate Modification = Visual Layout Disaster**
+- Components bunch in center
+- Interfaces disconnect
+- Model becomes unusable
 
 ### 5. **Text Enhancement Strategy**
 What WAS changed (safe modifications):
@@ -49,8 +57,8 @@ What WAS changed (safe modifications):
 
 What was NOT changed (critical preservation):
 - All IDs (system, component, interface, flow)
-- All coordinates and transforms
-- All relationship arrays
+- ⚠️ **All coordinates and transforms** (changing breaks visual layout!)
+- All relationship arrays  
 - JSON structure and field order
 - Type designations
 
@@ -128,7 +136,7 @@ Looking at the terminal output from the failed session, likely issues:
 1. Try to Read non-existent output files
 2. Use Edit tool for JSON modifications
 3. Attempt incremental field updates
-4. Change any IDs or coordinates
+4. ⚠️ **NEVER change coordinates** (breaks visual layout!)
 5. Modify relationship arrays
 6. Remove legacy fields
 

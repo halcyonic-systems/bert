@@ -92,6 +92,8 @@ pub fn init_bevy_app(
     detach_event_receiver: BevyEventReceiver<DetachMarkerLabelEvent>,
     load_file_event_sender: BevyEventReceiver<LoadFileEvent>,
     tree_event_sender: BevyEventSender<TreeEvent>,
+    zoom_event_receiver: BevyEventReceiver<ZoomEvent>,
+    deselect_event_receiver: BevyEventReceiver<DeselectAllEvent>,
     trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
 ) -> App {
     let mut app = App::new();
@@ -133,6 +135,8 @@ pub fn init_bevy_app(
     .add_event::<RemoveEvent>()
     .add_event::<DetachMarkerLabelEvent>()
     .add_event::<LoadFileEvent>()
+    .add_event::<ZoomEvent>()
+    .add_event::<DeselectAllEvent>()
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -144,6 +148,8 @@ pub fn init_bevy_app(
     .sync_leptos_signal_with_resource(spatial_mode_duplex)
     .import_event_from_leptos(detach_event_receiver)
     .import_event_from_leptos(load_file_event_sender)
+    .import_event_from_leptos(zoom_event_receiver)
+    .import_event_from_leptos(deselect_event_receiver)
     .import_event_from_leptos(trigger_event_receiver)
     .export_event_to_leptos(tree_event_sender)
     .add_systems(Startup, (window_setup, setup));
@@ -158,7 +164,9 @@ pub fn init_bevy_app(
         PreUpdate,
         (
             control_zoom_from_keyboard,
-            // TODO : for some reason this doesn't always work: control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
+            control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
+            handle_zoom_events,
+            handle_deselect_events,
         )
             .in_set(AllSet),
     );
