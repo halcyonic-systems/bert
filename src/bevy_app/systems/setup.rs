@@ -42,6 +42,8 @@ pub fn setup(
         "",
         "",
         "Second",
+        "Environment",
+        "",
         &mut meshes,
     );
 

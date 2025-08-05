@@ -11,5 +11,5 @@ pub use external_entity::*;
 pub use flow::*;
 pub use interface::*;
 pub use main_system::*;
-pub use spatial_interaction::*;
+// spatial_interaction functions are used only within spawn module
 pub use subsystem::*;

@@ -254,6 +254,8 @@ fn spawn_systems_interfaces_and_external_entities(
                 &system.info.description,
                 &system.equivalence,
                 &system.time_constant,
+                &world_model.environment.info.name,
+                &world_model.environment.info.description,
                 meshes,
             );
 
