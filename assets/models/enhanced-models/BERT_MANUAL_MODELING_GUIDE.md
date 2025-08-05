@@ -80,10 +80,12 @@
 **Purpose**: Define what separates system from environment
 
 **Human Actions**:
-1. Scroll to Boundary section in details panel
-2. Configure:
-   - **Name**: Descriptive boundary name
-   - **Description**: Explain regulatory function
+1. **Click on the boundary ring** (the stroke/edge of the system circle) to open Boundary Details panel
+   - Note: This is BERT's spatial interaction feature - boundary is a separate clickable region
+   - The boundary ring visually highlights when hovered
+2. In the Boundary Details panel, configure:
+   - **Description**: Explain regulatory function (note: appears before Name in current UI)
+   - **Name**: Descriptive boundary name (UI inconsistency - should appear first)
    - **Porosity**: Set 0-1 based on boundary permeability
    - **Perceptive Fuzziness**: Set 0-1 for boundary clarity
 
@@ -104,9 +106,7 @@
    - **Description**: What this output represents and why important
    - **Interaction Usability**: "Product" (primary outputs)
    - **Substance Type**: Energy/Material/Message as appropriate
-   - **Substance Sub Type**: Specific substance details
-   - **Amount & Unit**: Quantitative measures if known
-   - **Parameters**: Additional specifications
+   - Note: Legacy fields (Substance Sub Type, Amount, Unit, Parameters) exist in JSON but not in simplified UI
 
 3. **Click green rectangle button** → Creates interface on boundary
 4. **Click the interface rectangle** → Configure interface:
@@ -154,10 +154,8 @@ Repeat 2.1 sequence for each additional output.
 **BERT Constraint**: All subsystems must attach to existing interfaces
 
 **Creation Process**:
-1. **Create flow FROM boundary interface** toward center
-2. **Configure intermediate subsystem** at flow intersection
-3. **BERT automatically spawns subsystem** at appropriate location
-4. **Configure subsystem properties** following Phase 1 patterns
+1. **Click green circle button on interface** → Spawns subsystem attached to that interface
+2. **Configure subsystem properties** following Phase 1 patterns
 
 **Subsystem Types**:
 - **Input Processors**: Transform raw inputs for internal use
@@ -186,8 +184,9 @@ Repeat 2.1 sequence for each additional output.
 **For each flow, specify**:
 - **Clear naming**: What substance/signal flows
 - **Directional clarity**: Source → Sink relationships
-- **Quantitative details**: Rates, amounts, concentrations
-- **Regulatory mechanisms**: What controls flow rate/timing
+- **Substance type**: Energy/Material/Message classification
+- **Usability**: Resource/Product/Waste designation
+- Note: Quantitative details (rates, amounts) can be included in descriptions but aren't separate fields in simplified UI
 
 ---
 
