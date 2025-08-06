@@ -237,18 +237,27 @@ pub fn InterfaceDetails(interface_query: RwSignalSynced<Option<InterfaceQuery>>)
             }
         />
 
-        <TextArea
-            id="protocol"
-            label="Protocol φ"
-            placeholder="Create a protocol"
-            text=protocol
-            on_input=move |value: String| {
-                interface_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interface)| interface.protocol = value);
-            }
-        />
+        <div class="mb-4">
+            <label class="flex items-center mb-2">
+                <span class="block text-sm font-medium leading-6 text-gray-900">Protocol</span>
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                      title="Algorithm for letting flow across boundary in ordered fashion">
+                    ?
+                </span>
+            </label>
+            <TextArea
+                id="protocol"
+                label=""
+                placeholder="Create a protocol"
+                text=protocol
+                on_input=move |value: String| {
+                    interface_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, interface)| interface.protocol = value);
+                }
+            />
+        </div>
     }
 }
 
@@ -333,35 +342,54 @@ pub fn InteractionDetails(
             }
         />
 
-        <SelectGroup
-            id="interaction-type"
-            label="Interaction Type"
-            options=interaction_types
-            selected_option=interaction_type
-            on_change=move |value| {
-                interaction_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interaction)| value.map(|ty| interaction.interaction_type = ty));
-            }
-        />
+        <div class="mb-4">
+            <label class="flex items-center mb-2">
+                <span class="block text-sm font-medium leading-6 text-gray-900">Interaction Type</span>
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                      title="Flow: gradual movement, Force: immediate influence">
+                    ?
+                </span>
+            </label>
+            <SelectGroup
+                id="interaction-type"
+                label=""
+                options=interaction_types
+                selected_option=interaction_type
+                on_change=move |value| {
+                    interaction_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, interaction)| value.map(|ty| interaction.interaction_type = ty));
+                }
+            />
+        </div>
 
-        <SelectGroup
-            id="substance-type"
-            label="Substance Type"
-            options=substance_types
-            selected_option=substance_type
-            on_change=move |value| {
-                interaction_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, interaction)| value.map(|ty| interaction.substance_type = ty));
-            }
-        />
+        <div class="mb-4">
+            <label class="flex items-center mb-2">
+                <span class="block text-sm font-medium leading-6 text-gray-900">Substance Type</span>
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                      title="Energy: power/work, Material: physical matter, Message: information">
+                    ?
+                </span>
+            </label>
+            <SelectGroup
+                id="substance-type"
+                label=""
+                options=substance_types
+                selected_option=substance_type
+                on_change=move |value| {
+                    interaction_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, interaction)| value.map(|ty| interaction.substance_type = ty));
+                }
+            />
+        </div>
 
         <SelectGroup
             id="interaction-usability"
             label="Interaction Usability"
+            tooltip="Type of interaction based on its utility: Resource (useful input), Disruption (harmful input), Product (useful output), or Waste (harmful output)"
             options=usability_types
             selected_option=usability
             on_change=move |value| {
@@ -564,7 +592,7 @@ pub fn ExternalEntityDetails(
             .unwrap_or_default()
     });
 
-    let model = Signal::derive(move || {
+    let _model = Signal::derive(move || {
         external_entity_query
             .read()
             .as_ref()
@@ -615,17 +643,20 @@ pub fn ExternalEntityDetails(
             }
         />
 
-        <InputGroup
-            id="model"
-            label="Model"
-            value=model
-            on_input=move |value: String| {
-                external_entity_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, external_entity)| external_entity.model = value);
-            }
-        />
+        // HIDDEN for v0.2.0 "Structural Analysis Mode" - Model field is for dynamic behavior modeling
+        // This represents minimal behavioral models of source/sink entities (e.g., "seasonal demand", "steady supplier")
+        // Preserved for v0.3.0 dynamic modeling features
+        // <InputGroup
+        //     id="model"
+        //     label="Model"
+        //     value=model
+        //     on_input=move |value: String| {
+        //         external_entity_query
+        //             .write()
+        //             .as_mut()
+        //             .map(|(_, _, external_entity)| external_entity.model = value);
+        //     }
+        // />
 
         <div class="mt-4">
             <Show when=move || is_same_as_id.get().is_some()>
@@ -864,6 +895,15 @@ pub fn SystemDetails(
         <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::Boundary)>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Boundary</h3>
             
+            <InputGroup
+                id="boundary-name"
+                label="Name"
+                value=boundary_name
+                on_input=move |value| {
+                    system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
+                }
+            />
+            
             <TextArea
                 id="boundary-description"
                 label="Description"
@@ -878,18 +918,10 @@ pub fn SystemDetails(
                 }
             />
             
-            <InputGroup
-                id="boundary-name"
-                label="Name"
-                value=boundary_name
-                on_input=move |value| {
-                    system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
-                }
-            />
-            
             <Slider
                 id="boundary-porosity"
                 label="Porosity"
+                tooltip="How permeable the boundary is to substances, energy, and messages (0.0 = impermeable, 1.0 = completely open)"
                 value=boundary_porosity
                 step=0.01
                 on_input=move |value: f64| {
@@ -903,6 +935,7 @@ pub fn SystemDetails(
             <Slider
                 id="boundary-perceptive-fuzziness"
                 label="Perceptive Fuzziness"
+                tooltip="How difficult it is to determine exactly where the boundary lies (0.0 = sharp/clear boundary, 1.0 = very fuzzy/gradual boundary)"
                 value=Memo::new(move |_| system_query
                     .read()
                     .as_ref()
@@ -1181,6 +1214,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             <Slider
                 id="system-membership"
                 label="Member Autonomy"
+                tooltip="How much individual freedom system members have to act independently (0.0 = tightly controlled/coordinated, 1.0 = completely autonomous)"
                 step=0.01
                 value=membership
                 on_input=move |value: f64| {

@@ -9,6 +9,7 @@ pub fn SelectGroup<Opt, F>(
     #[prop(into)] selected_option: Signal<Option<Opt>>,
     on_change: F,
     #[prop(into, optional)] disabled: Signal<bool>,
+    #[prop(optional, into)] tooltip: Option<String>,
 ) -> impl IntoView
 where
     Opt: Display + Sync + Send + Clone + PartialEq + Eq + 'static,
@@ -27,8 +28,13 @@ where
 
     view! {
         <div class="mb-2">
-            <label for=id.clone() class="block font-medium text-gray-900 text-sm/6">
-                {label.clone()}
+            <label for=id.clone() class="flex items-center font-medium text-gray-900 text-sm/6">
+                <span>{label.clone()}</span>
+                {tooltip.as_ref().map(|tip| view! {
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" title=tip.clone()>
+                        "?"
+                    </span>
+                })}
             </label>
             <div class="grid grid-cols-1 mt-2">
                 <select

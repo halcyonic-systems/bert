@@ -9,6 +9,7 @@ pub fn Slider(
     #[prop(into, default = 0.0.into())] min: Signal<f64>,
     #[prop(into, default = 1.0.into())] max: Signal<f64>,
     #[prop(into, default = 1.0.into())] step: Signal<f64>,
+    #[prop(optional, into)] tooltip: Option<&'static str>,
     // #[prop(into, optional)] show_steps: Signal<bool>,
     on_input: impl Fn(f64) + 'static + Clone,
 ) -> impl IntoView {
@@ -45,8 +46,13 @@ pub fn Slider(
 
     view! {
         <div class="mb-2">
-            <label for=id class="block font-medium text-gray-900 text-sm/6">
-                {label}
+            <label for=id class="flex items-center font-medium text-gray-900 text-sm/6">
+                <span>{label}</span>
+                {tooltip.map(|tip| view! {
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" title=tip>
+                        "?"
+                    </span>
+                })}
             </label>
             <div class="flex relative items-center rounded-md">
                 <input
