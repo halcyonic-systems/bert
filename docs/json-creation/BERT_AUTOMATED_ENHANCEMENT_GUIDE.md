@@ -29,7 +29,7 @@
 The most straightforward approach (complete generation + single Write) is more reliable than complex multi-step modifications. BERT's robustness allows enhancement through simple text replacement while preserving structure.
 
 ### The Proven Process
-1. **Read original enhanced model JSON**
+1. **Read original model JSON**
 2. **Generate complete polished JSON** with all enhancements in single response
 3. **Write polished file** using single Write operation
 4. **Test in BERT** to verify loading and functionality
