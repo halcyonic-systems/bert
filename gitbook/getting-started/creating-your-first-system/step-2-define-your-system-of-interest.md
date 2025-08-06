@@ -10,7 +10,7 @@ This is represented as a main system circle on your canvas.
 
 <figure><img src="../../.gitbook/assets/SOI (1).png" alt="" width="375"><figcaption></figcaption></figure>
 
-Left-click on the circle to open an _**element details tab**_ where you can enter basic information about the system.&#x20;
+Left-click on the circle to open an _**element details tab**_ where you can enter basic information about the system. Before you click, try hovering over the system circle briefly - you'll see a helpful tooltip showing the system's current name and type.&#x20;
 
 
 
@@ -34,3 +34,6 @@ Learn more about them in the advanced features section.
 2. When prompted, choose a location for your file
 3. Enter a descriptive filename
 4. Click **Save** to save your BERT model as a JSON file
+5. Watch for the green "System saved" notification to confirm your work is protected
+
+💡 **Save tip**: You'll see a brief green checkmark appear when your file saves successfully. If you see a red warning instead, try saving again.

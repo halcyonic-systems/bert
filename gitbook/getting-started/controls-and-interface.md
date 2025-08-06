@@ -8,10 +8,12 @@ Master BERT's interface and controls to build systems efficiently and confidentl
 
 1. **🖱️ Left-click** any element to select it
 2. **🖱️ Right-click + drag** to move around the canvas  
-3. **⌨️ Press `=`** to zoom in, **`-`** to zoom out
-4. **⌨️ Press `Ctrl+S`** to save your work
+3. **⌨️ Press `=`** to zoom in, **`-`** to zoom out ⭐
+4. **⌨️ Press `Ctrl+S`** to save your work (watch for the save notification!) ⭐
 
 **That's it!** You're ready to start building systems.
+
+**⭐ New in v0.2.0**: Enhanced zoom maintains spatial boundaries, and save operations show visual feedback.
 
 ## Interface Overview
 
@@ -155,6 +157,62 @@ Understanding how elements connect helps you model systems accurately:
 - **Human-readable** - Can be viewed in any text editor
 - **Version control friendly** - Works well with Git
 
+## Spatial Interaction System (v0.2.0)
+
+BERT v0.2.0 introduces advanced spatial interaction features that make system boundaries and environments visually intuitive.
+
+### Boundary Regions
+
+**Visual system boundaries that move with your systems:**
+
+| Feature | What it does | How to use it |
+|---------|-------------|---------------|
+| **Boundary Ring** | Gray ring around each system showing the boundary | Automatically appears around systems |
+| **Zoom Persistence** | Boundary stays properly positioned during zoom | Zoom in/out - boundary follows the system |
+| **Click Interaction** | Click boundary to select the system | Click the gray ring to select its system |
+| **Hierarchy Awareness** | Subsystem boundaries nest within parent boundaries | Build subsystems - boundaries organize automatically |
+
+**💡 Tip**: The boundary ring helps you visualize where your system ends and its environment begins.
+
+### Environment Regions
+
+**Contextual environment visualization:**
+
+| Feature | What it shows | Visual cue |
+|---------|--------------|------------|
+| **Environment Boundary** | The space containing your system | Subtle background region |
+| **Environmental Context** | Shows what's outside your system | Different visual styling from internal space |
+| **Zoom Stability** | Environment stays properly sized during navigation | Consistent environmental context at all zoom levels |
+
+### Enhanced Tooltips
+
+**Context-sensitive help that appears on hover:**
+
+| Element Type | Tooltip Content | Example |
+|-------------|----------------|---------|
+| **Systems** | Name, complexity, and environmental context | "Cell (Complex) - Living Factory in Multicellular Organism" |
+| **Equivalence Classes** | Component type with domain examples | "Component type - what kind of thing this is (e.g., Ribosome, Sales Team)" |
+| **Interfaces** | Connection details and protocol | "Glucose Transport - GLUT protein mechanism" |
+| **Flows** | Substance type and transfer details | "ATP (Energy) - Universal cellular energy currency" |
+
+**Equivalence Class Tooltip Detail**:
+- **What it explains**: Component type classification with familiar examples
+- **Domain Examples**: Biological (Mitochondria), Social (Finance Department), Technological (Solar Cell)
+- **Purpose**: Helps you understand what kind of component you're looking at
+
+### Save Notifications
+
+**Visual feedback for save operations:**
+
+| Notification Type | When it appears | What it looks like |
+|------------------|-----------------|-------------------|
+| **Save Success** | After successful Ctrl+S | Green checkmark with "System saved" |
+| **Auto-save** | During background saves | Subtle spinner in status area |
+| **Save Error** | When save fails | Red warning with error message |
+| **File Status** | Current save state | "Saved" or "Unsaved changes" indicator |
+
+**💡 Pro tip**: Look for the save notification to confirm your work is protected.
+
 ## Advanced Features
 
 ### System Decomposition
@@ -162,7 +220,7 @@ Understanding how elements connect helps you model systems accurately:
 **Go deeper into your systems:**
 
 1. **Double-click a subsystem** - Enter it to see internal details
-2. **Use breadcrumbs** - Navigate back up through system levels
+2. **Use breadcrumbs** - Navigate back up through system levels  
 3. **Build hierarchically** - Start simple, add detail as needed
 4. **Unlimited nesting** - Decompose to any level of detail
 
@@ -186,9 +244,11 @@ Understanding how elements connect helps you model systems accurately:
 | **Unhide all** | `U` | Organization |
 | **Delete selected** | `Delete` | Editing |
 | **Deselect all** | `Escape` | Selection |
-| **Zoom in** | `=` | Navigation |
-| **Zoom out** | `-` | Navigation |
+| **Zoom in** | `=` | Navigation ⭐ |
+| **Zoom out** | `-` | Navigation ⭐ |
 | **Multi-select** | `Shift + Click` | Selection |
+
+**⭐ Enhanced in v0.2.0**: Zoom now properly maintains spatial regions (boundaries and environments)
 
 ### Advanced Shortcuts
 - **Apply Equivalence** (`E` key) - Automatically balance flows between connected interfaces
@@ -224,10 +284,13 @@ Understanding how elements connect helps you model systems accurately:
 | **Can't see my elements** | Press `Ctrl+R` to reset view |
 | **Elements won't connect** | Make sure you're dragging from one element to another |
 | **Properties panel is empty** | Click on an element to select it first |
-| **Lost my work** | Check if you saved recently (`Ctrl+S`) |
+| **Lost my work** | Check if you saved recently (`Ctrl+S`) - look for save notification |
 | **App is slow** | Hide unused elements with `H` key |
 | **Can't find an element** | Use `U` to unhide all elements |
 | **Accidental deletion** | Use `Ctrl+Z` to undo (if available) |
+| **Boundary ring disappeared** | Zoom in/out (`=`/`-`) to refresh spatial regions |
+| **Tooltip not showing** | Hover longer - tooltips appear after brief delay |
+| **Environment looks wrong** | Try resetting view (`Ctrl+R`) to refresh spatial layout |
 
 ### Getting Help
 

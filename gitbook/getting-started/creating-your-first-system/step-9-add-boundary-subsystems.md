@@ -21,7 +21,7 @@ As systems become complex, they can be broken down into **subsystems** - smaller
 
 
 
-The system will immediately turn white because we have transitioned from black box to white box analysis, looking at internals.&#x20;
+The system will immediately turn white because we have transitioned from black box to white box analysis, looking at internals. Notice how the boundary regions help organize the view - the main system boundary stays visible while new subsystem boundaries appear inside.&#x20;
 
 <figure><img src="../../.gitbook/assets/subs2 (1).png" alt="" width="375"><figcaption></figcaption></figure>
 

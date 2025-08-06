@@ -28,10 +28,15 @@
 * [Overview](examples/README.md)
 * [Biological Systems](examples/biological-systems/README.md)
   * [A Cell](examples/biological-systems/a-cell.md)
+  * [An Ecosystem](examples/biological-systems/an-ecosystem.md)
 * [Social Systems](examples/social-systems/README.md)
   * [An Organization](examples/social-systems/an-organization.md)
 * [Technological Systems](examples/technological-systems/README.md)
   * [A Solar Panel](examples/technological-systems/a-solar-panel.md)
+  * [An LLM](examples/technological-systems/an-llm.md)
+* [Meta-Systems](examples/meta-systems/README.md)
+  * [BERT Platform](examples/meta-systems/bert-platform.md)
+  * [Universal System Template](examples/meta-systems/universal-system-template.md)
 * [Cryptoeconomic Systems](examples/cryptoeconomic-systems/README.md)
 
 ## For Researchers
