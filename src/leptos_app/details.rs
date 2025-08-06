@@ -835,7 +835,7 @@ pub fn SystemDetails(
                 <label class="flex items-center mb-2">
                     <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
                     <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
-                          title="Grouping for similar systems (e.g., 'Living Cell', 'Social Organization', 'Economic Market')">
+                          title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
                         ?
                     </span>
                 </label>
@@ -1227,7 +1227,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             <label class="flex items-center mb-2">
                 <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
                 <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
-                      title="Grouping for similar systems (e.g., 'Living Cell', 'Social Organization', 'Economic Market')">
+                      title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
                     ?
                 </span>
             </label>
