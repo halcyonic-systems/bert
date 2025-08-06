@@ -48,6 +48,13 @@ pub struct TreeEvent {
     pub world_model: WorldModel,
 }
 
+/// Fires when a model is successfully saved to indicate success to the user
+#[derive(Event, Debug, Clone)]
+pub struct SaveSuccessEvent {
+    pub file_path: Option<String>,
+    pub message: String,
+}
+
 #[derive(Event, Debug, Clone)]
 pub enum TriggerEvent {
     ShowTree,

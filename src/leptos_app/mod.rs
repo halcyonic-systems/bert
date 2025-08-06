@@ -10,7 +10,7 @@ use crate::bevy_app::{
     Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
 use crate::leptos_app::details::Details;
-use crate::leptos_app::components::{ControlsMenu, ModelBrowser};
+use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Toast};
 use crate::LoadFileEvent;
 use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
@@ -30,7 +30,7 @@ pub type IsSameAsIdQuery = (IsSameAsId,);
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
-use crate::events::{TreeEvent, TriggerEvent, ZoomEvent, DeselectAllEvent};
+use crate::events::{TreeEvent, TriggerEvent, ZoomEvent, DeselectAllEvent, SaveSuccessEvent};
 use crate::leptos_app::tree::Tree;
 use leptos_bevy_canvas::prelude::*;
 
@@ -46,6 +46,13 @@ pub fn App() -> impl IntoView {
     
     // Deselect event system for close button functionality
     let (deselect_event_writer, deselect_event_receiver) = event_l2b::<DeselectAllEvent>();
+    
+    // Save success event system for user feedback
+    let (_save_success_event_writer, save_success_event_receiver) = event_l2b::<SaveSuccessEvent>();
+    
+    // Toast notification state
+    let (toast_visible, set_toast_visible) = signal(false);
+    let (toast_message, set_toast_message) = signal(String::new());
     
     // Set up file dialog with the shared event writer
     let file_dialog_signal = RwSignal::new(None::<crate::leptos_app::use_file_dialog::UseFile>);
@@ -130,7 +137,16 @@ pub fn App() -> impl IntoView {
     let (detach_event_sender, detach_event_receiver) = event_l2b::<DetachMarkerLabelEvent>();
 
     let (tree_event_receiver, tree_event_sender) = event_b2l::<TreeEvent>();
+    let (save_success_receiver, save_success_bevy_sender) = event_b2l::<SaveSuccessEvent>();
     let (trigger_event_sender, trigger_event_receiver) = event_l2b::<TriggerEvent>();
+
+    // Handle save success events from Bevy
+    Effect::new(move |_| {
+        if let Some(event) = save_success_receiver.read().as_ref() {
+            set_toast_message.set(event.message.clone());
+            set_toast_visible.set(true);
+        }
+    });
 
     let (tree_visible, set_tree_visible) = signal(false);
     let (controls_visible, set_controls_visible) = signal(false);
@@ -251,6 +267,8 @@ pub fn App() -> impl IntoView {
                     zoom_event_receiver,
                     deselect_event_receiver,
                     trigger_event_receiver,
+                    save_success_event_receiver,
+                    save_success_bevy_sender,
                 )
             } />
         </div>
@@ -265,6 +283,11 @@ pub fn App() -> impl IntoView {
             spatial_mode
             detach_event_sender
             deselect_event_sender=deselect_event_writer
+        />
+        <Toast
+            message=Signal::derive(move || toast_message.get())
+            visible=Signal::derive(move || toast_visible.get())
+            on_hide=Callback::new(move |_| set_toast_visible.set(false))
         />
     }
 }

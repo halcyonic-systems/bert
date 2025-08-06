@@ -113,6 +113,7 @@ mod camera;
 mod removal;
 mod setup;
 mod subsystem;
+mod toast_handler;
 mod ui;
 
 use bevy::ecs::system::{RunSystemOnce, SystemState};
@@ -120,6 +121,7 @@ pub use camera::*;
 pub use removal::*;
 pub use setup::*;
 pub use subsystem::*;
+// pub use toast_handler::*; // Disabled - desktop async notifications need different approach
 pub use ui::*;
 
 use crate::bevy_app::data_model::save::serialize_world;

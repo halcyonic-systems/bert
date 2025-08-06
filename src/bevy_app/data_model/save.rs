@@ -2,6 +2,7 @@ use crate::bevy_app::components::*;
 use crate::bevy_app::data_model::Interaction;
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::resources::CurrentFile;
+use crate::events::SaveSuccessEvent;
 use bevy::core::Name;
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
@@ -63,7 +64,8 @@ impl Context {
 
 pub fn save_world(
     In(world_model): In<WorldModel>,
-    current_file: Res<CurrentFile>
+    current_file: Res<CurrentFile>,
+    mut save_success_events: EventWriter<crate::events::SaveSuccessEvent>
 ) {
     #[derive(serde::Serialize)]
     struct Args {
@@ -120,18 +122,22 @@ pub fn save_world(
                             data: serde_json::to_string(&model).expect("This shouldn't fail"),
                             path: suggested_name,
                         },
-                    )
-                        .await;
+                    ).await;
+                    
+                    // TODO: Desktop toast notifications - need different approach than async channels
+                    // Web version works fine with direct EventWriter in save_success_events parameter
                 } else {
                     // Direct save for user files in safe locations
+                    let file_path = file_name.unwrap();
                     invoke::<()>(
                         "save_to_file",
                         &Args {
                             data: serde_json::to_string(&model).expect("This shouldn't fail"),
-                            path: file_name.unwrap(),
+                            path: file_path.clone(),
                         },
-                    )
-                        .await;
+                    ).await;
+                    
+                    // TODO: Desktop toast notifications - need different approach than async channels
                 }
             }
         });
@@ -140,20 +146,6 @@ pub fn save_world(
 
     } else {
         // Web version - always use download
-        let array = Array::new();
-        let uint8_array = Uint8Array::from(serde_json::to_string(&world_model)
-                    .expect("This shouldn't fail").as_bytes());
-        array.push(&uint8_array);
-
-        let blob = Blob::new_with_str_sequence(&array).unwrap();
-        let url = Url::create_object_url_with_blob(&blob).unwrap();
-
-        // Create an anchor element
-        let document = window.document().unwrap();
-        let a = document.create_element("a").unwrap().dyn_into::<HtmlAnchorElement>().unwrap();
-        a.set_href(&url);
-        
-        // Generate smart filename for web version too
         let download_name = file_name.as_ref()
             .and_then(|name| {
                 if name.starts_with("template:") {
@@ -166,6 +158,18 @@ pub fn save_world(
             })
             .unwrap_or_else(|| "untitled.json".to_string());
         
+        let array = Array::new();
+        let uint8_array = Uint8Array::from(serde_json::to_string(&world_model)
+                    .expect("This shouldn't fail").as_bytes());
+        array.push(&uint8_array);
+
+        let blob = Blob::new_with_str_sequence(&array).unwrap();
+        let url = Url::create_object_url_with_blob(&blob).unwrap();
+
+        // Create an anchor element
+        let document = window.document().unwrap();
+        let a = document.create_element("a").unwrap().dyn_into::<HtmlAnchorElement>().unwrap();
+        a.set_href(&url);
         a.set_download(&download_name);
 
         // Append to the document, trigger click, and remove
@@ -175,13 +179,20 @@ pub fn save_world(
 
         // Revoke the object URL
         Url::revoke_object_url(&url).unwrap();
+        
+        // Send save success event after download completes
+        save_success_events.send(SaveSuccessEvent {
+            file_path: None, // Web downloads don't have a specific file path
+            message: format!("File downloaded: {}", download_name),
+        });
     }
 }
 
 /// Force save with dialog regardless of current file state
 pub fn save_world_as(
     In(world_model): In<WorldModel>,
-    current_file: Res<CurrentFile>
+    current_file: Res<CurrentFile>,
+    save_success_events: EventWriter<SaveSuccessEvent>
 ) {
     #[derive(serde::Serialize)]
     struct Args {
@@ -220,8 +231,9 @@ pub fn save_world_as(
                         data: serde_json::to_string(&model).expect("This shouldn't fail"),
                         path: suggested_name,
                     },
-                )
-                    .await;
+                ).await;
+                
+                // TODO: Desktop toast notifications - need different approach than async channels
             }
         });
 
@@ -229,7 +241,7 @@ pub fn save_world_as(
 
     } else {
         // Web version - same as regular save (always downloads)
-        save_world(In(world_model), current_file);
+        save_world(In(world_model), current_file, save_success_events);
     }
 }
 

@@ -8,6 +8,7 @@ mod select_group;
 mod simplified_system_details;
 mod slider;
 mod text_area;
+mod toast;
 
 pub use button::*;
 pub use checkbox::*;
@@ -19,3 +20,4 @@ pub use select_group::*;
 pub use simplified_system_details::*;
 pub use slider::*;
 pub use text_area::*;
+pub use toast::*;
