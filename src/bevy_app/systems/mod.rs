@@ -112,6 +112,7 @@
 mod camera;
 mod removal;
 mod setup;
+mod spatial_sync;
 mod subsystem;
 mod toast_handler;
 mod ui;
@@ -120,6 +121,7 @@ use bevy::ecs::system::{RunSystemOnce, SystemState};
 pub use camera::*;
 pub use removal::*;
 pub use setup::*;
+pub use spatial_sync::*;
 pub use subsystem::*;
 // pub use toast_handler::*; // Disabled - desktop async notifications need different approach
 pub use ui::*;

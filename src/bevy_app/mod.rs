@@ -187,6 +187,7 @@ pub fn init_bevy_app(
                 draw_flow_curve,
                 update_initial_position_from_transform,
                 listen_to_remove_marker_label_event,
+                // sync_spatial_regions_with_changed_systems, // Disabled - spatial positioning issue persists
             ),
             (
                 update_selecting_flow_from_mouse,
@@ -236,6 +237,7 @@ pub fn init_bevy_app(
                 apply_zoom_to_strokes,
                 apply_zoom_to_scale,
                 apply_zoom_to_label,
+                apply_zoom_to_spatial_regions,
             )
                 .in_set(ZoomSet),
             (
