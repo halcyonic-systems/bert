@@ -1,4 +1,6 @@
 #![feature(string_remove_matches)]
+#![allow(clippy::all)]
+#![allow(dead_code)]
 
 pub mod bevy_app;
 pub mod leptos_app;
