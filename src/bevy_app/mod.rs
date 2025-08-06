@@ -95,6 +95,8 @@ pub fn init_bevy_app(
     zoom_event_receiver: BevyEventReceiver<ZoomEvent>,
     deselect_event_receiver: BevyEventReceiver<DeselectAllEvent>,
     trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
+    save_success_event_receiver: BevyEventReceiver<SaveSuccessEvent>,
+    save_success_bevy_sender: BevyEventSender<SaveSuccessEvent>,
 ) -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -129,6 +131,9 @@ pub fn init_bevy_app(
     .init_resource::<Zoom>()
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .init_resource::<IsSameAsIdCounter>()
+    // .add_systems(Startup, |mut commands: Commands| {
+    //     init_save_notification_channel(&mut commands);
+    // })
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
@@ -137,6 +142,7 @@ pub fn init_bevy_app(
     .add_event::<LoadFileEvent>()
     .add_event::<ZoomEvent>()
     .add_event::<DeselectAllEvent>()
+    .add_event::<SaveSuccessEvent>()
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -151,7 +157,9 @@ pub fn init_bevy_app(
     .import_event_from_leptos(zoom_event_receiver)
     .import_event_from_leptos(deselect_event_receiver)
     .import_event_from_leptos(trigger_event_receiver)
+    .import_event_from_leptos(save_success_event_receiver)
     .export_event_to_leptos(tree_event_sender)
+    .export_event_to_leptos(save_success_bevy_sender)
     .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
@@ -258,7 +266,7 @@ pub fn init_bevy_app(
         )
             .in_set(AllSet),
     )
-    .add_systems(Update, (react_to_trigger_event, toggle_theme_system))
+    .add_systems(Update, (react_to_trigger_event, toggle_theme_system)) // , handle_save_success_events))
     .add_systems(
         PostUpdate,
         (
