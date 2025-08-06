@@ -252,20 +252,33 @@
 - **Description**: "User interface subsystem managing reactive UI components, user interaction handling, and state management"
 - **Equivalence**: "Human Interface Controller"
 
-### Step 4.4: Create Model Persistence Subsystem
+### Step 4.4: Create Resource Management Subsystem
 
-#### 4.4.1: Spawn from Model Persistence Interface
+#### 4.4.1: Spawn from Resource Access Interface
+**Human Actions**:
+1. **Click the green circle button** on the Resource Access Interface
+2. **BERT spawns subsystem** attached to that interface
+
+#### 4.4.2: Configure Resource Management Subsystem
+- **Name**: "System Resource Manager"
+- **Description**: "Resource management subsystem responsible for CPU allocation, memory management, and system performance monitoring ensuring optimal resource utilization for modeling operations"
+- **Equivalence**: "Resource Allocation Center"
+- **Complexity**: "Complex: Adaptable, Not Evolveable" (adapts to resource demands but doesn't evolve)
+
+### Step 4.5: Create Model Persistence Subsystem
+
+#### 4.5.1: Spawn from Model Persistence Interface
 **Human Actions**:
 1. **Click the green circle button** on the Model Persistence Interface
 2. **BERT spawns subsystem** attached to that interface
 
-#### 4.4.2: Configure Model Persistence Subsystem
+#### 4.5.2: Configure Model Persistence Subsystem
 - **Name**: "JSON Serialization Engine"
 - **Description**: "Output processing subsystem responsible for model serialization, file formatting, and persistence operations ensuring data integrity during save/export operations"
 - **Equivalence**: "Data Packaging Plant"
 - **Complexity**: "Complex: Not Adaptable, Not Evolveable" (specialized function)
 
-### Step 4.5: Note on Knowledge Generation
+### Step 4.6: Note on Knowledge Generation
 
 **Current BERT Limitation**: BERT does not currently have an automated knowledge generation subsystem. The "Enhanced System Understanding" output represents the potential for users to gain insights through the modeling process, but this happens in the user's mind, not through an automated system.
 
@@ -275,20 +288,43 @@
 - **Equivalence**: "Human Learning Process"
 - **Note**: This is a conceptual placeholder, not actual BERT functionality
 
-### Step 4.6: Create Central Coordination Hub
+### Step 4.7: Create Central Coordination Hub
 
-#### 4.6.1: Hub Configuration
+#### 4.7.1: Hub Configuration
 **The central area where all flows converge**:
 - **Name**: "System Coordination Hub"
 - **Description**: "Central coordination subsystem integrating all platform components, managing state synchronization, and ensuring system coherence following systems theory principles"
 - **Equivalence**: "Central Command Center"
 - **Complexity**: "Complex: Adaptable, Not Evolveable" (learns user patterns)
 
-#### 4.6.2: Connect Hub to Outputs
-**Create flows FROM coordination hub TO output interfaces**:
-1. **To Model Persistence**: Coordinated file save operations
-2. **To Visual Rendering**: Coordinated display updates
-3. **To Knowledge Output**: Coordinated delivery of modeling session context (note: actual insight generation happens in user's mind)
+#### 4.7.2: Create Core Internal Flow Network
+**Connect the 4 core subsystems to central coordination hub using internal flows**:
+
+**Flow 1: Model Data Controller → Central Hub**
+- **Name**: "Validated Model Data"
+- **Description**: "Processed and validated JSON model data flowing from file operations to central coordination"
+- **Substance Type**: "Message"
+- **Usability**: "Product" (processed data)
+
+**Flow 2: Leptos Frontend Controller → Central Hub**  
+- **Name**: "User Interaction Commands"
+- **Description**: "Processed user interface events and state changes flowing to central coordination for system-wide response"
+- **Substance Type**: "Message" 
+- **Usability**: "Product" (processed commands)
+
+**Flow 3: Central Hub → Bevy Rendering Engine**
+- **Name**: "Render Coordination Signals" 
+- **Description**: "Coordinated rendering instructions and visual state updates flowing from central hub to graphics engine"
+- **Substance Type**: "Message"
+- **Usability**: "Product" (coordination signals)
+
+**Flow 4: Central Hub → JSON Serialization Engine**
+- **Name**: "Save Coordination Commands"
+- **Description**: "Coordinated model persistence instructions flowing from central hub to serialization engine"
+- **Substance Type**: "Message" 
+- **Usability**: "Product" (coordination commands)
+
+**Optional: Skip Resource Manager and User Cognitive Process for initial model - focus on core transformation pathway**
 
 ---
 
