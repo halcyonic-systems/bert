@@ -9,6 +9,7 @@ use crate::bevy_app::{
     components::System, DetachMarkerLabelEvent, ElementDescription, ExternalEntity, Flow,
     Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
+use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
 use crate::leptos_app::details::Details;
 use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Toast};
 use crate::LoadFileEvent;
@@ -54,6 +55,9 @@ pub fn App() -> impl IntoView {
     let (toast_visible, set_toast_visible) = signal(false);
     let (toast_message, set_toast_message) = signal(String::new());
     
+    // Complexity counter - tracks system complexity when models are loaded
+    let (complexity, set_complexity) = signal(0.0f64);
+    
     // Set up file dialog with the shared event writer
     let file_dialog_signal = RwSignal::new(None::<crate::leptos_app::use_file_dialog::UseFile>);
     let _ = use_file_dialog_with_options(crate::leptos_app::use_file_dialog::UseFileDialogOptions {
@@ -94,11 +98,18 @@ pub fn App() -> impl IntoView {
         },
     });
     
-    // Connect file dialog signal to LoadFileEvent stream
+    // Connect file dialog signal to LoadFileEvent stream with complexity calculation
     Effect::new({
         let load_file_writer = load_file_writer.clone();
+        let set_complexity_inner = set_complexity;
         move |_| {
             if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) = file_dialog_signal.get() {
+                // Calculate complexity when loading a file
+                if let Ok(world_model) = serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&data) {
+                    let complexity_result = calculate_simonian_complexity(&world_model);
+                    set_complexity_inner.set(complexity_result.total_complexity);
+                }
+                
                 load_file_writer
                     .send(LoadFileEvent {
                         file_path: path,
@@ -215,6 +226,15 @@ pub fn App() -> impl IntoView {
                 </button>
             </div>
         </Show>
+        
+        // Complexity counter display in top-right corner
+        <div class="absolute top-4 right-4 z-20 bg-white px-3 py-2 rounded-lg shadow-md">
+            <div class="text-sm text-gray-600">System Complexity</div>
+            <div class="text-lg font-mono text-blue-600">
+                {move || format!("{:.1}", complexity.get())}
+            </div>
+        </div>
+        
         <Tree visible=tree_visible event_receiver=tree_event_receiver />
         <ControlsMenu 
             visible=controls_visible 
@@ -223,11 +243,21 @@ pub fn App() -> impl IntoView {
         <ModelBrowser 
             visible=model_browser_visible
             on_close=Callback::new(move |_| set_model_browser_visible.set(false))
-            on_load=Callback::new(move |event: LoadFileEvent| {
-                // Send the load file event to Bevy
-                leptos::logging::log!("Sending LoadFileEvent: {} with {} bytes", event.file_path, event.data.len());
-                load_file_writer.send(event).ok();
-                set_model_browser_visible.set(false);
+            on_load=Callback::new({
+                let load_file_writer = load_file_writer.clone();
+                let set_complexity = set_complexity;
+                move |event: LoadFileEvent| {
+                    // Calculate complexity when loading from Model Browser
+                    if let Ok(world_model) = serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&event.data) {
+                        let complexity_result = calculate_simonian_complexity(&world_model);
+                        set_complexity.set(complexity_result.total_complexity);
+                    }
+                    
+                    // Send the load file event to Bevy
+                    leptos::logging::log!("Sending LoadFileEvent: {} with {} bytes", event.file_path, event.data.len());
+                    load_file_writer.send(event).ok();
+                    set_model_browser_visible.set(false);
+                }
             })
         />
         <div class="h-screen" 

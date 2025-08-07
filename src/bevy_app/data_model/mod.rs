@@ -57,6 +57,7 @@
 //! - [`save`]: Module for serializing world models to JSON
 //! - [`crate::bevy_app::components`]: Live ECS components that this module serializes
 
+pub mod complexity_calculator;
 pub mod load;
 pub mod save;
 
