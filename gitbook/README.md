@@ -2,7 +2,7 @@
 
 **BERT** (Bounded Entity Reasoning Toolkit) is a visual software tool that guides analysts through the rigorous decomposition and analysis of complex adaptive systems.
 
-Modern systems are increasingly interconnected and difficult to understand through conventional analysis. BERT implements Deep Systems Analysis (DSA) methodology to:
+Modern systems are increasingly interconnected and difficult to understand through conventional analysis. BERT implements [George Mobus's](https://directory.tacoma.uw.edu/employee/gmobus) Deep Systems Analysis (DSA) methodology to:
 
 * Systematically decompose complex systems into manageable components
 * Preserve critical flows, interfaces, and relationships between components  
@@ -31,4 +31,14 @@ If you're new to BERT, we recommend following this learning path:
 3. Learn the Essential [Controls and Interface](getting-started/controls-and-interface.md)
 4. Explore [System Decomposition](getting-started/creating-your-first-system/step-11-system-decomposition.md)
 5. Practice with our [Example Analyses](getting-started/examples/)
+
+## Theoretical Foundation
+
+BERT is built on the systems science work of [George Mobus](https://directory.tacoma.uw.edu/employee/gmobus), particularly:
+
+* **Deep Systems Analysis (DSA)** - A rigorous methodology for analyzing complex systems
+* **System Ontology** - The 7-tuple formal definition of system (from *Principles of Systems Science*)  
+* **System Language** - The vision for a formal language of systems (from *Systems Science: Theory, Analysis, Modeling, and Design*)
+
+BERT represents a first implementation of these theoretical concepts, making them accessible through visual software tools. For researchers interested in the formal foundations, see the [For Researchers](for-researchers/) section.
 

@@ -1,12 +1,12 @@
 # System Language
 
-##
-
-In the next section, we'll look at how the System Language (SL) formalizes these concepts and provides a rigorous framework for system analysis.
-
 ## System Language (SL) Foundation
 
-This page explains the formal System Language that underlies BERT and provides its methodological rigor.
+This page explains the System Language concept that inspired BERT's development and provides its theoretical grounding.
+
+### The Vision for System Language
+
+As described in Chapter 4 of *Systems Science: Theory, Analysis, Modeling, and Design*, Mobus proposes developing an "explicit system language to take systemese public" - a formal language that is both machine and human readable for communicating system descriptions.
 
 ### The Need for a Formal Systems Language
 
@@ -17,90 +17,64 @@ Traditional modeling languages often fall short when representing complex system
 * Others lack the rigor needed for computational validation
 * Most don't address the unique properties of adaptive systems
 
-System Language (SL) was developed to address these gaps, creating a unified approach to systems representation.
+System Language aims to address these gaps, creating a unified approach based on the "systemese hypothesis" - that human thought is fundamentally structured around system concepts.
 
 ### SL Components and Grammar
 
-The fundamental building blocks of System Language:
+The fundamental building blocks of System Language (from Section 4.3):
 
-* System elements and their ontological foundations
-* Relationship types and their semantics
-* Hierarchical representation rules
-* Validation constraints
+* **Lexical Elements** - Drawn from the primitive ontological elements (boundaries, flows, processes, etc.)
+* **Verbal Descriptions** - Structured statements that map to system relations (Fig. 4.2)
+* **Visual Icons** - Graphical representations of system elements (Fig. 4.13)
+* **Component Tables** - Structured descriptions with predefined types and domain-specific extensions (Table 4.1)
 
-_Detailed language specification coming soon..._
+### BERT's Implementation of SL Concepts
 
-### Visual Representation in BERT
+BERT informally implements several core System Language concepts:
 
-How BERT implements System Language visually:
+* **Visual Grammar** - Icons and graphical elements representing system components
+* **Hierarchical Structure** - Recursive decomposition matching SL's formal definition (Section 4.3)
+* **Boundary Definitions** - Explicit representation of system boundaries and interfaces
+* **Flow Specification** - Typed flows (matter, energy, information) with measurable parameters
 
-* Graphical notation standards
-* Visual grammar rules
-* Relationship representation
-* Layout conventions and meaning
-
-_Detailed visual reference coming soon..._
+*Note: BERT represents an accessible implementation of SL concepts to inspire and attract support for formal language specification. The full formal SL specification remains under development.*
 
 ### Computational Properties
 
-How System Language enables computational analysis:
+System Language's design enables computational analysis through:
 
-* Mathematical foundations
-* Computational verification
-* Simulation capabilities
-* Formal validation
+* **Mathematical Foundations** - Formal set-theoretic definitions enable rigorous analysis
+* **Machine Readability** - Structured format allows automated processing and validation
+* **Simulation Support** - Clear semantics enable dynamic system simulation
+* **Verification Capabilities** - Formal structure permits consistency checking
 
-_Detailed computational foundations coming soon..._
-
-
+*BERT demonstrates these capabilities through its complexity calculator, save/load functionality, and structured JSON format.*
 
 
 
-## Appendices
 
-This section provides supplementary materials and reference information to deepen your understanding of BERT and systems science.
 
-### Glossary of Systems Terms
+## Additional Resources
 
-Essential vocabulary for systems thinking and analysis:
+### Key References
 
-* Systems thinking terminology
-* BERT-specific terms
-* Field-specific vocabulary
-* Visual dictionary
+For deeper understanding of the theoretical foundations:
 
-_Detailed glossary coming soon..._
+* Mobus, G. (2022). *Systems Science: Theory, Analysis, Modeling, and Design* - Source for DSA methodology and System Language concepts
+* Mobus, G. & Kalton, M. (2015). *Principles of Systems Science* - Foundation for the 7-tuple model and system ontology
+* [BERT GitHub Repository](https://github.com/Halcyonic-Systems/bert) - Latest updates and community discussions
 
-### Theoretical Foundations
+### Related Concepts
 
-The scientific and theoretical basis of BERT:
+* **Deep Systems Analysis (DSA)** - The comprehensive methodology BERT implements
+* **Systemese Hypothesis** - The theory that human thought is structured around system concepts
+* **7-Tuple Model** - The formal mathematical definition of system underlying BERT
 
-* Systems science background
-* Cybernetics connections
-* Complex adaptive systems theory
-* References and further reading
+### Getting Help
 
-_Detailed theoretical background coming soon..._
-
-### Comparison with Other Tools
-
-How BERT compares to other systems modeling approaches:
-
-* BERT vs. UML/SysML
-* BERT vs. System Dynamics tools
-* BERT vs. Enterprise Architecture tools
-* Feature comparison matrix
-
-_Detailed comparisons coming soon..._
-
-### Frequently Asked Questions
-
-Answers to common questions about BERT:
-
-* Common issues and solutions
-* Best practices
-* Troubleshooting guides
-* Feature clarifications
+* **Documentation**: Browse the complete [GitBook documentation](../)
+* **Community**: Join discussions on [GitHub](https://github.com/Halcyonic-Systems/bert)
+* **Examples**: Explore the [Model Browser](../examples/) for practical applications
 
 ### Theoretical Background
 

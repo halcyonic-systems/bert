@@ -15,11 +15,9 @@
   * [Step 9: Add Boundary Subsystems](getting-started/creating-your-first-system/step-9-add-boundary-subsystems.md)
   * [Step 10: Adding Internal Flows](getting-started/creating-your-first-system/step-10-adding-internal-flows.md)
   * [Step 11: System Decomposition](getting-started/creating-your-first-system/step-11-system-decomposition.md)
-  * [Step 11: Share JSON](getting-started/creating-your-first-system/step-11-share-json.md)
   * [Next Steps](getting-started/creating-your-first-system/next-steps.md)
   * [System Elements](getting-started/creating-your-first-system/system-elements.md)
   * [Advanced Features](getting-started/creating-your-first-system/advanced-features.md)
-  * [Video Tutorial](getting-started/creating-your-first-system/video-tutorial.md)
 * [Controls and Interface](getting-started/controls-and-interface.md)
 * [Glossary](getting-started/glossary.md)
 
