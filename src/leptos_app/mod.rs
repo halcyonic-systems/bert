@@ -227,8 +227,8 @@ pub fn App() -> impl IntoView {
             </div>
         </Show>
         
-        // Complexity counter display in top-right corner
-        <div class="absolute top-4 right-4 z-20 bg-white px-3 py-2 rounded-lg shadow-md">
+        // Complexity counter display (positioned to work with both open/closed Details panel)
+        <div class="absolute top-4 right-1/3 z-20 bg-white px-3 py-2 rounded-lg shadow-md">
             <div class="text-sm text-gray-600">System Complexity</div>
             <div class="text-lg font-mono text-blue-600">
                 {move || format!("{:.1}", complexity.get())}
