@@ -5,7 +5,7 @@ BERT is built with Rust + Leptos + Bevy using professional development standards
 ## Quick Links
 
 **Essential Resources:**
-- [Contributing Guide](https://github.com/halcyonic-systems/bert/blob/main/docs/contributing/contributing.md) - Complete development workflow
+- [Contributing Guide](contributing.md) - Complete development workflow
 - [Architecture Overview](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/comprehensive-architecture-overview.md) - Technical architecture
 - [Feature Documentation](https://github.com/halcyonic-systems/bert/tree/main/docs/features) - Recent features and capabilities
 

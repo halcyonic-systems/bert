@@ -26,9 +26,9 @@ BERT maintains professional development standards:
 
 ## First Contribution
 
-1. **Read the [Contributing Guide](https://github.com/halcyonic-systems/bert/blob/main/docs/contributing/contributing.md)** - Complete workflow details
-2. **Review [Documentation Standards](https://github.com/halcyonic-systems/bert/blob/main/docs/contributing/rust-documentation-guidelines.md)** - Template requirements
-3. **Check Current Status** - See [implementation analysis](https://github.com/halcyonic-systems/bert/blob/main/docs/contributing/documentation-implementation-analysis.md)
+1. **Read the [Contributing Guide](contributing.md)** - Complete workflow details
+2. **Review [Documentation Standards](https://github.com/halcyonic-systems/bert/blob/main/docs/technical/rust-documentation-guidelines.md)** - Template requirements
+3. **Check Current Status** - See [implementation analysis](https://github.com/halcyonic-systems/bert/blob/main/docs/technical/documentation-implementation-analysis.md)
 4. **Create Feature Branch** - Follow `feature/descriptive-name` pattern
 
 ## Key Workflows

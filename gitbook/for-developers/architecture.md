@@ -34,9 +34,15 @@ graph LR
 - **UI Integration**: `/src/leptos_app/` (reactive user interface)
 - **Visual Bundles**: `/src/bevy_app/bundles/spawn/` (entity creation patterns)
 
-## Complete Documentation
+## Detailed Architecture Documentation
 
-**For comprehensive technical details:**
-- [Architecture Overview](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/comprehensive-architecture-overview.md) - Complete technical architecture
-- [Visual System Architecture](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/visual-system-architecture.md) - Rendering and interaction systems
-- [Interaction Architecture](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/interaction-system-architecture.md) - User interaction lifecycle
+**Comprehensive technical details:**
+- [Architecture Overview](architecture/comprehensive-architecture-overview.md) - Complete technical architecture and design principles
+- [Visual System Architecture](architecture/visual-system-architecture.md) - Rendering pipeline and interaction systems  
+- [Interaction System Architecture](architecture/interaction-system-architecture.md) - User interaction lifecycle and event handling
+
+**Architecture Decision Records:**
+- [ADR-001: Signal Pattern Decision](architecture/decisions/adr-001-signal-pattern.md) - Memo::new vs Signal::derive for reactive components
+
+**Design Source Files:**
+Architecture diagrams and design assets are maintained in `/docs/architecture/` as Affinity Publisher source files (.afpub) and PDFs for collaborative editing.

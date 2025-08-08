@@ -115,7 +115,7 @@ While BERT's foundation is in systems science, its rigorous approach enables app
 
 ## 👥 Contributing
 
-We welcome contributions from systems scientists, theorists, and developers! See our [Contributing Guide](docs/contributing/contributing.md) for details on:
+We welcome contributions from systems scientists, theorists, and developers! See our [Contributing Guide](https://bert.gitbook.io/bert-documentation/for-developers/contributing) for details on:
 
 - Development environment setup
 - Systems science integration

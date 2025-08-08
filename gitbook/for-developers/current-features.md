@@ -26,14 +26,14 @@ Enhanced system modeling workflows with improved UX.
 ### Professional Documentation Standards
 100% template compliance with comprehensive guidelines.
 
-**Standards**: [Rust Documentation Guidelines](https://github.com/halcyonic-systems/bert/blob/main/docs/contributing/rust-documentation-guidelines.md)
+**Standards**: [Rust Documentation Guidelines](https://github.com/halcyonic-systems/bert/blob/main/docs/technical/rust-documentation-guidelines.md)
 
 ### Feature Documentation Process
 Standardized workflow for documenting new capabilities.
 
 **Workflow**: Use `./scripts/bert.sh feature "Feature Name"` to generate documentation templates.
 
-**Process**: [Feature Documentation Process](https://github.com/halcyonic-systems/bert/blob/main/docs/contributing/feature-documentation-process.md)
+**Process**: See Contributing Guide for feature documentation process
 
 ## Core Capabilities
 
