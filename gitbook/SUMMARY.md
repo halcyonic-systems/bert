@@ -37,12 +37,17 @@
   * [Universal System Template](examples/meta-systems/universal-system-template.md)
 * [Cryptoeconomic Systems](examples/cryptoeconomic-systems/README.md)
 
+## Features
+
+* [Current & Planned Features](features/README.md)
+
 ## For Researchers
 
 * [Methodology](for-researchers/methodology/README.md)
   * [Deep Systems Analysis](for-researchers/methodology/deep-systems-analysis.md)
   * [System Modeling](for-researchers/methodology/system-modeling.md)
   * [System Simulation](for-researchers/methodology/system-simulation.md)
+  * [Systems Scientists Development Guide](for-researchers/methodology/systems-scientists-development.md)
 * [System Ontology](for-researchers/system-ontology.md)
 * [System Language](for-researchers/system-language.md)
 
