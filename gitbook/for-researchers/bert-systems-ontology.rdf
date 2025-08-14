@@ -1,0 +1,580 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://halcyonic.systems/ontologies/bert-systems#"
+     xml:base="http://halcyonic.systems/ontologies/bert-systems"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <owl:Ontology>
+        <rdfs:comment>BERT Systems Ontology: A computational systems ontology designed for practical implementation.
+
+This ontology formalizes the core concepts implemented in BERT (Bounded Element Recursive Toolkit) for hierarchical systems analysis. It represents the middle ground between Bunge&apos;s rigorous mathematical systems theory and Mobus&apos;s computational 7-tuple, providing formal semantic foundations while enabling accessible JSON-based implementations.
+
+Purpose:
+1. Formalize BERT&apos;s computational systems ontology for semantic validation
+2. Bridge theoretical rigor with practical accessibility 
+3. Enable consistent hierarchical systems modeling across domains
+4. Support the integration of systems sciences through shared computational foundations
+
+Theoretical Foundation:
+Based on Mario Bunge&apos;s systems ontology (Composition, Environment, Structure) extended with George Mobus&apos;s computational approach (7-tuple) and implemented through BERT&apos;s JSON representation patterns.</rdfs:comment>
+        <rdfs:label>BERT Systems Ontology</rdfs:label>
+        <owl:versionInfo>Version 1.0.0</owl:versionInfo>
+    </owl:Ontology>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Annotation properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#bertExample -->
+
+    <owl:AnnotationProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#bertExample">
+        <rdfs:comment>Provides concrete examples from BERT model implementations.</rdfs:comment>
+        <rdfs:label>BERT Example</rdfs:label>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#implementationNote -->
+
+    <owl:AnnotationProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#implementationNote">
+        <rdfs:comment>Implementation-specific details for computational systems modeling.</rdfs:comment>
+        <rdfs:label>Implementation Note</rdfs:label>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#jsonMapping -->
+
+    <owl:AnnotationProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#jsonMapping">
+        <rdfs:comment>Maps formal ontology concepts to BERT&apos;s JSON implementation structure.</rdfs:comment>
+        <rdfs:label>JSON Mapping</rdfs:label>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#mathematicalDefinition -->
+
+    <owl:AnnotationProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#mathematicalDefinition">
+        <rdfs:comment>Formal mathematical definition following Bunge&apos;s systems theory.</rdfs:comment>
+        <rdfs:label>Mathematical Definition</rdfs:label>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Object Properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#existsInEnvironment -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#existsInEnvironment">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Environment"/>
+        <jsonMapping>&quot;environment&quot;: {} object in BERT JSON</jsonMapping>
+        <rdfs:comment>Relates a system to its environmental context.</rdfs:comment>
+        <rdfs:label>exists in environment</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasBoundary -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasBoundary">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Boundary"/>
+        <jsonMapping>&quot;boundary&quot;: {} object in BERT JSON</jsonMapping>
+        <rdfs:comment>Relates a system to its boundary.</rdfs:comment>
+        <rdfs:label>has boundary</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasComponent -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasComponent">
+        <owl:inverseOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#isPartOf"/>
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Component"/>
+        <jsonMapping>&quot;systems&quot;: [] array in BERT JSON</jsonMapping>
+        <rdfs:comment>Relates a system to its constituent components.</rdfs:comment>
+        <rdfs:label>has component</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasFlow -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasFlow">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <jsonMapping>&quot;interactions&quot;: [] array in BERT JSON</jsonMapping>
+        <rdfs:comment>Relates a system to its flows (inputs, outputs, internal flows).</rdfs:comment>
+        <rdfs:label>has flow</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasInterface -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasInterface">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Boundary"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Interface"/>
+        <jsonMapping>&quot;interfaces&quot;: [] array in BERT boundary JSON</jsonMapping>
+        <rdfs:comment>Relates a boundary to its interfaces.</rdfs:comment>
+        <rdfs:label>has interface</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasSink -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasSink">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Sink"/>
+        <jsonMapping>&quot;sink&quot;: &quot;component_id&quot; field in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Identifies the sink (destination) of a flow.</rdfs:comment>
+        <rdfs:label>has sink</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasSource -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasSource">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Source"/>
+        <jsonMapping>&quot;source&quot;: &quot;component_id&quot; field in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Identifies the source of a flow.</rdfs:comment>
+        <rdfs:label>has source</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasSubsystem -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasSubsystem">
+        <rdfs:subPropertyOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#hasComponent"/>
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Subsystem"/>
+        <rdfs:comment>Relates a system to its subsystems.</rdfs:comment>
+        <rdfs:label>has subsystem</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#isPartOf -->
+
+    <owl:ObjectProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#isPartOf">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Component"/>
+        <rdfs:range rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <jsonMapping>&quot;parent&quot;: &quot;system_id&quot; field in BERT JSON</jsonMapping>
+        <rdfs:comment>Indicates that a component is part of a system.</rdfs:comment>
+        <rdfs:label>is part of</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Data properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasFlowAmount -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasFlowAmount">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <jsonMapping>&quot;amount&quot;: string field in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Quantifies the amount of substance in a flow.</rdfs:comment>
+        <rdfs:label>has flow amount</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasHierarchyLevel -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasHierarchyLevel">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+        <jsonMapping>&quot;level&quot;: integer field in BERT JSON</jsonMapping>
+        <mathematicalDefinition>Implements the (l) level index from Mobus 7-tuple S_{i,l} for hierarchical organization</mathematicalDefinition>
+        <rdfs:comment>Indicates the hierarchical level of a system (-1=Environment, 0=System, 1=Subsystem, etc.).</rdfs:comment>
+        <rdfs:label>has hierarchy level</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasHistory -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasHistory">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <jsonMapping>&quot;history&quot;: string field in BERT JSON</jsonMapping>
+        <mathematicalDefinition>Implements H_{i,l} from Mobus 7-tuple: historical trace of system states and learning experiences</mathematicalDefinition>
+        <rdfs:comment>Records the historical development, learning, and accumulated experience of the system.</rdfs:comment>
+        <rdfs:label>has history</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasPerceptiveFuzziness -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasPerceptiveFuzziness">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Boundary"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+        <jsonMapping>&quot;perceptive_fuzziness&quot;: float field in BERT boundary JSON</jsonMapping>
+        <rdfs:comment>Measures the fuzziness of boundary perception.</rdfs:comment>
+        <rdfs:label>has perceptive fuzziness</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasPorosity -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasPorosity">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Boundary"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+        <jsonMapping>&quot;porosity&quot;: float field in BERT boundary JSON</jsonMapping>
+        <rdfs:comment>Measures boundary permeability (0.0 = closed, 1.0 = completely open).</rdfs:comment>
+        <rdfs:label>has porosity</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasProtocol -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasProtocol">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Interface"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <jsonMapping>&quot;protocol&quot;: string field in BERT interface JSON</jsonMapping>
+        <rdfs:comment>Describes the protocol for interface operations.</rdfs:comment>
+        <rdfs:label>has protocol</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasTimeConstant -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasTimeConstant">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <jsonMapping>&quot;time_constant&quot;: string field in BERT JSON (e.g., &quot;Second&quot;, &quot;Day&quot;, &quot;Month&quot;)</jsonMapping>
+        <mathematicalDefinition>Implements Δ_{i,l} from Mobus 7-tuple: characteristic time scales for system operations and adaptation</mathematicalDefinition>
+        <rdfs:comment>Indicates the characteristic time scale at which the system operates and responds to changes.</rdfs:comment>
+        <rdfs:label>has time constant</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#hasTransformation -->
+
+    <owl:DatatypeProperty rdf:about="http://halcyonic.systems/ontologies/bert-systems#hasTransformation">
+        <rdfs:domain rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <jsonMapping>&quot;transformation&quot;: string field in BERT JSON</jsonMapping>
+        <mathematicalDefinition>Implements T_{i,l} from Mobus 7-tuple: the set of transformation functions that convert inputs to outputs</mathematicalDefinition>
+        <rdfs:comment>Describes the transformation processes that the system performs on its inputs to produce outputs.</rdfs:comment>
+        <rdfs:label>has transformation</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Boundary -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Boundary">
+        <bertExample>Organizational policies, cell membranes, national borders</bertExample>
+        <jsonMapping>&quot;boundary&quot;: {} object with porosity and interfaces properties</jsonMapping>
+        <mathematicalDefinition>Implements B_{i,l} from Mobus 7-tuple: active subsystem with properties and interfaces for protocol-based interaction management</mathematicalDefinition>
+        <rdfs:comment>The interface between a system and its environment, controlling flows and interactions.</rdfs:comment>
+        <rdfs:label>Boundary</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#ComplexSystem -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#ComplexSystem">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <bertExample>Biological organisms, economic markets, large organizations</bertExample>
+        <jsonMapping>&quot;complexity&quot;: {&quot;Complex&quot;: {&quot;adaptable&quot;: boolean, &quot;evolveable&quot;: boolean}} in BERT JSON</jsonMapping>
+        <mathematicalDefinition>Extends Mobus 7-tuple with BERT&apos;s computational complexity classification: adaptable (can adjust structure) and evolveable (can develop new capabilities)</mathematicalDefinition>
+        <rdfs:comment>System with non-linear behavior, emergent properties, and sophisticated internal organization.</rdfs:comment>
+        <rdfs:label>Complex System</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Component -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Component">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://halcyonic.systems/ontologies/bert-systems#isPartOf"/>
+                <owl:someValuesFrom rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <bertExample>Department in organization, organelle in cell, state in interstate system</bertExample>
+        <implementationNote>All components must be part of at least one system via isPartOf relationship</implementationNote>
+        <jsonMapping>Elements in &quot;systems&quot;: [] array</jsonMapping>
+        <mathematicalDefinition>Implements C_{i,l} from Mobus 7-tuple: the set of components with hierarchical indexing and fuzzy membership functions</mathematicalDefinition>
+        <rdfs:comment>A constituent part of a system that contributes to system function and structure. Components are always part of some system.</rdfs:comment>
+        <rdfs:label>Component</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#EnergyFlow -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#EnergyFlow">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <bertExample>Financial capital, electrical power, ATP in cells</bertExample>
+        <jsonMapping>&quot;substance&quot;: {&quot;type&quot;: &quot;Energy&quot;} in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Flow of energy in various forms (electrical, chemical, financial, etc.).</rdfs:comment>
+        <rdfs:label>Energy Flow</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Environment -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Environment">
+        <bertExample>Economic ecosystem for organizations, cellular environment for biological systems</bertExample>
+        <jsonMapping>&quot;environment&quot;: {} object containing sources and sinks arrays</jsonMapping>
+        <mathematicalDefinition>E(σ,t) = set of all things not in C(σ,t) that interact with components of σ at time t</mathematicalDefinition>
+        <rdfs:comment>The context surrounding a system, containing sources, sinks, and other external entities that interact with the system.</rdfs:comment>
+        <rdfs:label>Environment</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#ExportInterface -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#ExportInterface">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Interface"/>
+        <owl:disjointWith rdf:resource="http://halcyonic.systems/ontologies/bert-systems#ImportInterface"/>
+        <jsonMapping>&quot;type&quot;: &quot;Export&quot; in BERT interface JSON</jsonMapping>
+        <rdfs:comment>Interface that enables outward flows from system to environment.</rdfs:comment>
+        <rdfs:label>Export Interface</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Flow -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Flow">
+        <bertExample>Information flow between departments, nutrient flow in cells, commodity flow between states</bertExample>
+        <jsonMapping>Elements in &quot;interactions&quot;: [] array with source/sink properties</jsonMapping>
+        <mathematicalDefinition>Implements N_{i,l} (internal flows) and G_{i,l} (environmental flows) from Mobus 7-tuple: directed graphs with capacities and causal influences</mathematicalDefinition>
+        <rdfs:comment>Movement of substances (material, energy, messages) between system components or across system boundaries.</rdfs:comment>
+        <rdfs:label>Flow</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#ImportInterface -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#ImportInterface">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Interface"/>
+        <jsonMapping>&quot;type&quot;: &quot;Import&quot; in BERT interface JSON</jsonMapping>
+        <rdfs:comment>Interface that enables inward flows from environment to system.</rdfs:comment>
+        <rdfs:label>Import Interface</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Interface -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Interface">
+        <bertExample>Import/export terminals, membrane receptors, market interfaces</bertExample>
+        <jsonMapping>Elements in &quot;boundary.interfaces&quot;: [] array</jsonMapping>
+        <rdfs:comment>Specific connection points on system boundaries that enable controlled interaction with environment.</rdfs:comment>
+        <rdfs:label>Interface</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#MaterialFlow -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#MaterialFlow">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <bertExample>Commodity shipments, oxygen transport, raw materials</bertExample>
+        <jsonMapping>&quot;substance&quot;: {&quot;type&quot;: &quot;Material&quot;} in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Flow of physical substances or materials.</rdfs:comment>
+        <rdfs:label>Material Flow</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#MessageFlow -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#MessageFlow">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <bertExample>Strategic directives, neural signals, market information</bertExample>
+        <jsonMapping>&quot;substance&quot;: {&quot;type&quot;: &quot;Message&quot;} in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Flow of information, signals, or communication.</rdfs:comment>
+        <rdfs:label>Message Flow</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Product -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Product">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <bertExample>Goods and services, cellular functions, strategic decisions</bertExample>
+        <jsonMapping>&quot;usability&quot;: &quot;Product&quot; in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Desired output flow that represents the system&apos;s intended value creation.</rdfs:comment>
+        <rdfs:label>Product</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Resource -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Resource">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <bertExample>Human capital input, glucose for cells, investment capital</bertExample>
+        <jsonMapping>&quot;usability&quot;: &quot;Resource&quot; in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Flow that serves as input consumed by the system for its operations.</rdfs:comment>
+        <rdfs:label>Resource</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#SimpleSystem -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#SimpleSystem">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <bertExample>Basic mechanical systems, simple organizational structures</bertExample>
+        <jsonMapping>&quot;complexity&quot;: {&quot;Simple&quot;: {}} in BERT JSON</jsonMapping>
+        <rdfs:comment>System with straightforward, predictable behavior and minimal emergent properties.</rdfs:comment>
+        <rdfs:label>Simple System</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Sink -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Sink">
+        <bertExample>Customer markets for organizations, waste disposal for cells</bertExample>
+        <jsonMapping>Elements in &quot;environment.sinks&quot;: [] array</jsonMapping>
+        <rdfs:comment>Environmental entity that receives outputs from the system.</rdfs:comment>
+        <rdfs:label>Sink</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Source -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Source">
+        <bertExample>Talent market for organizations, nutrient sources for cells</bertExample>
+        <jsonMapping>Elements in &quot;environment.sources&quot;: [] array</jsonMapping>
+        <rdfs:comment>Environmental entity that provides inputs to the system.</rdfs:comment>
+        <rdfs:label>Source</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Subsystem -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Subsystem">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Component"/>
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#System"/>
+        <bertExample>California as subsystem of US interstate commerce, mitochondria as subsystem of cell</bertExample>
+        <implementationNote>Inherits both Component (can be part of larger systems) and System (has its own components) properties</implementationNote>
+        <rdfs:comment>A system that is itself a component of a larger system.</rdfs:comment>
+        <rdfs:label>Subsystem</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#System -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#System">
+        <bertExample>Interstate commerce system, biological cell, business organization</bertExample>
+        <jsonMapping>Top-level object in BERT JSON with &quot;info&quot;, &quot;boundary&quot;, &quot;complexity&quot; properties</jsonMapping>
+        <mathematicalDefinition>Following Mobus&apos;s 7-tuple: S_{i,l} = ⟨C_{i,l}, N_{i,l}, G_{i,l}, B_{i,l}, T_{i,l}, H_{i,l}, Δ_{i,l}⟩ where C=components, N=internal network, G=environmental connections, B=boundary, T=transformations, H=history, Δ=time scales</mathematicalDefinition>
+        <rdfs:comment>A bounded entity with defined composition, environment, and structure that processes flows and exhibits emergent behavior.</rdfs:comment>
+        <rdfs:label>System</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://halcyonic.systems/ontologies/bert-systems#Waste -->
+
+    <owl:Class rdf:about="http://halcyonic.systems/ontologies/bert-systems#Waste">
+        <rdfs:subClassOf rdf:resource="http://halcyonic.systems/ontologies/bert-systems#Flow"/>
+        <bertExample>Carbon emissions, cellular waste, administrative overhead</bertExample>
+        <jsonMapping>&quot;usability&quot;: &quot;Waste&quot; in BERT flow JSON</jsonMapping>
+        <rdfs:comment>Undesired output flow that represents byproducts of system operation.</rdfs:comment>
+        <rdfs:label>Waste</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // General axioms
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
+        <owl:members rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://halcyonic.systems/ontologies/bert-systems#EnergyFlow"/>
+            <rdf:Description rdf:about="http://halcyonic.systems/ontologies/bert-systems#MaterialFlow"/>
+            <rdf:Description rdf:about="http://halcyonic.systems/ontologies/bert-systems#MessageFlow"/>
+        </owl:members>
+    </rdf:Description>
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
+        <owl:members rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://halcyonic.systems/ontologies/bert-systems#Product"/>
+            <rdf:Description rdf:about="http://halcyonic.systems/ontologies/bert-systems#Resource"/>
+            <rdf:Description rdf:about="http://halcyonic.systems/ontologies/bert-systems#Waste"/>
+        </owl:members>
+    </rdf:Description>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi -->
+

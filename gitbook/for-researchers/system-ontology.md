@@ -4,7 +4,7 @@ The theoretical foundations underlying BERT's approach to system representation 
 
 ## Foundation: Mobus's Ontological Framework
 
-BERT implements the ontological framework from Chapter 3.4 of *Principles of Systems Science*, which asserts that "what can exist in this evolving Universe, made of matter and energy, organized by knowledge and information, is systems."
+BERT implements the ontological framework from Chapter 3.4 of *Systems Science: Theory, Analysis, Modeling, and Design*, which asserts that "what can exist in this evolving Universe, made of matter and energy, organized by knowledge and information, is systems."
 
 ### The Core Framework
 
@@ -42,13 +42,6 @@ Following Chapter 2, Principle 1: "Everything is a system, meaning that all thin
 
 BERT enables this recursive analysis where any COMPONENT at Level +1 can become the SYSTEM at Level 0 for deeper analysis.
 
-## Theoretical Extensions
-
-Future versions will expand the ontological implementation:
-- **Temporal dynamics** (v0.3.0 - simulation features)
-- **Process flows** (v0.3.0 - matter/energy/information)
-- **Emergent properties** (v0.4.0 - pattern detection)
-- **Cross-scale interactions** (v1.0.0 - multi-level dynamics)
 
 ## Related Concepts
 
@@ -56,11 +49,32 @@ Future versions will expand the ontological implementation:
 - [System Modeling](methodology/system-modeling.md) - Practical application of the ontology
 - [Complexity Metrics](../getting-started/interface-guide.md#complexity-counter) - Quantifying ontological properties
 
+## Formal Ontology Specification
+
+BERT's theoretical foundations are formalized in a complete OWL/RDF ontology that maps Mobus's 7-tuple framework to computational implementation:
+
+**📄 [bert-systems-ontology.rdf](bert-systems-ontology.rdf)** - Complete formal ontology specification
+
+This ontology provides:
+- **Semantic Validation** - Formal verification of system models against systems theory
+- **Protégé Compatibility** - Load directly into ontology editors for analysis  
+- **JSON Mapping** - Direct correspondence between formal concepts and BERT's JSON implementation
+- **Mobus 7-tuple Implementation** - Complete mapping of S_{i,l} = ⟨C_{i,l}, N_{i,l}, G_{i,l}, B_{i,l}, T_{i,l}, H_{i,l}, Δ_{i,l}⟩
+
+### Usage
+```bash
+# Load into Protégé for ontology analysis
+protege bert-systems-ontology.rdf
+
+# Validate BERT models against formal systems theory
+# (Integration tools coming in v0.3.0)
+```
+
 ## Further Reading
 
-- Mobus, G. & Kalton, M. (2015). *Principles of Systems Science*
+- Mobus, George (2022). *Principles of Systems Science*
 - BERT's [theoretical foundations](https://github.com/Halcyonic-Systems/bert/docs)
 - [DSA methodology](methodology/system-modeling.md) overview
 
-*This page will be expanded as BERT's ontological capabilities evolve.*
+*This page reflects BERT v0.2.0's complete ontological implementation.*
 
