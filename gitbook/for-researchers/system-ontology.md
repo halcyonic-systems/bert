@@ -2,6 +2,23 @@
 
 The theoretical foundations underlying BERT's approach to system representation and analysis.
 
+##  Quick Start: Explore the Formal Ontology
+
+**Download & explore BERT's formal ontology specification:**
+
+### Option 1: Protégé Desktop (Recommended)
+1. **Download Protégé**: https://protege.stanford.edu/download/protege/5.6.4/
+2. **Open ontology**: File → Open → Select [`bert-systems-ontology.rdf`](bert-systems-ontology.rdf)
+3. **Explore classes**: Use "Classes" tab to navigate the system hierarchy
+4. **Visualize**: Window → Tabs → OntoGraf for interactive graph view
+
+### Option 2: WebVOWL (No Installation)
+1. **Visit**: https://service.tib.eu/webvowl/
+2. **Upload**: [`bert-systems-ontology.rdf`](bert-systems-ontology.rdf)
+3. **Explore**: Interactive graph showing all relationships
+
+---
+
 ## Foundation: Mobus's Ontological Framework
 
 BERT implements the ontological framework from Chapter 3.4 of *Systems Science: Theory, Analysis, Modeling, and Design*, which asserts that "what can exist in this evolving Universe, made of matter and energy, organized by knowledge and information, is systems."
@@ -61,14 +78,10 @@ This ontology provides:
 - **JSON Mapping** - Direct correspondence between formal concepts and BERT's JSON implementation
 - **Mobus 7-tuple Implementation** - Complete mapping of S_{i,l} = ⟨C_{i,l}, N_{i,l}, G_{i,l}, B_{i,l}, T_{i,l}, H_{i,l}, Δ_{i,l}⟩
 
-### Usage
-```bash
-# Load into Protégé for ontology analysis
-protege bert-systems-ontology.rdf
+### Integration with BERT Models
 
-# Validate BERT models against formal systems theory
-# (Integration tools coming in v0.3.0)
-```
+The ontology provides semantic validation for BERT's JSON models:
+
 
 ## Further Reading
 
