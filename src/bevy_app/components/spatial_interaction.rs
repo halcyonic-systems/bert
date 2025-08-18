@@ -1,6 +1,6 @@
 //! # Spatial Interaction Components
 //!
-//! Components for the spatial interaction UX system, enabling boundary rings 
+//! Components for the spatial interaction UX system, enabling boundary rings
 //! and environment regions to be clicked separately from system interiors.
 
 use bevy::prelude::*;

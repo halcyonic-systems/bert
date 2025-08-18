@@ -114,7 +114,7 @@ pub fn spawn_boundary_ring(
     // This overlaps the system but picking priority is managed by z-order
     let ring_path = GeometryBuilder::build_as(&shapes::Circle {
         radius: radius + 8.0, // Extend beyond system for easier clicking
-        ..default()  
+        ..default()
     });
 
     let boundary_entity = commands
@@ -134,9 +134,11 @@ pub fn spawn_boundary_ring(
         ))
         .id();
 
-    info!("Spawned boundary ring entity {:?} for system {:?} at {:?}", 
-          boundary_entity, system_entity, position);
-    
+    info!(
+        "Spawned boundary ring entity {:?} for system {:?} at {:?}",
+        boundary_entity, system_entity, position
+    );
+
     boundary_entity
 }
 
@@ -245,9 +247,11 @@ pub fn spawn_environment_region(
         ))
         .id();
 
-    info!("Spawned environment region entity {:?} for system {:?} at {:?}", 
-          environment_entity, system_entity, position);
-    
+    info!(
+        "Spawned environment region entity {:?} for system {:?} at {:?}",
+        environment_entity, system_entity, position
+    );
+
     environment_entity
 }
 
@@ -341,7 +345,7 @@ pub fn spawn_system_with_spatial_regions(
     let boundary_entity = spawn_boundary_ring(
         commands,
         system_entity,
-        system_radius + 8.0, // Larger than system 
+        system_radius + 8.0, // Larger than system
         position,
         -0.1, // Behind system so system can be clicked
     );

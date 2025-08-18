@@ -19,7 +19,7 @@ pub fn handle_save_success_events(
         }
         // Event forwarding to Leptos happens automatically via export_event_to_leptos
     }
-    
+
     // Handle events from async contexts (like desktop saves)
     if let Some(channel) = save_channel {
         if let Ok(receiver_guard) = channel.receiver.lock() {
@@ -30,7 +30,7 @@ pub fn handle_save_success_events(
                 } else {
                     info!("File downloaded successfully");
                 }
-                
+
                 // Re-emit the event so it gets forwarded to Leptos
                 save_events.send(event);
             }

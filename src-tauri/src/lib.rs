@@ -57,9 +57,7 @@ async fn pick_file(app_handle: AppHandle) -> Option<PathBuf> {
         .file()
         .add_filter("valid_formats", &["json"])
         .blocking_pick_file()
-        .map(|file_path| {
-            file_path.into_path().unwrap()
-        })
+        .map(|file_path| file_path.into_path().unwrap())
 }
 
 #[tauri::command]

@@ -5,9 +5,9 @@
 pub mod bevy_app;
 pub mod leptos_app;
 
+pub use bevy_app::*;
 use leptos::mount;
 pub use leptos_app::*;
-pub use bevy_app::*;
 
 fn main() {
     console_error_panic_hook::set_once();

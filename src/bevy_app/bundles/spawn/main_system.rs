@@ -1,5 +1,5 @@
-use crate::bevy_app::bundles::SystemBundle;
 use crate::bevy_app::bundles::spawn::spatial_interaction::spawn_system_with_spatial_regions;
+use crate::bevy_app::bundles::SystemBundle;
 use crate::bevy_app::components::{NestingLevel, Subsystem, SystemBoundary, SystemEnvironment};
 use crate::bevy_app::constants::MAIN_SYSTEM_RADIUS;
 use crate::bevy_app::data_model::Complexity;
@@ -48,15 +48,11 @@ pub fn spawn_main_system(
             },
         ))
         .id();
-    
+
     // Add spatial interaction regions for boundary and environment clicking
-    let (_boundary_entity, _environment_entity) = spawn_system_with_spatial_regions(
-        commands,
-        system_entity,
-        MAIN_SYSTEM_RADIUS,
-        center,
-    );
-    
+    let (_boundary_entity, _environment_entity) =
+        spawn_system_with_spatial_regions(commands, system_entity, MAIN_SYSTEM_RADIUS, center);
+
     system_entity
 }
 

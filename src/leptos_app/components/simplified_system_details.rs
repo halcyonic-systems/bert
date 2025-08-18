@@ -6,7 +6,7 @@
 //! 3. Progressive disclosure for complex DSA concepts
 //! 4. Clear conceptual organization
 
-use crate::leptos_app::components::{InputGroup, Checkbox, TextArea};
+use crate::leptos_app::components::{Checkbox, InputGroup, TextArea};
 use crate::SystemQuery;
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::*;
@@ -15,7 +15,7 @@ use wasm_bindgen::JsCast;
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DetailsPanelMode {
     System,
-    Boundary, 
+    Boundary,
     Environment,
 }
 
@@ -74,7 +74,7 @@ pub fn SimplifiedSystemDetails(
             .map(|(_, _, system, _)| system.transformation.clone())
             .unwrap_or_default()
     });
-    
+
     // Boundary properties
     let boundary_name = Signal::derive(move || {
         system_query
@@ -104,8 +104,8 @@ pub fn SimplifiedSystemDetails(
             .map(|(_, _, system, _)| system.boundary.perceptive_fuzziness as f64)
             .unwrap_or_default()
     });
-    
-    // Environment properties  
+
+    // Environment properties
     let environment_name = Signal::derive(move || {
         system_query
             .read()
@@ -192,13 +192,13 @@ pub fn SimplifiedSystemDetails(
                             .map(|(_, description, _, _)| description.text = value);
                     }
                 />
-                
+
                 // Complexity with contextual help
                 <div class="space-y-2">
                     <div class="flex items-center gap-2">
                         <label class="block font-medium text-gray-900 text-sm">Complexity</label>
                         <div class="relative group">
-                            <button 
+                            <button
                                 type="button"
                                 class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
                             >
@@ -251,7 +251,7 @@ pub fn SimplifiedSystemDetails(
                             <div class="flex items-center gap-2 mb-2">
                                 <label class="block font-medium text-gray-700 text-sm">Equivalence</label>
                                 <div class="relative group">
-                                    <button 
+                                    <button
                                         type="button"
                                         class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
                                     >
@@ -278,12 +278,12 @@ pub fn SimplifiedSystemDetails(
                                 }
                             />
                         </div>
-                        
+
                         <div>
                             <div class="flex items-center gap-2 mb-2">
                                 <label class="block font-medium text-gray-700 text-sm">Time Unit</label>
                                 <div class="relative group">
-                                    <button 
+                                    <button
                                         type="button"
                                         class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
                                     >
@@ -315,7 +315,7 @@ pub fn SimplifiedSystemDetails(
                             <div class="flex items-center gap-2 mb-2">
                                 <label class="block font-medium text-gray-700 text-sm">Transformation Functions</label>
                                 <div class="relative group">
-                                    <button 
+                                    <button
                                         type="button"
                                         class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
                                     >
@@ -350,16 +350,16 @@ pub fn SimplifiedSystemDetails(
             </div>
         </Show>
 
-        // Boundary Panel  
+        // Boundary Panel
         <Show when=move || panel_mode.get() == DetailsPanelMode::Boundary>
             <div class="space-y-4">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                     <p class="text-sm text-blue-800">
-                        <strong>Boundary</strong> - The interface between system and environment. 
+                        <strong>Boundary</strong> - The interface between system and environment.
                         Contains all the interfaces that allow inputs and outputs to flow.
                     </p>
                 </div>
-                
+
                 <InputGroup
                     id="boundary-name"
                     label="Name"
@@ -378,13 +378,13 @@ pub fn SimplifiedSystemDetails(
                         system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.description = value);
                     }
                 />
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
                             <label class="block font-medium text-gray-700 text-sm">Porosity</label>
                             <div class="relative group">
-                                <button 
+                                <button
                                     type="button"
                                     class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
                                 >
@@ -415,12 +415,12 @@ pub fn SimplifiedSystemDetails(
                         />
                         <div class="text-xs text-gray-500 mt-1">{boundary_porosity}</div>
                     </div>
-                    
+
                     <div>
                         <div class="flex items-center gap-2 mb-2">
                             <label class="block font-medium text-gray-700 text-sm">Perceptive Fuzziness</label>
                             <div class="relative group">
-                                <button 
+                                <button
                                     type="button"
                                     class="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
                                 >
@@ -452,7 +452,7 @@ pub fn SimplifiedSystemDetails(
                         <div class="text-xs text-gray-500 mt-1">{perceptive_fuzziness}</div>
                     </div>
                 </div>
-                
+
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                     <p class="text-sm text-yellow-800">
                         <strong>Note:</strong> Interfaces within this boundary will be manageable through the interface creation tools.
@@ -466,11 +466,11 @@ pub fn SimplifiedSystemDetails(
             <div class="space-y-4">
                 <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                     <p class="text-sm text-green-800">
-                        <strong>Environment</strong> - The external context surrounding this system. 
+                        <strong>Environment</strong> - The external context surrounding this system.
                         Contains sources, sinks, and other systems that interact with this one.
                     </p>
                 </div>
-                
+
                 <InputGroup
                     id="environment-name"
                     label="Name"
@@ -489,7 +489,7 @@ pub fn SimplifiedSystemDetails(
                         system_query.write().as_mut().map(|(_, _, _, env)| env.description = value);
                     }
                 />
-                
+
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p class="text-sm text-blue-800">
                         <strong>Note:</strong> Sources and sinks in this environment will be manageable through the external entity creation tools.

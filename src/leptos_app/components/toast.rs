@@ -17,12 +17,14 @@ pub fn Toast(
             let closure = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
                 callback.run(());
             }) as Box<dyn FnMut()>);
-            
-            window.set_timeout_with_callback_and_timeout_and_arguments_0(
-                closure.as_ref().unchecked_ref(), 
-                4000  // 4 seconds
-            ).unwrap();
-            
+
+            window
+                .set_timeout_with_callback_and_timeout_and_arguments_0(
+                    closure.as_ref().unchecked_ref(),
+                    4000, // 4 seconds
+                )
+                .unwrap();
+
             closure.forget(); // Keep closure alive for the timeout duration
         }
     });

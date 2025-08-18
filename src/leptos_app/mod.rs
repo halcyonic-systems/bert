@@ -4,19 +4,21 @@ mod details;
 mod tree;
 mod use_file_dialog;
 
+use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
 use crate::bevy_app::init_bevy_app;
 use crate::bevy_app::{
     components::System, DetachMarkerLabelEvent, ElementDescription, ExternalEntity, Flow,
     Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
-use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
-use crate::leptos_app::details::Details;
 use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Toast};
+use crate::leptos_app::details::Details;
 use crate::LoadFileEvent;
 use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
 use leptos::prelude::*;
-use leptos_bevy_canvas::prelude::{event_l2b, event_b2l, single_query_signal, signal_synced, BevyCanvas};
+use leptos_bevy_canvas::prelude::{
+    event_b2l, event_l2b, signal_synced, single_query_signal, BevyCanvas,
+};
 use leptos_meta::*;
 use use_file_dialog::use_file_dialog_with_options;
 
@@ -31,7 +33,7 @@ pub type IsSameAsIdQuery = (IsSameAsId,);
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
-use crate::events::{TreeEvent, TriggerEvent, ZoomEvent, DeselectAllEvent, SaveSuccessEvent};
+use crate::events::{DeselectAllEvent, SaveSuccessEvent, TreeEvent, TriggerEvent, ZoomEvent};
 use crate::leptos_app::tree::Tree;
 use leptos_bevy_canvas::prelude::*;
 
@@ -41,75 +43,85 @@ pub fn App() -> impl IntoView {
 
     // Unified LoadFileEvent system for both Ctrl+L file dialog and Model Browser
     let (load_file_writer, load_file_event_receiver) = event_l2b::<LoadFileEvent>();
-    
+
     // Zoom event system for JavaScript to Bevy communication
     let (zoom_event_writer, zoom_event_receiver) = event_l2b::<ZoomEvent>();
-    
+
     // Deselect event system for close button functionality
     let (deselect_event_writer, deselect_event_receiver) = event_l2b::<DeselectAllEvent>();
-    
+
     // Save success event system for user feedback
     let (_save_success_event_writer, save_success_event_receiver) = event_l2b::<SaveSuccessEvent>();
-    
+
     // Toast notification state
     let (toast_visible, set_toast_visible) = signal(false);
     let (toast_message, set_toast_message) = signal(String::new());
-    
+
     // Complexity counter - tracks system complexity when models are loaded
     let (complexity, set_complexity) = signal(0.0f64);
-    
+
     // Set up file dialog with the shared event writer
     let file_dialog_signal = RwSignal::new(None::<crate::leptos_app::use_file_dialog::UseFile>);
-    let _ = use_file_dialog_with_options(crate::leptos_app::use_file_dialog::UseFileDialogOptions {
-        initial_file: file_dialog_signal,
-        extensions: vec!["application/json".to_string()].into(),
-        additional_behavior: move || {
-            // Check if Tauri is available for desktop file dialogs
-            let tauri_exists = leptos_use::js! {
-                "__TAURI__" in &window()
-            };
-            
-            if tauri_exists {
-                use leptos::task::spawn_local;
-                use serde::{Serialize, Deserialize};
-                use std::path::PathBuf;
-                use tauri_sys::core::invoke;
-                
-                #[derive(Serialize, Deserialize, Debug, Clone)]
-                struct Args {
-                    pb: PathBuf,
-                }
-                
-                spawn_local({
-                    let file_signal = file_dialog_signal;
-                    async move {
-                        let file_path = invoke::<Option<PathBuf>>("pick_file", ()).await;
-                        if let Some(path) = file_path {
-                            let file_data = invoke::<crate::leptos_app::use_file_dialog::UseFile>("load_file", &Args { pb: path }).await;
-                            file_signal.update(|file| {
-                                *file = Some(file_data);
-                            });
-                        }
+    let _ =
+        use_file_dialog_with_options(crate::leptos_app::use_file_dialog::UseFileDialogOptions {
+            initial_file: file_dialog_signal,
+            extensions: vec!["application/json".to_string()].into(),
+            additional_behavior: move || {
+                // Check if Tauri is available for desktop file dialogs
+                let tauri_exists = leptos_use::js! {
+                    "__TAURI__" in &window()
+                };
+
+                if tauri_exists {
+                    use leptos::task::spawn_local;
+                    use serde::{Deserialize, Serialize};
+                    use std::path::PathBuf;
+                    use tauri_sys::core::invoke;
+
+                    #[derive(Serialize, Deserialize, Debug, Clone)]
+                    struct Args {
+                        pb: PathBuf,
                     }
-                });
-            }
-            
-            !tauri_exists // Return true for web file dialog if Tauri not available
-        },
-    });
-    
+
+                    spawn_local({
+                        let file_signal = file_dialog_signal;
+                        async move {
+                            let file_path = invoke::<Option<PathBuf>>("pick_file", ()).await;
+                            if let Some(path) = file_path {
+                                let file_data =
+                                    invoke::<crate::leptos_app::use_file_dialog::UseFile>(
+                                        "load_file",
+                                        &Args { pb: path },
+                                    )
+                                    .await;
+                                file_signal.update(|file| {
+                                    *file = Some(file_data);
+                                });
+                            }
+                        }
+                    });
+                }
+
+                !tauri_exists // Return true for web file dialog if Tauri not available
+            },
+        });
+
     // Connect file dialog signal to LoadFileEvent stream with complexity calculation
     Effect::new({
         let load_file_writer = load_file_writer.clone();
         let set_complexity_inner = set_complexity;
         move |_| {
-            if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) = file_dialog_signal.get() {
+            if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) =
+                file_dialog_signal.get()
+            {
                 // Calculate complexity when loading a file
-                if let Ok(world_model) = serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&data) {
+                if let Ok(world_model) =
+                    serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&data)
+                {
                     let complexity_result = calculate_simonian_complexity(&world_model);
                     set_complexity_inner.set(complexity_result.total_complexity);
                 }
-                
+
                 load_file_writer
                     .send(LoadFileEvent {
                         file_path: path,
@@ -142,7 +154,7 @@ pub fn App() -> impl IntoView {
         single_query_signal::<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>();
 
     // Resource signal for spatial detail panel mode
-    let (spatial_mode, spatial_mode_duplex) = 
+    let (spatial_mode, spatial_mode_duplex) =
         signal_synced(crate::bevy_app::components::SpatialDetailPanelMode::default());
 
     let (detach_event_sender, detach_event_receiver) = event_l2b::<DetachMarkerLabelEvent>();
@@ -226,7 +238,7 @@ pub fn App() -> impl IntoView {
                 </button>
             </div>
         </Show>
-        
+
         // Complexity counter display (positioned to work with both open/closed Details panel)
         <div class="absolute top-4 right-1/3 z-20 bg-white px-3 py-2 rounded-lg shadow-md">
             <div class="text-sm text-gray-600">System Complexity</div>
@@ -234,13 +246,13 @@ pub fn App() -> impl IntoView {
                 {move || format!("{:.1}", complexity.get())}
             </div>
         </div>
-        
+
         <Tree visible=tree_visible event_receiver=tree_event_receiver />
-        <ControlsMenu 
-            visible=controls_visible 
+        <ControlsMenu
+            visible=controls_visible
             on_close=Callback::new(move |_| set_controls_visible.set(false))
         />
-        <ModelBrowser 
+        <ModelBrowser
             visible=model_browser_visible
             on_close=Callback::new(move |_| set_model_browser_visible.set(false))
             on_load=Callback::new({
@@ -252,7 +264,7 @@ pub fn App() -> impl IntoView {
                         let complexity_result = calculate_simonian_complexity(&world_model);
                         set_complexity.set(complexity_result.total_complexity);
                     }
-                    
+
                     // Send the load file event to Bevy
                     leptos::logging::log!("Sending LoadFileEvent: {} with {} bytes", event.file_path, event.data.len());
                     load_file_writer.send(event).ok();
@@ -260,7 +272,7 @@ pub fn App() -> impl IntoView {
                 }
             })
         />
-        <div class="h-screen" 
+        <div class="h-screen"
              tabindex="0"
              id="bevy-container"
              on:click=move |_| {
@@ -269,7 +281,7 @@ pub fn App() -> impl IntoView {
              on:keydown=move |ev| {
                  // Log all key presses for debugging
                  leptos::logging::log!("Key pressed: {} (code: {})", ev.key(), ev.code());
-                 
+
                  // Handle zoom keys directly in JavaScript to bypass Bevy keyboard focus issues
                  if ev.key() == "-" || ev.key() == "_" {
                      ev.prevent_default();

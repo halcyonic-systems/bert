@@ -1,10 +1,10 @@
+use crate::bevy_app::components::{Flow, NestingLevel};
+use crate::bevy_app::constants::CLEAR_COLOR;
+use crate::bevy_app::resources::Theme;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::text::TextLayoutInfo;
 use bevy_prototype_lyon::prelude::*;
-use crate::bevy_app::resources::Theme;
-use crate::bevy_app::constants::CLEAR_COLOR;
-use crate::bevy_app::components::{Flow, NestingLevel};
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]

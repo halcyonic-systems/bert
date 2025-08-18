@@ -176,8 +176,15 @@ pub fn update_flow_from_interface(
 
 pub fn update_flow_from_subsystem_without_interface(
     system_query: Query<
-        (Entity, &GlobalTransform, &crate::bevy_app::components::System),
-        Or<(Changed<GlobalTransform>, Changed<crate::bevy_app::components::System>)>,
+        (
+            Entity,
+            &GlobalTransform,
+            &crate::bevy_app::components::System,
+        ),
+        Or<(
+            Changed<GlobalTransform>,
+            Changed<crate::bevy_app::components::System>,
+        )>,
     >,
     mut flow_query: Query<
         (

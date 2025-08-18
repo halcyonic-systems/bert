@@ -207,9 +207,14 @@ pub fn init_bevy_app(
                 serialize_world
                     .pipe(save_world)
                     .run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyS))),
-                serialize_world
-                    .pipe(save_world_as)
-                    .run_if(input_pressed(MODIFIER).and(input_pressed(KeyCode::ShiftLeft).or(input_pressed(KeyCode::ShiftRight))).and(input_just_pressed(KeyCode::KeyS))),
+                serialize_world.pipe(save_world_as).run_if(
+                    input_pressed(MODIFIER)
+                        .and(
+                            input_pressed(KeyCode::ShiftLeft)
+                                .or(input_pressed(KeyCode::ShiftRight)),
+                        )
+                        .and(input_just_pressed(KeyCode::KeyS)),
+                ),
             ),
             (
                 hide_selected
@@ -401,13 +406,13 @@ pub fn toggle_theme_system(
 
     // Check for keyboard shortcut
     #[cfg(target_os = "macos")]
-    let shortcut_pressed = input.just_pressed(KeyCode::KeyB) 
-        && input.pressed(KeyCode::ControlLeft) 
+    let shortcut_pressed = input.just_pressed(KeyCode::KeyB)
+        && input.pressed(KeyCode::ControlLeft)
         && input.pressed(KeyCode::AltLeft); // AltLeft = Option key on Mac
-    
+
     #[cfg(not(target_os = "macos"))]
-    let shortcut_pressed = input.just_pressed(KeyCode::KeyB) 
-        && input.pressed(KeyCode::ControlLeft) 
+    let shortcut_pressed = input.just_pressed(KeyCode::KeyB)
+        && input.pressed(KeyCode::ControlLeft)
         && input.pressed(KeyCode::AltLeft);
 
     if shortcut_pressed {

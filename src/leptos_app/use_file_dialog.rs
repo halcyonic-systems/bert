@@ -168,7 +168,6 @@ pub fn generate_file_loader() -> BevyEventReceiver<LoadFileEvent> {
     let file = RwSignal::new(None::<UseFile>);
 
     let check_if_tauri_available = move || {
-
         let tauri_exists = leptos_use::js! {
             "__TAURI__" in &window()
         };
@@ -180,8 +179,7 @@ pub fn generate_file_loader() -> BevyEventReceiver<LoadFileEvent> {
             }
             spawn_local({
                 async move {
-                    let file_path = invoke::<Option<PathBuf>>("pick_file", ())
-                        .await;
+                    let file_path = invoke::<Option<PathBuf>>("pick_file", ()).await;
 
                     if let Some(path) = file_path {
                         let file_data = invoke::<UseFile>("load_file", &Args { pb: path }).await;
@@ -199,7 +197,7 @@ pub fn generate_file_loader() -> BevyEventReceiver<LoadFileEvent> {
     let _ = use_file_dialog_with_options(UseFileDialogOptions {
         initial_file: file,
         extensions: vec!["application/json".to_string()].into(),
-        additional_behavior: check_if_tauri_available
+        additional_behavior: check_if_tauri_available,
     });
 
     let (load_file_event_sender, load_file_event_receiver) = event_l2b::<LoadFileEvent>();

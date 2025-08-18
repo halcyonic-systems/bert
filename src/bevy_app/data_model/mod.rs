@@ -150,26 +150,26 @@ pub struct WorldModel {
     /// Must match [`CURRENT_FILE_VERSION`] for newly created models.
     /// Older versions trigger migration logic during deserialization.
     pub version: u32,
-    
+
     /// Environmental context containing external entities and root system information.
     ///
     /// The environment represents the broader context in which the system
     /// of interest operates, including all external sources and sinks.
     pub environment: Environment,
-    
+
     /// Complete collection of all system entities in the model.
     ///
     /// Includes the root system and all nested subsystems at any depth.
     /// Systems are stored in a flat list with hierarchical relationships
     /// maintained through parent ID references.
     pub systems: Vec<System>,
-    
+
     /// All flow interactions between system entities and external entities.
     ///
     /// Captures both internal flows (between systems) and external flows
     /// (between systems and environment sources/sinks).
     pub interactions: Vec<Interaction>,
-    
+
     /// List of entity IDs that are currently hidden in the visualization.
     ///
     /// Preserves the user's view state when saving and loading models,
@@ -248,7 +248,7 @@ pub struct Id {
     /// Determines how the ID should be interpreted and which kind of
     /// entity it references in the data model.
     pub ty: IdType,
-    
+
     /// Hierarchical path from root to this entity.
     ///
     /// The sequence of indices that uniquely identifies this entity's position
@@ -373,49 +373,49 @@ pub enum IdType {
     /// Systems can contain subsystems, interfaces, and interact with external entities.
     #[serde(rename = "S")]
     System,
-    
+
     /// Nested system component within a parent system.
     ///
     /// Subsystems represent decomposed parts of complex systems, enabling
     /// hierarchical modeling and analysis at multiple levels of detail.
     #[serde(rename = "C")]
     Subsystem,
-    
+
     /// System boundary interface for interaction points.
     ///
     /// Interfaces define formal connection points where flows can enter
     /// or exit system boundaries, implementing boundary management.
     #[serde(rename = "I")]
     Interface,
-    
+
     /// External source entity providing inputs to the system.
     ///
     /// Sources represent environmental entities that supply resources,
     /// energy, materials, or information to the system of interest.
     #[serde(rename = "Src")]
     Source,
-    
+
     /// External sink entity receiving outputs from the system.
     ///
     /// Sinks represent environmental entities that consume products,
     /// waste, or other outputs produced by the system of interest.
     #[serde(rename = "Snk")]
     Sink,
-    
+
     /// Environmental context container for external entities.
     ///
     /// The environment represents the broader context in which the
     /// system operates, containing all external sources and sinks.
     #[serde(rename = "E")]
     Environment,
-    
+
     /// Flow interaction between system entities.
     ///
     /// Flows represent the dynamic exchange of substances (energy,
     /// material, information) between systems and external entities.
     #[serde(rename = "F")]
     Flow,
-    
+
     /// System boundary definition and properties.
     ///
     /// Boundaries define the formal separation between systems and
@@ -479,7 +479,7 @@ pub struct Info {
     /// Provides both type information and positional data within
     /// the system hierarchy for accurate reconstruction.
     pub id: Id,
-    
+
     /// Hierarchical depth level of this entity within the system tree.
     ///
     /// Represents how many levels deep this entity is nested, with special
@@ -491,13 +491,13 @@ pub struct Info {
     /// - `1`: First-level subsystems
     /// - `2+`: Deeper nested subsystems
     pub level: i32,
-    
+
     /// Human-readable name for this entity.
     ///
     /// Should be descriptive and meaningful within the context of the
     /// system model, enabling easy identification and navigation.
     pub name: String,
-    
+
     /// Detailed description of this entity's purpose and characteristics.
     ///
     /// Provides additional context and documentation that helps users
@@ -694,19 +694,19 @@ pub enum Complexity {
     /// # Properties
     /// - `adaptable`: Can modify behavior in response to environmental changes
     /// - `evolveable`: Can develop new capabilities or structures over time
-    Complex { 
+    Complex {
         /// Whether the system can adapt its behavior to environmental changes.
-        adaptable: bool, 
+        adaptable: bool,
         /// Whether the system can evolve new capabilities or structures.
-        evolveable: bool 
+        evolveable: bool,
     },
-    
+
     /// Atomic system with no decomposable internal structure.
     ///
     /// Represents indivisible entities that are treated as single units
     /// without internal modeling. These systems exhibit simple, predictable behaviors.
     Atomic,
-    
+
     /// Multiset system containing multiple instances of identical components.
     ///
     /// Represents bounded collections where the count of identical components
@@ -719,7 +719,7 @@ pub enum Complexity {
     /// - Resource pools with N identical units
     Multiset(
         /// Number of identical component instances in the multiset.
-        u64
+        u64,
     ),
 }
 
@@ -1040,7 +1040,7 @@ impl Transform2d {
 /// // Works with any entity that implements HasInfo
 /// let system = System { /* ... */ };
 /// let environment = Environment { /* ... */ };
-/// 
+///
 /// print_entity_info(&system);
 /// print_entity_info(&environment);
 /// ```
@@ -1134,7 +1134,7 @@ impl_has_info!(System, Boundary, Environment, ExternalEntity, Interaction);
 /// // Works with both systems and environments
 /// let mut system = System { /* ... */ };
 /// let mut environment = Environment { /* ... */ };
-/// 
+///
 /// let source = ExternalEntity { /* ... */ };
 /// add_external_input(&mut system, source.clone());
 /// add_external_input(&mut environment, source);
@@ -1176,7 +1176,7 @@ pub trait HasSourcesAndSinks {
     /// println!("System has {} source entities", sources.len());
     /// ```
     fn sources(&self) -> &[ExternalEntity];
-    
+
     /// Returns a mutable reference to the sources collection.
     ///
     /// # Returns
@@ -1199,7 +1199,7 @@ pub trait HasSourcesAndSinks {
     ///
     /// let mut system = System { /* ... */ };
     /// let new_source = ExternalEntity { /* ... */ };
-    /// 
+    ///
     /// system.sources_mut().push(new_source);
     /// system.sources_mut().clear(); // Remove all sources
     /// ```
@@ -1222,7 +1222,7 @@ pub trait HasSourcesAndSinks {
     /// println!("System has {} sink entities", sinks.len());
     /// ```
     fn sinks(&self) -> &[ExternalEntity];
-    
+
     /// Returns a mutable reference to the sinks collection.
     ///
     /// # Returns
@@ -1237,7 +1237,7 @@ pub trait HasSourcesAndSinks {
     ///
     /// let mut system = System { /* ... */ };
     /// let new_sink = ExternalEntity { /* ... */ };
-    /// 
+    ///
     /// system.sinks_mut().push(new_sink);
     /// system.sinks_mut().retain(|sink| sink.info().name != "obsolete");
     /// ```

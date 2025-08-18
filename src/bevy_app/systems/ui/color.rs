@@ -2,8 +2,8 @@
 use crate::bevy_app::components::{
     Connection, CreateButton, Flow, HasFlowOtherEndButton, TargetTypeConnection,
 };
-use crate::bevy_app::constants::HIDDING_TRANSPARENCY;
 use crate::bevy_app::constants::theme::*;
+use crate::bevy_app::constants::HIDDING_TRANSPARENCY;
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::resources::Theme;
 use crate::bevy_app::{Hidden, Interface, Subsystem};

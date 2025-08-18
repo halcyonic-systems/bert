@@ -91,4 +91,4 @@ fn ControlItem(action: &'static str, control: &'static str) -> impl IntoView {
             </code>
         </div>
     }
-} 
+}

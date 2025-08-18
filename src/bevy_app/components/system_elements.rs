@@ -86,19 +86,19 @@ pub enum SystemElement {
     /// Systems are the primary structural elements that contain internal components,
     /// maintain boundaries, and exhibit emergent behaviors.
     System,
-    
+
     /// Boundary component defining system interaction points (rendered as rectangle).
     ///
     /// Interfaces represent the formal connection points where flows can enter
     /// or exit a system, implementing the System Language boundary concept.
     Interface,
-    
+
     /// Flow connection representing substance movement (rendered as line with arrow).
     ///
     /// Interactions capture the dynamic aspects of systems by modeling the
     /// movement of energy, material, or information between system elements.
     Interaction,
-    
+
     /// Environmental actor outside system boundaries (rendered as partially enclosed rectangle).
     ///
     /// External entities represent sources and sinks in the system environment
@@ -170,43 +170,43 @@ pub struct System {
     /// Determines the size of the circular representation in the diagram.
     /// Larger radius indicates greater scope or importance in the model.
     pub radius: f32,
-    
+
     /// Complexity classification of the system's internal structure.
     ///
     /// Determines whether the system contains subsystems, multiple instances,
     /// or represents an atomic (indivisible) entity.
     pub complexity: Complexity,
-    
+
     /// Degree of membership in the system hierarchy (0.0 to 1.0).
     ///
     /// Represents how strongly this system belongs to its parent system
     /// or the overall system of interest.
     pub membership: f32,
-    
+
     /// Equivalence class or category that this system represents.
     ///
     /// Used for grouping similar systems and establishing relationships
     /// between systems with comparable functions or structures.
     pub equivalence: String,
-    
+
     /// Description of the system's transformation process or function.
     ///
     /// Captures the primary purpose or behavioral pattern of the system,
     /// describing how it processes inputs to produce outputs.
     pub transformation: String,
-    
+
     /// Historical context and evolution of the system.
     ///
     /// Records the system's development over time, including past states,
     /// changes, and contextual information relevant to its current configuration.
     pub history: String,
-    
+
     /// Boundary definition specifying interaction capabilities.
     ///
     /// Defines how the system interfaces with its environment and what
     /// types of interactions are possible across the system boundary.
     pub boundary: SystemBoundary,
-    
+
     /// Temporal unit for system operations and measurements.
     ///
     /// Specifies the time scale at which the system operates, enabling
@@ -260,17 +260,17 @@ pub struct SystemBoundary {
     /// with the environment. Lower values represent more controlled or selective boundaries.
     /// TODO: Implement Decimal Type for precise numerical modeling
     pub porosity: f32,
-    
+
     /// Uncertainty measure in boundary definition and perception (0.0-1.0).
     ///
     /// Represents how clearly the boundary can be distinguished from the environment.
     /// Higher values indicate more ambiguous or fuzzy boundary definitions.
     /// TODO: Implement Decimal Type for precise numerical modeling
     pub perceptive_fuzziness: f32,
-    
+
     /// Human-readable identifier for the boundary type or category.
     pub name: String,
-    
+
     /// Detailed description of the boundary's characteristics and behavior.
     pub description: String,
 }
@@ -348,37 +348,37 @@ pub struct Flow {
     ///
     /// Determines how the interaction behaves and is visualized in the system model.
     pub interaction_type: InteractionType,
-    
+
     /// Primary substance category being exchanged in this interaction.
     ///
     /// Determines visual representation and helps categorize the nature of the exchange.
     pub substance_type: SubstanceType,
-    
+
     /// Specific subtype or detailed classification of the substance.
     ///
     /// Provides additional specificity beyond the primary substance type,
     /// allowing for detailed modeling of different varieties within each category.
     pub substance_sub_type: String,
-    
+
     /// Quantitative measure of the interaction strength or magnitude.
     ///
     /// Uses high-precision decimal arithmetic for accurate numerical modeling.
     /// The amount represents the quantity of substance flowing per time unit.
     #[reflect(ignore)]
     pub amount: Decimal,
-    
+
     /// Unit of measurement for the amount value.
     ///
     /// Should follow standard unit conventions to ensure consistency
     /// and enable proper analysis across different flows in the system.
     pub unit: String,
-    
+
     /// Classification of the flow's utility and directional nature.
     ///
     /// Determines whether this flow represents a beneficial or harmful
     /// exchange and whether it imports into or exports from the system.
     pub usability: InteractionUsability,
-    
+
     /// Additional user-defined parameters that characterize this flow.
     ///
     /// Allows users to specify custom attributes, constraints, or properties
@@ -438,19 +438,19 @@ pub struct Parameter {
     #[serde(skip)]
     #[reflect(ignore)]
     pub id: Uuid,
-    
+
     /// Human-readable name describing what this parameter represents.
     ///
     /// Should be descriptive and follow consistent naming conventions
     /// within the context of the containing flow.
     pub name: String,
-    
+
     /// The parameter's value as a string representation.
     ///
     /// Stored as string to accommodate various data types (numeric, text, boolean)
     /// while maintaining flexibility for user input and display.
     pub value: String,
-    
+
     /// Unit of measurement for the parameter value.
     ///
     /// Should follow standard unit conventions (SI units preferred) to ensure
@@ -626,19 +626,19 @@ pub enum InteractionUsability {
     /// Resources are beneficial imports that the system requires for proper functioning.
     /// Examples: raw materials, energy supply, information inputs, human expertise.
     Resource,
-    
+
     /// Harmful input that degrades system performance or introduces unwanted effects.
     ///
     /// Disruptions are negative imports that interfere with system operations.
     /// Examples: noise, contamination, system attacks, resource shortages.
     Disruption,
-    
+
     /// Useful output that fulfills the system's intended purpose or provides value.
     ///
     /// Products are beneficial exports that represent successful system transformation.
     /// Examples: manufactured goods, processed information, services, value creation.
     Product,
-    
+
     /// Harmful output that represents unwanted byproducts or system inefficiency.
     ///
     /// Waste represents negative exports that may require management or disposal.
@@ -772,13 +772,13 @@ pub enum SubstanceType {
     /// kinetic energy, or any form of energy transfer between system components.
     #[default]
     Energy,
-    
+
     /// Material flows representing physical matter or tangible resources.
     ///
     /// Examples: raw materials, manufactured components, fluids, gases, solid objects,
     /// or any physical substance that moves between system elements.
     Material,
-    
+
     /// Information flows representing data, signals, or symbolic content.
     ///
     /// Examples: control signals, data transmissions, communication protocols,
@@ -810,12 +810,12 @@ impl SubstanceType {
     /// ```
     pub fn flow_color(&self) -> Color {
         match self {
-            SubstanceType::Energy => Color::srgb_u8(181, 27, 27),    // Deep red for energy
-            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5),  // Medium gray for material
+            SubstanceType::Energy => Color::srgb_u8(181, 27, 27), // Deep red for energy
+            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5), // Medium gray for material
             SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75), // Light gray for information
         }
     }
-    
+
     /// Returns the color used for visual representation of interfaces handling this substance type.
     ///
     /// Interface colors are typically lighter variants of the corresponding flow colors
@@ -838,8 +838,8 @@ impl SubstanceType {
     /// ```
     pub fn interface_color(&self) -> Color {
         match self {
-            SubstanceType::Energy => Color::srgb_u8(233, 182, 178),  // Light red for energy interfaces
-            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5),  // Medium gray for material interfaces
+            SubstanceType::Energy => Color::srgb_u8(233, 182, 178), // Light red for energy interfaces
+            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5), // Medium gray for material interfaces
             SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75), // Light gray for message interfaces
         }
     }

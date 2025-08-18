@@ -9,18 +9,21 @@ pub struct SaveNotificationChannel {
 }
 
 /// Global sender that async tasks can use to send save success events
-static SAVE_NOTIFICATION_SENDER: std::sync::OnceLock<mpsc::Sender<SaveSuccessEvent>> = std::sync::OnceLock::new();
+static SAVE_NOTIFICATION_SENDER: std::sync::OnceLock<mpsc::Sender<SaveSuccessEvent>> =
+    std::sync::OnceLock::new();
 
 /// Initialize the save notification channel system
 pub fn init_save_notification_channel(commands: &mut Commands) {
     let (sender, receiver) = mpsc::channel();
-    
+
     // Store the sender globally for async tasks to use
-    SAVE_NOTIFICATION_SENDER.set(sender).expect("Save notification channel should only be initialized once");
-    
+    SAVE_NOTIFICATION_SENDER
+        .set(sender)
+        .expect("Save notification channel should only be initialized once");
+
     // Insert the receiver as a Bevy resource
-    commands.insert_resource(SaveNotificationChannel { 
-        receiver: Arc::new(std::sync::Mutex::new(receiver))
+    commands.insert_resource(SaveNotificationChannel {
+        receiver: Arc::new(std::sync::Mutex::new(receiver)),
     });
 }
 

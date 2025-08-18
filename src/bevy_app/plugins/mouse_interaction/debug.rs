@@ -28,7 +28,7 @@ pub fn debug_selection(
 ///
 /// This system logs when BoundaryRegion or EnvironmentRegion entities are clicked,
 /// helping verify that the spatial interaction infrastructure is working correctly.
-/// 
+///
 /// Enable by adding this system to the debug schedule and watching console output
 /// when clicking on boundary rings or environment areas around systems.
 pub fn debug_spatial_clicks(
@@ -38,9 +38,15 @@ pub fn debug_spatial_clicks(
 ) {
     for event in click_events.read() {
         if let Ok(boundary) = boundary_query.get(event.target) {
-            info!("🎯 BOUNDARY CLICKED for system {:?}", boundary.system_entity);
+            info!(
+                "🎯 BOUNDARY CLICKED for system {:?}",
+                boundary.system_entity
+            );
         } else if let Ok(environment) = environment_query.get(event.target) {
-            info!("🌍 ENVIRONMENT CLICKED for system {:?}", environment.system_entity);
+            info!(
+                "🌍 ENVIRONMENT CLICKED for system {:?}",
+                environment.system_entity
+            );
         } else {
             // Log regular system clicks too for comparison
             debug!("Regular entity clicked: {:?}", event.target);

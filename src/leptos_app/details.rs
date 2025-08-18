@@ -1,13 +1,13 @@
+use crate::bevy_app::components::SpatialDetailPanelMode;
 use crate::bevy_app::data_model::Complexity;
 use crate::leptos_app::components::{
-    Button, Checkbox, Divider, InputGroup, SelectGroup, DetailsPanelMode, Slider, TextArea,
+    Button, Checkbox, DetailsPanelMode, Divider, InputGroup, SelectGroup, Slider, TextArea,
 };
 use crate::{
-    DetachMarkerLabelEvent, DeselectAllEvent, ExternalEntityQuery, InteractionQuery, InteractionType,
-    InteractionUsability, InterfaceQuery, IsSameAsIdQuery, SubSystemQuery,
+    DeselectAllEvent, DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery,
+    InteractionType, InteractionUsability, InterfaceQuery, IsSameAsIdQuery, SubSystemQuery,
     SubstanceType, SystemElement, SystemQuery,
 };
-use crate::bevy_app::components::SpatialDetailPanelMode;
 use enum_iterator::all;
 use leptos::prelude::*;
 use leptos::tachys::html::property::IntoProperty;
@@ -88,7 +88,7 @@ pub fn Details(
 ) -> impl IntoView {
     // Panel mode signal for simplified system details
     let _panel_mode = RwSignal::new(DetailsPanelMode::System);
-    
+
     view! {
         <div
             class="relative z-10"
@@ -124,7 +124,7 @@ pub fn Details(
                                                 on:click=move |_| {
                                                     // Clear selection to close the details panel
                                                     leptos::logging::log!("🔽 Close button clicked - clearing both Leptos and Bevy selection");
-                                                    
+
                                                     // Clear all Leptos selection signals
                                                     selected.update(|s| *s = None);
                                                     interaction_details.update(|s| *s = None);
@@ -133,7 +133,7 @@ pub fn Details(
                                                     system_details.update(|s| *s = None);
                                                     sub_system_details.update(|s| *s = None);
                                                     is_same_as_id.update(|s| *s = None);
-                                                    
+
                                                     // Also clear Bevy selection state so elements can be re-selected
                                                     deselect_event_sender.send(DeselectAllEvent).ok();
                                                 }
@@ -237,7 +237,7 @@ pub fn InterfaceDetails(interface_query: RwSignalSynced<Option<InterfaceQuery>>)
         <div class="mb-4">
             <label class="flex items-center mb-2">
                 <span class="block text-sm font-medium leading-6 text-gray-900">Protocol</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                       title="Algorithm for letting flow across boundary in ordered fashion">
                     ?
                 </span>
@@ -262,32 +262,42 @@ pub fn InterfaceDetails(interface_query: RwSignalSynced<Option<InterfaceQuery>>)
 pub fn InteractionDetails(
     interaction_query: RwSignalSynced<Option<InteractionQuery>>,
 ) -> impl IntoView {
-    let name = Memo::new(move |_| interaction_query
-        .read()
-        .as_ref()
-        .map(|(name, _, _)| name.to_string())
-        .unwrap_or_default());
+    let name = Memo::new(move |_| {
+        interaction_query
+            .read()
+            .as_ref()
+            .map(|(name, _, _)| name.to_string())
+            .unwrap_or_default()
+    });
 
-    let description = Memo::new(move |_| interaction_query
-        .read()
-        .as_ref()
-        .map(|(_, el_desc, _)| el_desc.text.clone())
-        .unwrap_or_default());
+    let description = Memo::new(move |_| {
+        interaction_query
+            .read()
+            .as_ref()
+            .map(|(_, el_desc, _)| el_desc.text.clone())
+            .unwrap_or_default()
+    });
 
-    let usability = Memo::new(move |_| interaction_query
-        .read()
-        .as_ref()
-        .map(|(_, _, interaction)| interaction.usability));
+    let usability = Memo::new(move |_| {
+        interaction_query
+            .read()
+            .as_ref()
+            .map(|(_, _, interaction)| interaction.usability)
+    });
 
-    let interaction_type = Memo::new(move |_| interaction_query
-        .read()
-        .as_ref()
-        .map(|(_, _, interaction)| interaction.interaction_type));
+    let interaction_type = Memo::new(move |_| {
+        interaction_query
+            .read()
+            .as_ref()
+            .map(|(_, _, interaction)| interaction.interaction_type)
+    });
 
-    let substance_type = Memo::new(move |_| interaction_query
-        .read()
-        .as_ref()
-        .map(|(_, _, interaction)| interaction.substance_type));
+    let substance_type = Memo::new(move |_| {
+        interaction_query
+            .read()
+            .as_ref()
+            .map(|(_, _, interaction)| interaction.substance_type)
+    });
 
     // Hidden dynamic fields for v0.2.0 - too complex for structural analysis focus
     // let substance_sub_type = Memo::new(move |_| interaction_query
@@ -342,7 +352,7 @@ pub fn InteractionDetails(
         <div class="mb-4">
             <label class="flex items-center mb-2">
                 <span class="block text-sm font-medium leading-6 text-gray-900">Interaction Type</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                       title="Flow: gradual movement, Force: immediate influence">
                     ?
                 </span>
@@ -364,7 +374,7 @@ pub fn InteractionDetails(
         <div class="mb-4">
             <label class="flex items-center mb-2">
                 <span class="block text-sm font-medium leading-6 text-gray-900">Substance Type</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                       title="Energy: power/work, Material: physical matter, Message: information">
                     ?
                 </span>
@@ -676,85 +686,109 @@ pub fn SystemDetails(
     spatial_mode: RwSignalSynced<SpatialDetailPanelMode>,
 ) -> impl IntoView {
     // Use Memo::new instead of Signal::derive to prevent disposal issues
-    let system_name = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(name, _, _, _)| name.to_string())
-        .unwrap_or_default());
-    
-    let system_description = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, description, _, _)| description.text.clone())
-        .unwrap_or_default());
-    
-    let system_adaptable = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.complexity.is_adaptable())
-        .unwrap_or_default());
-    
-    let system_evolveable = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.complexity.is_evolveable())
-        .unwrap_or_default());
-    
-    let system_equivalence = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.equivalence.clone())
-        .unwrap_or_default());
-    
-    let boundary_name = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.boundary.name.clone())
-        .unwrap_or_default());
-    
-    let boundary_porosity = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.boundary.porosity as f64)
-        .unwrap_or_default());
-    
-    let environment_name = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, _, system_env)| system_env.name.clone())
-        .unwrap_or_default());
-        
-    let environment_description = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, _, system_env)| system_env.description.clone())
-        .unwrap_or_default());
-        
-    let system_time_unit = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.time_unit.clone())
-        .unwrap_or_default());
-        
+    let system_name = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(name, _, _, _)| name.to_string())
+            .unwrap_or_default()
+    });
+
+    let system_description = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, description, _, _)| description.text.clone())
+            .unwrap_or_default()
+    });
+
+    let system_adaptable = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.complexity.is_adaptable())
+            .unwrap_or_default()
+    });
+
+    let system_evolveable = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.complexity.is_evolveable())
+            .unwrap_or_default()
+    });
+
+    let system_equivalence = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.equivalence.clone())
+            .unwrap_or_default()
+    });
+
+    let boundary_name = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.boundary.name.clone())
+            .unwrap_or_default()
+    });
+
+    let boundary_porosity = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.boundary.porosity as f64)
+            .unwrap_or_default()
+    });
+
+    let environment_name = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, _, system_env)| system_env.name.clone())
+            .unwrap_or_default()
+    });
+
+    let environment_description = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, _, system_env)| system_env.description.clone())
+            .unwrap_or_default()
+    });
+
+    let system_time_unit = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.time_unit.clone())
+            .unwrap_or_default()
+    });
+
     // Dynamic fields - will be hidden for v0.2.0 "Structural Analysis" focus
     // Preserved for consistent pattern with SubSystemDetails and easier v0.3.0 restoration
-    let _system_history = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.history.clone())
-        .unwrap_or_default());
+    let _system_history = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.history.clone())
+            .unwrap_or_default()
+    });
 
-    let _system_transformation = Memo::new(move |_| system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.transformation.clone())
-        .unwrap_or_default());
+    let _system_transformation = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.transformation.clone())
+            .unwrap_or_default()
+    });
 
     view! {
         // System Mode Content
         <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::System)>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">System</h3>
-            
+
             <InputGroup
                 id="system-name"
                 label="Name"
@@ -777,11 +811,11 @@ pub fn SystemDetails(
                         .map(|(_, description, _, _)| description.text = value);
                 }
             />
-            
+
             <div class="mb-4">
                 <label class="flex items-center mb-2">
                     <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
-                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                           title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
                         ?
                     </span>
@@ -795,11 +829,11 @@ pub fn SystemDetails(
                     }
                 />
             </div>
-            
+
             <div class="mb-2">
                 <label for="complexity" class="flex items-center font-medium text-gray-900 text-sm/6">
                     <span>Complexity</span>
-                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                           title="System behavior type: Simple (predictable), Adaptive (responds to environment), Evolveable (can fundamentally change structure)">
                         ?
                     </span>
@@ -834,7 +868,7 @@ pub fn SystemDetails(
             <div class="mb-4">
                 <label class="flex items-center mb-2">
                     <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
-                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                           title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
                         ?
                     </span>
@@ -848,13 +882,13 @@ pub fn SystemDetails(
                     }
                 />
             </div>
-            
+
             // HIDDEN for v0.2.0 "Structural Analysis Mode" - Dynamic modeling features
             // Preserved for consistency with SubSystemDetails and easier v0.3.0 restoration
             // <div class="mb-4">
             //     <label class="flex items-center mb-2">
             //         <span class="block text-sm font-medium leading-6 text-gray-900">History</span>
-            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
             //               title="System state changes over time (requires temporal data collection)">
             //             ?
             //         </span>
@@ -868,11 +902,11 @@ pub fn SystemDetails(
             //         }
             //     />
             // </div>
-            
+
             // <div class="mb-4">
             //     <label class="flex items-center mb-2">
             //         <span class="block text-sm font-medium leading-6 text-gray-900">Transformation</span>
-            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
             //               title="Rules for system state transitions (requires behavioral modeling)">
             //             ?
             //         </span>
@@ -891,7 +925,7 @@ pub fn SystemDetails(
         // Boundary Mode Content
         <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::Boundary)>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Boundary</h3>
-            
+
             <InputGroup
                 id="boundary-name"
                 label="Name"
@@ -900,7 +934,7 @@ pub fn SystemDetails(
                     system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.name = value);
                 }
             />
-            
+
             <TextArea
                 id="boundary-description"
                 label="Description"
@@ -914,7 +948,7 @@ pub fn SystemDetails(
                     system_query.write().as_mut().map(|(_, _, system, _)| system.boundary.description = value);
                 }
             />
-            
+
             <Slider
                 id="boundary-porosity"
                 label="Porosity"
@@ -928,7 +962,7 @@ pub fn SystemDetails(
                         .map(|(_, _, system, _)| system.boundary.porosity = value as f32);
                 }
             />
-            
+
             <Slider
                 id="boundary-perceptive-fuzziness"
                 label="Perceptive Fuzziness"
@@ -951,7 +985,7 @@ pub fn SystemDetails(
         // Environment Mode Content
         <div class:hidden=move || !matches!(spatial_mode.get(), SpatialDetailPanelMode::Environment)>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Environment</h3>
-            
+
             <InputGroup
                 id="environment-name"
                 label="Name"
@@ -960,7 +994,7 @@ pub fn SystemDetails(
                     system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.name = value);
                 }
             />
-            
+
             <TextArea
                 id="environment-description"
                 label="Description"
@@ -970,7 +1004,7 @@ pub fn SystemDetails(
                     system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.description = value);
                 }
             />
-            
+
         </div>
     }
 }
@@ -978,17 +1012,21 @@ pub fn SystemDetails(
 #[component]
 pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>) -> impl IntoView {
     // Use Memo::new pattern for consistency with SystemDetails (prevents potential lifecycle issues)
-    let name = Memo::new(move |_| sub_system_query
-        .read()
-        .as_ref()
-        .map(|(name, _, _, _)| name.to_string())
-        .unwrap_or_default());
+    let name = Memo::new(move |_| {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(name, _, _, _)| name.to_string())
+            .unwrap_or_default()
+    });
 
-    let description = Memo::new(move |_| sub_system_query
-        .read()
-        .as_ref()
-        .map(|(_, description, _, _)| description.text.clone())
-        .unwrap_or_default());
+    let description = Memo::new(move |_| {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, description, _, _)| description.text.clone())
+            .unwrap_or_default()
+    });
 
     let complexity_types = vec![
         Complexity::Complex {
@@ -1030,30 +1068,38 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or_default()
     });
 
-    let equivalence = Memo::new(move |_| sub_system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.equivalence.clone())
-        .unwrap_or_default());
+    let equivalence = Memo::new(move |_| {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.equivalence.clone())
+            .unwrap_or_default()
+    });
 
-    let time_unit = Memo::new(move |_| sub_system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.time_unit.clone())
-        .unwrap_or_default());
+    let time_unit = Memo::new(move |_| {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.time_unit.clone())
+            .unwrap_or_default()
+    });
 
     // Dynamic fields - will be hidden for v0.2.0 "Structural Analysis" focus
-    let _history = Memo::new(move |_| sub_system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.history.clone())
-        .unwrap_or_default());
+    let _history = Memo::new(move |_| {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.history.clone())
+            .unwrap_or_default()
+    });
 
-    let _transformation = Memo::new(move |_| sub_system_query
-        .read()
-        .as_ref()
-        .map(|(_, _, system, _)| system.transformation.clone())
-        .unwrap_or_default());
+    let _transformation = Memo::new(move |_| {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.transformation.clone())
+            .unwrap_or_default()
+    });
 
     let boundary_name = Signal::derive(move || {
         sub_system_query
@@ -1130,7 +1176,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         <div class="mb-4">
             <label class="flex items-center mb-2">
                 <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                       title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
                     ?
                 </span>
@@ -1148,7 +1194,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         <div class="mb-4">
             <label class="flex items-center mb-2">
                 <span class="block text-sm font-medium leading-6 text-gray-900">Complexity</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                       title="System behavior type: Simple (predictable), Adaptive (responds to environment), Evolveable (can fundamentally change structure)">
                     ?
                 </span>
@@ -1226,7 +1272,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         <div class="mb-4">
             <label class="flex items-center mb-2">
                 <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" 
+                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
                       title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
                     ?
                 </span>
@@ -1255,7 +1301,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         //     }
         // />
 
-        // HIDDEN for v0.2.0 "Structural Analysis Mode" - Transformation is dynamic modeling feature  
+        // HIDDEN for v0.2.0 "Structural Analysis Mode" - Transformation is dynamic modeling feature
         // <InputGroup
         //     id="transformation"
         //     label="Transformation"

@@ -65,12 +65,12 @@ impl Context {
 pub fn save_world(
     In(world_model): In<WorldModel>,
     current_file: Res<CurrentFile>,
-    mut save_success_events: EventWriter<crate::events::SaveSuccessEvent>
+    mut save_success_events: EventWriter<crate::events::SaveSuccessEvent>,
 ) {
     #[derive(serde::Serialize)]
     struct Args {
         data: String,
-        path: String
+        path: String,
     }
 
     let file_name = (*current_file).clone();
@@ -91,14 +91,15 @@ pub fn save_world(
                     // 1. No file loaded (new model)
                     // 2. Template files from Model Browser
                     // 3. Files in protected directories (src-tauri, assets)
-                    name.starts_with("template:") || 
-                    name.contains("src-tauri") || 
-                    name.contains("assets/models")
+                    name.starts_with("template:")
+                        || name.contains("src-tauri")
+                        || name.contains("assets/models")
                 });
-                
+
                 if should_use_dialog {
                     // Generate smart default name based on context
-                    let suggested_name = file_name.as_ref()
+                    let suggested_name = file_name
+                        .as_ref()
                         .and_then(|name| {
                             if name.starts_with("template:") {
                                 // For Model Browser templates
@@ -106,24 +107,23 @@ pub fn save_world(
                                     .map(|n| format!("enhanced-{}", n))
                             } else if name.contains("assets/models/") {
                                 // For files loaded via Ctrl+L from assets
-                                name.split('/').last()
-                                    .map(|n| format!("my-{}", n))
+                                name.split('/').last().map(|n| format!("my-{}", n))
                             } else {
                                 // For other cases, suggest based on filename
-                                name.split('/').last()
-                                    .map(|n| n.to_string())
+                                name.split('/').last().map(|n| n.to_string())
                             }
                         })
                         .unwrap_or_else(|| "untitled.json".to_string());
-                    
+
                     invoke::<()>(
                         "save_with_dialog",
                         &Args {
                             data: serde_json::to_string(&model).expect("This shouldn't fail"),
                             path: suggested_name,
                         },
-                    ).await;
-                    
+                    )
+                    .await;
+
                     // TODO: Desktop toast notifications - need different approach than async channels
                     // Web version works fine with direct EventWriter in save_success_events parameter
                 } else {
@@ -135,32 +135,35 @@ pub fn save_world(
                             data: serde_json::to_string(&model).expect("This shouldn't fail"),
                             path: file_path.clone(),
                         },
-                    ).await;
-                    
+                    )
+                    .await;
+
                     // TODO: Desktop toast notifications - need different approach than async channels
                 }
             }
         });
 
         task.detach();
-
     } else {
         // Web version - always use download
-        let download_name = file_name.as_ref()
+        let download_name = file_name
+            .as_ref()
             .and_then(|name| {
                 if name.starts_with("template:") {
                     name.strip_prefix("template:")
                         .map(|n| format!("enhanced-{}", n))
                 } else {
-                    name.split('/').last()
-                        .map(|n| n.to_string())
+                    name.split('/').last().map(|n| n.to_string())
                 }
             })
             .unwrap_or_else(|| "untitled.json".to_string());
-        
+
         let array = Array::new();
-        let uint8_array = Uint8Array::from(serde_json::to_string(&world_model)
-                    .expect("This shouldn't fail").as_bytes());
+        let uint8_array = Uint8Array::from(
+            serde_json::to_string(&world_model)
+                .expect("This shouldn't fail")
+                .as_bytes(),
+        );
         array.push(&uint8_array);
 
         let blob = Blob::new_with_str_sequence(&array).unwrap();
@@ -168,7 +171,11 @@ pub fn save_world(
 
         // Create an anchor element
         let document = window.document().unwrap();
-        let a = document.create_element("a").unwrap().dyn_into::<HtmlAnchorElement>().unwrap();
+        let a = document
+            .create_element("a")
+            .unwrap()
+            .dyn_into::<HtmlAnchorElement>()
+            .unwrap();
         a.set_href(&url);
         a.set_download(&download_name);
 
@@ -179,7 +186,7 @@ pub fn save_world(
 
         // Revoke the object URL
         Url::revoke_object_url(&url).unwrap();
-        
+
         // Send save success event after download completes
         save_success_events.send(SaveSuccessEvent {
             file_path: None, // Web downloads don't have a specific file path
@@ -192,12 +199,12 @@ pub fn save_world(
 pub fn save_world_as(
     In(world_model): In<WorldModel>,
     current_file: Res<CurrentFile>,
-    save_success_events: EventWriter<SaveSuccessEvent>
+    save_success_events: EventWriter<SaveSuccessEvent>,
 ) {
     #[derive(serde::Serialize)]
     struct Args {
         data: String,
-        path: String
+        path: String,
     }
 
     let file_name = (*current_file).clone();
@@ -213,32 +220,32 @@ pub fn save_world_as(
             let model = world_model.clone();
             async move {
                 // Always show dialog for Save As
-                let suggested_name = file_name.as_ref()
+                let suggested_name = file_name
+                    .as_ref()
                     .and_then(|name| {
                         if name.starts_with("template:") {
                             name.strip_prefix("template:")
                                 .map(|n| format!("enhanced-{}", n))
                         } else {
-                            name.split('/').last()
-                                .map(|n| n.to_string())
+                            name.split('/').last().map(|n| n.to_string())
                         }
                     })
                     .unwrap_or_else(|| "untitled.json".to_string());
-                
+
                 invoke::<()>(
                     "save_with_dialog",
                     &Args {
                         data: serde_json::to_string(&model).expect("This shouldn't fail"),
                         path: suggested_name,
                     },
-                ).await;
-                
+                )
+                .await;
+
                 // TODO: Desktop toast notifications - need different approach than async channels
             }
         });
 
         task.detach();
-
     } else {
         // Web version - same as regular save (always downloads)
         save_world(In(world_model), current_file, save_success_events);
@@ -267,7 +274,10 @@ pub fn serialize_world(
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
+    external_entity_query: Query<(
+        &crate::bevy_app::components::ExternalEntity,
+        Option<&IsSameAsId>,
+    )>,
     hidden_query: Query<Entity, With<Hidden>>,
 ) -> WorldModel {
     let (system_entity, system_component, environment) = main_system_info_query
@@ -359,14 +369,13 @@ pub fn serialize_world(
         interaction.sink_interface = sink_interface;
     }
 
-
     let mut hidden_entities = Vec::new();
     for hidden_entity in &hidden_query {
         let id = ctx.entity_to_id[&hidden_entity].clone();
         hidden_entities.push(id);
     }
 
-     WorldModel {
+    WorldModel {
         version: CURRENT_FILE_VERSION,
         systems: entity_to_system.into_values().collect(),
         interactions: ctx.interactions,
@@ -394,7 +403,10 @@ fn build_subsystems(
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
+    external_entity_query: &Query<(
+        &crate::bevy_app::components::ExternalEntity,
+        Option<&IsSameAsId>,
+    )>,
     mut entity_to_system: &mut HashMap<Entity, System>,
 ) {
     let mut not_interface_subsystems = vec![];
@@ -557,7 +569,10 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         Option<&FlowEndInterfaceConnection>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
-    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
+    external_entity_query: &Query<(
+        &crate::bevy_app::components::ExternalEntity,
+        Option<&IsSameAsId>,
+    )>,
 ) {
     // we start from the interactions
     for (
@@ -782,11 +797,15 @@ fn build_external_entity<P: HasInfo>(
     parent: &P,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
-    external_entity_query: &Query<(&crate::bevy_app::components::ExternalEntity, Option<&IsSameAsId>)>,
+    external_entity_query: &Query<(
+        &crate::bevy_app::components::ExternalEntity,
+        Option<&IsSameAsId>,
+    )>,
 ) -> crate::bevy_app::data_model::ExternalEntity {
     let id = ctx.next_id(entity, id_type, &parent.info().id.indices);
 
-    let (external_entity_component, is_same_as_id) = external_entity_query.get(entity).expect("Should exist");
+    let (external_entity_component, is_same_as_id) =
+        external_entity_query.get(entity).expect("Should exist");
 
     let parent_level = parent.info().level;
 

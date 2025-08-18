@@ -34,10 +34,10 @@
 //! ### Basic Entity Selection
 //! ```rust
 //! use bert::mouse_interaction::{PickSelection, Selection};
-//! 
+//!
 //! // Make an entity selectable
 //! commands.entity(entity).insert(PickSelection::default());
-//! 
+//!
 //! // Check if entity is selected
 //! if pick_selection.is_selected {
 //!     // Handle selected entity
@@ -47,10 +47,10 @@
 //! ### Hierarchical Interaction
 //! ```rust
 //! use bert::mouse_interaction::{PickParent, PickTarget};
-//! 
+//!
 //! // Child entity that selects its parent when clicked
 //! commands.entity(child).insert(PickParent);
-//! 
+//!
 //! // Proxy entity that selects a different target
 //! commands.entity(proxy).insert(PickTarget { target: actual_entity });
 //! ```
@@ -85,7 +85,7 @@ use bevy_picking::focus::PickingInteraction;
 ///
 /// This system detects clicks on BoundaryRegion and EnvironmentRegion entities and updates
 /// the SpatialDetailPanelMode resource accordingly, enabling contextual property panels.
-/// 
+///
 /// - System interior clicks → SpatialDetailPanelMode::System
 /// - Boundary ring clicks → SpatialDetailPanelMode::Boundary  
 /// - Environment area clicks → SpatialDetailPanelMode::Environment
@@ -156,7 +156,7 @@ const DRAG_THRESHOLD_SQUARED: f32 = 4.0;
 /// Add to your Bevy app to enable mouse interactions:
 /// ```rust
 /// use bert::mouse_interaction::MouseInteractionPlugin;
-/// 
+///
 /// app.add_plugins(MouseInteractionPlugin);
 /// ```
 ///
@@ -197,8 +197,7 @@ impl Plugin for MouseInteractionPlugin {
     /// When `debug_selection` feature is enabled, adds additional systems
     /// for selection debugging and visualization.
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<Dragging>()
+        app.init_resource::<Dragging>()
             .init_resource::<Selection>()
             .init_resource::<MouseWorldPosition>()
             .init_resource::<SelectionEnabled>()
@@ -228,7 +227,10 @@ impl Plugin for MouseInteractionPlugin {
         {
             app.init_resource::<debug::SelectedEntities>()
                 .register_type::<debug::SelectedEntities>()
-                .add_systems(Update, (debug::debug_selection, debug::debug_spatial_clicks));
+                .add_systems(
+                    Update,
+                    (debug::debug_selection, debug::debug_spatial_clicks),
+                );
         }
     }
 }
@@ -324,14 +326,14 @@ impl Default for SelectionEnabled {
 pub struct DragPosition {
     /// The entity being dragged.
     pub target: Entity,
-    
+
     /// Position relative to the entity's parent transform.
     ///
     /// Use this for entities that should maintain their position relative
     /// to a parent system or container. The coordinates are transformed
     /// through the parent's inverse transform.
     pub local_position: Vec2,
-    
+
     /// Absolute position in world coordinates.
     ///
     /// Use this for entities that should be positioned directly in world
@@ -359,10 +361,10 @@ pub struct DragPosition {
 pub struct Dragging {
     /// Entity currently under the mouse cursor (if any).
     hovered_entity: Option<Entity>,
-    
+
     /// Whether a drag operation is currently active.
     started: bool,
-    
+
     /// Initial mouse position when interaction began.
     start_pos: Vec2,
 }
@@ -540,7 +542,7 @@ pub struct NoDeselect;
 /// let child = commands.spawn(PickParent)
 ///     .set_parent(parent)
 ///     .id();
-/// 
+///
 /// // Clicking the child will select the parent
 /// ```
 ///
@@ -726,11 +728,14 @@ fn handle_mouse_drag(
                 mouse_position
             };
 
-            commands.trigger_targets(DragPosition {
-                target: entity,
-                local_position: position,
-                world_position: mouse_position,
-            }, entity);
+            commands.trigger_targets(
+                DragPosition {
+                    target: entity,
+                    local_position: position,
+                    world_position: mouse_position,
+                },
+                entity,
+            );
         }
     }
 }

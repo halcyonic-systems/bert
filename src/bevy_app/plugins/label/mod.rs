@@ -168,7 +168,7 @@ pub use text::*;
 /// Add to your Bevy app to enable label functionality:
 /// ```rust
 /// use bert::label::LabelPlugin;
-/// 
+///
 /// app.add_plugins(LabelPlugin);
 /// ```
 ///
@@ -278,25 +278,25 @@ pub struct CopyPositionArgs {
     /// The offset is applied after anchor point calculation and can be
     /// in local or world coordinates depending on the `local_offset` setting.
     pub offset: Vec3,
-    
+
     /// Horizontal text alignment within the label container.
     ///
     /// Controls how text is aligned horizontally when the text is smaller
     /// than its container bounds.
     pub horizontal_alignment: Alignment,
-    
+
     /// Vertical text alignment within the label container.
     ///
     /// Controls how text is aligned vertically when the text is smaller
     /// than its container bounds.
     pub vertical_alignment: Alignment,
-    
+
     /// Horizontal anchor point on the parent entity.
     ///
     /// Determines which point on the parent entity the label should
     /// attach to horizontally.
     pub horizontal_anchor: HorizontalAttachmentAnchor,
-    
+
     /// Vertical anchor point on the parent entity.
     ///
     /// Determines which point on the parent entity the label should
@@ -362,13 +362,13 @@ pub struct BackgroundArgs {
     /// The color is used for the sprite background behind the label text.
     /// Alpha values less than 1.0 create semi-transparent backgrounds.
     pub color: Color,
-    
+
     /// Horizontal padding around the text in pixels.
     ///
     /// This padding is applied to both left and right sides of the text,
     /// so the total horizontal expansion is `2 * padding_horizontal`.
     pub padding_horizontal: f32,
-    
+
     /// Vertical padding around the text in pixels.
     ///
     /// This padding is applied to both top and bottom of the text,
