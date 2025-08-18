@@ -41,5 +41,5 @@ Identifying waste reveals:
 - **Environmental impact**: What your system imposes on its surroundings  
 - **Design opportunities**: How you might capture or reduce waste
 
-> 🔑 **Systems insight**: No system is perfectly efficient. Acknowledging waste is the first step toward understanding your system's true environmental footprint and improvement potential.
+No system is perfectly efficient. Acknowledging waste is the first step toward understanding your system's true environmental footprint and improvement potential.
 

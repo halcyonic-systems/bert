@@ -164,7 +164,7 @@ How DSA integrates with other systems analysis approaches:
 
 #### **Complementary Frameworks**
 - **DSRP** (Distinctions, Systems, Relationships, Perspectives) - cognitive frameworks
-- **SSM** (Soft Systems Methodology) - human-centered systems thinking
+- **SSM** (Soft Systems Methodology) - human-centered systems analysis
 - **VSM** (Viable System Model) - organizational cybernetics
 - **System Dynamics** - quantitative modeling of complex systems
 

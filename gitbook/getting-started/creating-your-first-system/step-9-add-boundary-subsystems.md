@@ -1,38 +1,43 @@
-# Step 9: Add Boundary Subsystems
+# Step 9: Add Boundary Handlers
 
-### Subsystems
+## How Does Your System Manage Its Interfaces?
 
-As systems become complex, they can be broken down into **subsystems** - smaller, more manageable components that perform specific functions within the larger system.
+You've validated that your system's inputs and outputs make sense. Now it's time to look inside and understand HOW your system actually works. Every interface you've created needs a specialized subsystem to handle it - these are your **boundary handlers**.
 
-**Characteristics of subsystems:**
+Boundary handlers are subsystems that manage your system's connections to the external world. They're the specialized components that receive inputs, deliver outputs, and manage waste - each one linked to a specific interface.
 
-* Encapsulate related functionality
-* Can contain their own interfaces and internal elements
-* Allow for hierarchical system decomposition
-* Help manage complexity through abstraction
+## Creating Boundary Handlers
 
+For each interface you've created, add a boundary handler subsystem:
 
-
-**Click the green circle on top of the interface.**&#x20;
-
-
+**Click the green circle above each interface** to create its handler subsystem.
 
 <figure><img src="../../.gitbook/assets/subs1 (1).png" alt="" width="375"><figcaption></figcaption></figure>
 
-
-
-The system will immediately turn white because we have transitioned from black box to white box analysis, looking at internals. Notice how the boundary regions help organize the view - the main system boundary stays visible while new subsystem boundaries appear inside.&#x20;
+**Notice the visual change**: Your system turns from black to white - you've moved from "black box" (external view) to "white box" (internal view) analysis.
 
 <figure><img src="../../.gitbook/assets/subs2 (1).png" alt="" width="375"><figcaption></figcaption></figure>
 
+## Defining Your Boundary Handlers
 
+**Create handlers for ALL your interfaces** - input, output, and waste.
 
-Each subsystem is itsself, a system, to be treated as an SOI. You'll be presented with element detail tab identical to the one from one we started.&#x20;
+When you click on each handler subsystem, give it a name that reflects what it does:
 
-
-
-Do the same for the other two interfaces.&#x20;
+**Examples from our model library:**
+- **Cell**: "Membrane Transport" (input handler), "Secretion Vesicles" (output handler), "Lysosome" (waste handler)
+- **Ecosystem**: "Root Uptake" (input handler), "Predation Interface" (output handler), "Decomposer Network" (waste handler)
+- **Solar Panel**: "Light Absorption Layer" (input handler), "Power Conditioning" (output handler), "Heat Dissipation" (waste handler)
+- **Organization**: "Procurement" (input handler), "Sales & Delivery" (output handler), "Waste Management" (waste handler)
+- **LLM**: "Prompt Processing" (input handler), "Response Generation" (output handler), "Error Handling" (waste handler)
 
 <figure><img src="../../.gitbook/assets/subs3.png" alt="" width="375"><figcaption></figcaption></figure>
 
-Now ready to start connecting our subsystems, identifying how they interact with each other.&#x20;
+## Why Boundary Handlers Matter
+
+Boundary handlers reveal:
+- **Specialization**: How your system dedicates specific components to managing external relationships
+- **Interface Design**: What capabilities your system needs at each boundary point
+- **Coordination**: How your system organizes its interactions with the environment
+
+Every interface requires a specialized handler. Systems that try to manage all external interactions through general-purpose components tend to be inefficient and fragile. Good systems have dedicated boundary handlers for each type of external relationship.

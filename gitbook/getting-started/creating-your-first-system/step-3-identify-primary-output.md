@@ -23,7 +23,7 @@ To identify outputs, you need to understand where they go and how they get there
 
 <figure><img src="../../.gitbook/assets/boundary-details-v2.png" alt="" width="375"><figcaption><p>Boundary details panel in v0.2.0</p></figcaption></figure>
 
-> 💡 **Why this helps**: Understanding who needs your system's outputs (environment) and how those outputs leave your system (boundary) clarifies what your primary output actually is and why it matters.
+Understanding who needs your system's outputs (environment) and how those outputs leave your system (boundary) clarifies what your primary output actually is and why it matters.
 
 ## Creating Your First Output Flow
 
@@ -46,4 +46,4 @@ When you click on the flow, specify:
 
 **Usability** - For outputs, this is typically "Product" (something useful your system creates)
 
-> 🔑 **Keep it simple**: Start with your system's most important output. You can add secondary outputs later as your analysis deepens.
+Start with your system's most important output. You can add secondary outputs later as your analysis deepens.

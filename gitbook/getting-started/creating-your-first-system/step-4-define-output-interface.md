@@ -44,4 +44,4 @@ Think of a protocol as the "brain" of your interface - the set of rules that det
 - **Cell Membrane**: "Allow glucose in when internal levels are low, expel waste when concentration exceeds threshold" 
 - **Website API**: "Authenticate users, rate-limit requests, return error codes for invalid queries"
 
-> 🔑 **Think concretely**: Interfaces are where your system meets the world. They're not abstract - they're the actual mechanisms, channels, or processes that make your outputs available to those who need them.
+Interfaces are where your system meets the world. They're not abstract - they're the actual mechanisms, channels, or processes that make your outputs available to those who need them.

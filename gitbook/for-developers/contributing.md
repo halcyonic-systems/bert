@@ -529,7 +529,7 @@ Extend BERT's theoretical foundation to support [new systems concept]
 - [ ] **Conceptual Integrity**: Aligns with systems theory
 - [ ] **Terminology**: Consistent systems science language
 - [ ] **Modeling Capability**: Enhances system representation
-- [ ] **User Experience**: Supports systems thinking workflows
+- [ ] **User Experience**: Supports systems analysis workflows
 
 #### Integration Quality
 - [ ] **Cross-System**: Proper integration with existing components

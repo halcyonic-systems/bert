@@ -40,5 +40,5 @@ Understanding your output receiver helps clarify:
 - **Quality**: What standards must your output meet to be useful?
 - **Success**: How do you know if your system is working well?
 
-> 🔑 **Key insight**: Every system exists to serve some recipient or beneficiary in its environment. If you can't identify who or what benefits from your system's output, you may need to reconsider what your system's true purpose is.
+Every system exists to serve some recipient or beneficiary in its environment. If you can't identify who or what benefits from your system's output, you may need to reconsider what your system's true purpose is.
 

@@ -47,8 +47,8 @@ Look at your complete model and ask these critical questions:
 - Balanced resource accounting
 - All flows have logical sources and destinations
 
-## Next Steps
+## Preparing for Internal Analysis
 
 Once your input-output story makes sense, you're ready to look inside your system and understand how it actually transforms inputs into outputs through internal processes and subsystems.
 
-> 🔑 **Systems thinking**: A valid system model tells a believable story about transformation - how inputs become outputs through the system's processes, with waste as a natural byproduct. If your story has gaps, revisit your flows before proceeding to internal analysis.
+A valid system model tells a believable story about transformation - how inputs become outputs through the system's processes, with waste as a natural byproduct. If your story has gaps, revisit your flows before proceeding to internal analysis.

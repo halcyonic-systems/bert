@@ -10,7 +10,7 @@ Think about a system that matters to you. Examples from our model library includ
 - **Social systems**: How does an organization coordinate work? How do markets set prices?
 - **Meta-systems**: How does BERT itself work as a modeling platform?
 
-Choose something you work with, want to improve, need to explain to others, or are simply curious about.
+Choose something you work with, want to improve, need to explain to others, or are curious about.
 
 ## Name and Define Your System
 
@@ -33,6 +33,6 @@ Click on the main system circle. This opens the details panel where you'll defin
 
 **Equivalence**: Component type classification - what kind of thing this is based on its essential function (e.g., "Ribosome" in a cell, "Sales Team" in a company).
 
-> 🔑 **Why this matters**: Clearly defining what your system is and what it does shapes everything that follows. A vague system definition leads to a vague analysis. A precise definition enables deep understanding.
+Clearly defining what your system is and what it does shapes everything that follows. A vague system definition leads to a vague analysis. A precise definition enables deep understanding.
 
-💾 **Quick save reminder**: Press `Ctrl+S` periodically to save your work.
+Press `Ctrl+S` periodically to save your work.

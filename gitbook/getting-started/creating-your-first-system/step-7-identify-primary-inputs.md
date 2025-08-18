@@ -56,4 +56,4 @@ Understanding inputs helps you see:
 - **Vulnerabilities**: What happens if inputs are interrupted
 - **Requirements**: What quality and quantity your system needs
 
-> 🔑 **Systems insight**: Every output requires corresponding inputs. If you can't identify what your system needs to produce its outputs, you may be missing critical dependencies or resources.
+Every output requires corresponding inputs. If you can't identify what your system needs to produce its outputs, you may be missing critical dependencies or resources.
