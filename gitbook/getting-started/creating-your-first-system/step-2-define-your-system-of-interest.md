@@ -4,11 +4,13 @@
 
 BERT is most useful when you have a real-world system that is complex, that you're deeply interested in, and that you either want to deepen your understanding of how it works, or share your understanding with others.
 
-Think about a system that matters to you. It might be:
-- Something you work with daily but don't fully understand
-- A system you're trying to improve or fix
-- Something you need to explain to colleagues or students
-- A complex process you're curious about
+Think about a system that matters to you. Examples from our model library include:
+- **Biological systems**: How does a cell maintain life? How do ecosystems balance energy flows?
+- **Technological systems**: How does a solar panel convert light to electricity? How does an LLM generate text?
+- **Social systems**: How does an organization coordinate work? How do markets set prices?
+- **Meta-systems**: How does BERT itself work as a modeling platform?
+
+Choose something you work with, want to improve, need to explain to others, or are simply curious about.
 
 ## Name and Define Your System
 

@@ -2,7 +2,12 @@
 
 ## What Does Your System Produce?
 
-Every system exists for a reason - it produces something that its environment needs or values. This could be a product, a service, energy, information, or any other output that flows from your system to the world around it.
+Every system exists for a reason - it produces something that its environment needs or values. Examples from our model library:
+- **Cell**: Oxygen and waste products
+- **Ecosystem**: Biomass and habitat services
+- **Solar Panel**: Electrical energy
+- **Organization**: Products, services, or coordination
+- **LLM**: Generated text responses
 
 Ask yourself: **What is the main thing your system creates or provides?**
 
