@@ -1,24 +1,18 @@
 # Creating Your First System
 
-## Creating Your First System
-
 In this tutorial, you'll learn how to create your first system in BERT and set up the foundation for deeper analysis.
 
-### What You'll Learn
+## What You'll Learn
 
 * How to start a new BERT project
 * Setting up the main system boundary
 * Adding basic elements to your system
 * Saving your work
 
-### Prerequisites
+## Prerequisites
 
 * BERT installed on your computer or access to the web version at [bert.systems](https://bert.systems)
 * Basic understanding of systems concepts (optional)
-
-###
-
-###
 
 
 
