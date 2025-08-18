@@ -187,7 +187,7 @@ pub fn init_bevy_app(
                 draw_flow_curve,
                 update_initial_position_from_transform,
                 listen_to_remove_marker_label_event,
-                // sync_spatial_regions_with_changed_systems, // Disabled - spatial positioning issue persists
+                sync_spatial_regions_with_systems.run_if(no_load_events_this_frame), // Pause during active model loading
             ),
             (
                 update_selecting_flow_from_mouse,
@@ -424,4 +424,10 @@ pub fn toggle_theme_system(
     if should_toggle {
         *theme = theme.toggle();
     }
+}
+
+/// Run condition that returns false when there are active LoadFileEvents in the current frame.
+/// This prevents spatial sync from running during model loading to avoid race conditions.
+fn no_load_events_this_frame(mut events: EventReader<LoadFileEvent>) -> bool {
+    events.read().count() == 0
 }

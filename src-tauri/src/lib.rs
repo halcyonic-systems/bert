@@ -1,14 +1,8 @@
-use std::{
-    ops::Deref,
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::path::PathBuf;
 
-use leptos::task::spawn_local;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, State};
+use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
-use tauri_plugin_fs::FilePath;
 
 #[derive(Serialize, Deserialize)]
 struct Data {
@@ -69,7 +63,7 @@ async fn pick_file(app_handle: AppHandle) -> Option<PathBuf> {
 }
 
 #[tauri::command]
-fn load_file(app_handle: AppHandle, pb: PathBuf) -> Result<FileData, String> {
+fn load_file(_app_handle: AppHandle, pb: PathBuf) -> Result<FileData, String> {
     let data = std::fs::read(&pb).map_err(|err| format!("Error reading file: {:?}", err))?;
     Ok(FileData {
         data,
