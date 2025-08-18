@@ -1,4 +1,4 @@
-# Step 5: Add Customer Sink
+# Step 5: Add Output Receiver
 
 ## Who Receives Your System's Output?
 

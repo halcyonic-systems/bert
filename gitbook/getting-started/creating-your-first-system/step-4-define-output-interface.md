@@ -29,7 +29,7 @@ Click on the interface element to specify how your system delivers its output:
 
 **Protocol** - What rules or algorithm does this interface use to decide what goes out (and potentially what comes in)? This is the decision-making logic that governs the interface's behavior.
 
-<figure><img src="../../.gitbook/assets/interface2.png" alt="" width="279"><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/interface-details-v2.png" alt="" width="375"><figcaption><p>Interface details panel in v0.2.0</p></figcaption></figure>
 
 ## Understanding Interface Protocols
 

@@ -8,7 +8,7 @@
   * [Step 2: Define Your System of Interest](getting-started/creating-your-first-system/step-2-define-your-system-of-interest.md)
   * [Step 3: Identify Primary Output](getting-started/creating-your-first-system/step-3-identify-primary-output.md)
   * [Step 4: Define Output Interface](getting-started/creating-your-first-system/step-4-define-output-interface.md)
-  * [Step 5: Add Customer Sink](getting-started/creating-your-first-system/step-5-add-customer-sink.md)
+  * [Step 5: Add Output Receiver](getting-started/creating-your-first-system/step-5-add-customer-sink.md)
   * [Step 6: Add a Waste Output](getting-started/creating-your-first-system/step-6-add-a-waste-output.md)
   * [Step 7: Identify Primary Inputs](getting-started/creating-your-first-system/step-7-identify-primary-inputs.md)
   * [Step 8: Traverse The Boundary](getting-started/creating-your-first-system/step-8-traverse-the-boundary.md)

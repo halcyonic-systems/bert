@@ -1,18 +1,45 @@
-# Step 6: Add a Waste Output
+# Step 6: Add Waste Output
 
-### Waste Outputs
+## What Does Your System Discard?
 
-A waste output is something that your system creates which isn't considered useful by anything in the environment.&#x20;
+You've defined your system's primary output - the valuable thing it produces. But every real system also creates waste - byproducts that aren't useful to anyone in the environment or that may even be harmful.
 
-The current BERT prototype requires creating waste outputs before proceeding to inputs. Future versions will relax this requirement.
+Understanding waste helps you see the full picture of what your system does and identify potential improvement opportunities.
 
-**Click the green arrow to create a new flow**
+## Creating the Complete Waste Flow
+
+Systems modeling requires connecting three elements: the flow, its interface, and its destination:
+
+1. **Create the waste flow** - Click the green flow button and draw outward from your system
+2. **Define the flow** - Click on the flow to specify what waste your system produces  
+3. **Create the interface** - The flow will end in a rectangle (interface) where waste exits
+4. **Add waste sink** - Create a sink in the environment to receive the waste
 
 <figure><img src="../../.gitbook/assets/waste1.png" alt="" width="176"><figcaption></figcaption></figure>
 
-**Change interaction usability to waste**
+## Defining Your Waste Flow
+
+When you click on the waste flow, specify:
+
+**Substance Type** - What kind of waste? (Material, Energy, or Information)
+
+**Usability** - Select "Waste" (something not useful to the environment)
+
+**Examples from our model library:**
+- **Cell**: "Carbon dioxide and metabolic toxins" (Material waste)
+- **Ecosystem**: "Dead biomass and nutrient depletion" (Material waste)  
+- **Solar Panel**: "Heat dissipation" (Energy waste)
+- **Organization**: "Rejected proposals and bureaucratic overhead" (Information waste)
+- **LLM**: "Computational heat and irrelevant generations" (Energy + Information waste)
 
 <figure><img src="../../.gitbook/assets/waste2.png" alt="" width="223"><figcaption></figcaption></figure>
 
-Once you have identified a waste and created the associated interface and sinks, you'll see a new button appear on the left side of your SOI for creating inputs.&#x20;
+## Why Waste Matters
+
+Identifying waste reveals:
+- **Inefficiencies**: Where your system could work better
+- **Environmental impact**: What your system imposes on its surroundings  
+- **Design opportunities**: How you might capture or reduce waste
+
+> 🔑 **Systems insight**: No system is perfectly efficient. Acknowledging waste is the first step toward understanding your system's true environmental footprint and improvement potential.
 
