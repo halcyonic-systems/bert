@@ -1,10 +1,8 @@
 # Deep Systems Analysis
 
-Why Deep Systems Analysis?
+# Deep Systems Analysis
 
-## Deep Systems Analysis
-
-This page describes the Deep Systems Analysis (DSA) methodology that forms the theoretical core of BERT.
+The rigorous methodology for understanding complex systems that forms the theoretical core of BERT.
 
 ### What is Deep Systems Analysis?
 
@@ -18,9 +16,7 @@ The traditional approach to understanding systems in science uses models as tool
 - Solving models to produce testable results
 - Focusing only on specific questions of interest to the modeler
 
-{% hint style="warning" %}
 **Traditional Limitation**: This approach assumes we only need models to answer specific questions and shouldn't involve details outside the scope of those questions.
-{% endhint %}
 
 **The DSA Alternative:**
 
@@ -30,9 +26,7 @@ DSA rejects this mindset and proposes a methodology based on:
 - **Deep analysis before modeling** - thorough understanding precedes model construction
 - **Systems hierarchy recognition** - systems contain subsystems and exist within supra-systems
 
-{% hint style="success" %}
 **DSA Philosophy**: Acquire knowledge of how things in the Universe work by understanding "things" as systems that interact with other systems, forming larger encompassing supra-systems, while being composed of subsystems all the way down to the atomistic level.
-{% endhint %}
 
 #### DSA Characteristics:
 

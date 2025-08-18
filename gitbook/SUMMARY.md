@@ -36,20 +36,14 @@
 
 ## For Researchers
 
-* [Methodology](for-researchers/methodology/README.md)
-  * [Deep Systems Analysis](for-researchers/methodology/deep-systems-analysis.md)
-  * [System Modeling](for-researchers/methodology/system-modeling.md)
-  * [System Simulation](for-researchers/methodology/system-simulation.md)
-  * [Systems Scientists Development Guide](for-researchers/methodology/systems-scientists-development.md)
-* [System Ontology](for-researchers/system-ontology.md)
 * [System Language](for-researchers/system-language.md)
+* [Deep Systems Analysis](for-researchers/deep-systems-analysis.md)
+* [System Ontology](for-researchers/system-ontology.md)
 
 ## For Developers
 
 * [Overview](for-developers/README.md)
-* [Getting Started](for-developers/getting-started.md)
 * [Architecture](for-developers/architecture.md)
-* [Current Features](for-developers/current-features.md)
 * [Contributing](for-developers/contributing.md)
 
 ## Releases

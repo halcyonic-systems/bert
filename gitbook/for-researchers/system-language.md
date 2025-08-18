@@ -21,21 +21,21 @@ System Language aims to address these gaps, creating a unified approach based on
 
 ### SL Components and Grammar
 
-The fundamental building blocks of System Language (from Section 4.3):
-
-* **Lexical Elements** - Drawn from the primitive ontological elements (boundaries, flows, processes, etc.)
-* **Verbal Descriptions** - Structured statements that map to system relations (Fig. 4.2)
-* **Visual Icons** - Graphical representations of system elements (Fig. 4.13)
-* **Component Tables** - Structured descriptions with predefined types and domain-specific extensions (Table 4.1)
+| Component | Description | Theoretical Source |
+|-----------|-------------|-------------------|
+| **Lexical Elements** | Primitive ontological elements (boundaries, flows, processes) | Section 4.3 |
+| **Verbal Descriptions** | Structured statements mapping to system relations | Fig. 4.2 |
+| **Visual Icons** | Graphical representations of system elements | Fig. 4.13 |
+| **Component Tables** | Structured descriptions with predefined types | Table 4.1 |
 
 ### BERT's Implementation of SL Concepts
 
-BERT informally implements several core System Language concepts:
-
-* **Visual Grammar** - Icons and graphical elements representing system components
-* **Hierarchical Structure** - Recursive decomposition matching SL's formal definition (Section 4.3)
-* **Boundary Definitions** - Explicit representation of system boundaries and interfaces
-* **Flow Specification** - Typed flows (matter, energy, information) with measurable parameters
+| SL Concept | BERT Implementation |
+|------------|-------------------|
+| **Visual Grammar** | Icons and graphical elements for system components |
+| **Hierarchical Structure** | Recursive decomposition matching SL's formal definition |
+| **Boundary Definitions** | Explicit system boundaries and interfaces |
+| **Flow Specification** | Typed flows (matter, energy, information) with parameters |
 
 *Note: BERT represents an accessible implementation of SL concepts to inspire and attract support for formal language specification. The full formal SL specification remains under development.*
 

@@ -12,6 +12,14 @@ BERT development follows semantic versioning with regular feature releases.
 - [v0.3.0 - Agent Archetype](v0.3.0.md) - Agent modeling capabilities
 - [v0.4.0 - Simulation Bridge](v0.4.0.md) - Integration with simulation frameworks
 
+## Current Capabilities (v0.2.0)
+
+- **Visual System Modeling** - Interactive system design with real-time rendering
+- **Hierarchical Decomposition** - Infinite nesting with automatic scaling  
+- **Model Browser** - Browse and load example systems directly in the application
+- **Cross-Platform Deployment** - Web and desktop applications
+- **JSON Persistence** - Human-readable save/load system
+
 ## Future Vision
 
 - [v1.0 - Production Ready](v1.0.md) - Full systems science integration platform
