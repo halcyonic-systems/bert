@@ -1,39 +1,36 @@
 # Step 2: Define Your System of Interest
 
-## Identify the System of Interest
+## Choose a System Worth Understanding
 
-Every BERT analysis begins with a **System of Interest** - the primary system you're analyzing in order to develop a deeper scientific understanding of how it works. &#x20;
+BERT is most useful when you have a real-world system that is complex, that you're deeply interested in, and that you either want to deepen your understanding of how it works, or share your understanding with others.
 
-This is represented as a main system circle on your canvas.
+Think about a system that matters to you. It might be:
+- Something you work with daily but don't fully understand
+- A system you're trying to improve or fix
+- Something you need to explain to colleagues or students
+- A complex process you're curious about
 
-💡 **Tip**: Choose a descriptive name that reflects the system you're modeling. This will help you identify your projects later.
+## Name and Define Your System
+
+Click on the main system circle. This opens the details panel where you'll define what you're analyzing.
 
 <figure><img src="../../.gitbook/assets/SOI (1).png" alt="" width="375"><figcaption></figcaption></figure>
 
-Left-click on the circle to open an _**element details tab**_ where you can enter basic information about the system. Before you click, try hovering over the system circle briefly - you'll see a helpful tooltip showing the system's current name and type.&#x20;
+**Give your system a clear name and purpose.** This is essential for grounding a good analysis. Be specific about:
+- What you call this system
+- What its primary purpose is
+- Why this particular system matters to analyze
 
+<figure><img src="../../.gitbook/assets/SOI-details-v2.png" alt="" width="375"><figcaption><p>The simplified details panel in v0.2.0</p></figcaption></figure>
 
+### Quick Guide to Optional Fields
 
-<figure><img src="../../.gitbook/assets/SOI-details (3).png" alt="" width="375"><figcaption></figcaption></figure>
+**Time Unit**: The temporal resolution for your analysis (seconds, days, years). Choose what makes sense for your system's dynamics.
 
-For now there are just a few key details to focus on. Be clear and precise, but brief.
+**Complexity**: System behavior type - Simple (predictable), Adaptive (responds to environment), or Evolveable (can fundamentally change structure).
 
-1. **System**: The first step is to identify the specific  main system you would like to understand. This is your System of Interest (SOI). It could be the company you work for, your local government, or a cell.  Name your system, describe context about its purpose and role what this system encompasses.
-2. **Boundary**: Name the system boundary responsible for defining what is inside vs. what is outside. Describe its general form.&#x20;
-3. **Environment:** Name the environment, describe its features.
+**Equivalence**: Component type classification - what kind of thing this is based on its essential function (e.g., "Ribosome" in a cell, "Sales Team" in a company).
 
-> 🔑 **Key Concept**: The system boundary defines what's inside your system (what you're analyzing) and what's outside (the environment). Drawing this boundary correctly is a critical first step in systems analysis. Properly defining your system boundary is critical. Too broad, and your analysis becomes unwieldy; too narrow, and you miss important interactions.
+> 🔑 **Why this matters**: Clearly defining what your system is and what it does shapes everything that follows. A vague system definition leads to a vague analysis. A precise definition enables deep understanding.
 
-You don't kneed to worry about all of the other details for now, they can be filled out later since they aren't essential for describing the basic features of our system, just for elaborating the details that will come into play once we want to start designing simulations.&#x20;
-
-Learn more about them in the advanced features section.
-
-**Regularly save your work during analysis to prevent data loss:**
-
-1. Press **Ctrl+S** (both Windows and Mac)
-2. When prompted, choose a location for your file
-3. Enter a descriptive filename
-4. Click **Save** to save your BERT model as a JSON file
-5. Watch for the green "System saved" notification to confirm your work is protected
-
-💡 **Save tip**: You'll see a brief green checkmark appear when your file saves successfully. If you see a red warning instead, try saving again.
+💾 **Quick save reminder**: Press `Ctrl+S` periodically to save your work.
