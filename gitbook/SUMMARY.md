@@ -34,10 +34,6 @@
   * [Universal System Template](examples/meta-systems/universal-system-template.md)
 * [Cryptoeconomic Systems](examples/cryptoeconomic-systems/README.md)
 
-## Features
-
-* [Current & Planned Features](features/README.md)
-
 ## For Researchers
 
 * [Methodology](for-researchers/methodology/README.md)

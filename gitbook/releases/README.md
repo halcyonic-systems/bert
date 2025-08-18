@@ -15,3 +15,10 @@ BERT development follows semantic versioning with regular feature releases.
 ## Future Vision
 
 - [v1.0 - Production Ready](v1.0.md) - Full systems science integration platform
+
+## Feature Requests
+
+Have ideas for BERT enhancements? We welcome community input:
+- **GitHub Issues** - Submit feature requests and bug reports
+- **Research Collaboration** - Partner with us on systems science features
+- **User Testing** - Participate in beta testing for new releases
