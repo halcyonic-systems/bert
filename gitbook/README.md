@@ -17,6 +17,6 @@ For desktop applications with offline capabilities, download the version for you
 
 New to BERT? Here's the fastest way to learn:
 
-1. **Follow the tutorial**: [Creating Your First System](getting-started/creating-your-first-system/) - learn by doing
+1. **Follow the tutorial**: [Starting Your First Analysis](getting-started/creating-your-first-system/) - learn by doing
 2. **Explore examples**: Open BERT and click "Model Browser" to load and explore pre-built systems
 

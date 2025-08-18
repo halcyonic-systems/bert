@@ -1,18 +1,15 @@
-# Creating Your First System
+# Starting Your First Analysis
 
-In this tutorial, you'll learn how to create your first system in BERT and set up the foundation for deeper analysis.
+In this tutorial, you'll learn how to use BERT to analyze your first system by defining boundaries, identifying components, and mapping relationships.
 
 ## What You'll Learn
 
-* How to start a new BERT project
-* Setting up the main system boundary
-* Adding basic elements to your system
-* Saving your work
+* Define system boundaries
+* Identify key components
+* Map flows between elements
+* Navigate hierarchical levels
 
-## Prerequisites
-
-* BERT installed on your computer or access to the web version at [bert.systems](https://bert.systems)
-* Basic understanding of systems concepts (optional)
+Open BERT in your browser at [bert.systems](https://bert.systems) or download the desktop version to get started.
 
 
 
@@ -44,13 +41,5 @@ Include all important external systems or actors that directly interact with you
 <summary><strong>Can I change the position of elements after placing them?</strong></summary>
 
 Yes! Simply click on an element to select it, then click and drag to move it to a new position. You can also select multiple elements by holding Shift while clicking on them, then move them as a group.
-
-</details>
-
-<details>
-
-<summary><strong>What are the gray rings around my systems?</strong></summary>
-
-Those are boundary regions that show where your system ends and its environment begins. They help you visualize system boundaries and automatically stay positioned correctly when you zoom in or out. You can click on a boundary ring to select its system.
 
 </details>

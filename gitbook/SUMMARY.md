@@ -3,7 +3,7 @@
 ## Getting Started
 
 * [Get Started with BERT](README.md)
-* [Creating Your First System](getting-started/creating-your-first-system/README.md)
+* [Starting Your First Analysis](getting-started/creating-your-first-system/README.md)
   * [Step 1: Starting a New Project](getting-started/creating-your-first-system/step-1-starting-a-new-project.md)
   * [Step 2: Define Your System of Interest](getting-started/creating-your-first-system/step-2-define-your-system-of-interest.md)
   * [Step 3: Identify Primary Output](getting-started/creating-your-first-system/step-3-identify-primary-output.md)
