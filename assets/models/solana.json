@@ -4,8 +4,8 @@
         "info": {
             "id": "E-1",
             "level": -1,
-            "name": "",
-            "description": ""
+            "name": "High-Performance Blockchain",
+            "description": "High-throughput computational environment for web-scale applications"
         },
         "sources": [
             {
