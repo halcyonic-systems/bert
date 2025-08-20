@@ -23,13 +23,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin --bundles app,dmg'
-          - platform: 'macos-latest' # for Intel based macs.
+          - platform: 'macos-latest' # Intel Macs (works on ARM Macs via Rosetta 2)
             args: '--target x86_64-apple-darwin --bundles app,dmg'
-          - platform: 'ubuntu-22.04' # for Tauri v1 you could also use ubuntu-20.04.
+          - platform: 'ubuntu-22.04' # Linux
             args: '--bundles deb,appimage'
-          - platform: 'windows-latest'
+          - platform: 'windows-latest' # Windows
             args: '--bundles msi,nsis'
 
     runs-on: ${{ matrix.platform }}
@@ -46,16 +44,14 @@ jobs:
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'x86_64-apple-darwin' || '' }}
 
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: Add macOS targets
+      - name: Add macOS Intel target
         if: matrix.platform == 'macos-latest'
-        run: |
-          rustup target add aarch64-apple-darwin
-          rustup target add x86_64-apple-darwin
+        run: rustup target add x86_64-apple-darwin
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0.0"
