@@ -168,10 +168,23 @@ pub fn init_bevy_app(
         .or(input_pressed(KeyCode::ControlRight)
             .or(input_pressed(MODIFIER).or(input_pressed(KeyCode::SuperRight))));
 
+    // Add zoom systems - keyboard zoom disabled for web builds to prevent dual events
+    #[cfg(not(target_arch = "wasm32"))]
     app.add_systems(
         PreUpdate,
         (
             control_zoom_from_keyboard,
+            control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
+            handle_zoom_events,
+            handle_deselect_events,
+        )
+            .in_set(AllSet),
+    );
+    
+    #[cfg(target_arch = "wasm32")]
+    app.add_systems(
+        PreUpdate,
+        (
             control_zoom_from_mouse_wheel.run_if(wheel_zoom_condition.clone()),
             handle_zoom_events,
             handle_deselect_events,
