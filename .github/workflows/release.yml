@@ -1,5 +1,11 @@
 name: "Release Desktop App"
 
+permissions:
+  contents: write
+  actions: read
+  packages: write
+  pull-requests: write
+
 on:
   push:
     tags:
@@ -13,8 +19,6 @@ on:
 
 jobs:
   publish-tauri:
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
