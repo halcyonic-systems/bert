@@ -20,13 +20,13 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin'
+            args: '--target aarch64-apple-darwin --bundles app,dmg'
           - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin'
+            args: '--target x86_64-apple-darwin --bundles app,dmg'
           - platform: 'ubuntu-22.04' # for Tauri v1 you could also use ubuntu-20.04.
-            args: ''
+            args: '--bundles deb,appimage'
           - platform: 'windows-latest'
-            args: ''
+            args: '--bundles msi,nsis'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -44,6 +44,9 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0.0"
 
@@ -59,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install trunk
         uses: jetli/trunk-action@v0.4.0
@@ -75,7 +78,7 @@ jobs:
           fi
 
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
