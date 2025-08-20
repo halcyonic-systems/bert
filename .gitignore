@@ -9,7 +9,6 @@ build
 *.dot
 .cargo
 /node_modules
-package-lock.json
 /dist
 
 # IDE files
