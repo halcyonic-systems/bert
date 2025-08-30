@@ -48,7 +48,7 @@ pub const SUBSYSTEM_MIN_SCALING_FACTOR: f32 = 0.04;
 /// Local z coordinate of a subsystem.
 pub const SUBSYSTEM_Z: f32 = 10.0;
 /// Size of subsystems are scaled based on the number of interfaces it has until it reaches this limit.
-pub const SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT: f32 = 5.0;
+pub const SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT: f32 = 8.0;
 
 /// Default half width of the rectangle that defines an interface.
 pub const INTERFACE_WIDTH_HALF: f32 = 12.0;
