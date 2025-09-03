@@ -7,6 +7,9 @@ Purpose: 5-minute verification, first issues to try, and troubleshooting.
 - Node.js (for Tauri v2)
 - wasm32 target and trunk (for web dev)
 
+**Alternative: Dev Container**
+Open folder in VS Code → "Reopen in Container" for automatic setup with Rust, Node, wasm target, and trunk pre-installed.
+
 ## 5-Minute Checks
 
 Web (wasm):
@@ -31,6 +34,12 @@ Tests:
 cd bert/bert
 cargo test -p bert
 ```
+
+**Dev Container Usage:**
+- Web: `trunk serve` (or `just web` if using justfile)
+- Tests: `cargo test -p bert`
+- Lint/format: `cargo clippy -- -D warnings` / `cargo fmt --all`
+- Note: Desktop (Tauri) GUI is best run on host OS due to GUI requirements
 
 ## Good First Issues
 - Fix Zoom Controls Mapping (map plus/equal → ZoomIn, minus/underscore → ZoomOut; update controls menu)

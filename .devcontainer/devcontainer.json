@@ -1,0 +1,33 @@
+{
+  "name": "BERT Dev",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "profile": "default"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "postCreateCommand": "rustup target add wasm32-unknown-unknown && cargo install trunk --locked || true && corepack enable && corepack prepare pnpm@9 --activate",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "vadimcn.vscode-lldb",
+        "serayuzgur.crates"
+      ],
+      "settings": {
+        "rust-analyzer.check.command": "clippy",
+        "rust-analyzer.cargo.features": ["debug_selection"]
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "workspaceFolder": "/workspaces/bert/bert",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": { "label": "Trunk Web Dev Server" }
+  }
+}
