@@ -21,5 +21,5 @@
 - PR checklist: link to GitBook/repo docs you updated; no dead links
 
 ## Maintenance
-- Keep `DOCUMENTATION_GUIDE.md` current as the single entry point
+- Keep `documentation_guide.md` current as the single entry point
 - Prefer updating existing docs over adding new top-level files
