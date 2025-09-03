@@ -52,6 +52,7 @@ cargo tauri build  # Production build
 
 ## Documentation
 
+- [Documentation Guide](DOCUMENTATION_GUIDE.md)
 - [User Guide](https://bert.gitbook.io/bert-documentation)
 - [System Language Overview](https://bert.gitbook.io/bert-documentation/system-language)
 - [Contributing Guide](https://bert.gitbook.io/bert-documentation/for-developers/contributing)
