@@ -61,6 +61,8 @@ cargo tauri build  # Production build
 
 New contributors can start with issues labeled [`good first issue`](https://github.com/halcyonic-systems/bert/labels/good%20first%20issue).
 
+**Quick start**: [Getting Started Developing](GETTING_STARTED_DEVELOPING.md) (5-minute setup verification)
+
 See our [Contributing Guide](CONTRIBUTING.md) for:
 - Development setup
 - Code standards
