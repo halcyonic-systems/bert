@@ -52,6 +52,8 @@ cargo tauri build  # Production build
 
 ## Documentation
 
+- [Documentation Guide](documentation_guide.md)
+- [Documentation Policy](docs_policy.md)
 - [User Guide](https://bert.gitbook.io/bert-documentation)
 - [System Language Overview](https://bert.gitbook.io/bert-documentation/system-language)
 - [Contributing Guide](https://bert.gitbook.io/bert-documentation/for-developers/contributing)
@@ -59,6 +61,8 @@ cargo tauri build  # Production build
 ## Contributing
 
 New contributors can start with issues labeled [`good first issue`](https://github.com/halcyonic-systems/bert/labels/good%20first%20issue).
+
+**Quick start**: [Getting Started Developing](getting_started_developing.md) (5-minute setup verification)
 
 See our [Contributing Guide](CONTRIBUTING.md) for:
 - Development setup

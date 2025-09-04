@@ -99,8 +99,8 @@ cargo test --all
 
 ## Essential Resources
 
-- [Contributing Guide](contributing.md) - Complete development workflow
-- [Architecture Overview](architecture.md) - High-level technical overview  
+- [Contributing Guide](bert/bert/gitbook/for-developers/contributing.md) - Complete development workflow
+- [Architecture Overview](bert/bert/gitbook/for-developers/architecture.md) - High-level technical overview  
 - [Current Capabilities](../releases/README.md#current-capabilities-v020) - See what's available in v0.2.0
 
 **External Documentation:**
@@ -110,7 +110,7 @@ cargo test --all
 
 ## First Contribution
 
-1. **Read the [Contributing Guide](contributing.md)** - Complete workflow details
+1. **Read the [Contributing Guide](bert/bert/gitbook/for-developers/contributing.md)** - Complete workflow details
 2. **Review Documentation Standards** - Template requirements (link above)
 3. **Create Feature Branch** - Follow `feature/descriptive-name` pattern
 4. **Generate Documentation** - Use `./scripts/bert.sh feature "Feature Name"`

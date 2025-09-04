@@ -18,6 +18,7 @@ const SYSTEM_MODEL_JSON: &str = include_str!("../../../assets/models/system.json
 const BERT_MODEL_JSON: &str = include_str!("../../../assets/models/bert.json");
 const BITCOIN_MODEL_JSON: &str = include_str!("../../../assets/models/bitcoin.json");
 const ETHEREUM_MODEL_JSON: &str = include_str!("../../../assets/models/ethereum.json");
+const HALCYONIC_MODEL_JSON: &str = include_str!("../../../assets/models/halcyonic.json");
 
 /// Modal component for browsing and loading example BERT models.
 ///
@@ -209,10 +210,26 @@ pub fn ModelBrowser(
                             <h3 class="font-semibold text-gray-800">"Ethereum Network"</h3>
                             <p class="text-sm text-gray-600 mt-1">"Smart contract platform with EVM, consensus, staking, and dApp ecosystem"</p>
                         </button>
+
+                        // Halcyonic Systems Model
+                        <button
+                            class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                            on:click=move |_| {
+                                leptos::logging::log!("Loading Halcyonic model, data length: {}", HALCYONIC_MODEL_JSON.len());
+                                on_load.run(LoadFileEvent {
+                                    file_path: "template:halcyonic.json".to_string(),
+                                    data: HALCYONIC_MODEL_JSON.as_bytes().to_vec(),
+                                });
+                                on_close.run(());
+                            }
+                        >
+                            <h3 class="font-semibold text-gray-800">"Halcyonic Systems"</h3>
+                            <p class="text-sm text-gray-600 mt-1">"Research organization blending theoretical systems science with transdisciplinary research and technology development"</p>
+                        </button>
                     </div>
 
                     <div class="mt-6 text-center text-sm text-gray-600">
-                        "9 enhanced educational models available. Press Ctrl+L to load your own files."
+                        "10 enhanced educational models available. Press Ctrl+L to load your own files."
                     </div>
                 </div>
             </div>

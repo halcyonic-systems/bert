@@ -37,7 +37,7 @@ BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "unknown")
 OUTPUT_DIR="docs/features"
 FEATURE_NAME=""
 CURRENT_DATE=$(date +"%Y-%m-%d")
-CONTRIBUTORS=$(git log --pretty=format:"%an" | sort -u | paste -sd "," -)
+CONTRIBUTORS="[Your Name]"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
