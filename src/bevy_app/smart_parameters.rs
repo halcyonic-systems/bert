@@ -125,6 +125,105 @@ impl SmartParameterDatabase {
 
         // Material substance type suggestions
         suggestions.insert(SubstanceType::Material, vec![
+            // Economic flow parameters for interstate commerce analysis
+            ParameterSuggestion {
+                display_name: "Shipment Value".to_string(),
+                parameter_type: ParameterType::Numeric,
+                search_terms: vec!["value".to_string(), "shipment".to_string(), "trade".to_string(), "usd".to_string()],
+                default_value: ParameterValue::Numeric { 
+                    value: "".to_string(), 
+                    unit: "USD".to_string() 
+                },
+            },
+            ParameterSuggestion {
+                display_name: "Weight".to_string(),
+                parameter_type: ParameterType::Numeric,
+                search_terms: vec!["weight".to_string(), "tons".to_string(), "mass".to_string()],
+                default_value: ParameterValue::Numeric { 
+                    value: "".to_string(), 
+                    unit: "tons".to_string() 
+                },
+            },
+            ParameterSuggestion {
+                display_name: "Commodity (SCTG2)".to_string(),
+                parameter_type: ParameterType::Categorical,
+                search_terms: vec!["commodity".to_string(), "sctg".to_string(), "goods".to_string(), "product".to_string()],
+                default_value: ParameterValue::Categorical { 
+                    value: "35".to_string(), 
+                    options: vec![
+                        "01 – Live Animals/Fish".to_string(),
+                        "02 – Cereal Grains".to_string(), 
+                        "03 – Agricultural Products".to_string(),
+                        "04 – Animal Feed".to_string(),
+                        "05 – Meat/Seafood".to_string(),
+                        "06 – Milled Grain Products".to_string(),
+                        "07 – Other Foodstuffs".to_string(),
+                        "08 – Alcoholic Beverages".to_string(),
+                        "09 – Tobacco Products".to_string(),
+                        "10 – Building Stone".to_string(),
+                        "11 – Natural Sands".to_string(),
+                        "12 – Gravel/Crushed Stone".to_string(),
+                        "13 – Nonmetallic Minerals".to_string(),
+                        "14 – Metallic Ores".to_string(),
+                        "15 – Coal".to_string(),
+                        "16 – Crude Petroleum".to_string(),
+                        "17 – Gasoline".to_string(),
+                        "18 – Fuel Oils".to_string(),
+                        "19 – Natural Gas/Other Fossil Fuels".to_string(),
+                        "20 – Basic Chemicals".to_string(),
+                        "21 – Pharmaceutical Products".to_string(),
+                        "22 – Fertilizers".to_string(),
+                        "23 – Chemical Products".to_string(),
+                        "24 – Plastics/Rubber".to_string(),
+                        "25 – Logs/Other Wood Products".to_string(),
+                        "26 – Wood Products".to_string(),
+                        "27 – Newsprint/Paper Products".to_string(),
+                        "28 – Paper Articles".to_string(),
+                        "29 – Printed Products".to_string(),
+                        "30 – Textiles/Leather".to_string(),
+                        "31 – Nonmetallic Mineral Products".to_string(),
+                        "32 – Base Metals".to_string(),
+                        "33 – Articles of Base Metal".to_string(),
+                        "34 – Machinery".to_string(),
+                        "35 – Electronics".to_string(),
+                        "36 – Motorized Vehicles".to_string(),
+                        "37 – Transportation Equipment".to_string(),
+                        "38 – Precision Instruments".to_string(),
+                        "39 – Furniture".to_string(),
+                        "40 – Miscellaneous Mfg Products".to_string(),
+                        "41 – Waste/Scrap".to_string(),
+                        "43 – Mixed Freight".to_string()
+                    ]
+                },
+            },
+            ParameterSuggestion {
+                display_name: "Transport Mode".to_string(),
+                parameter_type: ParameterType::Categorical,
+                search_terms: vec!["mode".to_string(), "transport".to_string(), "shipping".to_string()],
+                default_value: ParameterValue::Categorical { 
+                    value: "1".to_string(), 
+                    options: vec![
+                        "1 – Truck".to_string(),
+                        "2 – Rail".to_string(),
+                        "3 – Water".to_string(),
+                        "4 – Air (include truck-air)".to_string(),
+                        "5 – Multiple modes & mail".to_string(),
+                        "6 – Pipeline".to_string(),
+                        "7 – Other and unknown".to_string()
+                    ]
+                },
+            },
+            ParameterSuggestion {
+                display_name: "International".to_string(),
+                parameter_type: ParameterType::Boolean,
+                search_terms: vec!["international".to_string(), "foreign".to_string(), "row".to_string(), "trade".to_string()],
+                default_value: ParameterValue::Boolean { 
+                    value: false, 
+                    true_label: "International".to_string(), 
+                    false_label: "Domestic".to_string() 
+                },
+            },
+            // Original physical parameters (kept for compatibility)
             ParameterSuggestion {
                 display_name: "Flow Rate".to_string(),
                 parameter_type: ParameterType::Numeric,
@@ -166,6 +265,35 @@ impl SmartParameterDatabase {
 
         // Message substance type suggestions  
         suggestions.insert(SubstanceType::Message, vec![
+            // Economic indicator parameters
+            ParameterSuggestion {
+                display_name: "Indicator Type".to_string(),
+                parameter_type: ParameterType::Categorical,
+                search_terms: vec!["indicator".to_string(), "metric".to_string(), "measure".to_string()],
+                default_value: ParameterValue::Categorical { 
+                    value: "GDP".to_string(), 
+                    options: vec!["GDP".to_string(), "Productivity".to_string(), "Employment".to_string(), "Trade Balance".to_string(), "Price Index".to_string()] 
+                },
+            },
+            ParameterSuggestion {
+                display_name: "Period".to_string(),
+                parameter_type: ParameterType::Numeric,
+                search_terms: vec!["period".to_string(), "year".to_string(), "time".to_string()],
+                default_value: ParameterValue::Numeric { 
+                    value: "2017".to_string(), 
+                    unit: "year".to_string() 
+                },
+            },
+            ParameterSuggestion {
+                display_name: "Unit Basis".to_string(),
+                parameter_type: ParameterType::Categorical,
+                search_terms: vec!["basis".to_string(), "units".to_string(), "real".to_string(), "nominal".to_string()],
+                default_value: ParameterValue::Categorical { 
+                    value: "Real".to_string(), 
+                    options: vec!["Real".to_string(), "Nominal".to_string(), "Index".to_string(), "Ratio".to_string()] 
+                },
+            },
+            // Original IT parameters (kept for compatibility)
             ParameterSuggestion {
                 display_name: "Bandwidth".to_string(),
                 parameter_type: ParameterType::Numeric,

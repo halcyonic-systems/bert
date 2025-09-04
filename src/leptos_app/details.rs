@@ -387,7 +387,19 @@ pub fn SmartParameterInput(
                                     // Update the parameter in the interaction
                                     interaction_query.write().as_mut().map(|(_, _, interaction)| {
                                         if let Some(existing_param) = interaction.smart_parameters.iter_mut().find(|p| p.id == param_id) {
-                                            *existing_param = updated_param;
+                                            *existing_param = updated_param.clone();
+                                            
+                                            // Sync Flow.amount with Shipment Value parameter
+                                            if updated_param.name == "Shipment Value" {
+                                                if let ParameterValue::Numeric { value, unit } = &updated_param.value {
+                                                    if unit == "USD" {
+                                                        if let Ok(parsed_value) = value.parse::<rust_decimal::Decimal>() {
+                                                            interaction.amount = parsed_value;
+                                                            interaction.unit = "USD".to_string();
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     });
                                 }
