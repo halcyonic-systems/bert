@@ -384,6 +384,14 @@ pub struct Flow {
     /// Allows users to specify custom attributes, constraints, or properties
     /// that are specific to their modeling requirements.
     pub parameters: Vec<Parameter>,
+
+    /// Smart parameters with enhanced type system (MVP - runtime only)
+    ///
+    /// Provides context-aware parameter suggestions and supports multiple data types
+    /// including numeric, ordinal, categorical, and boolean parameters.
+    /// Currently runtime-only for MVP; persistence will be added later.
+    #[reflect(ignore)]
+    pub smart_parameters: Vec<crate::bevy_app::smart_parameters::SmartParameter>,
 }
 
 /// Represents a user-defined parameter that provides additional context for flow interactions.
@@ -764,7 +772,7 @@ impl core::fmt::Display for InteractionUsability {
 ///
 /// - [`Flow`]: Uses substance types to categorize interactions
 /// - [`InteractionUsability`]: Defines the directional and utility aspects of flows
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence)]
+#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash)]
 pub enum SubstanceType {
     /// Energy flows representing power, work capacity, or transformative potential.
     ///

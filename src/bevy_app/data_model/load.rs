@@ -145,6 +145,7 @@ fn spawn_interactions(
                 unit: interaction.unit.clone(),
                 usability: interaction.usability,
                 parameters: interaction.parameters.clone(),
+                smart_parameters: vec![], // MVP: Initialize empty, persistence added later
             },
             FlowCurve::default(),
             &interaction.info.name,
