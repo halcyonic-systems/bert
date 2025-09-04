@@ -389,8 +389,6 @@ pub struct Flow {
     ///
     /// Provides context-aware parameter suggestions and supports multiple data types
     /// including numeric, ordinal, categorical, and boolean parameters.
-    /// Currently runtime-only for MVP; persistence will be added later.
-    #[reflect(ignore)]
     pub smart_parameters: Vec<crate::bevy_app::smart_parameters::SmartParameter>,
 }
 

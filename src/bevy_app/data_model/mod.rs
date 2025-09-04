@@ -628,6 +628,8 @@ pub struct Interaction {
     pub unit: String,
     /// List of additional parameters
     pub parameters: Vec<Parameter>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub smart_parameters: Vec<crate::bevy_app::smart_parameters::SmartParameter>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
