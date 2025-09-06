@@ -143,9 +143,15 @@ pub fn update_subsystem_radius_from_interface_count(
             }
         }
 
-        let mut scaling_factor = SUBSYSTEM_MIN_SCALING_FACTOR
-            + interface_count as f32 * (SUBSYSTEM_SCALING_FACTOR - SUBSYSTEM_MIN_SCALING_FACTOR)
-                / SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT;
+        let mut scaling_factor = if interface_subsystem.is_some() {
+            // Interface subsystems stay small (4%) regardless of interface count
+            SUBSYSTEM_MIN_SCALING_FACTOR
+        } else {
+            // Regular subsystems scale with interface count
+            SUBSYSTEM_MIN_SCALING_FACTOR
+                + interface_count as f32 * (SUBSYSTEM_SCALING_FACTOR - SUBSYSTEM_MIN_SCALING_FACTOR)
+                    / SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT
+        };
 
         scaling_factor = scaling_factor.min(SUBSYSTEM_SCALING_FACTOR);
 
