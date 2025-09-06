@@ -69,11 +69,11 @@ pub const BUTTON_WIDTH_HALF: f32 = 16.0;
 pub const BUTTON_Z: f32 = 200.0;
 
 /// Default half width of an external entity.
-pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 25.0;
+pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 35.0;
 /// Default half height of an external entity.
-pub const EXTERNAL_ENTITY_HEIGHT_HALF: f32 = 70.0;
+pub const EXTERNAL_ENTITY_HEIGHT_HALF: f32 = 85.0;
 /// Default line width of the lines that define an external entity.
-pub const EXTERNAL_ENTITY_LINE_WIDTH: f32 = 4.0;
+pub const EXTERNAL_ENTITY_LINE_WIDTH: f32 = 5.0;
 /// Default line width of the lines that define a selected external entity.
 pub const EXTERNAL_ENTITY_SELECTED_LINE_WIDTH: f32 = EXTERNAL_ENTITY_LINE_WIDTH + 2.0;
 /// Default line width of the selection lines overlaid on a selected external entity.
