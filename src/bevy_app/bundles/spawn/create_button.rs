@@ -42,7 +42,11 @@ pub fn spawn_create_button(
         CreateButtonType::Subsystem => "Subsystem Button",
     };
 
-    let button_width = BUTTON_WIDTH_HALF * 2.0;
+    let button_width = if matches!(create_button.ty, CreateButtonType::InterfaceSubsystem { .. }) {
+        BUTTON_WIDTH_HALF * 1.0  // Half size for interface subsystem buttons
+    } else {
+        BUTTON_WIDTH_HALF * 2.0  // Normal size for all other buttons
+    };
 
     let mut spawn_image = &mut commands.spawn((
         create_button,
