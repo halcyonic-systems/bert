@@ -5,6 +5,24 @@ All notable changes to BERT will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-09-08
+
+### Added
+- **Smart Parameters Deletion** - Added delete functionality for all Smart Parameters types
+  - Clean "×" delete buttons with hover states for all parameter types
+  - Safe UUID-based deletion preventing accidental removals
+  - Consistent UI across Numeric, Ordinal, Categorical, and Boolean parameters
+
+### Fixed
+- **Windows Build Compatibility** - Resolved CI build failures on Windows
+  - Removed files with invalid Windows filename characters
+  - Improved cross-platform filename handling
+  - All CI builds now pass on Windows, macOS, and Linux
+
+### Changed
+- Enhanced parameter management UX with intuitive deletion workflow
+- Improved overall Smart Parameters system usability
+
 ## [0.2.2] - 2025-09-08
 
 ### Added
