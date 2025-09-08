@@ -411,6 +411,12 @@ pub fn SmartParameterInput(
                                         }
                                     });
                                 }
+                                on_delete=move |param_id_to_delete| {
+                                    // Remove the parameter from the interaction
+                                    interaction_query.write().as_mut().map(|(_, _, interaction)| {
+                                        interaction.smart_parameters.retain(|p| p.id != param_id_to_delete);
+                                    });
+                                }
                             />
                         }
                     }
@@ -424,6 +430,7 @@ pub fn SmartParameterInput(
 pub fn SmartParameterWidget(
     parameter: SmartParameter,
     on_update: impl Fn(SmartParameter) + 'static + Copy,
+    on_delete: impl Fn(uuid::Uuid) + 'static + Copy,
 ) -> impl IntoView {
     let name = parameter.name.clone();
     match parameter.value {
@@ -477,6 +484,16 @@ pub fn SmartParameterWidget(
                         </div>
                     </div>
                     <span class="px-2 py-1 text-xs text-blue-600 bg-blue-100 rounded-full">Numeric</span>
+                    <button
+                        type="button"
+                        on:click=move |_| on_delete(parameter.id)
+                        class="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete parameter"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             }.into_any()
         }
@@ -514,6 +531,16 @@ pub fn SmartParameterWidget(
                         </select>
                     </div>
                     <span class="px-2 py-1 text-xs text-green-600 bg-green-100 rounded-full">Ordinal</span>
+                    <button
+                        type="button"
+                        on:click=move |_| on_delete(parameter.id)
+                        class="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete parameter"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             }.into_any()
         }
@@ -554,6 +581,16 @@ pub fn SmartParameterWidget(
                         </select>
                     </div>
                     <span class="px-2 py-1 text-xs text-purple-600 bg-purple-100 rounded-full">Categorical</span>
+                    <button
+                        type="button"
+                        on:click=move |_| on_delete(parameter.id)
+                        class="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete parameter"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             }.into_any()
         }
@@ -622,6 +659,16 @@ pub fn SmartParameterWidget(
                         </div>
                     </div>
                     <span class="px-2 py-1 text-xs text-orange-600 bg-orange-100 rounded-full">Boolean</span>
+                    <button
+                        type="button"
+                        on:click=move |_| on_delete(parameter.id)
+                        class="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete parameter"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             }.into_any()
         }
