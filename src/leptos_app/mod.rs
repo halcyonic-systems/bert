@@ -283,11 +283,11 @@ pub fn App() -> impl IntoView {
                  leptos::logging::log!("Key pressed: {} (code: {})", ev.key(), ev.code());
 
                  // Handle zoom keys directly in JavaScript to bypass Bevy keyboard focus issues
-                 if ev.key() == "-" || ev.key() == "_" {
+                 if ev.key() == "=" || ev.key() == "+" || ev.code() == "NumpadAdd" {
                      ev.prevent_default();
                      leptos::logging::log!("🔍 ZOOM IN detected via JavaScript - sending to Bevy");
                      zoom_event_writer.send(ZoomEvent::ZoomIn).ok();
-                 } else if ev.key() == "=" || ev.key() == "+" {
+                 } else if ev.key() == "-" || ev.key() == "_" || ev.code() == "NumpadSubtract" {
                      ev.prevent_default();
                      leptos::logging::log!("🔍 ZOOM OUT detected via JavaScript - sending to Bevy");
                      zoom_event_writer.send(ZoomEvent::ZoomOut).ok();
