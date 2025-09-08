@@ -25,9 +25,9 @@ pub const SYSTEM_SELECTED_INNER_LINE_WIDTH: f32 = SYSTEM_SELECTED_LINE_WIDTH - 4
 /// Default length of the line segment of a flow.
 pub const FLOW_LENGTH: f32 = 200.0;
 /// Default width of the line segment of a flow.
-pub const FLOW_LINE_WIDTH: f32 = 3.0;
+pub const FLOW_LINE_WIDTH: f32 = 6.0;
 /// Default width of the line segment of a selected flow.
-pub const FLOW_SELECTED_LINE_WIDTH: f32 = 5.0;
+pub const FLOW_SELECTED_LINE_WIDTH: f32 = 8.0;
 /// Default width of the selection line segment overlaid on top of a selected flow's line segment.
 pub const FLOW_SELECTED_INNER_LINE_WIDTH: f32 = FLOW_SELECTED_LINE_WIDTH - 4.0;
 /// Local z coordinate of a flow.
@@ -51,11 +51,11 @@ pub const SUBSYSTEM_Z: f32 = 10.0;
 pub const SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT: f32 = 8.0;
 
 /// Default half width of the rectangle that defines an interface.
-pub const INTERFACE_WIDTH_HALF: f32 = 12.0;
+pub const INTERFACE_WIDTH_HALF: f32 = 15.0;
 /// Default half height of the rectangle that defines an interface.
-pub const INTERFACE_HEIGHT_HALF: f32 = 30.0;
+pub const INTERFACE_HEIGHT_HALF: f32 = 35.0;
 /// Default line width of the perimeter of the rectangle that defines an interface.
-pub const INTERFACE_LINE_WIDTH: f32 = DEFAULT_LINE_WIDTH;
+pub const INTERFACE_LINE_WIDTH: f32 = 4.0;
 /// Default line width of the perimeter of the rectangle of a selected interface.
 pub const INTERFACE_SELECTED_LINE_WIDTH: f32 = INTERFACE_LINE_WIDTH + 2.0;
 /// Default line width of the selection lines overlaid on the perimeter of the rectangle of a selected interface.
@@ -69,11 +69,11 @@ pub const BUTTON_WIDTH_HALF: f32 = 16.0;
 pub const BUTTON_Z: f32 = 200.0;
 
 /// Default half width of an external entity.
-pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 20.0;
+pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 35.0;
 /// Default half height of an external entity.
-pub const EXTERNAL_ENTITY_HEIGHT_HALF: f32 = 60.0;
+pub const EXTERNAL_ENTITY_HEIGHT_HALF: f32 = 85.0;
 /// Default line width of the lines that define an external entity.
-pub const EXTERNAL_ENTITY_LINE_WIDTH: f32 = DEFAULT_LINE_WIDTH;
+pub const EXTERNAL_ENTITY_LINE_WIDTH: f32 = 5.0;
 /// Default line width of the lines that define a selected external entity.
 pub const EXTERNAL_ENTITY_SELECTED_LINE_WIDTH: f32 = EXTERNAL_ENTITY_LINE_WIDTH + 2.0;
 /// Default line width of the selection lines overlaid on a selected external entity.
