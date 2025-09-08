@@ -782,6 +782,7 @@ fn build_interaction<P: HasInfo>(
         amount: flow.amount,
         unit: flow.unit.clone(),
         parameters: flow.parameters.clone(),
+        smart_parameters: flow.smart_parameters.clone(),
     };
 
     ctx.interactions.push(interaction);

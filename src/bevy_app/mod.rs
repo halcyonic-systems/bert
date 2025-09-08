@@ -5,6 +5,7 @@ pub mod data_model;
 pub mod events;
 pub mod plugins;
 mod resources;
+pub mod smart_parameters;
 mod states;
 mod systems;
 mod utils;

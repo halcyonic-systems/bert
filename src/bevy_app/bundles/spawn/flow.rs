@@ -83,6 +83,7 @@ macro_rules! spawn_flow {
                     unit: unit.to_string(),
                     usability,
                     parameters: vec![],
+                    smart_parameters: vec![],
                 },
                 $flow_conn_ty {
                     target: system_entity,
