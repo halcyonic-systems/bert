@@ -770,7 +770,9 @@ impl core::fmt::Display for InteractionUsability {
 ///
 /// - [`Flow`]: Uses substance types to categorize interactions
 /// - [`InteractionUsability`]: Defines the directional and utility aspects of flows
-#[derive(Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash)]
+#[derive(
+    Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash,
+)]
 pub enum SubstanceType {
     /// Energy flows representing power, work capacity, or transformative potential.
     ///

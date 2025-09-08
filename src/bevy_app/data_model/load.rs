@@ -2,7 +2,6 @@ use crate::bevy_app::bundles::{
     spawn_external_entity_only, spawn_interaction_only, spawn_interface_only,
     spawn_is_same_as_id_counter, spawn_main_system, SystemBundle,
 };
-use uuid::Uuid;
 use crate::bevy_app::constants::{EXTERNAL_ENTITY_Z, INTERFACE_Z, SUBSYSTEM_Z};
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::events::SubsystemDrag;
@@ -12,6 +11,7 @@ use crate::LoadFileEvent;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use rust_decimal_macros::dec;
+use uuid::Uuid;
 
 fn load_from_bytes(bytes: &[u8]) -> WorldModel {
     serde_json::from_slice(bytes).expect("This shouldn't fail")
@@ -142,7 +142,10 @@ fn spawn_interactions(
             .smart_parameters
             .iter()
             .cloned()
-            .map(|mut p| { p.id = Uuid::new_v4(); p })
+            .map(|mut p| {
+                p.id = Uuid::new_v4();
+                p
+            })
             .collect::<Vec<_>>();
 
         let interaction_entity = spawn_interaction_only(

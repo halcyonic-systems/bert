@@ -35,24 +35,27 @@ pub fn apply_zoom(
     if time.elapsed_secs() < 0.2 {
         return;
     }
-    
+
     // Additional safety: validate we have entities with InitialPosition
     let entity_count = query.iter().count();
     if entity_count == 0 {
         return; // No entities to zoom
     }
-    
+
     if zoom.is_changed() {
-        info!("apply_zoom: Zoom changed to {} (applying to {} entities)", **zoom, entity_count);
+        info!(
+            "apply_zoom: Zoom changed to {} (applying to {} entities)",
+            **zoom, entity_count
+        );
     }
-    
+
     for (mut transform, initial_position) in &mut query {
         // Validate initial_position is reasonable
         if initial_position.is_nan() || initial_position.length() > 10000.0 {
             error!("Invalid InitialPosition detected: {:?}", initial_position);
             continue;
         }
-        
+
         transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
     }
 }

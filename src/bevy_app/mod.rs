@@ -181,7 +181,7 @@ pub fn init_bevy_app(
         )
             .in_set(AllSet),
     );
-    
+
     #[cfg(target_arch = "wasm32")]
     app.add_systems(
         PreUpdate,
