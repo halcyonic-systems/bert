@@ -1,4 +1,4 @@
-mod add_remove_buttons;
+mod add_remove_buttons; // DISABLED: Button systems not used in drag-and-drop workflow (Phase 0)
 mod color;
 mod drag;
 mod flow;
@@ -9,6 +9,7 @@ mod source_sink_equivalence;
 mod zoom;
 
 use crate::bevy_app::plugins::mouse_interaction::{do_deselect_all, PickSelection};
+// Button module still needed for helper functions (has_incomplete_interactions, etc.) used by other systems
 pub use add_remove_buttons::*;
 pub use color::*;
 pub use drag::*;

@@ -300,6 +300,11 @@ pub fn init_bevy_app(
                 auto_spawn_source_sink_equivalence.after(auto_spawn_external_entity_label),
             )
                 .in_set(AutoSpawnLabelSet),
+            // DISABLED: CreateButtonSet - Button-based UI workflow disabled for drag-and-drop transition (Phase 0)
+            // All 9 button systems are purely UI affordances, safe to disable without affecting core rendering.
+            // Core selection handler (change_focused_system) remains active in Update schedule.
+            // See docs/architecture/button-system-analysis-unified.md for full dependency analysis.
+            /*
             (
                 add_outflow_interface_create_button,
                 add_inflow_interface_create_button,
@@ -313,6 +318,7 @@ pub fn init_bevy_app(
                 remove_unfocused_system_buttons,
             )
                 .in_set(CreateButtonSet),
+            */
             (
                 update_flow_from_interface,
                 update_flow_from_external_entity,
@@ -338,10 +344,11 @@ pub fn init_bevy_app(
         OnEnter(AppState::FlowTerminalSelection),
         (disable_selection,),
     )
-    .add_systems(
-        OnExit(AppState::FlowTerminalSelection),
-        (add_inflow_create_button, add_outflow_create_button),
-    )
+    // DISABLED: Button spawning on FlowTerminalSelection exit (Phase 0)
+    // .add_systems(
+    //     OnExit(AppState::FlowTerminalSelection),
+    //     (add_inflow_create_button, add_outflow_create_button),
+    // )
     .add_systems(OnEnter(AppState::Normal), (enable_selection,))
     // .configure_sets(PreUpdate, (AllSet.run_if(in_state(FileState::Inactive)),))
     .configure_sets(
