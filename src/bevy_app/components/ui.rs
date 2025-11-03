@@ -16,22 +16,23 @@ pub struct PaletteElement {
 
 /// Types of elements available in the drag-and-drop palette.
 /// Organized by category: Systems, Interfaces, Flows, External Entities.
+///
+/// Aligned with Mobus formalization where flow direction determines import/export,
+/// not interface type. Interfaces are unified boundary components with protocols.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect)]
 pub enum PaletteElementType {
-    // Systems Category (4 types)
+    // Systems
     Subsystem,
-    InterfaceSubsystem,
 
-    // Interfaces Category (8 types)
-    ImportInterface,
-    ExportInterface,
+    // Interfaces (unified - direction determined by flows)
+    Interface,
 
-    // Flows Category (12 types)
+    // Flows
     Flow,
     Inflow,
     Outflow,
 
-    // External Entities Category (5 types)
+    // External Entities
     Source,
     Sink,
 }

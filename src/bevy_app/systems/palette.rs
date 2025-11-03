@@ -11,10 +11,10 @@
 //! 3. Click canvas → Element spawns at cursor position
 //! 4. ESC → Cancel placement
 
-use crate::bevy_app::bundles::spawn_subsystem;
+use crate::bevy_app::bundles::{spawn_interface_only, spawn_subsystem};
 use crate::bevy_app::components::{
     ElementDescription, Flow, FlowCurve, InitialPosition, NestingLevel, PaletteElement,
-    PaletteElementType, System,
+    PaletteElementType, SubstanceType, System,
 };
 use crate::bevy_app::constants::BUTTON_Z;
 use crate::bevy_app::events::PaletteDrag;
@@ -67,9 +67,7 @@ const PALETTE_START_Y: f32 = 300.0;
 fn icon_path_for(element_type: PaletteElementType) -> &'static str {
     match element_type {
         PaletteElementType::Subsystem => "palette-icons/subsystem.png",
-        PaletteElementType::InterfaceSubsystem => "palette-icons/interface-subsystem.png",
-        PaletteElementType::ImportInterface => "palette-icons/interface.png",
-        PaletteElementType::ExportInterface => "palette-icons/interface.png",
+        PaletteElementType::Interface => "palette-icons/interface.png",
         PaletteElementType::Flow => "palette-icons/flow.png",
         PaletteElementType::Inflow => "palette-icons/inflow.png",
         PaletteElementType::Outflow => "palette-icons/outflow.png",
@@ -86,18 +84,7 @@ fn icon_path_for(element_type: PaletteElementType) -> &'static str {
 pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let elements = [
         (PaletteElementType::Subsystem, "palette-icons/subsystem.png"),
-        (
-            PaletteElementType::InterfaceSubsystem,
-            "palette-icons/interface-subsystem.png",
-        ),
-        (
-            PaletteElementType::ImportInterface,
-            "palette-icons/interface.png",
-        ),
-        (
-            PaletteElementType::ExportInterface,
-            "palette-icons/interface.png",
-        ),
+        (PaletteElementType::Interface, "palette-icons/interface.png"),
         (PaletteElementType::Flow, "palette-icons/flow.png"),
         (PaletteElementType::Inflow, "palette-icons/inflow.png"),
         (PaletteElementType::Outflow, "palette-icons/outflow.png"),
@@ -187,20 +174,25 @@ pub fn enter_placement_mode(
 ///
 /// Runs every frame while in placement mode. Converts cursor screen coordinates
 /// to world coordinates and updates the ghost transform.
+///
+/// For interfaces, snaps ghost to boundary of focused system.
 pub fn update_placement_ghost(
     placement_mode: Res<PlacementMode>,
     mut ghost_query: Query<&mut Transform, With<PlacementGhost>>,
     camera_query: Query<(&Camera, &GlobalTransform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
+    focused_system: Res<FocusedSystem>,
+    system_query: Query<(&Transform, &System), Without<PlacementGhost>>,
+    zoom: Res<Zoom>,
 ) {
-    if placement_mode.active_element.is_none() {
+    let Some(element_type) = placement_mode.active_element else {
         return;
-    }
+    };
 
     let Some(ghost_entity) = placement_mode.ghost_entity else {
         return;
     };
-    let Ok(mut transform) = ghost_query.get_mut(ghost_entity) else {
+    let Ok(mut ghost_transform) = ghost_query.get_mut(ghost_entity) else {
         return;
     };
 
@@ -209,8 +201,27 @@ pub fn update_placement_ghost(
     let window = window_query.single();
 
     if let Some(cursor_pos) = window.cursor_position() {
-        if let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
-            transform.translation = world_pos.extend(GHOST_Z);
+        if let Ok(cursor_world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
+            // Snap to boundary for interfaces
+            let ghost_world_pos = match element_type {
+                PaletteElementType::Interface => {
+                    if **focused_system != Entity::PLACEHOLDER {
+                        if let Ok((system_transform, system)) = system_query.get(**focused_system) {
+                            let system_center = system_transform.translation.truncate();
+                            let cursor_direction =
+                                (cursor_world_pos - system_center).normalize_or_zero();
+                            system_center + cursor_direction * system.radius * **zoom
+                        } else {
+                            cursor_world_pos // Fallback to cursor if system query fails
+                        }
+                    } else {
+                        cursor_world_pos // No focused system, follow cursor
+                    }
+                }
+                _ => cursor_world_pos, // Subsystems and others follow cursor freely
+            };
+
+            ghost_transform.translation = ghost_world_pos.extend(GHOST_Z);
         }
     }
 }
@@ -272,13 +283,16 @@ pub fn finalize_placement(
             return;
         }
 
-        // Convert world position to local position relative to focused system
-        let focused_transform = system_query.get(**focused_system).unwrap().0;
-        let local_pos = (ghost_world_pos - focused_transform.translation.truncate()) / **zoom;
+        // Get focused system data
+        let (focused_transform, _focused_system_component, _, _) =
+            system_query.get(**focused_system).unwrap();
+        let system_center = focused_transform.translation.truncate();
 
         // Spawn element based on type
         match element_type {
             PaletteElementType::Subsystem => {
+                // Subsystems: Place at cursor position (freeform)
+                let local_pos = (ghost_world_pos - system_center) / **zoom;
                 spawn_subsystem(
                     &mut commands,
                     **focused_system,
@@ -297,10 +311,42 @@ pub fn finalize_placement(
                 );
                 info!("✅ Subsystem placed at {:?}", local_pos);
             }
+            PaletteElementType::Interface => {
+                // Interfaces: Already snapped to boundary by update_placement_ghost
+                // The ghost position IS the boundary position
+
+                // Calculate angle for interface rotation (faces outward from center)
+                let cursor_direction = (ghost_world_pos - system_center).normalize_or_zero();
+                let angle = cursor_direction.to_angle();
+
+                let transform = Transform::from_translation(ghost_world_pos.extend(0.0))
+                    .with_rotation(Quat::from_rotation_z(angle));
+                let initial_position = InitialPosition::new(ghost_world_pos);
+
+                let nesting_level = NestingLevel::current(**focused_system, &nesting_level_query);
+
+                spawn_interface_only(
+                    &mut commands,
+                    SubstanceType::default(), // Default substance, user can change later
+                    nesting_level,
+                    **focused_system,
+                    **zoom,
+                    false, // Not selected initially
+                    "New Interface",
+                    "", // Empty description
+                    "default".to_string(), // Default protocol
+                    transform,
+                    initial_position,
+                    &mut stroke_tess,
+                    &mut meshes,
+                    &mut fixed_system_element_geometries,
+                );
+                info!("✅ Interface placed on boundary at angle {:.2}°", angle.to_degrees());
+            }
             _ => {
-                // Phase 2B/C/D: Not yet implemented
+                // Phase 2C/D: Not yet implemented
                 warn!(
-                    "Element type {:?} not yet implemented in Phase 2A",
+                    "Element type {:?} not yet implemented in Phase 2B",
                     element_type
                 );
             }
