@@ -3,23 +3,25 @@
 //! Spawns a static sidebar with draggable element icons. Users drag elements
 //! from the palette to the canvas to create system components.
 
-use crate::bevy_app::components::{PaletteElement, PaletteElementType};
+use crate::bevy_app::components::{InitialPosition, PaletteElement, PaletteElementType};
+use crate::bevy_app::constants::BUTTON_Z;
+use bevy::picking::PickingBehavior;
 use bevy::prelude::*;
 
-/// Z-level for palette UI elements (above all diagram elements)
-const PALETTE_Z: f32 = 1000.0;
+/// Z-level for palette UI elements (same as buttons for consistency)
+const PALETTE_Z: f32 = BUTTON_Z;
 
 /// Icon size for palette elements
 const PALETTE_ICON_SIZE: f32 = 40.0;
 
 /// Vertical spacing between palette elements
-const PALETTE_SPACING: f32 = 50.0;
+const PALETTE_SPACING: f32 = 60.0;
 
-/// Left edge position for palette (screen coordinates)
-const PALETTE_X: f32 = -900.0;
+/// Left edge position for palette (world coordinates, adjusted for main system at origin)
+const PALETTE_X: f32 = -550.0;
 
 /// Top position for first palette element
-const PALETTE_START_Y: f32 = 400.0;
+const PALETTE_START_Y: f32 = 300.0;
 
 /// Spawns the static palette UI with all draggable elements on startup.
 ///
@@ -50,6 +52,7 @@ pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) 
 
     for (idx, (element_type, icon_path)) in elements.iter().enumerate() {
         let y_position = PALETTE_START_Y - (idx as f32 * PALETTE_SPACING);
+        let position = Vec2::new(PALETTE_X, y_position);
 
         commands.spawn((
             PaletteElement {
@@ -60,8 +63,10 @@ pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) 
                 custom_size: Some(Vec2::splat(PALETTE_ICON_SIZE)),
                 ..default()
             },
-            Transform::from_translation(Vec3::new(PALETTE_X, y_position, PALETTE_Z)),
+            Transform::from_translation(position.extend(PALETTE_Z)),
+            InitialPosition::new(position),
             Name::new(format!("Palette: {:?}", element_type)),
+            PickingBehavior::default(),
         ));
     }
 }
