@@ -29,7 +29,6 @@ const PALETTE_START_Y: f32 = 300.0;
 /// vertical sidebar on the left side of the screen. Each element is marked
 /// with PaletteElement component for drag detection.
 pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Icons from bert-icon-system-collection (SVG→PNG converted at 40x40)
     let elements = [
         (PaletteElementType::Subsystem, "palette-icons/subsystem.png"),
         (
@@ -38,15 +37,15 @@ pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) 
         ),
         (
             PaletteElementType::ImportInterface,
-            "palette-icons/import.png", // Semantic import icon
+            "palette-icons/interface.png",
         ),
         (
             PaletteElementType::ExportInterface,
-            "palette-icons/export.png", // Semantic export icon
+            "palette-icons/interface.png",
         ),
-        (PaletteElementType::Flow, "palette-icons/flow.png"), // interaction.svg (flows are interactions)
-        (PaletteElementType::Inflow, "palette-icons/inflow.png"), // interaction.svg variant
-        (PaletteElementType::Outflow, "palette-icons/outflow.png"), // interaction.svg variant
+        (PaletteElementType::Flow, "palette-icons/flow.png"),
+        (PaletteElementType::Inflow, "palette-icons/inflow.png"),
+        (PaletteElementType::Outflow, "palette-icons/outflow.png"),
         (PaletteElementType::Source, "palette-icons/source.png"),
         (PaletteElementType::Sink, "palette-icons/sink.png"),
     ];
