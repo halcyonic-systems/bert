@@ -32,30 +32,25 @@ use crate::bevy_app::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 use rust_decimal_macros::dec;
 
+/// Updates FocusedSystem resource when user selects a system.
+///
+/// Core selection handler (not button-specific) - must remain active for correct
+/// subsystem placement, flow creation, and other FocusedSystem-dependent systems.
+///
+/// Button validation removed in drag-and-drop transition - original logic prevented
+/// selecting interface subsystems before all buttons created, unnecessary without buttons.
 pub fn change_focused_system(
     selected_query: Query<
-        (Entity, &PickSelection, Option<&Subsystem>),
+        (Entity, &PickSelection),
         (
             Changed<PickSelection>,
             With<crate::bevy_app::components::System>,
         ),
     >,
-    button_query: Query<&CreateButton>,
     mut focused_system: ResMut<FocusedSystem>,
 ) {
-    for (entity, selection, subsystem) in &selected_query {
+    for (entity, selection) in &selected_query {
         if selection.is_selected {
-            if let Some(subsystem) = subsystem {
-                for button in &button_query {
-                    if matches!(button.ty, CreateButtonType::InterfaceSubsystem { .. })
-                        && button.system == subsystem.parent_system
-                    {
-                        // Do not allow selecting an interface subsystem while not all interface subsystems are created for the parent
-                        return;
-                    }
-                }
-            }
-
             **focused_system = entity;
         }
     }
