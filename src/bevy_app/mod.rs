@@ -161,7 +161,7 @@ pub fn init_bevy_app(
     .import_event_from_leptos(save_success_event_receiver)
     .export_event_to_leptos(tree_event_sender)
     .export_event_to_leptos(save_success_bevy_sender)
-    .add_systems(Startup, (window_setup, setup));
+    .add_systems(Startup, (window_setup, setup, spawn_palette_ui));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
 

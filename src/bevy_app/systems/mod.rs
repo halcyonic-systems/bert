@@ -110,6 +110,7 @@
 //! - [`crate::events`]: Event types and communication patterns
 
 mod camera;
+mod palette;
 mod removal;
 mod setup;
 mod spatial_sync;
@@ -119,6 +120,7 @@ mod ui;
 
 use bevy::ecs::system::{RunSystemOnce, SystemState};
 pub use camera::*;
+pub use palette::*;
 pub use removal::*;
 pub use setup::*;
 pub use spatial_sync::*;
