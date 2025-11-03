@@ -139,6 +139,7 @@ pub fn init_bevy_app(
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
     .init_resource::<PlacementMode>()
+    // .init_resource::<ConnectionMode>() // TEMPORARILY DISABLED
     .add_event::<RemoveEvent>()
     .add_event::<DetachMarkerLabelEvent>()
     .add_event::<LoadFileEvent>()
@@ -220,6 +221,13 @@ pub fn init_bevy_app(
                 update_placement_ghost,  // Ghost follows cursor
                 finalize_placement,      // Click canvas → spawn element OR ESC → cancel
             ),
+            // Connection mode systems - TEMPORARILY DISABLED (investigating grey screen)
+            // (
+            //     enter_connection_mode,      // F key → enter mode
+            //     select_connection_source,   // Click subsystem → select source
+            //     update_connection_ghost,    // Ghost line from source to cursor
+            //     finalize_connection,        // Click destination → create flow OR ESC → cancel
+            // ),
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),

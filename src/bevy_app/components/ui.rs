@@ -15,26 +15,27 @@ pub struct PaletteElement {
 }
 
 /// Types of elements available in the drag-and-drop palette.
-/// Organized by category: Systems, Interfaces, Flows, External Entities.
 ///
-/// Aligned with Mobus formalization where flow direction determines import/export,
-/// not interface type. Interfaces are unified boundary components with protocols.
+/// Aligned with Mobus 8-tuple formalization:
+/// - Subsystem: Components (c ∈ C, internal processing)
+/// - Interface: Boundary components (c ∈ I ⊂ C, protocol-mediated exchange)
+/// - EnvironmentalObject: External entities (o ∈ O, unified sources/sinks)
+///
+/// Flows are NOT palette items - they are edges in N (internal) or G (external)
+/// networks, created via connection mode.
+///
+/// Key insight: Direction determined by flow edges, not node types.
+/// Environmental objects can be BOTH source AND sink simultaneously.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect)]
 pub enum PaletteElementType {
-    // Systems
+    /// Internal component (c ∈ C, not interface) - processes within system
     Subsystem,
 
-    // Interfaces (unified - direction determined by flows)
+    /// Boundary component (c ∈ I ⊂ C) - mediates flows across boundary
     Interface,
 
-    // Flows
-    Flow,
-    Inflow,
-    Outflow,
-
-    // External Entities
-    Source,
-    Sink,
+    /// External entity (o ∈ O) - environmental object, unified source/sink
+    EnvironmentalObject,
 }
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]

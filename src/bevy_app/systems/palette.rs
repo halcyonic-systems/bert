@@ -11,7 +11,7 @@
 //! 3. Click canvas → Element spawns at cursor position
 //! 4. ESC → Cancel placement
 
-use crate::bevy_app::bundles::{spawn_interface_only, spawn_subsystem};
+use crate::bevy_app::bundles::{spawn_external_entity_only, spawn_interface_only, spawn_subsystem};
 use crate::bevy_app::components::{
     ElementDescription, Flow, FlowCurve, InitialPosition, NestingLevel, PaletteElement,
     PaletteElementType, SubstanceType, System,
@@ -68,11 +68,7 @@ fn icon_path_for(element_type: PaletteElementType) -> &'static str {
     match element_type {
         PaletteElementType::Subsystem => "palette-icons/subsystem.png",
         PaletteElementType::Interface => "palette-icons/interface.png",
-        PaletteElementType::Flow => "palette-icons/flow.png",
-        PaletteElementType::Inflow => "palette-icons/inflow.png",
-        PaletteElementType::Outflow => "palette-icons/outflow.png",
-        PaletteElementType::Source => "palette-icons/source.png",
-        PaletteElementType::Sink => "palette-icons/sink.png",
+        PaletteElementType::EnvironmentalObject => "palette-icons/source.png", // Reuse source icon for now
     }
 }
 
@@ -85,11 +81,7 @@ pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) 
     let elements = [
         (PaletteElementType::Subsystem, "palette-icons/subsystem.png"),
         (PaletteElementType::Interface, "palette-icons/interface.png"),
-        (PaletteElementType::Flow, "palette-icons/flow.png"),
-        (PaletteElementType::Inflow, "palette-icons/inflow.png"),
-        (PaletteElementType::Outflow, "palette-icons/outflow.png"),
-        (PaletteElementType::Source, "palette-icons/source.png"),
-        (PaletteElementType::Sink, "palette-icons/sink.png"),
+        (PaletteElementType::EnvironmentalObject, "palette-icons/source.png"),
     ];
 
     for (idx, (element_type, icon_path)) in elements.iter().enumerate() {
@@ -202,7 +194,7 @@ pub fn update_placement_ghost(
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Ok(cursor_world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
-            // Snap to boundary for interfaces
+            // Snap to boundary for interfaces only
             let ghost_world_pos = match element_type {
                 PaletteElementType::Interface => {
                     if **focused_system != Entity::PLACEHOLDER {
@@ -218,7 +210,10 @@ pub fn update_placement_ghost(
                         cursor_world_pos // No focused system, follow cursor
                     }
                 }
-                _ => cursor_world_pos, // Subsystems and others follow cursor freely
+                // Subsystems and EnvironmentalObjects follow cursor freely
+                PaletteElementType::Subsystem | PaletteElementType::EnvironmentalObject => {
+                    cursor_world_pos
+                }
             };
 
             ghost_transform.translation = ghost_world_pos.extend(GHOST_Z);
@@ -343,12 +338,32 @@ pub fn finalize_placement(
                 );
                 info!("✅ Interface placed on boundary at angle {:.2}°", angle.to_degrees());
             }
-            _ => {
-                // Phase 2C/D: Not yet implemented
-                warn!(
-                    "Element type {:?} not yet implemented in Phase 2B",
-                    element_type
+            PaletteElementType::EnvironmentalObject => {
+                // Environmental objects: Freeform placement in environment
+                // These are objects in O (environment set) per Mobus 8-tuple
+
+                let transform = Transform::from_translation(ghost_world_pos.extend(0.0));
+                let initial_position = InitialPosition::new(ghost_world_pos);
+
+                let nesting_level = NestingLevel::current(**focused_system, &nesting_level_query);
+
+                spawn_external_entity_only(
+                    &mut commands,
+                    SubstanceType::default(), // Default substance, user can change later
+                    false, // Not selected initially
+                    "New Environmental Object",
+                    "", // Empty description
+                    "", // Empty equivalence
+                    "", // Empty model
+                    transform,
+                    initial_position,
+                    nesting_level,
+                    **zoom,
+                    &mut fixed_system_element_geometries,
+                    &mut meshes,
+                    &mut stroke_tess,
                 );
+                info!("✅ Environmental object placed at {:?}", ghost_world_pos);
             }
         }
 

@@ -110,6 +110,7 @@
 //! - [`crate::events`]: Event types and communication patterns
 
 mod camera;
+// mod connection_mode; // TEMPORARILY DISABLED - investigating grey screen
 mod palette;
 mod removal;
 mod setup;
@@ -120,6 +121,7 @@ mod ui;
 
 use bevy::ecs::system::{RunSystemOnce, SystemState};
 pub use camera::*;
+// pub use connection_mode::*; // TEMPORARILY DISABLED
 pub use palette::*;
 pub use removal::*;
 pub use setup::*;
