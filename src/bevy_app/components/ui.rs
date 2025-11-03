@@ -2,6 +2,40 @@ use crate::bevy_app::components::{InitialPosition, InterfaceType, SubstanceType}
 use crate::bevy_app::constants::FLOW_LENGTH;
 use bevy::prelude::*;
 
+// ============================================================================
+// Drag-and-Drop Palette Components (Phase 1)
+// ============================================================================
+
+/// Marks an entity as a draggable palette element in the sidebar.
+/// Palette elements spawn new diagram elements when dragged to canvas.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
+pub struct PaletteElement {
+    pub element_type: PaletteElementType,
+}
+
+/// Types of elements available in the drag-and-drop palette.
+/// Organized by category: Systems, Interfaces, Flows, External Entities.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+pub enum PaletteElementType {
+    // Systems Category (4 types)
+    Subsystem,
+    InterfaceSubsystem,
+
+    // Interfaces Category (8 types)
+    ImportInterface,
+    ExportInterface,
+
+    // Flows Category (12 types)
+    Flow,
+    Inflow,
+    Outflow,
+
+    // External Entities Category (5 types)
+    Source,
+    Sink,
+}
+
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]
 pub struct CreateButton {

@@ -18,12 +18,13 @@ Replaces sequential button-based workflow with freeform drag-and-drop UI for cre
 
 ## Implemented Functionality
 
-**Phase 0** (Current):
-- Disabled button-based UI workflow (CreateButtonSet systems)
-- Preserved core selection handler (change_focused_system simplified)
-- Zero breaking changes to rendering/geometry/labels
+**Phase 0** (Completed):
+- ✅ Disabled button-based UI workflow (CreateButtonSet systems)
+- ✅ Preserved core selection handler (change_focused_system simplified)
+- ✅ Zero breaking changes to rendering/geometry/labels
+- ✅ Manual verification: flows work, buttons correctly absent, selection intact
 
-**Phase 1** (In Progress):
+**Phase 1** (Current):
 - [ ] Static palette sidebar with element icons
 - [ ] PNG icon assets (29 icons across 4 categories)
 - [ ] World-space sprite rendering (consistent with BERT architecture)
