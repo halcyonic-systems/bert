@@ -138,6 +138,7 @@ pub fn init_bevy_app(
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
+    .init_resource::<PlacementMode>()
     .add_event::<RemoveEvent>()
     .add_event::<DetachMarkerLabelEvent>()
     .add_event::<LoadFileEvent>()
@@ -208,7 +209,17 @@ pub fn init_bevy_app(
                 select_flow_terminal.after(update_selecting_flow_from_mouse),
             )
                 .in_set(FlowTerminalSelectingSet),
-            (drag_external_entity, drag_interface, drag_subsystem),
+            (
+                drag_external_entity,
+                drag_interface,
+                drag_subsystem,
+            ),
+            // Palette placement mode systems
+            (
+                enter_placement_mode,    // Click palette → enter mode + spawn ghost
+                update_placement_ghost,  // Ghost follows cursor
+                finalize_placement,      // Click canvas → spawn element OR ESC → cancel
+            ),
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),

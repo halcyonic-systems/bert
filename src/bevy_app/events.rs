@@ -27,6 +27,7 @@ macro_rules! impl_drag_event {
 impl_drag_event!(ExternalEntityDrag);
 impl_drag_event!(InterfaceDrag);
 impl_drag_event!(SubsystemDrag);
+impl_drag_event!(PaletteDrag);
 
 /// Fires when an entity is removed from the world. Used in system control flow.
 #[derive(Event, Debug, Clone, Copy)]
