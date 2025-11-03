@@ -24,10 +24,17 @@ Replaces sequential button-based workflow with freeform drag-and-drop UI for cre
 - ✅ Zero breaking changes to rendering/geometry/labels
 - ✅ Manual verification: flows work, buttons correctly absent, selection intact
 
-**Phase 1** (Current):
-- [ ] Static palette sidebar with element icons
-- [ ] PNG icon assets (29 icons across 4 categories)
-- [ ] World-space sprite rendering (consistent with BERT architecture)
+**Phase 1** (Completed):
+- ✅ Static palette sidebar with element icons (9 elements, vertical layout)
+- ✅ PNG icon assets (8 icons for 7 element types + generic variants)
+- ✅ World-space sprite rendering at z=1000 (consistent with BERT architecture)
+- ✅ spawn_palette_ui system registered on Startup
+
+**Phase 2** (Next):
+- [ ] Drag detection for palette elements
+- [ ] Visual feedback during drag (ghost element follows cursor)
+- [ ] Drop detection on canvas
+- [ ] Spawn appropriate system element based on PaletteElementType
 
 ## Technical Implementation
 
