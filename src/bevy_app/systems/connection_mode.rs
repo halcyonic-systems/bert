@@ -22,7 +22,8 @@
 
 use crate::bevy_app::bundles::spawn_interaction_only;
 use crate::bevy_app::components::{
-    EndTargetType, ExternalEntity, Flow, FlowCurve, FlowEndConnection, FlowStartConnection,
+    EndTargetType, ExternalEntity, Flow, FlowCurve, FlowEndConnection,
+    FlowEndInterfaceConnection, FlowStartConnection, FlowStartInterfaceConnection,
     InitialPosition, InteractionType, InteractionUsability, Interface, NestingLevel, Parameter,
     StartTargetType, SubstanceType, Subsystem,
 };
@@ -227,6 +228,8 @@ pub fn finalize_connection(
                 warn!("❌ Cannot connect EnvironmentalObject to EnvironmentalObject (no direct environment-to-environment flows)");
             } else if source_is_interface && dest_is_interface {
                 warn!("❌ Cannot connect Interface to Interface directly");
+            } else if (source_is_interface && dest_is_subsystem) || (source_is_subsystem && dest_is_interface) {
+                warn!("❌ Interface ↔ Subsystem flows not yet implemented (pending Phase 3 'Interfaces as Subsystems' refactor)");
             } else {
                 warn!("❌ Invalid connection type");
             }
@@ -321,7 +324,9 @@ pub fn finalize_connection(
         };
 
         // Add connection components to link flow to source and destination
-        commands.entity(flow_entity).insert((
+        let mut flow_commands = commands.entity(flow_entity);
+
+        flow_commands.insert((
             FlowStartConnection {
                 target: source_entity,
                 target_type: start_target_type,
@@ -331,6 +336,19 @@ pub fn finalize_connection(
                 target_type: end_target_type,
             },
         ));
+
+        // Add Interface-specific connection components for proper rendering
+        if source_is_interface {
+            flow_commands.insert(FlowStartInterfaceConnection {
+                target: source_entity,
+            });
+        }
+
+        if dest_is_interface {
+            flow_commands.insert(FlowEndInterfaceConnection {
+                target: destination_entity,
+            });
+        }
 
         // Log network type for debugging
         let network_type = if is_valid_n_network { "N" } else { "G" };
