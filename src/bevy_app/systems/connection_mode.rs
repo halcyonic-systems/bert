@@ -274,13 +274,19 @@ pub fn finalize_connection(
             (t, n)
         };
 
-        // Validate: Same nesting level
+        // Validate: Same nesting level (only for N network)
+        // G network connections MUST cross levels (interface at N+1, external at N)
+        // per Mobus theory - that's the system boundary!
         if source_nesting_level != dest_nesting_level {
-            warn!(
-                "❌ Cannot connect elements at different nesting levels ({} vs {})",
-                **source_nesting_level, **dest_nesting_level
-            );
-            continue;
+            if is_valid_n_network {
+                // N network requires same level
+                warn!(
+                    "❌ Cannot connect elements at different nesting levels ({} vs {})",
+                    **source_nesting_level, **dest_nesting_level
+                );
+                continue;
+            }
+            // G network: cross-level is expected and correct, allow it
         }
 
         // All validation passed - create flow edge
