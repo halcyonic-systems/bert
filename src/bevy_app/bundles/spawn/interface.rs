@@ -91,7 +91,13 @@ pub fn spawn_interface_only(
 
     let interface_entity = commands
         .spawn((
-            Interface { protocol },
+            Interface {
+                protocol: protocol.clone(),
+            },
+            InterfaceBehavior {
+                substance_type,
+                protocol,
+            },
             transform,
             Fill::color(substance_type.interface_color_default()),
             PickingBehavior::default(),

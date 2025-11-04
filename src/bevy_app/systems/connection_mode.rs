@@ -1,4 +1,4 @@
-//! Connection mode system for creating flow edges between elements (Phase 2D)
+//! Connection mode system for creating flow edges between elements (Phase 2D + Phase 3A)
 //!
 //! Implements modal workflow for connecting elements with flow edges.
 //! This aligns with Mobus formalization where flows are EDGES, not nodes.
@@ -10,6 +10,12 @@
 //! - Default substance: Material, usability: Resource
 //! - Modal mode: stay active after creating flow, ESC to exit
 //!
+//! ## Phase 3A: Interface as Subsystem Foundation (Complete)
+//! - **I ⊆ C**: Treats interfaces as special subsystems per Mobus theory
+//! - **Interface ↔ Subsystem flows**: Now valid for proper import/export modeling
+//! - **Interface ↔ Interface flows**: Now valid within N network
+//! - Implemented via component composition: Interface = Subsystem + InterfaceBehavior
+//!
 //! ## UX Flow
 //! 1. Press 'F' key or click connection button → Enter connection mode
 //! 2. Click first element → Select as source, ghost line appears
@@ -18,7 +24,7 @@
 //! 5. Mode stays active for multiple connections, ESC to exit
 //!
 //! ## Future Phases
-//! - Phase 3: Substance/usability selection dialog, duplicate detection
+//! - Phase 3B+: Substance/usability selection dialog, duplicate detection
 
 use crate::bevy_app::bundles::spawn_interaction_only;
 use crate::bevy_app::components::{
@@ -155,9 +161,11 @@ pub fn update_connection_ghost(
 
 /// Step 4: Finalize connection on second click - validate and create flow edge.
 ///
-/// # Validation Rules (Phase 2D Complete)
+/// # Validation Rules (Phase 3A Complete)
 /// **N network** (Internal):
 /// - Subsystem ↔ Subsystem
+/// - Interface ↔ Interface (Phase 3A: I ⊆ C)
+/// - Interface ↔ Subsystem (Phase 3A: enables import/export modeling)
 /// - Same nesting level required
 ///
 /// **G network** (External):
@@ -214,7 +222,9 @@ pub fn finalize_connection(
         let dest_is_external = external_entity_query.get(destination_entity).is_ok();
 
         // Validate connection types (N network or G network)
-        let is_valid_n_network = source_is_subsystem && dest_is_subsystem;
+        // Phase 3A: Treat interfaces as subsystems (I ⊆ C per Mobus)
+        let is_valid_n_network = (source_is_subsystem || source_is_interface)
+            && (dest_is_subsystem || dest_is_interface);
         let is_valid_g_network =
             (source_is_external && dest_is_interface) || (source_is_interface && dest_is_external);
 
@@ -226,10 +236,6 @@ pub fn finalize_connection(
                 warn!("❌ Cannot connect Subsystem directly to EnvironmentalObject (must connect to Interface per G network)");
             } else if source_is_external && dest_is_external {
                 warn!("❌ Cannot connect EnvironmentalObject to EnvironmentalObject (no direct environment-to-environment flows)");
-            } else if source_is_interface && dest_is_interface {
-                warn!("❌ Cannot connect Interface to Interface directly");
-            } else if (source_is_interface && dest_is_subsystem) || (source_is_subsystem && dest_is_interface) {
-                warn!("❌ Interface ↔ Subsystem flows not yet implemented (pending Phase 3 'Interfaces as Subsystems' refactor)");
             } else {
                 warn!("❌ Invalid connection type");
             }
