@@ -44,7 +44,8 @@ pub const FLOW_ARROW_HEAD_WIDTH_HALF: f32 = 10.0;
 /// Default number that defines the scale factor used in the (re)sizing a subsystem.
 pub const SUBSYSTEM_SCALING_FACTOR: f32 = 0.3;
 /// Default number that defines the lower bound of the scale factor used in the (re)sizing a subsystem.
-pub const SUBSYSTEM_MIN_SCALING_FACTOR: f32 = 0.04;
+/// Set to 0.14 (14% of parent) to match size achieved with ~3 interfaces for better initial visibility.
+pub const SUBSYSTEM_MIN_SCALING_FACTOR: f32 = 0.14;
 /// Local z coordinate of a subsystem.
 pub const SUBSYSTEM_Z: f32 = 10.0;
 /// Size of subsystems are scaled based on the number of interfaces it has until it reaches this limit.
@@ -69,9 +70,11 @@ pub const BUTTON_WIDTH_HALF: f32 = 16.0;
 pub const BUTTON_Z: f32 = 200.0;
 
 /// Default half width of an external entity.
-pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 35.0;
+/// Reduced to 20.0 for better visual hierarchy (was 35.0)
+pub const EXTERNAL_ENTITY_WIDTH_HALF: f32 = 20.0;
 /// Default half height of an external entity.
-pub const EXTERNAL_ENTITY_HEIGHT_HALF: f32 = 85.0;
+/// Reduced to 50.0 for better visual hierarchy (was 85.0)
+pub const EXTERNAL_ENTITY_HEIGHT_HALF: f32 = 50.0;
 /// Default line width of the lines that define an external entity.
 pub const EXTERNAL_ENTITY_LINE_WIDTH: f32 = 5.0;
 /// Default line width of the lines that define a selected external entity.

@@ -149,11 +149,11 @@ pub fn update_connection_ghost(
         if let Ok(cursor_world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
             let source_world_pos = source_transform.translation.truncate();
 
-            // Draw cyan line from source to cursor
+            // Draw preview line from source to cursor (matches default flow color)
             gizmos.line_2d(
                 source_world_pos,
                 cursor_world_pos,
-                Color::srgb(0.0, 1.0, 1.0),
+                Color::srgb(0.95, 0.95, 0.95),
             );
         }
     }
