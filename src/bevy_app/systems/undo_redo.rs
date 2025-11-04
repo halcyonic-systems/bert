@@ -26,6 +26,7 @@
 //! ```
 
 use crate::bevy_app::components::PaletteElementType;
+use bevy::ecs::event::EventCursor;
 use bevy::prelude::*;
 
 /// Event requesting an undo operation.
@@ -35,6 +36,14 @@ pub struct UndoEvent;
 /// Event requesting a redo operation.
 #[derive(Event)]
 pub struct RedoEvent;
+
+/// Local resource to track undo event reader state between frames.
+#[derive(Resource, Default)]
+pub struct UndoEventReader(EventCursor<UndoEvent>);
+
+/// Local resource to track redo event reader state between frames.
+#[derive(Resource, Default)]
+pub struct RedoEventReader(EventCursor<RedoEvent>);
 
 /// Trait for reversible commands that can be undone and redone.
 ///
@@ -234,43 +243,37 @@ pub fn handle_undo_redo_shortcuts(
 /// System that executes undo operations from UndoEvent.
 ///
 /// Runs with exclusive world access to perform entity despawning.
+/// Only processes ONE undo per frame to match user expectation.
+/// Uses a persistent ManualEventReader to avoid re-processing events.
 pub fn execute_undo(world: &mut World) {
-    // Check if there are undo events
-    let mut events_to_process = Vec::new();
-    {
-        let mut event_reader = world.resource_mut::<Events<UndoEvent>>();
-        let mut reader = event_reader.get_reader();
-        for _event in reader.read(&event_reader) {
-            events_to_process.push(());
-        }
-    }
+    world.resource_scope(|world, mut event_reader: Mut<UndoEventReader>| {
+        let events = world.resource::<Events<UndoEvent>>();
 
-    // Process each undo event
-    for _ in events_to_process {
-        world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
-            command_history.undo(world);
-        });
-    }
+        // Read only the NEXT event (not all events)
+        if let Some(_event) = event_reader.0.read(&events).next() {
+            // Process exactly ONE undo
+            world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
+                command_history.undo(world);
+            });
+        }
+    });
 }
 
 /// System that executes redo operations from RedoEvent.
 ///
 /// Runs with exclusive world access to perform entity respawning.
+/// Only processes ONE redo per frame to match user expectation.
+/// Uses a persistent ManualEventReader to avoid re-processing events.
 pub fn execute_redo(world: &mut World) {
-    // Check if there are redo events
-    let mut events_to_process = Vec::new();
-    {
-        let mut event_reader = world.resource_mut::<Events<RedoEvent>>();
-        let mut reader = event_reader.get_reader();
-        for _event in reader.read(&event_reader) {
-            events_to_process.push(());
-        }
-    }
+    world.resource_scope(|world, mut event_reader: Mut<RedoEventReader>| {
+        let events = world.resource::<Events<RedoEvent>>();
 
-    // Process each redo event
-    for _ in events_to_process {
-        world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
-            command_history.redo(world);
-        });
-    }
+        // Read only the NEXT event (not all events)
+        if let Some(_event) = event_reader.0.read(&events).next() {
+            // Process exactly ONE redo
+            world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
+                command_history.redo(world);
+            });
+        }
+    });
 }

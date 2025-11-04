@@ -141,6 +141,8 @@ pub fn init_bevy_app(
     .init_resource::<PlacementMode>()
     .init_resource::<ConnectionMode>() // PHASE 1: Resource enabled
     .insert_resource(CommandHistory::new(50)) // PHASE 2: Undo/redo with 50-command history
+    .init_resource::<UndoEventReader>() // PHASE 2: Persistent event readers for undo/redo
+    .init_resource::<RedoEventReader>()
     .add_event::<RemoveEvent>()
     .add_event::<DetachMarkerLabelEvent>()
     .add_event::<LoadFileEvent>()
