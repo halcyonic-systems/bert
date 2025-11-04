@@ -14,7 +14,8 @@ use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::resources::{
     build_external_entity_aabb_half_extents, build_external_entity_path,
     build_interface_aabb_half_extends, build_interface_path, build_interface_simplified_mesh,
-    FixedSystemElementGeometriesByNestingLevel, StrokeTessellator, Zoom,
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom,
+    ZoomTarget,
 };
 use crate::bevy_app::systems::tessellate_simplified_mesh;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -445,5 +446,92 @@ pub fn apply_zoom_to_added_label(
             **zoom,
             LABEL_SCALE_VISIBILITY_THRESHOLD,
         );
+    }
+}
+
+/// Phase 3B: Auto-zoom on focus change - calculates target zoom to make focused system ~300px radius.
+///
+/// When user focuses a nested subsystem (double-click), this system:
+/// 1. Detects the focus change
+/// 2. Calculates zoom to make focused system 300px screen radius
+/// 3. Sets ZoomTarget for smooth animation
+///
+/// Solves "subsystems too tiny at deep nesting" UX issue.
+pub fn auto_zoom_on_focus_change(
+    focused_system: Res<FocusedSystem>,
+    mut previous_focus: Local<Option<Entity>>,
+    system_query: Query<(&Transform, &crate::bevy_app::components::System, &NestingLevel)>,
+    mut zoom_target: ResMut<ZoomTarget>,
+) {
+    // Only trigger on actual focus change
+    if focused_system.is_changed() && Some(**focused_system) != *previous_focus {
+        // Skip placeholder entity (no real system focused)
+        if **focused_system == Entity::PLACEHOLDER {
+            *previous_focus = None;
+            return;
+        }
+
+        let Ok((transform, system, _nesting_level)) = system_query.get(**focused_system) else {
+            warn!("Failed to get system data for focused entity");
+            return;
+        };
+
+        // Target: make focused system appear as 300px radius on screen
+        let desired_screen_radius = 300.0;
+        let target_zoom: f32 = desired_screen_radius / system.radius;
+
+        // Clamp zoom to reasonable bounds
+        zoom_target.target_zoom = target_zoom.clamp(0.1, 10.0);
+        zoom_target.target_pan = transform.translation.truncate();
+        zoom_target.animating = true;
+        zoom_target.progress = 0.0;
+
+        info!(
+            "🔍 Auto-zoom triggered: target zoom {:.2}x (system radius {:.1} → screen radius {:.1}px)",
+            target_zoom, system.radius, desired_screen_radius
+        );
+
+        *previous_focus = Some(**focused_system);
+    }
+}
+
+/// Phase 3B: Animate zoom and camera pan toward target over ~300ms.
+///
+/// Smoothly lerps Zoom resource and Camera transform from current to target values.
+/// Uses ease-out interpolation for natural feel.
+pub fn animate_zoom_to_target(
+    mut zoom: ResMut<Zoom>,
+    mut zoom_target: ResMut<ZoomTarget>,
+    mut camera_query: Query<&mut Transform, With<Camera2d>>,
+    time: Res<Time>,
+) {
+    if !zoom_target.animating {
+        return;
+    }
+
+    // Animation duration: 300ms
+    let animation_speed = 3.33; // 1.0 / 0.3 seconds
+    zoom_target.progress += time.delta_secs() * animation_speed;
+
+    // Ease-out cubic interpolation for smooth deceleration
+    let t = zoom_target.progress.min(1.0);
+    let ease_t = 1.0 - (1.0 - t).powi(3);
+
+    // Lerp zoom
+    let start_zoom = **zoom;
+    let new_zoom = start_zoom + (zoom_target.target_zoom - start_zoom) * ease_t;
+    **zoom = new_zoom;
+
+    // Lerp camera pan
+    if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+        let start_pan = camera_transform.translation.truncate();
+        let new_pan = start_pan + (zoom_target.target_pan - start_pan) * ease_t;
+        camera_transform.translation = new_pan.extend(camera_transform.translation.z);
+    }
+
+    // Complete animation when progress reaches 1.0
+    if zoom_target.progress >= 1.0 {
+        zoom_target.animating = false;
+        info!("✅ Auto-zoom animation complete at {:.2}x", **zoom);
     }
 }

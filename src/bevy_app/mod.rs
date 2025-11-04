@@ -130,6 +130,7 @@ pub fn init_bevy_app(
     .init_resource::<CurrentFile>()
     .init_resource::<Theme>()
     .init_resource::<Zoom>()
+    .init_resource::<ZoomTarget>() // Phase 3B: auto-zoom animation state
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .init_resource::<IsSameAsIdCounter>()
     // .add_systems(Startup, |mut commands: Commands| {
@@ -274,6 +275,8 @@ pub fn init_bevy_app(
             )
                 .in_set(RemovalCleanupSet),
             (
+                auto_zoom_on_focus_change, // Phase 3B: detect focus change, set zoom target
+                animate_zoom_to_target,    // Phase 3B: smooth animation to target
                 apply_zoom,
                 apply_zoom_to_camera_position,
                 apply_zoom_to_incomplete_flows,

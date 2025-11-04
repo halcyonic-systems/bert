@@ -39,6 +39,34 @@ impl Default for Zoom {
     }
 }
 
+/// Phase 3B: Animation target for smooth zoom transitions on focus change.
+///
+/// When user focuses a nested subsystem, this resource stores the target zoom level
+/// and camera position for smooth animation over ~300ms.
+#[derive(Debug, Resource, Reflect)]
+#[reflect(Resource)]
+pub struct ZoomTarget {
+    /// Target zoom level to animate toward
+    pub target_zoom: f32,
+    /// Target camera pan position (world coordinates)
+    pub target_pan: Vec2,
+    /// Whether animation is currently active
+    pub animating: bool,
+    /// Animation progress (0.0 = start, 1.0 = complete)
+    pub progress: f32,
+}
+
+impl Default for ZoomTarget {
+    fn default() -> Self {
+        Self {
+            target_zoom: 1.0,
+            target_pan: Vec2::ZERO,
+            animating: false,
+            progress: 0.0,
+        }
+    }
+}
+
 #[derive(Resource, Deref, DerefMut)]
 pub struct StrokeTessellator(bevy_prototype_lyon::prelude::tess::StrokeTessellator);
 
