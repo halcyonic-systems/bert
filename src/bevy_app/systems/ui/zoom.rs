@@ -457,42 +457,54 @@ pub fn apply_zoom_to_added_label(
 /// 3. Sets ZoomTarget for smooth animation
 ///
 /// Solves "subsystems too tiny at deep nesting" UX issue.
+///
+/// IMPORTANT: Only triggers on actual FocusedSystem entity changes, NOT on manual zoom changes.
+/// Uses change detection on FocusedSystem resource to detect when user focuses a different system.
 pub fn auto_zoom_on_focus_change(
     focused_system: Res<FocusedSystem>,
     mut previous_focus: Local<Option<Entity>>,
     system_query: Query<(&Transform, &crate::bevy_app::components::System, &NestingLevel)>,
     mut zoom_target: ResMut<ZoomTarget>,
 ) {
-    // Only trigger on actual focus change
-    if focused_system.is_changed() && Some(**focused_system) != *previous_focus {
-        // Skip placeholder entity (no real system focused)
-        if **focused_system == Entity::PLACEHOLDER {
-            *previous_focus = None;
-            return;
-        }
-
-        let Ok((transform, system, _nesting_level)) = system_query.get(**focused_system) else {
-            warn!("Failed to get system data for focused entity");
-            return;
-        };
-
-        // Target: make focused system appear as 300px radius on screen
-        let desired_screen_radius = 300.0;
-        let target_zoom: f32 = desired_screen_radius / system.radius;
-
-        // Clamp zoom to reasonable bounds
-        zoom_target.target_zoom = target_zoom.clamp(0.1, 10.0);
-        zoom_target.target_pan = transform.translation.truncate();
-        zoom_target.animating = true;
-        zoom_target.progress = 0.0;
-
-        info!(
-            "🔍 Auto-zoom triggered: target zoom {:.2}x (system radius {:.1} → screen radius {:.1}px)",
-            target_zoom, system.radius, desired_screen_radius
-        );
-
-        *previous_focus = Some(**focused_system);
+    // Only trigger if FocusedSystem resource changed AND the entity is different
+    if !focused_system.is_changed() {
+        return;
     }
+
+    let current_focus = **focused_system;
+
+    // Check if this is actually a NEW focus (entity changed, not just resource marked changed)
+    if Some(current_focus) == *previous_focus {
+        return; // Same entity, no actual focus change
+    }
+
+    // Skip placeholder entity (no real system focused)
+    if current_focus == Entity::PLACEHOLDER {
+        *previous_focus = None;
+        return;
+    }
+
+    let Ok((transform, system, _nesting_level)) = system_query.get(current_focus) else {
+        warn!("Failed to get system data for focused entity");
+        return;
+    };
+
+    // Target: make focused system appear as 300px radius on screen
+    let desired_screen_radius = 300.0;
+    let target_zoom: f32 = desired_screen_radius / system.radius;
+
+    // Clamp zoom to reasonable bounds
+    zoom_target.target_zoom = target_zoom.clamp(0.1, 10.0);
+    zoom_target.target_pan = transform.translation.truncate();
+    zoom_target.animating = true;
+    zoom_target.progress = 0.0;
+
+    info!(
+        "🔍 Auto-zoom triggered: entity {:?}, target zoom {:.2}x (system radius {:.1} → screen radius {:.1}px)",
+        current_focus, target_zoom, system.radius, desired_screen_radius
+    );
+
+    *previous_focus = Some(current_focus);
 }
 
 /// Phase 3B: Animate zoom and camera pan toward target over ~300ms.
