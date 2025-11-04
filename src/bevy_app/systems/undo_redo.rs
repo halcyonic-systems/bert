@@ -191,11 +191,14 @@ impl UndoCommand for PlaceElementCommand {
     }
 
     fn redo(&mut self, _world: &mut World) {
-        // TODO: Re-spawn the element at the same position
-        // This requires access to spawn functions which need Resources
-        // For now, log that redo is not fully implemented
+        // TODO: Implement redo by respawning entities
+        // Challenge: spawn functions expect system context (Query, ResMut) but we have
+        // exclusive world context (QueryState, Mut). Options:
+        // 1. Refactor spawn functions to accept both types
+        // 2. Manually recreate entities with all components here
+        // 3. Store enough data to rebuild without calling spawn functions
         warn!(
-            "Redo for PlaceElementCommand not yet fully implemented (would respawn {:?} at {:?})",
+            "Redo not yet fully implemented (would respawn {:?} at {:?})",
             self.element_type, self.position
         );
     }
