@@ -257,7 +257,7 @@ pub struct ConnectionMode {
 - ✅ Nesting level validation
 
 ### Known Issues
-- 🐛 **Interface flow rendering**: Flows attached to Interfaces render to parent system boundary instead of Interface position (data model correct, rendering bug in flow update systems)
+- ⚠️ **Interface ↔ Subsystem flows not yet implemented**: Pending Phase 3 "Interfaces as Subsystems" refactor. Workaround: use Subsystem ↔ Subsystem flows. Theoretically valid (both are components in C), but requires architectural work to handle Interface's dual role as boundary component and internal node.
 
 ### Automated Testing (Future)
 - [ ] Unit tests for placement validation
@@ -269,7 +269,6 @@ pub struct ConnectionMode {
 ## Future Improvements
 
 ### Immediate (Mobus 8-Tuple Completion)
-- Fix Interface flow rendering bug
 - Add M (Milieu) panel for ambient environmental properties
 - Add H (History/Memory) panel for state variables per subsystem
 - Make boundary (B) explicitly selectable with properties panel
