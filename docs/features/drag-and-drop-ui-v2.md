@@ -104,12 +104,13 @@ Users learn Mobus formalization through muscle memory, not paper citations. Same
   - Command pattern with PlaceElementCommand
   - Event-based execution with persistent EventCursor
   - Redo (Ctrl+Shift+Z) deferred - requires spawn function refactoring
-- ⏸️ **Extended shortcuts**: Power user keyboard navigation deferred to Phase 4
+- ⏸️ **Extended shortcuts**: Power user keyboard navigation deferred to Phase 5 Polish
 
-### Phase 3-5: Not Started
-- Intelligence & Guidance (Hints system)
-- Polish & Testing
-- Advanced Features (Optional)
+### Phase 3-6: Not Started
+- **Phase 3**: Decomposition & Refinement (Interfaces as Subsystems, sizing, drilling)
+- **Phase 4**: Intelligence & Guidance (Hints system)
+- **Phase 5**: Polish & Testing
+- **Phase 6**: Advanced Features (Optional)
 
 ## Mobus 8-Tuple Implementation Status
 
@@ -322,21 +323,35 @@ pub struct ConnectionMode {
 - ✅ Undo/redo foundation (Ctrl+Z working, redo deferred)
 - ✅ Keyboard shortcuts (F-key, ESC)
 
-### Phase 3: Intelligence & Guidance (24 hours) ⏸️ NOT STARTED
+### Phase 3: Decomposition & Refinement (TBD hours) ⏸️ NOT STARTED
+**Rationale**: Phase 2 optimized creation workflow but regressed refinement workflow.
+Old main had smooth recursive decomposition; new click-to-place needs decomposition polish.
+
+Priority issues:
+- **Interfaces as Subsystems**: Enable Interface ↔ Subsystem flows (Mobus: "interfaces are special subsystems")
+  - Architectural challenge: Interface's dual role (boundary component + internal node)
+  - Required for proper import/export process modeling
+- **System Decomposition Polish**:
+  - Subsystem sizing (currently too small, no dynamic resize)
+  - Zoom-aware rendering and interaction
+  - Smooth recursive drilling (focus → decompose → focus child)
+  - Visual hierarchy (nested systems need clearer parent/child relationships)
+
+### Phase 4: Intelligence & Guidance (24 hours) ⏸️ NOT STARTED
 - Model state analysis system
 - Completion hint generator
 - Hint display panel
 - Mobus validation feedback
 - Smart parameter templates
 
-### Phase 4: Polish & Testing (25 hours) ⏸️ NOT STARTED
+### Phase 5: Polish & Testing (25 hours) ⏸️ NOT STARTED
 - Animation & transitions
 - Error visualization
 - Comprehensive testing
 - Documentation updates
 - Performance optimization
 
-### Phase 5: Advanced Features (Optional) ⏸️ NOT STARTED
+### Phase 6: Advanced Features (Optional) ⏸️ NOT STARTED
 - Classic mode toggle
 - Model templates
 - Collaborative hints (AI)
@@ -376,4 +391,4 @@ pub struct ConnectionMode {
 ---
 
 **Last Updated**: 2025-11-04
-**Branch Status**: Phase 2 Complete ✅ | 6/8 Mobus elements implemented | Ready for Phase 3 (Intelligence & Guidance) or T/Δt functional properties
+**Branch Status**: Phase 2 Complete ✅ | 6/8 Mobus elements implemented | Next: Phase 3 (Decomposition & Refinement - Interfaces as Subsystems)
