@@ -1206,9 +1206,8 @@ pub fn SystemDetails(
             .unwrap_or_default()
     });
 
-    // Dynamic fields - will be hidden for v0.2.0 "Structural Analysis" focus
-    // Preserved for consistent pattern with SubSystemDetails and easier v0.3.0 restoration
-    let _system_history = Memo::new(move |_| {
+    // H (History/Memory) from Mobus 8-tuple - enabled for structural completeness
+    let system_history = Memo::new(move |_| {
         system_query
             .read()
             .as_ref()
@@ -1323,25 +1322,29 @@ pub fn SystemDetails(
                 />
             </div>
 
-            // HIDDEN for v0.2.0 "Structural Analysis Mode" - Dynamic modeling features
-            // Preserved for consistency with SubSystemDetails and easier v0.3.0 restoration
-            // <div class="mb-4">
-            //     <label class="flex items-center mb-2">
-            //         <span class="block text-sm font-medium leading-6 text-gray-900">History</span>
-            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-            //               title="System state changes over time (requires temporal data collection)">
-            //             ?
-            //         </span>
-            //     </label>
-            //     <InputGroup
-            //         id="system-history"
-            //         placeholder="History"
-            //         value=_system_history
-            //         on_input=move |value: String| {
-            //             system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
-            //         }
-            //     />
-            // </div>
+            <Divider />
+
+            <div class="space-y-2">
+                <label class="flex items-center mb-2">
+                    <span class="block text-sm font-medium leading-6 text-gray-900">History (H)</span>
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
+                          title="Memory/state variables placeholder (under research - will point to stack of system state images per Mobus formalization)">
+                        ?
+                    </span>
+                </label>
+                <p class="text-xs text-gray-500 mb-2">
+                    "Placeholder for system memory - future implementation will track stack of state images over time per history_implementation.txt"
+                </p>
+                <TextArea
+                    id="system-history"
+                    label=""
+                    placeholder="Placeholder: Will contain pointer to state history stack (under research)"
+                    text=system_history
+                    on_input=move |value: String| {
+                        system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
+                    }
+                />
+            </div>
 
             // <div class="mb-4">
             //     <label class="flex items-center mb-2">
