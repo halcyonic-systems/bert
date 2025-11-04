@@ -147,6 +147,8 @@ pub fn init_bevy_app(
     .add_event::<ZoomEvent>()
     .add_event::<DeselectAllEvent>()
     .add_event::<SaveSuccessEvent>()
+    .add_event::<UndoEvent>() // PHASE 2: Undo/redo events
+    .add_event::<RedoEvent>()
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -248,6 +250,9 @@ pub fn init_bevy_app(
             ),
             // PHASE 2: Undo/Redo keyboard shortcuts
             handle_undo_redo_shortcuts,
+            // PHASE 2: Undo/Redo execution systems (exclusive world access)
+            execute_undo,
+            execute_redo,
             (
                 hide_selected
                     .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),

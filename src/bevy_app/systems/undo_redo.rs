@@ -28,6 +28,14 @@
 use crate::bevy_app::components::PaletteElementType;
 use bevy::prelude::*;
 
+/// Event requesting an undo operation.
+#[derive(Event)]
+pub struct UndoEvent;
+
+/// Event requesting a redo operation.
+#[derive(Event)]
+pub struct RedoEvent;
+
 /// Trait for reversible commands that can be undone and redone.
 ///
 /// Each command stores the necessary data to both execute and reverse
@@ -193,12 +201,13 @@ impl UndoCommand for PlaceElementCommand {
 /// - Ctrl+Z: Undo last action
 /// - Ctrl+Shift+Z: Redo last undone action
 ///
-/// NOTE: This is a stub for Phase 2A. Full implementation requires exclusive
-/// world access which needs to be called via run_system_once or a deferred command.
-/// For now, we log the shortcuts to validate keyboard detection.
+/// Sends UndoEvent or RedoEvent which are handled by execute_undo/execute_redo
+/// systems that have exclusive world access.
 pub fn handle_undo_redo_shortcuts(
     keyboard: Res<ButtonInput<KeyCode>>,
     command_history: Res<CommandHistory>,
+    mut undo_events: EventWriter<UndoEvent>,
+    mut redo_events: EventWriter<RedoEvent>,
 ) {
     let ctrl = keyboard.pressed(KeyCode::ControlLeft) || keyboard.pressed(KeyCode::ControlRight);
     let shift = keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight);
@@ -206,18 +215,62 @@ pub fn handle_undo_redo_shortcuts(
     if ctrl && shift && keyboard.just_pressed(KeyCode::KeyZ) {
         // Ctrl+Shift+Z: Redo
         if command_history.can_redo() {
-            info!("⏩ Redo shortcut detected (Ctrl+Shift+Z)");
-            // TODO: Send event or deferred command to execute redo
+            info!("⏩ Sending redo event (Ctrl+Shift+Z)");
+            redo_events.send(RedoEvent);
         } else {
             warn!("⚠️ Nothing to redo");
         }
     } else if ctrl && keyboard.just_pressed(KeyCode::KeyZ) {
         // Ctrl+Z: Undo
         if command_history.can_undo() {
-            info!("⏪ Undo shortcut detected (Ctrl+Z)");
-            // TODO: Send event or deferred command to execute undo
+            info!("⏪ Sending undo event (Ctrl+Z)");
+            undo_events.send(UndoEvent);
         } else {
             warn!("⚠️ Nothing to undo");
         }
+    }
+}
+
+/// System that executes undo operations from UndoEvent.
+///
+/// Runs with exclusive world access to perform entity despawning.
+pub fn execute_undo(world: &mut World) {
+    // Check if there are undo events
+    let mut events_to_process = Vec::new();
+    {
+        let mut event_reader = world.resource_mut::<Events<UndoEvent>>();
+        let mut reader = event_reader.get_reader();
+        for _event in reader.read(&event_reader) {
+            events_to_process.push(());
+        }
+    }
+
+    // Process each undo event
+    for _ in events_to_process {
+        world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
+            command_history.undo(world);
+        });
+    }
+}
+
+/// System that executes redo operations from RedoEvent.
+///
+/// Runs with exclusive world access to perform entity respawning.
+pub fn execute_redo(world: &mut World) {
+    // Check if there are redo events
+    let mut events_to_process = Vec::new();
+    {
+        let mut event_reader = world.resource_mut::<Events<RedoEvent>>();
+        let mut reader = event_reader.get_reader();
+        for _event in reader.read(&event_reader) {
+            events_to_process.push(());
+        }
+    }
+
+    // Process each redo event
+    for _ in events_to_process {
+        world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
+            command_history.redo(world);
+        });
     }
 }
