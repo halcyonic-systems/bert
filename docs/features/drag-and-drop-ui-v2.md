@@ -110,23 +110,26 @@ Users learn Mobus formalization through muscle memory, not paper citations. Same
 
 ## Mobus 8-Tuple Implementation Status
 
-### ✅ Complete (Spatial + Validation)
-- **C** (Components): Subsystem + Interface click-to-place
-- **N** (Network): Subsystem ↔ Subsystem flows with validation
-- **O** (Objects): EnvironmentalObject freeform placement
-- **I** (Interfaces): Boundary snapping, unified type
-- **G** (External Graph): EnvironmentalObject ↔ Interface flows with validation
+**Formal Definition**: S_{i,l} = ⟨C, N, E, G, B, T, H, Δt⟩_{i,l}
 
-### 🟡 Partially Complete
-- **B** (Boundary): Implicit via snap constraints, not explicit selectable object
-- **T** (Transformation): Text field exists (behavioral property)
-- **Δt** (Timescale): Text field exists (temporal property)
+**Key Clarifications**:
+- **E = ⟨O, M⟩**: Environment contains Objects (O) and Milieu (M)
+- **I ⊆ C**: Interfaces are a subset of Components, contained within Boundary (B)
+- **I, O, M** are NOT separate tuple elements - they are nested within C, E, and B
 
-### 🔴 Gaps Identified
-- **M** (Milieu): Ambient environmental properties panel needed
-- **H** (History/Memory): State variables panel per subsystem needed
-- **P** (Boundary Properties): Properties panel when boundary selected
-- **φ** (Protocol): Algorithmic protocol editor (not just string)
+### ✅ Complete (5/8 Core Elements)
+- **C** (Components): Subsystem + Interface click-to-place. I ⊆ C with boundary snapping.
+- **N** (Network): Internal edges ⟨c_i, c_j⟩ with Subsystem ↔ Subsystem flow validation
+- **E** (Environment): Composite element ⟨O, M⟩ fully implemented:
+  - **O** (Objects): EnvironmentalObject freeform placement (unified sources/sinks)
+  - **M** (Milieu): Editable key-value ambient properties (Temp, Humidity, pH, etc.)
+- **G** (External Graph): Edges ⟨o_i ∈ O, c_j ∈ I⟩ with EnvironmentalObject ↔ Interface validation
+- **B** (Boundary): Spatial clicking system, properties panel (porosity, perceptive fuzziness), contains set I
+- **H** (History): Placeholder field with research pointer (future: state image stack per timestep)
+
+### 🔴 Deferred (Functional Properties - Future Work)
+- **T** (Transformation): Behavioral functions/algorithms. Text field exists but needs computational editor.
+- **Δt** (Timescale): Temporal resolution. Text field exists but needs simulation integration.
 
 ## Technical Implementation
 
