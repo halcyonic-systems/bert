@@ -281,6 +281,10 @@ pub struct SystemBoundary {
 pub struct SystemEnvironment {
     pub name: String,
     pub description: String,
+    /// Milieu (M in Mobus 8-tuple): Ambient environmental properties that "bathe" the system
+    /// but don't flow through discrete interfaces. Examples: Temperature, Humidity, Salinity, pH, Pressure.
+    /// Stored as key-value pairs (property name, property value with unit).
+    pub milieu: Vec<(String, String)>,
 }
 
 /// Attached to entities with a SystemElement::Interface component to hold modeling data related to the interface.

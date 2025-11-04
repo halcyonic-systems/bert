@@ -1190,6 +1190,14 @@ pub fn SystemDetails(
             .unwrap_or_default()
     });
 
+    let environment_milieu = Memo::new(move |_| {
+        system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, _, system_env)| system_env.milieu.clone())
+            .unwrap_or_default()
+    });
+
     let system_time_unit = Memo::new(move |_| {
         system_query
             .read()
@@ -1436,6 +1444,62 @@ pub fn SystemDetails(
                     system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.description = value);
                 }
             />
+
+            <Divider />
+
+            <div class="space-y-3">
+                <h4 class="text-sm font-semibold text-gray-700">
+                    Milieu Properties
+                    <span class="text-xs font-normal text-gray-500 ml-2">(Ambient environmental conditions)</span>
+                </h4>
+                <p class="text-xs text-gray-500">
+                    "Properties that surround or 'bathe' the system but don't flow through discrete interfaces. Examples: Temperature, Humidity, Salinity, pH, Pressure."
+                </p>
+
+                <div class:hidden=move || !environment_milieu.get().is_empty()>
+                    <div class="text-sm text-gray-500 italic py-2">
+                        No milieu properties defined. Click + to add.
+                    </div>
+                </div>
+
+                <div class:hidden=move || environment_milieu.get().is_empty()>
+                    <div class="space-y-2">
+                        <For
+                            each=move || environment_milieu.get().into_iter().enumerate()
+                            key=|(idx, _)| *idx
+                            children=move |(idx, (name, value))| {
+                                view! {
+                                    <div class="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                                        <span class="font-medium text-gray-700">{name.clone()}:</span>
+                                        <span class="text-gray-600">{value.clone()}</span>
+                                        <button
+                                            class="ml-auto text-red-600 hover:text-red-800 text-xs"
+                                            on:click=move |_| {
+                                                system_query.write().as_mut().map(|(_, _, _, system_env)| {
+                                                    system_env.milieu.remove(idx);
+                                                });
+                                            }
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                }
+                            }
+                        />
+                    </div>
+                </div>
+
+                <button
+                    class="w-full px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100"
+                    on:click=move |_| {
+                        system_query.write().as_mut().map(|(_, _, _, system_env)| {
+                            system_env.milieu.push(("Property".to_string(), "Value".to_string()));
+                        });
+                    }
+                >
+                    + Add Milieu Property
+                </button>
+            </div>
 
         </div>
     }
