@@ -81,7 +81,10 @@ pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) 
     let elements = [
         (PaletteElementType::Subsystem, "palette-icons/subsystem.png"),
         (PaletteElementType::Interface, "palette-icons/interface.png"),
-        (PaletteElementType::EnvironmentalObject, "palette-icons/source.png"),
+        (
+            PaletteElementType::EnvironmentalObject,
+            "palette-icons/source.png",
+        ),
     ];
 
     for (idx, (element_type, icon_path)) in elements.iter().enumerate() {
@@ -107,7 +110,7 @@ pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) 
                     is_hoverable: true,
                 },
                 PickSelection::default(), // Required for mouse interaction system
-                NoDeselect, // Don't participate in selection system
+                NoDeselect,               // Don't participate in selection system
             ))
             .observe(|trigger: Trigger<DragPosition>, mut commands: Commands| {
                 commands.trigger(PaletteDrag::from(trigger));
@@ -328,7 +331,7 @@ pub fn finalize_placement(
                     **zoom,
                     false, // Not selected initially
                     "New Interface",
-                    "", // Empty description
+                    "",                    // Empty description
                     "default".to_string(), // Default protocol
                     transform,
                     initial_position,
@@ -336,7 +339,10 @@ pub fn finalize_placement(
                     &mut meshes,
                     &mut fixed_system_element_geometries,
                 );
-                info!("✅ Interface placed on boundary at angle {:.2}°", angle.to_degrees());
+                info!(
+                    "✅ Interface placed on boundary at angle {:.2}°",
+                    angle.to_degrees()
+                );
             }
             PaletteElementType::EnvironmentalObject => {
                 // Environmental objects: Freeform placement in environment
@@ -350,7 +356,7 @@ pub fn finalize_placement(
                 spawn_external_entity_only(
                     &mut commands,
                     SubstanceType::default(), // Default substance, user can change later
-                    false, // Not selected initially
+                    false,                    // Not selected initially
                     "New Environmental Object",
                     "", // Empty description
                     "", // Empty equivalence

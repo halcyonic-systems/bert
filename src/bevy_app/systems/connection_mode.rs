@@ -1,31 +1,30 @@
-//! Connection mode system for creating flow edges between elements (Phase 2D-Alpha)
+//! Connection mode system for creating flow edges between elements (Phase 2D)
 //!
-//! Implements modal workflow for connecting subsystems with flow edges.
-//! This aligns with Mobus formalization where flows are EDGES in N (internal network),
-//! not nodes - you can't "place" an edge, you create it by connecting vertices.
+//! Implements modal workflow for connecting elements with flow edges.
+//! This aligns with Mobus formalization where flows are EDGES, not nodes.
 //!
-//! ## Phase 2D-Alpha Scope
-//! - Subsystem ↔ Subsystem flows ONLY (N network edges)
+//! ## Phase 2D Scope (Complete)
+//! - **N network**: Subsystem ↔ Subsystem flows (internal network)
+//! - **G network**: EnvironmentalObject ↔ Interface flows (external graph)
 //! - Same nesting level validation
 //! - Default substance: Material, usability: Resource
 //! - Modal mode: stay active after creating flow, ESC to exit
 //!
 //! ## UX Flow
 //! 1. Press 'F' key or click connection button → Enter connection mode
-//! 2. Click first subsystem → Select as source, ghost line appears
+//! 2. Click first element → Select as source, ghost line appears
 //! 3. Ghost line follows cursor from source
-//! 4. Click second subsystem → Validate and create flow edge
+//! 4. Click second element → Validate and create flow edge
 //! 5. Mode stays active for multiple connections, ESC to exit
 //!
 //! ## Future Phases
-//! - Phase 2D-Beta: Add EnvironmentalObject ↔ Interface support (G network)
 //! - Phase 3: Substance/usability selection dialog, duplicate detection
 
 use crate::bevy_app::bundles::spawn_interaction_only;
 use crate::bevy_app::components::{
-    EndTargetType, Flow, FlowCurve, FlowEndConnection, FlowStartConnection, InitialPosition,
-    InteractionType, InteractionUsability, NestingLevel, Parameter, StartTargetType, SubstanceType,
-    Subsystem,
+    EndTargetType, ExternalEntity, Flow, FlowCurve, FlowEndConnection, FlowStartConnection,
+    InitialPosition, InteractionType, InteractionUsability, Interface, NestingLevel, Parameter,
+    StartTargetType, SubstanceType, Subsystem,
 };
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
 use bevy::prelude::*;
@@ -71,12 +70,14 @@ pub fn enter_connection_mode(
 
 /// Step 2: Select connection source on first click.
 ///
-/// When user clicks a subsystem while in connection mode (and no source selected),
-/// that subsystem becomes the source of the flow edge.
+/// Accepts Subsystem, Interface, or ExternalEntity as source.
+/// Valid connections determined in finalize_connection validation.
 pub fn select_connection_source(
     mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
     mut connection_mode: ResMut<ConnectionMode>,
     subsystem_query: Query<&Subsystem>,
+    interface_query: Query<&Interface>,
+    external_entity_query: Query<&ExternalEntity>,
 ) {
     if !connection_mode.active {
         return;
@@ -88,10 +89,19 @@ pub fn select_connection_source(
     }
 
     for click_event in click_events.read() {
-        // Check if clicked entity is a subsystem
-        if subsystem_query.get(click_event.target).is_ok() {
-            connection_mode.source_entity = Some(click_event.target);
-            info!("✅ Source selected: {:?} - Click destination subsystem", click_event.target);
+        let target = click_event.target;
+
+        // Check if clicked entity is a valid connection source
+        let is_valid = subsystem_query.get(target).is_ok()
+            || interface_query.get(target).is_ok()
+            || external_entity_query.get(target).is_ok();
+
+        if is_valid {
+            connection_mode.source_entity = Some(target);
+            info!(
+                "✅ Source selected: {:?} - Click destination element",
+                target
+            );
             return; // Only select first valid click
         }
     }
@@ -103,7 +113,7 @@ pub fn select_connection_source(
 /// Line follows cursor in world space.
 pub fn update_connection_ghost(
     connection_mode: Res<ConnectionMode>,
-    subsystem_query: Query<&Transform, With<Subsystem>>,
+    transform_query: Query<&Transform>,
     camera_query: Query<(&Camera, &GlobalTransform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut gizmos: Gizmos,
@@ -116,7 +126,7 @@ pub fn update_connection_ghost(
         return; // No source selected yet, nothing to draw
     };
 
-    let Ok(source_transform) = subsystem_query.get(source_entity) else {
+    let Ok(source_transform) = transform_query.get(source_entity) else {
         return; // Source entity invalid (deleted?), skip drawing
     };
 
@@ -133,17 +143,30 @@ pub fn update_connection_ghost(
             let source_world_pos = source_transform.translation.truncate();
 
             // Draw cyan line from source to cursor
-            gizmos.line_2d(source_world_pos, cursor_world_pos, Color::srgb(0.0, 1.0, 1.0));
+            gizmos.line_2d(
+                source_world_pos,
+                cursor_world_pos,
+                Color::srgb(0.0, 1.0, 1.0),
+            );
         }
     }
 }
 
 /// Step 4: Finalize connection on second click - validate and create flow edge.
 ///
-/// # Validation Rules (Phase 2D-Alpha)
-/// - Both entities must be Subsystems
-/// - Must be at same nesting level
-/// - Source and destination must be different entities
+/// # Validation Rules (Phase 2D Complete)
+/// **N network** (Internal):
+/// - Subsystem ↔ Subsystem
+/// - Same nesting level required
+///
+/// **G network** (External):
+/// - ExternalEntity ↔ Interface (bidirectional)
+/// - Same nesting level required
+///
+/// **Invalid combinations**:
+/// - ExternalEntity ↔ Subsystem (violates G network definition)
+/// - ExternalEntity ↔ ExternalEntity (no direct environment-to-environment flows)
+/// - Self-connections (any type)
 ///
 /// # Flow Properties (Hardcoded for MVP)
 /// - Substance: Material
@@ -153,6 +176,11 @@ pub fn finalize_connection(
     mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
     mut connection_mode: ResMut<ConnectionMode>,
     subsystem_query: Query<(&Transform, &InitialPosition, &NestingLevel), With<Subsystem>>,
+    interface_query: Query<(&Transform, &InitialPosition, &NestingLevel), With<Interface>>,
+    external_entity_query: Query<
+        (&Transform, &InitialPosition, &NestingLevel),
+        With<ExternalEntity>,
+    >,
     mut commands: Commands,
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -171,30 +199,69 @@ pub fn finalize_connection(
 
         // Validate: Don't connect to self
         if source_entity == destination_entity {
-            warn!("❌ Cannot connect subsystem to itself");
+            warn!("❌ Cannot connect element to itself");
             continue;
         }
 
-        // Validate: Both must be subsystems
-        let Ok((source_transform, _source_initial_pos, source_nesting_level)) =
-            subsystem_query.get(source_entity)
-        else {
-            warn!("❌ Source entity is not a subsystem or was deleted");
-            connection_mode.source_entity = None; // Clear invalid source
+        // Determine element types
+        let source_is_subsystem = subsystem_query.get(source_entity).is_ok();
+        let source_is_interface = interface_query.get(source_entity).is_ok();
+        let source_is_external = external_entity_query.get(source_entity).is_ok();
+
+        let dest_is_subsystem = subsystem_query.get(destination_entity).is_ok();
+        let dest_is_interface = interface_query.get(destination_entity).is_ok();
+        let dest_is_external = external_entity_query.get(destination_entity).is_ok();
+
+        // Validate connection types (N network or G network)
+        let is_valid_n_network = source_is_subsystem && dest_is_subsystem;
+        let is_valid_g_network =
+            (source_is_external && dest_is_interface) || (source_is_interface && dest_is_external);
+
+        if !is_valid_n_network && !is_valid_g_network {
+            // Provide specific error messages for invalid combinations
+            if source_is_external && dest_is_subsystem {
+                warn!("❌ Cannot connect EnvironmentalObject directly to Subsystem (must connect to Interface per G network)");
+            } else if source_is_subsystem && dest_is_external {
+                warn!("❌ Cannot connect Subsystem directly to EnvironmentalObject (must connect to Interface per G network)");
+            } else if source_is_external && dest_is_external {
+                warn!("❌ Cannot connect EnvironmentalObject to EnvironmentalObject (no direct environment-to-environment flows)");
+            } else if source_is_interface && dest_is_interface {
+                warn!("❌ Cannot connect Interface to Interface directly");
+            } else {
+                warn!("❌ Invalid connection type");
+            }
             continue;
+        }
+
+        // Get transforms and nesting levels based on element type
+        let (source_transform, source_nesting_level) = if source_is_subsystem {
+            let (t, _, n) = subsystem_query.get(source_entity).unwrap();
+            (t, n)
+        } else if source_is_interface {
+            let (t, _, n) = interface_query.get(source_entity).unwrap();
+            (t, n)
+        } else {
+            // source_is_external
+            let (t, _, n) = external_entity_query.get(source_entity).unwrap();
+            (t, n)
         };
 
-        let Ok((dest_transform, _dest_initial_pos, dest_nesting_level)) =
-            subsystem_query.get(destination_entity)
-        else {
-            warn!("❌ Destination entity is not a subsystem");
-            continue; // Don't clear source, user might click wrong element
+        let (dest_transform, dest_nesting_level) = if dest_is_subsystem {
+            let (t, _, n) = subsystem_query.get(destination_entity).unwrap();
+            (t, n)
+        } else if dest_is_interface {
+            let (t, _, n) = interface_query.get(destination_entity).unwrap();
+            (t, n)
+        } else {
+            // dest_is_external
+            let (t, _, n) = external_entity_query.get(destination_entity).unwrap();
+            (t, n)
         };
 
         // Validate: Same nesting level
         if source_nesting_level != dest_nesting_level {
             warn!(
-                "❌ Cannot connect subsystems at different nesting levels ({} vs {})",
+                "❌ Cannot connect elements at different nesting levels ({} vs {})",
                 **source_nesting_level, **dest_nesting_level
             );
             continue;
@@ -240,26 +307,41 @@ pub fn finalize_connection(
             &mut meshes,
         );
 
-        // Add connection components to link flow to source and destination subsystems
+        // Determine target types based on element types
+        let start_target_type = if source_is_external {
+            StartTargetType::Source
+        } else {
+            StartTargetType::System
+        };
+
+        let end_target_type = if dest_is_external {
+            EndTargetType::Sink
+        } else {
+            EndTargetType::System
+        };
+
+        // Add connection components to link flow to source and destination
         commands.entity(flow_entity).insert((
             FlowStartConnection {
                 target: source_entity,
-                target_type: StartTargetType::System,
+                target_type: start_target_type,
             },
             FlowEndConnection {
                 target: destination_entity,
-                target_type: EndTargetType::System,
+                target_type: end_target_type,
             },
         ));
 
+        // Log network type for debugging
+        let network_type = if is_valid_n_network { "N" } else { "G" };
         info!(
-            "✅ Flow created: {:?} → {:?} (Material/Resource)",
-            source_entity, destination_entity
+            "✅ Flow created: {:?} → {:?} ({} network, Material/Resource)",
+            source_entity, destination_entity, network_type
         );
 
         // Clear source to allow creating another flow
         connection_mode.source_entity = None;
-        info!("🔗 Connection mode ACTIVE - Click first subsystem (or ESC to exit)");
+        info!("🔗 Connection mode ACTIVE - Click first element (or ESC to exit)");
 
         return; // Only handle first valid click per frame
     }

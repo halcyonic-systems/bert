@@ -210,23 +210,19 @@ pub fn init_bevy_app(
                 select_flow_terminal.after(update_selecting_flow_from_mouse),
             )
                 .in_set(FlowTerminalSelectingSet),
-            (
-                drag_external_entity,
-                drag_interface,
-                drag_subsystem,
-            ),
+            (drag_external_entity, drag_interface, drag_subsystem),
             // Palette placement mode systems
             (
-                enter_placement_mode,    // Click palette → enter mode + spawn ghost
-                update_placement_ghost,  // Ghost follows cursor
-                finalize_placement,      // Click canvas → spawn element OR ESC → cancel
+                enter_placement_mode,   // Click palette → enter mode + spawn ghost
+                update_placement_ghost, // Ghost follows cursor
+                finalize_placement,     // Click canvas → spawn element OR ESC → cancel
             ),
             // Connection mode systems - PHASE 4: Full workflow enabled
             (
-                enter_connection_mode,      // F key → enter mode
-                select_connection_source,   // Click subsystem → select source
-                update_connection_ghost,    // Ghost line rendering (Gizmos)
-                finalize_connection,        // PHASE 4: Click destination → create flow OR ESC → cancel
+                enter_connection_mode,    // F key → enter mode
+                select_connection_source, // Click subsystem → select source
+                update_connection_ghost,  // Ghost line rendering (Gizmos)
+                finalize_connection, // PHASE 4: Click destination → create flow OR ESC → cancel
             ),
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
