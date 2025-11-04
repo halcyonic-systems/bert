@@ -463,7 +463,7 @@ pub fn apply_zoom_to_added_label(
 pub fn auto_zoom_on_focus_change(
     focused_system: Res<FocusedSystem>,
     mut previous_focus: Local<Option<Entity>>,
-    system_query: Query<(&Transform, &crate::bevy_app::components::System, &NestingLevel)>,
+    system_query: Query<(&GlobalTransform, &crate::bevy_app::components::System, &NestingLevel)>,
     mut zoom_target: ResMut<ZoomTarget>,
 ) {
     // Only trigger if FocusedSystem resource changed AND the entity is different
@@ -484,7 +484,7 @@ pub fn auto_zoom_on_focus_change(
         return;
     }
 
-    let Ok((transform, system, _nesting_level)) = system_query.get(current_focus) else {
+    let Ok((global_transform, system, _nesting_level)) = system_query.get(current_focus) else {
         warn!("Failed to get system data for focused entity");
         return;
     };
@@ -495,13 +495,14 @@ pub fn auto_zoom_on_focus_change(
 
     // Clamp zoom to reasonable bounds
     zoom_target.target_zoom = target_zoom.clamp(0.1, 10.0);
-    zoom_target.target_pan = transform.translation.truncate();
+    // CRITICAL FIX: Use GlobalTransform for world position, not local Transform
+    zoom_target.target_pan = global_transform.translation().truncate();
     zoom_target.animating = true;
     zoom_target.progress = 0.0;
 
     info!(
-        "🔍 Auto-zoom triggered: entity {:?}, target zoom {:.2}x (system radius {:.1} → screen radius {:.1}px)",
-        current_focus, target_zoom, system.radius, desired_screen_radius
+        "🔍 Auto-zoom triggered: entity {:?}, target zoom {:.2}x (system radius {:.1} → screen radius {:.1}px), world pos {:?}",
+        current_focus, target_zoom, system.radius, desired_screen_radius, global_transform.translation().truncate()
     );
 
     *previous_focus = Some(current_focus);
