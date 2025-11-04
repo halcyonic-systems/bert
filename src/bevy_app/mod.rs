@@ -279,6 +279,7 @@ pub fn init_bevy_app(
                 animate_zoom_to_target,    // Phase 3B: smooth animation to target
                 apply_zoom,
                 apply_zoom_to_camera_position,
+                apply_zoom_to_palette_compensation, // Counter-adjust palette for camera zoom scaling
                 apply_zoom_to_incomplete_flows,
                 apply_zoom_to_system_geometries,
                 apply_zoom_to_strokes,

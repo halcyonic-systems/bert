@@ -106,6 +106,10 @@ pub fn apply_zoom_to_system_radii(
 }
 
 /// Moves the camera to always be centered on the same point relative to the world entities.
+///
+/// This maintains zoom centering by scaling camera position with zoom changes.
+/// Note: Palette elements are counter-adjusted in `apply_zoom_to_palette_compensation`
+/// to remain fixed in screen space despite camera position scaling.
 pub fn apply_zoom_to_camera_position(
     mut query: Query<&mut Transform, With<Camera>>,
     zoom: Res<Zoom>,
@@ -114,6 +118,44 @@ pub fn apply_zoom_to_camera_position(
     query.single_mut().translation *= **zoom / **prev_zoom;
 
     **prev_zoom = **zoom;
+}
+
+/// Maintains palette position relative to camera to keep it screen-fixed.
+///
+/// Palette elements are in world-space but should appear screen-fixed (like UI).
+/// This system tracks camera position changes and moves palette elements to compensate,
+/// maintaining their fixed screen-space position despite camera panning and zoom scaling.
+///
+/// Without this: Camera pans to (500, 500) and palette at world (-550, 300) goes off-screen.
+/// With this: Palette moves to (450, 800) in world space to stay at same screen position.
+pub fn apply_zoom_to_palette_compensation(
+    mut palette_query: Query<(&mut Transform, &InitialPosition), With<PaletteElement>>,
+    camera_query: Query<&Transform, (With<Camera>, Without<PaletteElement>)>,
+    mut prev_camera_pos: Local<Vec2>,
+) {
+    let Ok(camera_transform) = camera_query.get_single() else {
+        return;
+    };
+
+    let camera_pos = camera_transform.translation.truncate();
+
+    // Initialize on first run
+    if *prev_camera_pos == Vec2::ZERO && camera_pos == Vec2::ZERO {
+        *prev_camera_pos = camera_pos;
+        return;
+    }
+
+    // Calculate camera movement delta
+    let camera_delta = camera_pos - *prev_camera_pos;
+
+    if camera_delta.length() > 0.01 {
+        // Move palette by same delta to counteract camera pan
+        for (mut transform, _initial_position) in &mut palette_query {
+            transform.translation += camera_delta.extend(0.0);
+        }
+    }
+
+    *prev_camera_pos = camera_pos;
 }
 
 /// Adjusts the position of flow endpoints that are not connected to anything.
