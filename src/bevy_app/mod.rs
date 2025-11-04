@@ -140,6 +140,7 @@ pub fn init_bevy_app(
     .add_event::<SubsystemDrag>()
     .init_resource::<PlacementMode>()
     .init_resource::<ConnectionMode>() // PHASE 1: Resource enabled
+    .insert_resource(CommandHistory::new(50)) // PHASE 2: Undo/redo with 50-command history
     .add_event::<RemoveEvent>()
     .add_event::<DetachMarkerLabelEvent>()
     .add_event::<LoadFileEvent>()
@@ -245,6 +246,8 @@ pub fn init_bevy_app(
                         .and(input_just_pressed(KeyCode::KeyS)),
                 ),
             ),
+            // PHASE 2: Undo/Redo keyboard shortcuts
+            handle_undo_redo_shortcuts,
             (
                 hide_selected
                     .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),
