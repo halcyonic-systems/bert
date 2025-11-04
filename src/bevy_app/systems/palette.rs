@@ -331,7 +331,9 @@ pub fn finalize_placement(
                     .with_rotation(Quat::from_rotation_z(angle));
                 let initial_position = InitialPosition::new(ghost_world_pos);
 
-                let nesting_level = NestingLevel::current(**focused_system, &nesting_level_query);
+                // Phase 3A: Interfaces must be at same nesting level as internal subsystems
+                // for N network flows to work (same-level validation requirement)
+                let nesting_level = NestingLevel::current(**focused_system, &nesting_level_query) + 1;
 
                 let entity = spawn_interface_only(
                     &mut commands,
