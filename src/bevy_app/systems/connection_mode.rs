@@ -30,8 +30,8 @@ use crate::bevy_app::bundles::spawn_interaction_only;
 use crate::bevy_app::components::{
     EndTargetType, ExternalEntity, Flow, FlowCurve, FlowEndConnection,
     FlowEndInterfaceConnection, FlowStartConnection, FlowStartInterfaceConnection,
-    InitialPosition, InteractionType, InteractionUsability, Interface, NestingLevel, Parameter,
-    StartTargetType, SubstanceType, Subsystem,
+    InitialPosition, InterfaceBehavior, InteractionType, InteractionUsability, Interface,
+    NestingLevel, Parameter, StartTargetType, SubstanceType, Subsystem,
 };
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
 use bevy::prelude::*;
@@ -186,6 +186,7 @@ pub fn finalize_connection(
     mut connection_mode: ResMut<ConnectionMode>,
     subsystem_query: Query<(&Transform, &InitialPosition, &NestingLevel), With<Subsystem>>,
     interface_query: Query<(&Transform, &InitialPosition, &NestingLevel), With<Interface>>,
+    interface_behavior_query: Query<&InterfaceBehavior>,
     external_entity_query: Query<
         (&Transform, &InitialPosition, &NestingLevel),
         With<ExternalEntity>,
@@ -221,10 +222,16 @@ pub fn finalize_connection(
         let dest_is_interface = interface_query.get(destination_entity).is_ok();
         let dest_is_external = external_entity_query.get(destination_entity).is_ok();
 
+        // Phase 3A: Check if entities have InterfaceBehavior (subsystem-capable interfaces)
+        let source_has_interface_behavior = interface_behavior_query.get(source_entity).is_ok();
+        let dest_has_interface_behavior = interface_behavior_query.get(destination_entity).is_ok();
+
         // Validate connection types (N network or G network)
-        // Phase 3A: Treat interfaces as subsystems (I ⊆ C per Mobus)
-        let is_valid_n_network = (source_is_subsystem || source_is_interface)
-            && (dest_is_subsystem || dest_is_interface);
+        // Phase 3A: Treat interfaces with InterfaceBehavior as subsystem-capable (I ⊆ C per Mobus)
+        let source_is_n_network_capable = source_is_subsystem || source_has_interface_behavior;
+        let dest_is_n_network_capable = dest_is_subsystem || dest_has_interface_behavior;
+
+        let is_valid_n_network = source_is_n_network_capable && dest_is_n_network_capable;
         let is_valid_g_network =
             (source_is_external && dest_is_interface) || (source_is_interface && dest_is_external);
 
