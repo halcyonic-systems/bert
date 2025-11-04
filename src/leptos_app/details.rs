@@ -1449,11 +1449,11 @@ pub fn SystemDetails(
 
             <div class="space-y-3">
                 <h4 class="text-sm font-semibold text-gray-700">
-                    Milieu Properties
-                    <span class="text-xs font-normal text-gray-500 ml-2">(Ambient environmental conditions)</span>
+                    Milieu Properties (M)
+                    <span class="text-xs font-normal text-gray-500 ml-2">"(Part of Environment: E = (O, M))"</span>
                 </h4>
                 <p class="text-xs text-gray-500">
-                    "Properties that surround or 'bathe' the system but don't flow through discrete interfaces. Examples: Temperature, Humidity, Salinity, pH, Pressure."
+                    "Ambient properties that surround or 'bathe' the system but don't flow through discrete interfaces. Examples: Temperature, Humidity, Salinity, pH, Pressure."
                 </p>
 
                 <div class:hidden=move || !environment_milieu.get().is_empty()>
@@ -1463,25 +1463,55 @@ pub fn SystemDetails(
                 </div>
 
                 <div class:hidden=move || environment_milieu.get().is_empty()>
-                    <div class="space-y-2">
+                    <div class="space-y-3">
                         <For
                             each=move || environment_milieu.get().into_iter().enumerate()
                             key=|(idx, _)| *idx
                             children=move |(idx, (name, value))| {
+                                let property_name = name.clone();
+                                let property_value = value.clone();
                                 view! {
-                                    <div class="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
-                                        <span class="font-medium text-gray-700">{name.clone()}:</span>
-                                        <span class="text-gray-600">{value.clone()}</span>
-                                        <button
-                                            class="ml-auto text-red-600 hover:text-red-800 text-xs"
-                                            on:click=move |_| {
+                                    <div class="bg-gray-50 p-3 rounded space-y-2">
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                                                placeholder="Property name (e.g., Temperature)"
+                                                value=property_name.clone()
+                                                on:input=move |ev| {
+                                                    let new_name = event_target_value(&ev);
+                                                    system_query.write().as_mut().map(|(_, _, _, system_env)| {
+                                                        if let Some(prop) = system_env.milieu.get_mut(idx) {
+                                                            prop.0 = new_name;
+                                                        }
+                                                    });
+                                                }
+                                            />
+                                            <button
+                                                class="text-red-600 hover:text-red-800 text-xs px-2"
+                                                on:click=move |_| {
+                                                    system_query.write().as_mut().map(|(_, _, _, system_env)| {
+                                                        system_env.milieu.remove(idx);
+                                                    });
+                                                }
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                            placeholder="Value with unit (e.g., 25°C, 60%, 7.4 pH)"
+                                            value=property_value.clone()
+                                            on:input=move |ev| {
+                                                let new_value = event_target_value(&ev);
                                                 system_query.write().as_mut().map(|(_, _, _, system_env)| {
-                                                    system_env.milieu.remove(idx);
+                                                    if let Some(prop) = system_env.milieu.get_mut(idx) {
+                                                        prop.1 = new_value;
+                                                    }
                                                 });
                                             }
-                                        >
-                                            Remove
-                                        </button>
+                                        />
                                     </div>
                                 }
                             }
