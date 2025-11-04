@@ -1,81 +1,366 @@
-# Feature: Drag-and-Drop UI V2
+# Feature: Click-to-Place UI with Modal Connections (V2)
 
 ## Overview
 
-**Feature Name**: Drag-and-Drop UI V2  
-**Branch**: feature/drag-and-drop-v2  
-**Status**: In Progress  
-**Contributors**: [Your Name]  
-**Date**: 2025-11-03
+**Feature Name**: Click-to-Place UI V2 (formerly "Drag-and-Drop UI V2")
+**Branch**: `feature/drag-and-drop-v2`
+**Status**: Phase 1 Complete, Phase 2D-Beta Complete
+**Contributors**: Claude Code
+**Started**: 2025-11-01
+**Last Updated**: 2025-11-04
 
 ## Description
 
-Replaces sequential button-based workflow with freeform drag-and-drop UI for creating system diagrams. Users drag elements from a palette sidebar to the canvas, enabling rapid iteration and reducing cognitive load from 5+ prerequisite steps to single drag operation.
+Replaces sequential button-based workflow with freeform click-to-place UI for creating system diagrams. Users click palette icons then click canvas to place elements, with modal connection mode (F-key) for creating flows. Enables rapid iteration and reduces cognitive load from 5+ prerequisite steps to 2-click operations.
 
-**Motivation**: Baseline measurement showed internal subsystem creation takes 6min 19sec with ~16 clicks and requires complex multi-select sequences. Drag-and-drop reduces to single gesture.
+**Motivation**: Baseline measurement showed internal subsystem creation takes 6min 19sec with ~16 clicks and requires complex multi-select sequences. Click-to-place reduces to 2 clicks per element.
 
-**Architectural Foundation**: Based on Mobus 8-tuple formalization where interfaces ∈ C (component set), making interfaces first-class draggable elements rather than auto-generated boundaries.
+**Architectural Foundation**: Based on Mobus 8-tuple formalization where interfaces ∈ C (component set), making interfaces first-class placeable elements. Spatial constraints teach systems theory through interaction design (interfaces snap to boundaries, subsystems inside, environmental objects outside).
+
+**Critical Pivot** (2025-11-03): Abandoned drag-and-drop in favor of click-to-place after discovering Bevy 0.15 sprite picking limitations. Click-to-place provides superior UX (CAD-pattern: select tool → place, vs drag gesture) and aligns with modal interaction design.
+
+## Breakthrough: Spatial Systems Language
+
+**Core Insight**: Theoretical rigor can be expressed through interaction design, not text requirements.
+
+BERT's transformation from enforcement tool → learning environment:
+- **Before**: "Fill out 8-tuple notation fields before modeling" (correctness over exploration)
+- **After**: "3 icons + spatial constraints teach Mobus ontology through use" (discovery → formalization)
+
+**The Pedagogical Mechanism**:
+- **Icons as Vocabulary**: 3-icon palette maps to Mobus structural primitives (C, I, O)
+- **Spatial Constraints as Grammar**: Interfaces snap to boundary, subsystems inside, environmental objects outside
+- **Modal Workflows as Syntax**: F-key connection mode teaches "flows are edges not nodes"
+
+Users learn Mobus formalization through muscle memory, not paper citations. Same tool supports novices ("fun modeling tool") and experts ("computational Mobus implementation").
 
 ## Implemented Functionality
 
-**Phase 0** (Completed):
-- ✅ Disabled button-based UI workflow (CreateButtonSet systems)
-- ✅ Preserved core selection handler (change_focused_system simplified)
+### Phase 0: Preparation (Completed 2025-11-01)
+- ✅ Architectural decisions documented (Layered validation + Hybrid hints)
+- ✅ Feature branch created (`feature/drag-and-drop-v2`)
+- ✅ Button system audit completed (18+ dependent systems mapped)
+- ✅ Workflow baseline measured (6min 19sec, ~16 clicks)
+
+### Phase 1: Foundational Refactoring (Completed 2025-11-03)
+
+**Phase 1.1: Button System Disabled**
+- ✅ Disabled CreateButtonSet systems (not deleted, preserved for potential Classic Mode)
+- ✅ Preserved core selection handler (change_focused_system)
 - ✅ Zero breaking changes to rendering/geometry/labels
-- ✅ Manual verification: flows work, buttons correctly absent, selection intact
+- ✅ Commit: `b93c2bf` - "session: Phase 2D-Alpha complete, connection mode working"
 
-**Phase 1** (Completed - 2025-11-03):
-- ✅ Static palette sidebar with element icons (9 elements, vertical layout)
-- ✅ PNG icon assets (8 icons for 7 element types + generic variants)
-- ✅ World-space sprite rendering at z=200 (consistent with BERT button architecture)
-- ✅ spawn_palette_ui system registered on Startup
-- ✅ Manual verification: Icons render on left side of main system
-- ✅ Proper components: InitialPosition, PickingBehavior for spatial/picking integration
+**Phase 1.2-1.4: Click-to-Place Palette** (Pivot from drag-and-drop)
+- ✅ 3-icon Mobus-aligned palette (Subsystem, Interface, EnvironmentalObject)
+- ✅ PNG icon assets with clear semantics
+- ✅ World-space sprite rendering at z=200
+- ✅ Click palette → enter placement mode → click canvas to place
+- ✅ Ghost preview follows cursor with ESC cancellation
+- ✅ Proper components: PaletteElement, PlacementGhost, PaletteDrag events
 
-**Phase 2** (Next):
-- [ ] Drag detection for palette elements
-- [ ] Visual feedback during drag (ghost element follows cursor)
-- [ ] Drop detection on canvas
-- [ ] Spawn appropriate system element based on PaletteElementType
+**Phase 2A: Subsystem Placement**
+- ✅ Click-to-place workflow (2 clicks: palette → canvas)
+- ✅ Ghost preview with cyan tint
+- ✅ Freeform placement inside system boundary
+- ✅ ESC to cancel placement mode
+
+**Phase 2B: Interface Boundary Snapping**
+- ✅ Interfaces snap to nearest boundary point
+- ✅ Angle-based positioning on system perimeter
+- ✅ Spatial constraint teaches "interfaces live on boundaries"
+- ✅ Unified Interface type (Import/Export merged per Mobus - direction belongs to flows)
+
+**Phase 2C: EnvironmentalObject Placement**
+- ✅ Freeform placement (no boundary constraints)
+- ✅ Unified Source/Sink into EnvironmentalObject (Mobus set O is unified)
+- ✅ Spatial constraint teaches "environment is external to system"
+- ✅ Commit: `b894105` - "feat: implement environmental object placement and 3-icon palette"
+
+**Phase 2D-Alpha: N Network (Internal Flows)** (Completed 2025-11-03)
+- ✅ Modal connection workflow: Press F → click source → click destination
+- ✅ Ghost line preview (cyan Gizmo from source to cursor)
+- ✅ Subsystem ↔ Subsystem flow validation
+- ✅ Same nesting level enforcement
+- ✅ No self-connections
+- ✅ ESC to exit connection mode
+- ✅ Mode stays active for multiple connections
+- ✅ Commit: `98d5afb` - "feat: implement subsystem-to-subsystem flow connections"
+
+**Phase 2D-Beta: G Network (External Flows)** (Completed 2025-11-04)
+- ✅ Extended connection mode for EnvironmentalObject ↔ Interface
+- ✅ Bidirectional G network validation
+- ✅ Invalid connection rejection with specific error messages:
+  - EO ↔ EO: "no direct environment-to-environment flows"
+  - EO ↔ Subsystem: "must connect to Interface per G network"
+  - Interface ↔ Interface: "Cannot connect Interface to Interface directly"
+- ✅ Proper StartTargetType/EndTargetType mapping (Source/Sink for external, System for internal)
+- ✅ Network type logging (N vs G) for debugging
+- ✅ Commit: `4f59d1a` - "feat(connection-mode): implement G network validation"
+
+### Phase 2: Core Validation & UX (Partially Complete)
+- ✅ **Structural validation** (connection mode): N and G network rules enforced
+- ✅ **Keyboard shortcuts** (partial): F-key modal mode, ESC cancellation
+- ⏸️ **Undo/redo**: Not yet implemented
+- ⏸️ **Extended shortcuts**: Power user keyboard navigation deferred
+
+### Phase 3-5: Not Started
+- Intelligence & Guidance (Hints system)
+- Polish & Testing
+- Advanced Features (Optional)
+
+## Mobus 8-Tuple Implementation Status
+
+### ✅ Complete (Spatial + Validation)
+- **C** (Components): Subsystem + Interface click-to-place
+- **N** (Network): Subsystem ↔ Subsystem flows with validation
+- **O** (Objects): EnvironmentalObject freeform placement
+- **I** (Interfaces): Boundary snapping, unified type
+- **G** (External Graph): EnvironmentalObject ↔ Interface flows with validation
+
+### 🟡 Partially Complete
+- **B** (Boundary): Implicit via snap constraints, not explicit selectable object
+- **T** (Transformation): Text field exists (behavioral property)
+- **Δt** (Timescale): Text field exists (temporal property)
+
+### 🔴 Gaps Identified
+- **M** (Milieu): Ambient environmental properties panel needed
+- **H** (History/Memory): State variables panel per subsystem needed
+- **P** (Boundary Properties): Properties panel when boundary selected
+- **φ** (Protocol): Algorithmic protocol editor (not just string)
 
 ## Technical Implementation
 
 ### Components Added
 
-[No new components added]
+```rust
+// src/bevy_app/components.rs
+#[derive(Component)]
+pub struct PaletteElement {
+    pub element_type: PaletteElementType,
+}
 
-### Components Modified
+#[derive(Component)]
+pub struct PlacementGhost;
 
-- ``: [Describe changes]\n
+#[derive(Resource, Default)]
+pub struct PlacementMode {
+    pub active: bool,
+    pub element_type: Option<PaletteElementType>,
+    pub ghost_entity: Option<Entity>,
+}
+
+#[derive(Resource, Default)]
+pub struct ConnectionMode {
+    pub active: bool,
+    pub source_entity: Option<Entity>,
+}
+```
+
+### Systems Added
+
+**Palette System** (`src/bevy_app/systems/palette.rs`):
+- `spawn_palette_ui`: Creates 3-icon sidebar on Startup
+- `enter_placement_mode`: Click palette → spawn ghost + enter mode
+- `update_placement_ghost`: Ghost follows cursor
+- `finalize_placement`: Click canvas → spawn element at position
+
+**Connection Mode System** (`src/bevy_app/systems/connection_mode.rs`):
+- `enter_connection_mode`: F-key → enter modal connection mode
+- `select_connection_source`: First click stores source entity
+- `update_connection_ghost`: Gizmo line from source to cursor
+- `finalize_connection`: Second click validates + creates flow edge
 
 ### Architecture Decisions
 
-[Brief explanation of key architectural decisions, patterns used, and their rationale]
+**1. Click-to-Place over Drag-and-Drop**
+- **Rationale**: Bevy 0.15 sprite entities don't support picking events, would require mesh conversion
+- **UX Benefit**: CAD-pattern (select tool → place) superior to drag gesture for precision work
+- **Pattern**: Tool selection (palette click) → application (canvas click) → ESC to cancel
+
+**2. 3-Icon Palette (Mobus Minimal)**
+- **Subsystem**: Component within system (C ∈ C set)
+- **Interface**: Boundary component that snaps to perimeter (I ∈ C, lives on B)
+- **EnvironmentalObject**: External entity (O ∈ O set), unified Source/Sink per Mobus
+- **Flows**: Created via modal connection mode (edges in N and G, not palette items)
+
+**3. Modal Connection Mode (F-Key)**
+- **Rationale**: Flows are edges (relationships), not nodes (entities) - can't be "placed"
+- **UX**: F → click source → click destination → flow created with validation
+- **Advantage**: Clear workflow for directed edges, prevents accidental flow creation
+- **Pattern**: Stays active for multiple connections, ESC to exit
+
+**4. Spatial Constraints as Teaching**
+- **Interfaces snap to boundary**: Kinesthetic learning "interfaces live on boundaries"
+- **Subsystems inside only**: Experience "components exist within system"
+- **Environmental objects outside**: Learn "environment is external"
+- **Validation during connection**: Real-time Mobus G/N network enforcement
+
+**5. Layered Validation Philosophy**
+- **Structural (Strict)**: Prevents breaking operations (e.g., can't place interface in space)
+- **Mobus (Advisory)**: Educates on systems science principles (future hints system)
+- **Pattern**: Hard constraints via spatial/connection rules, soft guidance via future hints
 
 ## Usage Examples
 
+### Basic Element Placement
 ```rust
-// Simple code example showing how to use the feature
-let example = Feature::new();
-example.demonstrate();
+// User workflow:
+// 1. Click Subsystem icon in palette
+// 2. Click inside system boundary on canvas
+// 3. Subsystem spawned at click position
+
+// System: enter_placement_mode (triggered on palette click)
+// System: update_placement_ghost (ghost follows cursor)
+// System: finalize_placement (spawns element on canvas click)
+```
+
+### Creating Flows (N Network)
+```rust
+// User workflow:
+// 1. Press F key (enter connection mode)
+// 2. Click first subsystem (source)
+// 3. Click second subsystem (destination)
+// 4. Flow created with validation (N network rules)
+
+// Validation checks:
+// - Both must be Subsystems
+// - Same nesting level
+// - No self-connections
+```
+
+### Creating Flows (G Network)
+```rust
+// User workflow:
+// 1. Press F key
+// 2. Click EnvironmentalObject (source)
+// 3. Click Interface (destination)
+// 4. Flow created with G network validation
+
+// Validation checks:
+// - EnvironmentalObject ↔ Interface only (bidirectional)
+// - Rejects EO ↔ Subsystem (violates G network definition)
+// - Rejects EO ↔ EO (no environment-to-environment flows)
 ```
 
 ## Testing Strategy
 
-[Describe how this feature has been tested]
+### Manual Testing Completed
+- ✅ Palette icon rendering (3 icons visible, correct positioning)
+- ✅ Click-to-place workflow (all 3 element types)
+- ✅ Ghost preview following cursor
+- ✅ Interface boundary snapping (angles calculated correctly)
+- ✅ Connection mode entry/exit (F key and ESC)
+- ✅ N network flows (Subsystem ↔ Subsystem)
+- ✅ G network flows (EnvironmentalObject ↔ Interface bidirectional)
+- ✅ Invalid connection rejection (EO↔EO, EO↔Subsystem, Interface↔Interface)
+- ✅ Self-connection prevention
+- ✅ Nesting level validation
+
+### Known Issues
+- 🐛 **Interface flow rendering**: Flows attached to Interfaces render to parent system boundary instead of Interface position (data model correct, rendering bug in flow update systems)
+
+### Automated Testing (Future)
+- [ ] Unit tests for placement validation
+- [ ] Unit tests for connection validation (N and G networks)
+- [ ] Integration tests for full workflow
+- [ ] Performance tests with 50+ elements
+- [ ] Regression tests for existing model loading
 
 ## Future Improvements
 
-- [Potential enhancements identified during implementation]
-- [Known limitations that could be addressed]
-- [Ideas for extending the feature]
+### Immediate (Mobus 8-Tuple Completion)
+- Fix Interface flow rendering bug
+- Add M (Milieu) panel for ambient environmental properties
+- Add H (History/Memory) panel for state variables per subsystem
+- Make boundary (B) explicitly selectable with properties panel
+- Implement algorithmic protocol editor (φ)
+
+### Phase 2 Remainder (Original Roadmap)
+- Undo/redo system with keyboard shortcuts (Ctrl+Z/Ctrl+Shift+Z)
+- Extended keyboard shortcuts for power users (S=System, I=Interface, Arrow keys=Move)
+- Visual error indicators on canvas elements
+
+### Phase 3-5 (Intelligence & Polish)
+- Model state analysis system (detect incomplete structures)
+- Completion hint generator (AI-style suggestions)
+- Hint display panel with actionable suggestions
+- Mobus validation feedback (advisory warnings)
+- Smart parameter templates
+- Animation & transitions
+- Performance optimization for 100+ element models
+
+### Advanced Features (Optional)
+- Classic Mode toggle (restore button-based UI for legacy users)
+- Model templates (common patterns library)
+- Collaborative hints with LLM integration
+
+## Complete 5-Phase Roadmap
+
+### Phase 0: Preparation (2-3 hours) ✅ COMPLETE
+- Architectural decisions
+- Feature branch creation
+- Button system audit
+- Workflow baseline measurement
+
+### Phase 1: Foundational Refactoring (23 hours) ✅ COMPLETE
+- Button system deletion
+- Palette component creation → **PIVOT: 3-icon Mobus palette**
+- Drag-from-palette → **PIVOT: Click-to-place with ghost**
+- Canvas drop zones → **PIVOT: Modal placement mode**
+- Details panel redesign → **DEFERRED**
+- **BONUS**: Phase 2A-D (Subsystem, Interface, EnvironmentalObject placement + N/G network flows)
+
+### Phase 2: Core Validation & UX (16 hours) 🟡 PARTIAL
+- ✅ Structural validation (connection mode)
+- ⏸️ Highlight valid drop targets (N/A for click-to-place)
+- ⏸️ Undo/redo foundation
+- ✅ Keyboard shortcuts (F-key, ESC - partial)
+
+### Phase 3: Intelligence & Guidance (24 hours) ⏸️ NOT STARTED
+- Model state analysis system
+- Completion hint generator
+- Hint display panel
+- Mobus validation feedback
+- Smart parameter templates
+
+### Phase 4: Polish & Testing (25 hours) ⏸️ NOT STARTED
+- Animation & transitions
+- Error visualization
+- Comprehensive testing
+- Documentation updates
+- Performance optimization
+
+### Phase 5: Advanced Features (Optional) ⏸️ NOT STARTED
+- Classic mode toggle
+- Model templates
+- Collaborative hints (AI)
 
 ## Related Documentation
 
-- [Links to related features or documentation]
-- [References to external resources or dependencies]
-- [Design documents or discussions]
+- **Session Files** (halcyonic workspace):
+  - `operations/sessions/2025-11-01/bert-transition-planning-session.md` - Original 5-phase roadmap
+  - `operations/sessions/2025-11-03/bert-phase2-reference.md` - Detailed implementation notes (Phase 2A-D)
+  - `operations/sessions/2025-11-03/daily-recap.md` - Spatial systems language breakthrough
+  - `operations/sessions/2025-11-04/bert-phase2d-beta-session.md` - G network implementation
+- **Architecture Docs**:
+  - `docs/architecture/button-system-analysis-unified.md` - Button system dependency analysis
+  - `docs/architecture/phase1-lessons-learned.md` - V1 branch failure lessons
+  - `docs/architecture/icon-integration-lessons.md` - Icon rendering learnings
+- **BERT Documentation**:
+  - [System Language](https://bert.gitbook.io/bert-documentation/system-language) - Mobus 8-tuple formalization
+  - [Contributing Guide](CONTRIBUTING.md) - Development workflow
+
+## Commits
+
+**Phase 0-1**:
+- `b93c2bf` - session: Phase 2D-Alpha complete, connection mode working
+- `b894105` - feat: implement environmental object placement and 3-icon palette
+- `98d5afb` - feat: implement subsystem-to-subsystem flow connections
+
+**Phase 2D-Beta**:
+- `4f59d1a` - feat(connection-mode): implement G network validation for EnvironmentalObject ↔ Interface flows
 
 ---
 
-_This documentation was automatically generated for the Drag-and-Drop UI V2 feature on 2025-11-03._
+**Last Updated**: 2025-11-04
+**Branch Status**: Active development, Phase 2D-Beta complete, ready for Mobus 8-tuple gap filling or Phase 2 remainder work
