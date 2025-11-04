@@ -22,6 +22,7 @@ use crate::bevy_app::plugins::mouse_interaction::{DragPosition, NoDeselect, Pick
 use crate::bevy_app::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom,
 };
+use crate::bevy_app::systems::{CommandHistory, PlaceElementCommand};
 use bevy::picking::PickingBehavior;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -247,6 +248,7 @@ pub fn finalize_placement(
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     zoom: Res<Zoom>,
+    mut command_history: ResMut<CommandHistory>,
 ) {
     let Some(element_type) = placement_mode.active_element else {
         return;
@@ -291,7 +293,7 @@ pub fn finalize_placement(
             PaletteElementType::Subsystem => {
                 // Subsystems: Place at cursor position (freeform)
                 let local_pos = (ghost_world_pos - system_center) / **zoom;
-                spawn_subsystem(
+                let entity = spawn_subsystem(
                     &mut commands,
                     **focused_system,
                     &system_query,
@@ -308,6 +310,14 @@ pub fn finalize_placement(
                     local_pos,
                 );
                 info!("✅ Subsystem placed at {:?}", local_pos);
+
+                // Push undo command
+                command_history.push(Box::new(PlaceElementCommand {
+                    entity,
+                    element_type,
+                    position: local_pos,
+                    parent_system: Some(**focused_system),
+                }));
             }
             PaletteElementType::Interface => {
                 // Interfaces: Already snapped to boundary by update_placement_ghost
@@ -323,7 +333,7 @@ pub fn finalize_placement(
 
                 let nesting_level = NestingLevel::current(**focused_system, &nesting_level_query);
 
-                spawn_interface_only(
+                let entity = spawn_interface_only(
                     &mut commands,
                     SubstanceType::default(), // Default substance, user can change later
                     nesting_level,
@@ -343,6 +353,14 @@ pub fn finalize_placement(
                     "✅ Interface placed on boundary at angle {:.2}°",
                     angle.to_degrees()
                 );
+
+                // Push undo command
+                command_history.push(Box::new(PlaceElementCommand {
+                    entity,
+                    element_type,
+                    position: ghost_world_pos,
+                    parent_system: Some(**focused_system),
+                }));
             }
             PaletteElementType::EnvironmentalObject => {
                 // Environmental objects: Freeform placement in environment
@@ -353,7 +371,7 @@ pub fn finalize_placement(
 
                 let nesting_level = NestingLevel::current(**focused_system, &nesting_level_query);
 
-                spawn_external_entity_only(
+                let entity = spawn_external_entity_only(
                     &mut commands,
                     SubstanceType::default(), // Default substance, user can change later
                     false,                    // Not selected initially
@@ -370,6 +388,14 @@ pub fn finalize_placement(
                     &mut stroke_tess,
                 );
                 info!("✅ Environmental object placed at {:?}", ghost_world_pos);
+
+                // Push undo command
+                command_history.push(Box::new(PlaceElementCommand {
+                    entity,
+                    element_type,
+                    position: ghost_world_pos,
+                    parent_system: Some(**focused_system),
+                }));
             }
         }
 
