@@ -28,7 +28,10 @@ use bevy_prototype_lyon::prelude::*;
 /// Applies the current zoom value to the x and y translations of all non-camera entities.
 /// The z component of the translation remains unchanged.
 pub fn apply_zoom(
-    mut query: Query<(&mut Transform, &InitialPosition), Without<Camera>>,
+    mut query: Query<
+        (&mut Transform, &InitialPosition),
+        (Without<Camera>, Without<PaletteElement>),
+    >,
     zoom: Res<Zoom>,
     time: Res<Time>,
 ) {
