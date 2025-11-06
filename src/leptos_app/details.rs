@@ -1070,17 +1070,20 @@ pub fn ExternalEntityDetails(
             }
         />
 
-        <InputGroup
-            id="equivalence"
-            label="Equivalence"
-            value=equivalence
-            on_input=move |value: String| {
-                external_entity_query
-                    .write()
-                    .as_mut()
-                    .map(|(_, _, external_entity)| external_entity.equivalence = value);
-            }
-        />
+        // REMOVED for Phase 3C UX improvements - Equivalence field was confusing and unimplemented
+        // The actual equivalence feature uses IsSameAsId component via multi-select + Detach button (below)
+        // ExternalEntity.equivalence data field kept for backward compatibility but not shown in UI
+        // <InputGroup
+        //     id="equivalence"
+        //     label="Equivalence"
+        //     value=equivalence
+        //     on_input=move |value: String| {
+        //         external_entity_query
+        //             .write()
+        //             .as_mut()
+        //             .map(|(_, _, external_entity)| external_entity.equivalence = value);
+        //     }
+        // />
 
         // HIDDEN for v0.2.0 "Structural Analysis Mode" - Model field is for dynamic behavior modeling
         // This represents minimal behavioral models of source/sink entities (e.g., "seasonal demand", "steady supplier")
