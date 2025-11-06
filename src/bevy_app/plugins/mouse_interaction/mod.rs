@@ -102,9 +102,10 @@ fn handle_spatial_panel_switching(
     environment_query: Query<&EnvironmentRegion>,
     system_query: Query<Entity, With<crate::bevy_app::components::System>>,
 ) {
-    // Suppress panel switching during connection mode (Phase 3C UX improvement)
-    // User is connecting elements, not exploring spatial regions
-    if connection_mode.active {
+    // Suppress panel switching during connection mode or just after exit (Phase 3C UX improvement)
+    // - Active: User is connecting elements, not exploring spatial regions
+    // - Just exited: Prevents final connection click from switching panels on same frame
+    if connection_mode.active || connection_mode.just_exited {
         return;
     }
 
@@ -672,10 +673,11 @@ fn handle_mouse_up(
 
     let multi_select = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
 
-    // Suppress selection when connection mode is active (Phase 3C UX improvement)
-    // Users are connecting elements, not inspecting properties - details panel would be distracting
+    // Suppress selection when connection mode is active or just exited (Phase 3C UX improvement)
+    // - Active: Users are connecting elements, not inspecting properties
+    // - Just exited: Prevents final connection click from opening panel on same frame
     // Connection mode handles clicks for source/destination selection, not entity selection
-    if **selection_enabled && !connection_mode.active {
+    if **selection_enabled && !connection_mode.active && !connection_mode.just_exited {
         selection.clear();
 
         let mut deselect = true;

@@ -49,6 +49,9 @@ pub struct ConnectionMode {
     pub active: bool,
     /// Entity of the first-clicked element (source of flow)
     pub source_entity: Option<Entity>,
+    /// Flag to prevent selection on the frame connection mode exits
+    /// (Phase 3C: Prevents final click from opening details panel)
+    pub just_exited: bool,
 }
 
 /// Step 1: Enter connection mode when 'F' key is pressed.
@@ -385,11 +388,24 @@ pub fn finalize_connection(
         );
 
         // Exit connection mode after successful flow creation
+        // Set just_exited flag to prevent this click from triggering selection
         // This provides better UX for new users who expect mode to exit after one action
         // Power users can press F again to create multiple flows
-        *connection_mode = ConnectionMode::default();
+        connection_mode.active = false;
+        connection_mode.source_entity = None;
+        connection_mode.just_exited = true; // Prevents selection on this frame
         info!("✅ Flow created successfully - Connection mode EXITED (Press F to create another)");
 
         return; // Only handle first valid click per frame
+    }
+}
+
+/// Clear the just_exited flag after one frame to allow normal selection again.
+///
+/// This system runs after finalize_connection to reset the flag, preventing
+/// indefinite selection suppression after exiting connection mode.
+pub fn clear_connection_exit_flag(mut connection_mode: ResMut<ConnectionMode>) {
+    if connection_mode.just_exited {
+        connection_mode.just_exited = false;
     }
 }

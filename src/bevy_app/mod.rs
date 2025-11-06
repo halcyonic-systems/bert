@@ -225,10 +225,11 @@ pub fn init_bevy_app(
             ),
             // Connection mode systems - PHASE 4: Full workflow enabled
             (
-                enter_connection_mode,    // F key → enter mode
-                select_connection_source, // Click subsystem → select source
-                update_connection_ghost,  // Ghost line rendering (Gizmos)
+                enter_connection_mode,      // F key → enter mode
+                select_connection_source,   // Click subsystem → select source
+                update_connection_ghost,    // Ghost line rendering (Gizmos)
                 finalize_connection, // PHASE 4: Click destination → create flow OR ESC → cancel
+                clear_connection_exit_flag, // Phase 3C: Clear just_exited flag next frame
             ),
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
