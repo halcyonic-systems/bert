@@ -88,17 +88,26 @@ use bevy_picking::focus::PickingInteraction;
 /// the SpatialDetailPanelMode resource accordingly, enabling contextual property panels.
 ///
 /// - System interior clicks → SpatialDetailPanelMode::System
-/// - Boundary ring clicks → SpatialDetailPanelMode::Boundary  
+/// - Boundary ring clicks → SpatialDetailPanelMode::Boundary
 /// - Environment area clicks → SpatialDetailPanelMode::Environment
 ///
 /// This implements the core spatial interaction UX where users click WHERE they want to edit.
+///
+/// Suppressed during connection mode to avoid panel switching during flow creation.
 fn handle_spatial_panel_switching(
     mut click_events: EventReader<Pointer<Click>>,
     mut panel_mode: ResMut<SpatialDetailPanelMode>,
+    connection_mode: Res<ConnectionMode>,
     boundary_query: Query<&BoundaryRegion>,
     environment_query: Query<&EnvironmentRegion>,
     system_query: Query<Entity, With<crate::bevy_app::components::System>>,
 ) {
+    // Suppress panel switching during connection mode (Phase 3C UX improvement)
+    // User is connecting elements, not exploring spatial regions
+    if connection_mode.active {
+        return;
+    }
+
     for event in click_events.read() {
         // Check what type of entity was clicked and update panel mode accordingly
         if boundary_query.get(event.target).is_ok() {
