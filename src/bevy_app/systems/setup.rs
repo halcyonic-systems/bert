@@ -49,26 +49,32 @@ pub fn setup(
 
     commands.insert_resource(FocusedSystem::new(system_entity));
 
-    #[cfg(not(feature = "init_complete_system"))]
-    {
-        use crate::bevy_app::bundles::spawn_create_button;
-        use crate::bevy_app::components::{CreateButton, CreateButtonType};
-
-        spawn_create_button(
-            &mut commands,
-            CreateButton {
-                ty: CreateButtonType::Outflow,
-                connection_source: system_entity,
-                system: system_entity,
-                substance_type: None,
-            },
-            bevy::math::vec2(MAIN_SYSTEM_RADIUS, 0.0),
-            0.0,
-            **zoom,
-            Some(system_entity),
-            &asset_server,
-        );
-    }
+    // REMOVED: Initial outflow button (Phase 3C UX improvements)
+    // This button was a relic from pre-drag-and-drop era. It created an incomplete flow
+    // with no automatic follow-up (interface/sink creation), confusing users.
+    // Modern workflow: User drags palette items (interface, external entity) then uses F key
+    // to create flows via connection mode. This is more discoverable and consistent.
+    //
+    // #[cfg(not(feature = "init_complete_system"))]
+    // {
+    //     use crate::bevy_app::bundles::spawn_create_button;
+    //     use crate::bevy_app::components::{CreateButton, CreateButtonType};
+    //
+    //     spawn_create_button(
+    //         &mut commands,
+    //         CreateButton {
+    //             ty: CreateButtonType::Outflow,
+    //             connection_source: system_entity,
+    //             system: system_entity,
+    //             substance_type: None,
+    //         },
+    //         bevy::math::vec2(MAIN_SYSTEM_RADIUS, 0.0),
+    //         0.0,
+    //         **zoom,
+    //         Some(system_entity),
+    //         &asset_server,
+    //     );
+    // }
 }
 
 /// Helpful flag for development that creates the state required before a user can deconstruct the system of interest.
