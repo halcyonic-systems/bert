@@ -181,10 +181,7 @@ impl UndoCommand for PlaceElementCommand {
         // Remove the entity that was placed
         if let Ok(entity) = world.get_entity_mut(self.entity) {
             entity.despawn_recursive();
-            info!(
-                "Removed {:?} at {:?}",
-                self.element_type, self.position
-            );
+            info!("Removed {:?} at {:?}", self.element_type, self.position);
         } else {
             warn!("Entity {:?} already despawned or not found", self.entity);
         }

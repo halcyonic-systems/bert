@@ -110,7 +110,7 @@
 //! - [`crate::events`]: Event types and communication patterns
 
 mod camera;
-mod connection_mode; // PHASE 1: Testing incremental enablement
+pub mod connection_mode; // PHASE 3C: Public for mouse interaction integration
 mod palette;
 mod removal;
 mod setup;

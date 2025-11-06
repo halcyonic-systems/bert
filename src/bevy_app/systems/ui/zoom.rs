@@ -14,8 +14,7 @@ use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::resources::{
     build_external_entity_aabb_half_extents, build_external_entity_path,
     build_interface_aabb_half_extends, build_interface_path, build_interface_simplified_mesh,
-    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom,
-    ZoomTarget,
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom, ZoomTarget,
 };
 use crate::bevy_app::systems::tessellate_simplified_mesh;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -508,7 +507,11 @@ pub fn apply_zoom_to_added_label(
 pub fn auto_zoom_on_focus_change(
     focused_system: Res<FocusedSystem>,
     mut previous_focus: Local<Option<Entity>>,
-    system_query: Query<(&GlobalTransform, &crate::bevy_app::components::System, &NestingLevel)>,
+    system_query: Query<(
+        &GlobalTransform,
+        &crate::bevy_app::components::System,
+        &NestingLevel,
+    )>,
     mut zoom_target: ResMut<ZoomTarget>,
 ) {
     // Only trigger if FocusedSystem resource changed AND the entity is different

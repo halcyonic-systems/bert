@@ -74,6 +74,7 @@
 pub mod debug;
 
 use crate::bevy_app::components::{BoundaryRegion, EnvironmentRegion, SpatialDetailPanelMode};
+use crate::bevy_app::systems::connection_mode::ConnectionMode;
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
@@ -651,6 +652,7 @@ fn handle_mouse_up(
     mut dragging: ResMut<Dragging>,
     mut selection: ResMut<Selection>,
     selection_enabled: Res<SelectionEnabled>,
+    connection_mode: Res<ConnectionMode>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
     if dragging.started {
@@ -661,7 +663,10 @@ fn handle_mouse_up(
 
     let multi_select = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
 
-    if **selection_enabled {
+    // Suppress selection when connection mode is active (Phase 3C UX improvement)
+    // Users are connecting elements, not inspecting properties - details panel would be distracting
+    // Connection mode handles clicks for source/destination selection, not entity selection
+    if **selection_enabled && !connection_mode.active {
         selection.clear();
 
         let mut deselect = true;

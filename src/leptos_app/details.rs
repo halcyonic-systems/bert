@@ -1023,7 +1023,7 @@ pub fn ExternalEntityDetails(
             .unwrap_or_default()
     });
 
-    let equivalence = Signal::derive(move || {
+    let _equivalence = Signal::derive(move || {
         external_entity_query
             .read()
             .as_ref()
