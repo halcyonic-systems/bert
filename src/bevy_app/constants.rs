@@ -52,9 +52,11 @@ pub const SUBSYSTEM_Z: f32 = 10.0;
 pub const SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT: f32 = 8.0;
 
 /// Default half width of the rectangle that defines an interface.
-pub const INTERFACE_WIDTH_HALF: f32 = 15.0;
+/// Increased from 15.0 to 25.0 (+67%) for better visibility and clickability (Phase 3C UX)
+pub const INTERFACE_WIDTH_HALF: f32 = 25.0;
 /// Default half height of the rectangle that defines an interface.
-pub const INTERFACE_HEIGHT_HALF: f32 = 35.0;
+/// Increased from 35.0 to 50.0 (+43%) to match external entity height (Phase 3C UX)
+pub const INTERFACE_HEIGHT_HALF: f32 = 50.0;
 /// Default line width of the perimeter of the rectangle that defines an interface.
 pub const INTERFACE_LINE_WIDTH: f32 = 4.0;
 /// Default line width of the perimeter of the rectangle of a selected interface.
