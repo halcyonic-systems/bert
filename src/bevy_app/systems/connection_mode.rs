@@ -28,10 +28,10 @@
 
 use crate::bevy_app::bundles::spawn_interaction_only;
 use crate::bevy_app::components::{
-    EndTargetType, ExternalEntity, Flow, FlowCurve, FlowEndConnection,
-    FlowEndInterfaceConnection, FlowStartConnection, FlowStartInterfaceConnection,
-    InitialPosition, InterfaceBehavior, InteractionType, InteractionUsability, Interface,
-    NestingLevel, Parameter, StartTargetType, SubstanceType, Subsystem,
+    EndTargetType, ExternalEntity, Flow, FlowCurve, FlowEndConnection, FlowEndInterfaceConnection,
+    FlowStartConnection, FlowStartInterfaceConnection, InitialPosition, InteractionType,
+    InteractionUsability, Interface, InterfaceBehavior, NestingLevel, Parameter, StartTargetType,
+    SubstanceType, Subsystem,
 };
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
 use bevy::prelude::*;
@@ -376,9 +376,11 @@ pub fn finalize_connection(
             source_entity, destination_entity, network_type
         );
 
-        // Clear source to allow creating another flow
-        connection_mode.source_entity = None;
-        info!("🔗 Connection mode ACTIVE - Click first element (or ESC to exit)");
+        // Exit connection mode after successful flow creation
+        // This provides better UX for new users who expect mode to exit after one action
+        // Power users can press F again to create multiple flows
+        *connection_mode = ConnectionMode::default();
+        info!("✅ Flow created successfully - Connection mode EXITED (Press F to create another)");
 
         return; // Only handle first valid click per frame
     }
