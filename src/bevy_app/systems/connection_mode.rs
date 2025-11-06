@@ -33,6 +33,7 @@ use crate::bevy_app::components::{
     InteractionUsability, Interface, InterfaceBehavior, NestingLevel, Parameter, StartTargetType,
     SubstanceType, Subsystem,
 };
+use crate::bevy_app::events::DeselectAllEvent;
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -54,9 +55,11 @@ pub struct ConnectionMode {
 ///
 /// Initializes ConnectionMode resource to active state.
 /// Visual feedback handled by ghost line system.
+/// Auto-deselects any selected elements to prevent self-connection errors.
 pub fn enter_connection_mode(
     keys: Res<ButtonInput<KeyCode>>,
     mut connection_mode: ResMut<ConnectionMode>,
+    mut deselect_events: EventWriter<DeselectAllEvent>,
 ) {
     if keys.just_pressed(KeyCode::KeyF) {
         if connection_mode.active {
@@ -65,6 +68,11 @@ pub fn enter_connection_mode(
         }
         connection_mode.active = true;
         connection_mode.source_entity = None;
+
+        // Clear any selected elements to avoid "cannot connect element to itself" errors
+        // User can now press F and immediately click the same element that was selected
+        deselect_events.send(DeselectAllEvent);
+
         info!("🔗 Connection mode ACTIVE - Click first subsystem");
     }
 
