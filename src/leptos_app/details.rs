@@ -239,16 +239,16 @@ pub fn InterfaceDetails(interface_query: RwSignalSynced<Option<InterfaceQuery>>)
 
         <div class="mb-4">
             <label class="flex items-center mb-2">
-                <span class="block text-sm font-medium leading-6 text-gray-900">Protocol</span>
+                <span class="block text-sm font-medium leading-6 text-gray-900">Protocol (Optional)</span>
                 <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                      title="Algorithm for letting flow across boundary in ordered fashion">
+                      title="The rules for how substances cross this interface. Examples: 'HTTPS POST to /api/orders', 'phone call', 'batch file transfer', 'face-to-face meeting'. Can be as technical (code-level) or conceptual (business process) as needed for your analysis.">
                     ?
                 </span>
             </label>
             <TextArea
                 id="protocol"
                 label=""
-                placeholder="Create a protocol"
+                placeholder="e.g., HTTPS API request, phone call, batch transfer, queue system..."
                 text=protocol
                 on_input=move |value: String| {
                     interface_query
