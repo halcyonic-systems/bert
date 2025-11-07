@@ -1,7 +1,7 @@
 use crate::bevy_app::components::SpatialDetailPanelMode;
 use crate::bevy_app::data_model::Complexity;
 use crate::bevy_app::smart_parameters::{
-    ParameterType, ParameterValue, SmartParameter, SmartParameterDatabase,
+    ParameterValue, SmartParameter,
 };
 use crate::leptos_app::components::{
     Button, Checkbox, DetailsPanelMode, Divider, InputGroup, SelectGroup, Slider, TextArea,
@@ -262,167 +262,124 @@ pub fn InterfaceDetails(interface_query: RwSignalSynced<Option<InterfaceQuery>>)
 }
 
 #[component]
-pub fn SmartParameterInput(
+pub fn SimpleParameterInput(
     interaction_query: RwSignalSynced<Option<InteractionQuery>>,
-    substance_type: Memo<Option<SubstanceType>>,
 ) -> impl IntoView {
-    // Initialize the parameter database
-    let db = SmartParameterDatabase::new();
-
-    // State for parameter creation
-    let (search_query, set_search_query) = signal(String::new());
-    let (show_suggestions, set_show_suggestions) = signal(false);
-
-    // Get smart parameters from the interaction
-    let smart_parameters = Memo::new(move |_| {
+    // Get parameters from the interaction (using basic Parameter struct)
+    let parameters = Memo::new(move |_| {
         interaction_query
             .read()
             .as_ref()
-            .map(|(_, _, interaction)| interaction.smart_parameters.clone())
+            .map(|(_, _, interaction)| interaction.parameters.clone())
             .unwrap_or_default()
     });
 
-    // Get search suggestions based on substance type and query
-    let suggestions = Memo::new(move |_| {
-        if let Some(substance_type) = substance_type.get() {
-            let query = search_query.get();
-            if query.is_empty() {
-                db.get_suggestions(&substance_type)
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-            } else {
-                db.search_suggestions(&substance_type, &query)
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-            }
-        } else {
-            vec![]
+    // State for adding new parameter
+    let (new_param_name, set_new_param_name) = signal(String::new());
+    let (new_param_value, set_new_param_value) = signal(String::new());
+    let (new_param_unit, set_new_param_unit) = signal(String::new());
+
+    let add_parameter = move |_| {
+        let name = new_param_name.get_untracked();
+        let value = new_param_value.get_untracked();
+        let unit = new_param_unit.get_untracked();
+
+        if !name.is_empty() {
+            let new_parameter = crate::Parameter {
+                id: uuid::Uuid::new_v4(),
+                name: name.clone(),
+                value: value.clone(),
+                unit: unit.clone(),
+            };
+
+            interaction_query.write().as_mut().map(|(_, _, interaction)| {
+                interaction.parameters.push(new_parameter);
+            });
+
+            // Reset form
+            set_new_param_name.set(String::new());
+            set_new_param_value.set(String::new());
+            set_new_param_unit.set(String::new());
         }
-    });
+    };
 
     view! {
-        // Add Parameter Section
-        <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex items-center justify-between mb-3">
-                <label class="block text-sm font-medium text-gray-700">Add Parameter</label>
-                <span class="text-xs text-gray-500">Type to search</span>
-            </div>
-
-            <div class="relative">
-                <input
-                    type="text"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Search parameters (e.g., 'temp', 'eff', 'active')..."
-                    value=search_query
-                    on:input=move |e| {
-                        let value = event_target_value(&e);
-                        set_search_query.set(value);
-                        set_show_suggestions.set(true);
-                    }
-                    on:focus=move |_| set_show_suggestions.set(true)
-                />
-
-                // Suggestions dropdown
-                <Show when=move || show_suggestions.get() && !suggestions.get().is_empty()>
-                    <div class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                        <For
-                            each=move || suggestions.get()
-                            key=|suggestion| suggestion.display_name.clone()
-                            children=move |suggestion| {
-                                let parameter_type_text = match suggestion.parameter_type {
-                                    ParameterType::Numeric => "Numeric",
-                                    ParameterType::Ordinal => "Ordinal",
-                                    ParameterType::Categorical => "Categorical",
-                                    ParameterType::Boolean => "Boolean",
-                                };
-
-                                let type_color = match suggestion.parameter_type {
-                                    ParameterType::Numeric => "text-blue-600 bg-blue-50",
-                                    ParameterType::Ordinal => "text-green-600 bg-green-50",
-                                    ParameterType::Categorical => "text-purple-600 bg-purple-50",
-                                    ParameterType::Boolean => "text-orange-600 bg-orange-50",
-                                };
-
-                                view! {
-                                    <button
-                                        type="button"
-                                        class="w-full px-4 py-2 text-left hover:bg-gray-50 focus:outline-none focus:bg-gray-50 flex items-center justify-between"
-                                        on:click=move |_| {
-                                            // Add the suggested parameter
-                                            let new_parameter = SmartParameter::new(
-                                                suggestion.display_name.clone(),
-                                                suggestion.default_value.clone()
-                                            );
-
-                                            interaction_query.write().as_mut().map(|(_, _, interaction)| {
-                                                interaction.smart_parameters.push(new_parameter);
-                                            });
-
-                                            set_search_query.set(String::new());
-                                            set_show_suggestions.set(false);
-                                        }
-                                    >
-                                        <div class="flex-1">
-                                            <div class="text-sm font-medium text-gray-900">{suggestion.display_name.clone()}</div>
-                                        </div>
-                                        <span class=format!("px-2 py-1 text-xs rounded-full {}", type_color)>
-                                            {parameter_type_text}
-                                        </span>
-                                    </button>
-                                }
-                            }
-                        />
-                    </div>
-                </Show>
-            </div>
-        </div>
-
-        // Existing Parameters List
-        <Show when=move || !smart_parameters.get().is_empty()>
-            <div class="space-y-3">
-                <h4 class="text-sm font-medium text-gray-700">Parameters</h4>
-                <For
-                    each=move || smart_parameters.get()
-                    key=|param| param.id
-                    children=move |param| {
+        // Existing parameters list
+        <Show when=move || !parameters.get().is_empty()>
+            <div class="space-y-2 mb-3">
+                {move || {
+                    parameters.get().into_iter().map(|param| {
                         let param_id = param.id;
                         view! {
-                            <SmartParameterWidget
-                                parameter=param.clone()
-                                on_update=move |updated_param| {
-                                    // Update the parameter in the interaction
-                                    interaction_query.write().as_mut().map(|(_, _, interaction)| {
-                                        if let Some(existing_param) = interaction.smart_parameters.iter_mut().find(|p| p.id == param_id) {
-                                            *existing_param = updated_param.clone();
-
-                                            // Sync Flow.amount with Shipment Value parameter
-                                            if updated_param.name == "Shipment Value" {
-                                                if let ParameterValue::Numeric { value, unit } = &updated_param.value {
-                                                    if unit == "USD" {
-                                                        if let Ok(parsed_value) = value.parse::<rust_decimal::Decimal>() {
-                                                            interaction.amount = parsed_value;
-                                                            interaction.unit = "USD".to_string();
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    });
-                                }
-                                on_delete=move |param_id_to_delete| {
-                                    // Remove the parameter from the interaction
-                                    interaction_query.write().as_mut().map(|(_, _, interaction)| {
-                                        interaction.smart_parameters.retain(|p| p.id != param_id_to_delete);
-                                    });
-                                }
-                            />
+                            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium text-gray-900 truncate">{param.name.clone()}</div>
+                                    <div class="text-xs text-gray-600">
+                                        {param.value.clone()}
+                                        {if !param.unit.is_empty() {
+                                            format!(" {}", param.unit)
+                                        } else {
+                                            String::new()
+                                        }}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    on:click=move |_| {
+                                        interaction_query.write().as_mut().map(|(_, _, interaction)| {
+                                            interaction.parameters.retain(|p| p.id != param_id);
+                                        });
+                                    }
+                                    class="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 flex-shrink-0"
+                                    title="Remove parameter"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         }
-                    }
-                />
+                    }).collect_view()
+                }}
             </div>
         </Show>
+
+        // Add new parameter form
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded">
+            <div class="text-xs font-medium text-blue-900 mb-2">Add Parameter</div>
+            <div class="space-y-2">
+                <input
+                    type="text"
+                    placeholder="Name (e.g., temperature, efficiency)"
+                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-cyan-500 focus:border-cyan-500"
+                    prop:value=new_param_name
+                    on:input=move |ev| set_new_param_name.set(event_target_value(&ev))
+                />
+                <div class="flex gap-2">
+                    <input
+                        type="text"
+                        placeholder="Value"
+                        class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-cyan-500 focus:border-cyan-500"
+                        prop:value=new_param_value
+                        on:input=move |ev| set_new_param_value.set(event_target_value(&ev))
+                    />
+                    <input
+                        type="text"
+                        placeholder="Unit"
+                        class="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-cyan-500 focus:border-cyan-500"
+                        prop:value=new_param_unit
+                        on:input=move |ev| set_new_param_unit.set(event_target_value(&ev))
+                    />
+                </div>
+                <button
+                    type="button"
+                    on:click=add_parameter
+                    class="w-full px-3 py-1.5 text-sm font-medium text-white bg-cyan-600 rounded hover:bg-cyan-700"
+                >
+                    Add Parameter
+                </button>
+            </div>
+        </div>
     }
 }
 
@@ -984,17 +941,16 @@ pub fn InteractionDetails(
         //     </For>
         // </div>
 
-        // Smart Parameters section - Enhanced parameter system with categorical variables
+        // Parameters section - Simple key-value parameters
         <div class="mt-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Smart Parameters</h3>
-                <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">MVP</span>
+            <div class="mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Parameters</h3>
+                <p class="text-xs text-gray-500 mt-1">Add domain-specific attributes for this flow</p>
             </div>
 
             <div class="space-y-4">
-                <SmartParameterInput
+                <SimpleParameterInput
                     interaction_query=interaction_query
-                    substance_type=substance_type
                 />
             </div>
         </div>
