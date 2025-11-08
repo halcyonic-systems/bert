@@ -100,7 +100,10 @@ pub fn spawn_interface_only(
             },
             transform,
             Fill::color(substance_type.interface_color_default()),
-            PickingBehavior::default(),
+            PickingBehavior {
+                should_block_lower: true, // PHASE 3D FIX: Block clicks from passing through to parent system
+                is_hoverable: true,
+            },
             RayCastPickable::default(),
             PickSelection { is_selected },
             HighlightBundles {
