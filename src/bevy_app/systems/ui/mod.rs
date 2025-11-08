@@ -52,7 +52,12 @@ pub fn change_focused_system(
 ) {
     for (entity, selection) in &selected_query {
         if selection.is_selected {
-            **focused_system = entity;
+            // PHASE 3D FIX: Only assign if entity actually changed to prevent spurious auto-zoom triggers.
+            // Clicking canvas to refocus keyboard was causing FocusedSystem reassignment to same entity,
+            // triggering Bevy change detection → auto-zoom → jittery camera during manual zoom.
+            if **focused_system != entity {
+                **focused_system = entity;
+            }
         }
     }
 }
