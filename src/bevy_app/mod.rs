@@ -96,6 +96,7 @@ pub fn init_bevy_app(
     zoom_event_receiver: BevyEventReceiver<ZoomEvent>,
     deselect_event_receiver: BevyEventReceiver<DeselectAllEvent>,
     trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
+    palette_click_receiver: BevyEventReceiver<PaletteClickEvent>,
     save_success_event_receiver: BevyEventReceiver<SaveSuccessEvent>,
     save_success_bevy_sender: BevyEventSender<SaveSuccessEvent>,
 ) -> App {
@@ -149,6 +150,7 @@ pub fn init_bevy_app(
     .add_event::<LoadFileEvent>()
     .add_event::<ZoomEvent>()
     .add_event::<DeselectAllEvent>()
+    .add_event::<PaletteClickEvent>()
     .add_event::<SaveSuccessEvent>()
     .add_event::<UndoEvent>() // PHASE 2: Undo/redo events
     .add_event::<RedoEvent>()
@@ -166,10 +168,11 @@ pub fn init_bevy_app(
     .import_event_from_leptos(zoom_event_receiver)
     .import_event_from_leptos(deselect_event_receiver)
     .import_event_from_leptos(trigger_event_receiver)
+    .import_event_from_leptos(palette_click_receiver)
     .import_event_from_leptos(save_success_event_receiver)
     .export_event_to_leptos(tree_event_sender)
     .export_event_to_leptos(save_success_bevy_sender)
-    .add_systems(Startup, (window_setup, setup, spawn_palette_ui));
+    .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
 
@@ -219,9 +222,9 @@ pub fn init_bevy_app(
             (drag_external_entity, drag_interface, drag_subsystem),
             // Palette placement mode systems
             (
-                enter_placement_mode,   // Click palette → enter mode + spawn ghost
-                update_placement_ghost, // Ghost follows cursor
-                finalize_placement,     // Click canvas → spawn element OR ESC → cancel
+                handle_leptos_palette_click,   // Leptos palette clicks → enter mode
+                update_placement_ghost,        // Ghost follows cursor
+                finalize_placement,            // Click canvas → spawn element OR ESC → cancel
             ),
             // Connection mode systems - PHASE 4: Full workflow enabled
             (

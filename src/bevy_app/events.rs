@@ -72,3 +72,16 @@ pub enum ZoomEvent {
 /// Fires from Leptos to Bevy to deselect all elements (clear selection state)
 #[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DeselectAllEvent;
+
+/// Fires from Leptos palette panel to Bevy to enter placement mode
+#[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct PaletteClickEvent {
+    pub element_type: PaletteElementTypeEvent,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum PaletteElementTypeEvent {
+    Subsystem,
+    Interface,
+    EnvironmentalObject,
+}

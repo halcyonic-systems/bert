@@ -10,7 +10,7 @@ use crate::bevy_app::{
     components::System, DetachMarkerLabelEvent, ElementDescription, ExternalEntity, Flow,
     Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
-use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Toast};
+use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast};
 use crate::leptos_app::details::Details;
 use crate::LoadFileEvent;
 use crate::{ParentState, Subsystem};
@@ -33,7 +33,7 @@ pub type IsSameAsIdQuery = (IsSameAsId,);
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
-use crate::events::{DeselectAllEvent, SaveSuccessEvent, TreeEvent, TriggerEvent, ZoomEvent};
+use crate::events::{DeselectAllEvent, PaletteClickEvent, SaveSuccessEvent, TreeEvent, TriggerEvent, ZoomEvent};
 use crate::leptos_app::tree::Tree;
 use leptos_bevy_canvas::prelude::*;
 
@@ -49,6 +49,9 @@ pub fn App() -> impl IntoView {
 
     // Deselect event system for close button functionality
     let (deselect_event_writer, deselect_event_receiver) = event_l2b::<DeselectAllEvent>();
+
+    // Palette click event system for Leptos palette panel
+    let (palette_click_writer, palette_click_receiver) = event_l2b::<PaletteClickEvent>();
 
     // Save success event system for user feedback
     let (_save_success_event_writer, save_success_event_receiver) = event_l2b::<SaveSuccessEvent>();
@@ -247,6 +250,15 @@ pub fn App() -> impl IntoView {
             </div>
         </div>
 
+        <Palette
+            on_element_click=Callback::new({
+                let palette_click_writer = palette_click_writer.clone();
+                move |element_type| {
+                    leptos::logging::log!("🎨 Palette clicked: {:?}", element_type);
+                    palette_click_writer.send(PaletteClickEvent { element_type }).ok();
+                }
+            })
+        />
         <Tree visible=tree_visible event_receiver=tree_event_receiver />
         <ControlsMenu
             visible=controls_visible
@@ -309,6 +321,7 @@ pub fn App() -> impl IntoView {
                     zoom_event_receiver,
                     deselect_event_receiver,
                     trigger_event_receiver,
+                    palette_click_receiver,
                     save_success_event_receiver,
                     save_success_bevy_sender,
                 )

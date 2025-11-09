@@ -13,22 +13,15 @@
 
 use crate::bevy_app::bundles::{spawn_external_entity_only, spawn_interface_only, spawn_subsystem};
 use crate::bevy_app::components::{
-    ElementDescription, Flow, FlowCurve, InitialPosition, NestingLevel, PaletteElement,
-    PaletteElementType, SubstanceType, System,
+    ElementDescription, Flow, FlowCurve, InitialPosition, NestingLevel, PaletteElementType,
+    SubstanceType, System,
 };
-use crate::bevy_app::constants::BUTTON_Z;
-use crate::bevy_app::events::PaletteDrag;
-use crate::bevy_app::plugins::mouse_interaction::{DragPosition, NoDeselect, PickSelection};
 use crate::bevy_app::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom,
 };
 use crate::bevy_app::systems::{CommandHistory, PlaceElementCommand};
-use bevy::picking::PickingBehavior;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-
-/// Z-level for palette UI elements (same as buttons for consistency)
-const PALETTE_Z: f32 = BUTTON_Z;
 
 /// Z-level for placement ghost (above everything else)
 const GHOST_Z: f32 = 200.0;
@@ -52,17 +45,8 @@ pub struct PlacementMode {
 #[derive(Component)]
 pub struct PlacementGhost;
 
-/// Icon size for palette elements
+/// Icon size for palette ghost preview
 const PALETTE_ICON_SIZE: f32 = 40.0;
-
-/// Vertical spacing between palette elements
-const PALETTE_SPACING: f32 = 60.0;
-
-/// Left edge position for palette (world coordinates, adjusted for main system at origin)
-const PALETTE_X: f32 = -550.0;
-
-/// Top position for first palette element
-const PALETTE_START_Y: f32 = 300.0;
 
 /// Maps PaletteElementType to its icon asset path.
 fn icon_path_for(element_type: PaletteElementType) -> &'static str {
@@ -73,96 +57,143 @@ fn icon_path_for(element_type: PaletteElementType) -> &'static str {
     }
 }
 
-/// Spawns the static palette UI with all draggable elements on startup.
-///
-/// Creates world-space sprites for each PaletteElementType, positioned in a
-/// vertical sidebar on the left side of the screen. Each element is marked
-/// with PaletteElement component for drag detection.
-pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let elements = [
-        (PaletteElementType::Subsystem, "palette-icons/subsystem.png"),
-        (PaletteElementType::Interface, "palette-icons/interface.png"),
-        (
-            PaletteElementType::EnvironmentalObject,
-            "palette-icons/source.png",
-        ),
-    ];
+// DEPRECATED: Replaced by Leptos fixed panel (see src/leptos_app/components/palette.rs)
+// /// Spawns the static palette UI with all draggable elements on startup.
+// ///
+// /// Creates world-space sprites for each PaletteElementType, positioned in a
+// /// vertical sidebar on the left side of the screen. Each element is marked
+// /// with PaletteElement component for drag detection.
+// pub fn spawn_palette_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+//     let elements = [
+//         (PaletteElementType::Subsystem, "palette-icons/subsystem.png"),
+//         (PaletteElementType::Interface, "palette-icons/interface.png"),
+//         (
+//             PaletteElementType::EnvironmentalObject,
+//             "palette-icons/source.png",
+//         ),
+//     ];
+//
+//     for (idx, (element_type, icon_path)) in elements.iter().enumerate() {
+//         let y_position = PALETTE_START_Y - (idx as f32 * PALETTE_SPACING);
+//         let position = Vec2::new(PALETTE_X, y_position);
+//
+//         commands
+//             .spawn((
+//                 PaletteElement {
+//                     element_type: *element_type,
+//                 },
+//                 Sprite {
+//                     image: asset_server.load(*icon_path),
+//                     custom_size: Some(Vec2::splat(PALETTE_ICON_SIZE)),
+//                     ..default()
+//                 },
+//                 Transform::from_translation(position.extend(PALETTE_Z)),
+//                 InitialPosition::new(position),
+//                 Name::new(format!("Palette: {:?}", element_type)),
+//                 // Enable picking and dragging
+//                 PickingBehavior {
+//                     should_block_lower: true, // Block clicks from passing through
+//                     is_hoverable: true,
+//                 },
+//                 PickSelection::default(), // Required for mouse interaction system
+//                 NoDeselect,               // Don't participate in selection system
+//             ))
+//             .observe(|trigger: Trigger<DragPosition>, mut commands: Commands| {
+//                 commands.trigger(PaletteDrag::from(trigger));
+//             });
+//     }
+// }
 
-    for (idx, (element_type, icon_path)) in elements.iter().enumerate() {
-        let y_position = PALETTE_START_Y - (idx as f32 * PALETTE_SPACING);
-        let position = Vec2::new(PALETTE_X, y_position);
+// DEPRECATED: Replaced by handle_leptos_palette_click
+// /// Step 1: Detects palette icon clicks and enters placement mode with ghost preview.
+// ///
+// /// When a palette icon is clicked:
+// /// 1. Stores the element type in PlacementMode resource
+// /// 2. Spawns a semi-transparent ghost sprite
+// /// 3. Ghost will follow cursor (handled by update_placement_ghost)
+// pub fn enter_placement_mode(
+//     mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
+//     palette_query: Query<&PaletteElement>,
+//     mut placement_mode: ResMut<PlacementMode>,
+//     mut commands: Commands,
+//     asset_server: Res<AssetServer>,
+// ) {
+//     for click_event in click_events.read() {
+//         if let Ok(palette_element) = palette_query.get(click_event.target) {
+//             // Clean up previous ghost if it exists
+//             if let Some(old_ghost) = placement_mode.ghost_entity {
+//                 commands.entity(old_ghost).despawn();
+//             }
+//
+//             // Enter placement mode
+//             placement_mode.active_element = Some(palette_element.element_type);
+//
+//             // Spawn semi-transparent preview ghost
+//             let ghost = commands
+//                 .spawn((
+//                     PlacementGhost,
+//                     Sprite {
+//                         image: asset_server.load(icon_path_for(palette_element.element_type)),
+//                         color: Color::srgba(1.0, 1.0, 1.0, 0.5), // Semi-transparent
+//                         custom_size: Some(Vec2::splat(PALETTE_ICON_SIZE)),
+//                         ..default()
+//                     },
+//                     Transform::from_xyz(0.0, 0.0, GHOST_Z),
+//                     Name::new("Placement Ghost"),
+//                 ))
+//                 .id();
+//
+//             placement_mode.ghost_entity = Some(ghost);
+//             info!(
+//                 "✨ Entered placement mode for {:?}",
+//                 palette_element.element_type
+//             );
+//         }
+//     }
+// }
 
-        commands
-            .spawn((
-                PaletteElement {
-                    element_type: *element_type,
-                },
-                Sprite {
-                    image: asset_server.load(*icon_path),
-                    custom_size: Some(Vec2::splat(PALETTE_ICON_SIZE)),
-                    ..default()
-                },
-                Transform::from_translation(position.extend(PALETTE_Z)),
-                InitialPosition::new(position),
-                Name::new(format!("Palette: {:?}", element_type)),
-                // Enable picking and dragging
-                PickingBehavior {
-                    should_block_lower: true, // Block clicks from passing through
-                    is_hoverable: true,
-                },
-                PickSelection::default(), // Required for mouse interaction system
-                NoDeselect,               // Don't participate in selection system
-            ))
-            .observe(|trigger: Trigger<DragPosition>, mut commands: Commands| {
-                commands.trigger(PaletteDrag::from(trigger));
-            });
-    }
-}
-
-/// Step 1: Detects palette icon clicks and enters placement mode with ghost preview.
-///
-/// When a palette icon is clicked:
-/// 1. Stores the element type in PlacementMode resource
-/// 2. Spawns a semi-transparent ghost sprite
-/// 3. Ghost will follow cursor (handled by update_placement_ghost)
-pub fn enter_placement_mode(
-    mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
-    palette_query: Query<&PaletteElement>,
+/// Handle palette clicks from Leptos UI panel
+pub fn handle_leptos_palette_click(
+    mut palette_events: EventReader<crate::events::PaletteClickEvent>,
     mut placement_mode: ResMut<PlacementMode>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    for click_event in click_events.read() {
-        if let Ok(palette_element) = palette_query.get(click_event.target) {
-            // Clean up previous ghost if it exists
-            if let Some(old_ghost) = placement_mode.ghost_entity {
-                commands.entity(old_ghost).despawn();
+    for event in palette_events.read() {
+        // Convert PaletteElementTypeEvent to PaletteElementType
+        let element_type = match event.element_type {
+            crate::events::PaletteElementTypeEvent::Subsystem => PaletteElementType::Subsystem,
+            crate::events::PaletteElementTypeEvent::Interface => PaletteElementType::Interface,
+            crate::events::PaletteElementTypeEvent::EnvironmentalObject => {
+                PaletteElementType::EnvironmentalObject
             }
+        };
 
-            // Enter placement mode
-            placement_mode.active_element = Some(palette_element.element_type);
-
-            // Spawn semi-transparent preview ghost
-            let ghost = commands
-                .spawn((
-                    PlacementGhost,
-                    Sprite {
-                        image: asset_server.load(icon_path_for(palette_element.element_type)),
-                        color: Color::srgba(1.0, 1.0, 1.0, 0.5), // Semi-transparent
-                        custom_size: Some(Vec2::splat(PALETTE_ICON_SIZE)),
-                        ..default()
-                    },
-                    Transform::from_xyz(0.0, 0.0, GHOST_Z),
-                    Name::new("Placement Ghost"),
-                ))
-                .id();
-
-            placement_mode.ghost_entity = Some(ghost);
-            info!(
-                "✨ Entered placement mode for {:?}",
-                palette_element.element_type
-            );
+        // Clean up previous ghost if it exists
+        if let Some(old_ghost) = placement_mode.ghost_entity {
+            commands.entity(old_ghost).despawn();
         }
+
+        // Enter placement mode
+        placement_mode.active_element = Some(element_type);
+
+        // Spawn semi-transparent preview ghost
+        let ghost = commands
+            .spawn((
+                PlacementGhost,
+                Sprite {
+                    image: asset_server.load(icon_path_for(element_type)),
+                    color: Color::srgba(1.0, 1.0, 1.0, 0.5), // Semi-transparent
+                    custom_size: Some(Vec2::splat(PALETTE_ICON_SIZE)),
+                    ..default()
+                },
+                Transform::from_xyz(0.0, 0.0, GHOST_Z),
+                Name::new("Placement Ghost"),
+            ))
+            .id();
+
+        placement_mode.ghost_entity = Some(ghost);
+        info!("✨ Entered placement mode for {:?} (from Leptos)", element_type);
     }
 }
 
