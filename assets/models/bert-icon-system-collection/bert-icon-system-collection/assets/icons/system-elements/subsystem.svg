@@ -1,0 +1,39 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Subsystem: Nested circles showing hierarchy -->
+  <!-- Outer system circle -->
+  <circle 
+    cx="16" 
+    cy="16" 
+    r="14" 
+    fill="none" 
+    stroke="#808080" 
+    stroke-width="2"
+    opacity="0.6"
+  />
+  <!-- Inner subsystem circle -->
+  <circle 
+    cx="16" 
+    cy="16" 
+    r="8" 
+    fill="none" 
+    stroke="#404040" 
+    stroke-width="2"
+    opacity="0.8"
+  />
+  <!-- Subtle fill for outer system -->
+  <circle 
+    cx="16" 
+    cy="16" 
+    r="12" 
+    fill="#f0f0f0" 
+    opacity="0.2"
+  />
+  <!-- Subtle fill for inner subsystem -->
+  <circle 
+    cx="16" 
+    cy="16" 
+    r="6" 
+    fill="#e0e0e0" 
+    opacity="0.3"
+  />
+</svg> 

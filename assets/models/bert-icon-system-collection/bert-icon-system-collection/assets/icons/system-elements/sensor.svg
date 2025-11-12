@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sensor: Triangular sensor with signal output -->
+  <!-- Sensor body (triangle pointing right) -->
+  <path d="M8 12 L8 20 L18 16 Z" 
+        fill="#606060" 
+        stroke="#404040" 
+        stroke-width="1.5"/>
+  
+  <!-- Input connection (physical phenomenon) -->
+  <line x1="4" y1="16" x2="8" y2="16" 
+        stroke="#404040" 
+        stroke-width="2"/>
+  
+  <!-- Output signal (modulated) -->
+  <line x1="18" y1="16" x2="24" y2="16" 
+        stroke="#2563eb" 
+        stroke-width="2"/>
+  
+  <!-- Signal modulation indicator (sine wave) -->
+  <path d="M24 16 Q26 14 28 16 Q30 18 32 16" 
+        fill="none" 
+        stroke="#2563eb" 
+        stroke-width="1.5"/>
+  
+  <!-- Energy input for operation -->
+  <line x1="12" y1="10" x2="12" y2="12" 
+        stroke="#b51b1b" 
+        stroke-width="1.5"/>
+  <text x="10" y="9" font-family="Arial, sans-serif" font-size="6" fill="#b51b1b">E</text>
+</svg> 

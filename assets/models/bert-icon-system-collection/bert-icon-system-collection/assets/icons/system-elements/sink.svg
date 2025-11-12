@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sink: Open-ended rectangle representing environmental disposal -->
+  <!-- Main sink body (open on left side) -->
+  <path d="M28 8 L28 24 L12 24 L12 20 L8 20 L8 12 L12 12 L12 8 Z" 
+        fill="none" 
+        stroke="#404040" 
+        stroke-width="2"/>
+  
+  <!-- Input flow arrow -->
+  <path d="M4 16 L12 16 M8 12 L12 16 L8 20" 
+        fill="none" 
+        stroke="#dc2626" 
+        stroke-width="2" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Sink indicator (minus symbol) -->
+  <line x1="16" y1="16" x2="24" y2="16" stroke="#404040" stroke-width="2"/>
+</svg> 

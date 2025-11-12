@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Copying: Pattern replication from template + substrate -->
+  <!-- Process body -->
+  <rect x="10" y="10" width="12" height="12" 
+        fill="#606060" 
+        stroke="#404040" 
+        stroke-width="1.5" 
+        rx="2"/>
+  
+  <!-- Template input (patterned) -->
+  <line x1="4" y1="12" x2="10" y2="12" stroke="#2563eb" stroke-width="2"/>
+  <rect x="2" y="10" width="4" height="4" fill="#2563eb" opacity="0.3"/>
+  <text x="1" y="9" font-family="Arial, sans-serif" font-size="6" fill="#2563eb">T</text>
+  
+  <!-- Substrate input (unpatterned) -->
+  <line x1="4" y1="20" x2="10" y2="20" stroke="#808080" stroke-width="2"/>
+  <rect x="2" y="18" width="4" height="4" fill="#808080" opacity="0.3"/>
+  <text x="1" y="17" font-family="Arial, sans-serif" font-size="6" fill="#808080">S</text>
+  
+  <!-- Original output -->
+  <line x1="22" y1="12" x2="28" y2="12" stroke="#2563eb" stroke-width="2"/>
+  <rect x="26" y="10" width="4" height="4" fill="#2563eb" opacity="0.3"/>
+  
+  <!-- Copy output -->
+  <line x1="22" y1="20" x2="28" y2="20" stroke="#2563eb" stroke-width="2"/>
+  <rect x="26" y="18" width="4" height="4" fill="#2563eb" opacity="0.3"/>
+  
+  <!-- Energy input -->
+  <line x1="16" y1="6" x2="16" y2="10" stroke="#b51b1b" stroke-width="1.5"/>
+  <text x="14" y="5" font-family="Arial, sans-serif" font-size="6" fill="#b51b1b">E</text>
+  
+  <!-- Copy indicator -->
+  <text x="13" y="18" font-family="Arial, sans-serif" font-size="8" fill="#ffffff">×2</text>
+</svg> 

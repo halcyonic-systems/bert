@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modulator: Applies modulated signal to substance flow -->
+  <!-- Modulator body (diamond shape) -->
+  <path d="M16 8 L24 16 L16 24 L8 16 Z" 
+        fill="#606060" 
+        stroke="#404040" 
+        stroke-width="1.5"/>
+  
+  <!-- Substance flow (horizontal) -->
+  <line x1="4" y1="16" x2="8" y2="16" stroke="#808080" stroke-width="2"/>
+  <line x1="24" y1="16" x2="28" y2="16" stroke="#808080" stroke-width="2"/>
+  
+  <!-- Control signal input (vertical) -->
+  <line x1="16" y1="4" x2="16" y2="8" stroke="#2563eb" stroke-width="2"/>
+  <path d="M16 2 Q17 3 16 4 Q15 5 16 6" fill="none" stroke="#2563eb" stroke-width="1"/>
+  
+  <!-- Modulated output indication -->
+  <path d="M24 16 Q26 14 28 16 Q30 18 32 16" fill="none" stroke="#808080" stroke-width="1"/>
+  
+  <!-- Energy input -->
+  <line x1="16" y1="28" x2="16" y2="24" stroke="#b51b1b" stroke-width="1.5"/>
+  <text x="14" y="31" font-family="Arial, sans-serif" font-size="6" fill="#b51b1b">E</text>
+  
+  <!-- Labels -->
+  <text x="1" y="12" font-family="Arial, sans-serif" font-size="6" fill="#808080">flow</text>
+  <text x="12" y="6" font-family="Arial, sans-serif" font-size="6" fill="#2563eb">ctrl</text>
+</svg> 

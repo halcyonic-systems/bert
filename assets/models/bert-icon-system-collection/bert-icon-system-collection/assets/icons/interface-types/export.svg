@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Export: Outward-pointing arrow with boundary opening -->
+  <!-- System boundary (partial rectangle with opening on right) -->
+  <path d="M6 6 L24 6 L24 12 L20 12 L20 20 L24 20 L24 26 L6 26 Z" 
+        fill="none" stroke="#404040" stroke-width="2"/>
+  
+  <!-- Export arrow pointing outward -->
+  <path d="M22 16 L30 16 M26 12 L30 16 L26 20" 
+        fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Small circle at arrow origin to show interface point -->
+  <circle cx="22" cy="16" r="1.5" fill="#dc2626"/>
+</svg> 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Boundary: Dashed rectangle representing system boundary with porosity -->
+  <rect x="4" y="8" width="24" height="16" 
+        fill="none" 
+        stroke="#404040" 
+        stroke-width="2" 
+        stroke-dasharray="4,2"
+        opacity="0.8"/>
+  
+  <!-- Small openings to suggest porosity/interfaces -->
+  <rect x="14" y="6" width="4" height="4" fill="#f6ebd6" stroke="none"/>
+  <rect x="14" y="22" width="4" height="4" fill="#f6ebd6" stroke="none"/>
+  
+  <!-- Subtle gradient to show inside vs outside -->
+  <defs>
+    <linearGradient id="boundaryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e0e0e0;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#f0f0f0;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#e0e0e0;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="8" width="24" height="16" fill="url(#boundaryGradient)"/>
+</svg> 

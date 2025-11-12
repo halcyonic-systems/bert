@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Message Alternative 1: Wave pattern representing information flow -->
+  <!-- Main wave -->
+  <path 
+    d="M 4 16 Q 8 12 12 16 T 20 16 T 28 16" 
+    fill="none" 
+    stroke="#bfbfbf" 
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+  <!-- Secondary wave (slightly offset) -->
+  <path 
+    d="M 4 20 Q 8 16 12 20 T 20 20 T 28 20" 
+    fill="none" 
+    stroke="#bfbfbf" 
+    stroke-width="2"
+    stroke-linecap="round"
+    opacity="0.7"
+  />
+  <!-- Tertiary wave (more subtle) -->
+  <path 
+    d="M 4 12 Q 8 8 12 12 T 20 12 T 28 12" 
+    fill="none" 
+    stroke="#bfbfbf" 
+    stroke-width="1.5"
+    stroke-linecap="round"
+    opacity="0.5"
+  />
+</svg> 

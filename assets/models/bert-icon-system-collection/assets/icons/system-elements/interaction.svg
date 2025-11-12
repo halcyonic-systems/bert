@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Interaction: Curved arrow representing flow -->
+  <!-- Curved path -->
+  <path 
+    d="M 6 20 Q 16 8 26 16" 
+    fill="none" 
+    stroke="#404040" 
+    stroke-width="2" 
+    stroke-linecap="round"
+  />
+  <!-- Arrow head -->
+  <path 
+    d="M 26 16 L 22 13 L 22 15.5 L 24 16 L 22 16.5 L 22 19 Z" 
+    fill="#404040"
+  />
+</svg> 

@@ -1,0 +1,11 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Material: 3D cube representing physical matter -->
+  <!-- Front face -->
+  <rect x="8" y="12" width="12" height="12" fill="#808080" stroke="#606060" stroke-width="1"/>
+  <!-- Top face (isometric) -->
+  <path d="M 8 12 L 12 8 L 24 8 L 20 12 Z" fill="#a0a0a0" stroke="#606060" stroke-width="1"/>
+  <!-- Right face (isometric) -->
+  <path d="M 20 12 L 24 8 L 24 20 L 20 24 Z" fill="#606060" stroke="#404040" stroke-width="1"/>
+  <!-- Subtle highlight on top face -->
+  <path d="M 9 11 L 12 9 L 22 9 L 19 11 Z" fill="#c0c0c0" opacity="0.5"/>
+</svg> 

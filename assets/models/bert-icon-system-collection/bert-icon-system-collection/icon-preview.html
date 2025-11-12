@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BERT Icon Set Preview</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f6ebd6; /* BERT's background color */
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .category {
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .category h2 {
+            color: #404040;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .icon-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .icon-card:hover {
+            background: #f0f0f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .icon-card.active {
+            background: #e8f4f8;
+            border-color: #2196F3;
+        }
+        .icon-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .icon-sizes {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .icon-size-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .icon-description {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+        .size-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .tooltip {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            width: 400px;
+            max-width: 90vw;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 10px;
+            display: none;
+        }
+        .tooltip.show {
+            display: block;
+        }
+        .tooltip::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #2c3e50;
+        }
+        .tooltip-title {
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .tooltip-quote {
+            font-style: italic;
+            margin-bottom: 8px;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+        .tooltip-source {
+            font-size: 11px;
+            color: #bdc3c7;
+            text-align: right;
+        }
+        .click-hint {
+            font-size: 12px;
+            color: #3498db;
+            margin-top: 8px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 BERT System Ontology Icon Set</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+            Comprehensive visual representation of BERT's formal system elements
+        </p>
+        <p style="text-align: center; color: #3498db; margin-bottom: 40px; font-weight: 500;">
+            💡 Click any icon to explore insights from George Mobus's Systems Science foundations
+        </p>
+
+        <div class="category">
+            <h2>System Elements</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">System</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/system.svg" width="16" alt="System 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/system.svg" width="32" alt="System 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/system.svg" width="48" alt="System 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Circular representation of bounded systems with internal structure</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">External Entity</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/external_entity.svg" width="16" alt="External Entity 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/external_entity.svg" width="32" alt="External Entity 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/external_entity.svg" width="48" alt="External Entity 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Partially enclosed rectangle representing environmental actors</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Interaction</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/interaction.svg" width="16" alt="Interaction 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/interaction.svg" width="32" alt="Interaction 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/interaction.svg" width="48" alt="Interaction 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Curved arrow representing flow connections between elements</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Subsystem</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/subsystem.svg" width="16" alt="Subsystem 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/subsystem.svg" width="32" alt="Subsystem 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/subsystem.svg" width="48" alt="Subsystem 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Nested circles showing hierarchical system relationships</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Substance Types</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">Energy</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/energy.svg" width="16" alt="Energy 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/energy.svg" width="32" alt="Energy 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/energy.svg" width="48" alt="Energy 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Lightning bolt representing power and transformative potential</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Material</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material.svg" width="16" alt="Material 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material.svg" width="32" alt="Material 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material.svg" width="48" alt="Material 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Stacked rectangles representing building blocks and material layers</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Message</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message.svg" width="16" alt="Message 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message.svg" width="32" alt="Message 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message.svg" width="48" alt="Message 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Data flow lines representing information streams - clean and geometric</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Interaction Usability</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">Resource</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/resource.svg" width="16" alt="Resource 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/resource.svg" width="32" alt="Resource 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/resource.svg" width="48" alt="Resource 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Upward green arrow with plus - beneficial input flows</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Disruption</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/disruption.svg" width="16" alt="Disruption 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/disruption.svg" width="32" alt="Disruption 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/disruption.svg" width="48" alt="Disruption 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Downward red arrow with X - harmful input flows</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Product</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/product.svg" width="16" alt="Product 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/product.svg" width="32" alt="Product 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/product.svg" width="48" alt="Product 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Rightward blue arrow with checkmark - beneficial output flows</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Waste</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/waste.svg" width="16" alt="Waste 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/waste.svg" width="32" alt="Waste 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interaction-usability/waste.svg" width="48" alt="Waste 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Rightward orange arrow with minus - harmful output flows</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Complexity Types - Mobus Classification</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">Atomic</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/atomic.svg" width="16" alt="Atomic 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/atomic.svg" width="32" alt="Atomic 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/atomic.svg" width="48" alt="Atomic 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Indivisible entities with no internal structure - "leaf nodes in the deconstruction tree"</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Complex</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/complex.svg" width="16" alt="Complex 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/complex.svg" width="32" alt="Complex 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/complex.svg" width="48" alt="Complex 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Entities with internal components and emergent properties - can be adaptable and/or evolvable</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Multiset</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/multiset.svg" width="16" alt="Multiset 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/multiset.svg" width="32" alt="Multiset 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/complexity-types/multiset.svg" width="48" alt="Multiset 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Collections of identical components with scaling behavior - "multiple instances of the same kind of element"</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Interface Types</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">Import</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/interface-types/import.svg" width="16" alt="Import 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interface-types/import.svg" width="32" alt="Import 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interface-types/import.svg" width="48" alt="Import 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Inward-pointing arrow through system boundary - input interface points</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Export</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/interface-types/export.svg" width="16" alt="Export 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interface-types/export.svg" width="32" alt="Export 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/interface-types/export.svg" width="48" alt="Export 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Outward-pointing arrow through system boundary - output interface points</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Additional System Elements - High Priority</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">Boundary</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/boundary.svg" width="16" alt="Boundary 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/boundary.svg" width="32" alt="Boundary 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/boundary.svg" width="48" alt="Boundary 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Dashed rectangle representing system boundary with porosity and interfaces</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Stock/Reservoir</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/stock.svg" width="16" alt="Stock 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/stock.svg" width="32" alt="Stock 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/stock.svg" width="48" alt="Stock 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Container with level indicator showing substance storage with capacity limits</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Sensor</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/sensor.svg" width="16" alt="Sensor 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/sensor.svg" width="32" alt="Sensor 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/sensor.svg" width="48" alt="Sensor 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Triangular sensor converting physical phenomena to modulated signals</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Source (Formal)</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/source.svg" width="16" alt="Source 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/source.svg" width="32" alt="Source 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/source.svg" width="48" alt="Source 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Open-ended rectangle representing environmental supply entities</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Sink (Formal)</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/sink.svg" width="16" alt="Sink 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/sink.svg" width="32" alt="Sink 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/system-elements/sink.svg" width="48" alt="Sink 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Open-ended rectangle representing environmental disposal entities</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Atomic Work Processes - Complete Mobus Set</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">Combiner</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/combiner.svg" width="16" alt="Combiner 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/combiner.svg" width="32" alt="Combiner 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/combiner.svg" width="48" alt="Combiner 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Two inputs merge into one output with waste heat production</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Splitter</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/splitter.svg" width="16" alt="Splitter 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/splitter.svg" width="32" alt="Splitter 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/splitter.svg" width="48" alt="Splitter 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">One input splits into two outputs with waste heat production</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Impeder</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/impeder.svg" width="16" alt="Impeder 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/impeder.svg" width="32" alt="Impeder 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/impeder.svg" width="48" alt="Impeder 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Flow restriction creating back-pressure and rate limiting</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Buffer</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/buffer.svg" width="16" alt="Buffer 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/buffer.svg" width="32" alt="Buffer 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/buffer.svg" width="48" alt="Buffer 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Smooths flow volumes over time, raw stock for temporal regulation</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Copying</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/copying.svg" width="16" alt="Copying 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/copying.svg" width="32" alt="Copying 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/copying.svg" width="48" alt="Copying 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Pattern replication from template plus substrate materials</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Propeller/Pump</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/propeller.svg" width="16" alt="Propeller 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/propeller.svg" width="32" alt="Propeller 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/propeller.svg" width="48" alt="Propeller 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Pushes substance against gradient using energy input</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Amplifier</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/amplifier.svg" width="16" alt="Amplifier 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/amplifier.svg" width="32" alt="Amplifier 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/amplifier.svg" width="48" alt="Amplifier 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Adds energy to weak modulated signal for high-power output</div>
+                </div>
+                <div class="icon-card">
+                    <div class="icon-name">Modulator</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/modulator.svg" width="16" alt="Modulator 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/modulator.svg" width="32" alt="Modulator 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/atomic-processes/modulator.svg" width="48" alt="Modulator 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Applies modulated control signal to substance flow</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Alternative Designs (Design Exploration)</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-name">Message - Original Speech Bubble</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message-original.svg" width="16" alt="Message Original 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message-original.svg" width="32" alt="Message Original 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message-original.svg" width="48" alt="Message Original 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Original speech bubble design - more conversational feel</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Message - Wave Pattern</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message-alt1.svg" width="16" alt="Message Alt1 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message-alt1.svg" width="32" alt="Message Alt1 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/message-alt1.svg" width="48" alt="Message Alt1 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Wave pattern representing signal/information flow - technical approach</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Material - Original 3D Cube</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material-original.svg" width="16" alt="Material Original 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material-original.svg" width="32" alt="Material Original 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material-original.svg" width="48" alt="Material Original 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Original isometric cube design - classic 3D representation</div>
+                </div>
+
+                <div class="icon-card">
+                    <div class="icon-name">Material - Molecular Hexagon</div>
+                    <div class="icon-sizes">
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material-alt2.svg" width="16" alt="Material Alt2 16px">
+                            <div class="icon-size-label">16px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material-alt2.svg" width="32" alt="Material Alt2 32px">
+                            <div class="icon-size-label">32px</div>
+                        </div>
+                        <div class="size-group">
+                            <img src="assets/icons/substance-types/material-alt2.svg" width="48" alt="Material Alt2 48px">
+                            <div class="icon-size-label">48px</div>
+                        </div>
+                    </div>
+                    <div class="icon-description">Hexagonal structure representing molecular/scientific material concept</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; color: #666;">
+            <p><strong>Status:</strong> 🚀 <strong>COMPREHENSIVE MOBUS ONTOLOGY COMPLETE!</strong> 🚀</p>
+            <p><strong>29 core icons + 4 alternatives created</strong></p>
+            <p><strong>✅ Complete:</strong> System Elements (9), Substance Types (3), Interaction Usability (4), Complexity Types (3), Interface Types (2), Atomic Work Processes (8)</p>
+            <p><strong>🎯 High-Priority Additions:</strong> Boundary, Stock/Reservoir, Sensor, Formal Source/Sink + Complete 8 Atomic Processes</p>
+            <p><em>Icons designed following BERT's geometric visual language and George Mobus's complete System Language framework</em></p>
+        </div>
+    </div>
+
+    <script>
+        // Educational content from Mobus source material
+        const iconEducation = {
+            'system': {
+                title: 'System - The Root Category',
+                quote: 'The SOI is the entity that we are most interested in understanding. It can be viewed as the root of a tree (inverted) with branches to nodes representing the subsystems at Level 1... Systems are generally speaking compositions of atomic work processes and so accomplish more complex processes.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2'
+            },
+            'external_entity': {
+                title: 'External Entity - Environmental Actors',
+                quote: 'A system, through its behaviors, will affect other entities in its environment (level of organization in the hierarchy). This is what we call "entity-hood." In this perspective, entities affect each other, which is the same as saying subsystems interact with one another.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.3'
+            },
+            'interaction': {
+                title: 'Interaction - Flow Networks',
+                quote: 'There are various kinds of interactions between components and between components and entities outside the original Level 0... The interactions between internal components are generally characterized as flows of substance, either channelized (through channels) or broadcast as fields.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.5'
+            },
+            'subsystem': {
+                title: 'Subsystem - Hierarchical Components',
+                quote: 'Every object elements within the system boundary, including the interfaces, channels, stocks, sensors, and regulators, are components of the system. At higher levels of organization in the SOI, components will be found to be complex objects themselves, or, in other words, subsystems.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'energy': {
+                title: 'Energy - Transformative Potential',
+                quote: 'Energy transformations involve work done on a low-grade (low potential or quality) energy form to boost its potential or quality (with some loss as heat) so that the energy flow becomes, product-like, available to other work processes.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.1'
+            },
+            'material': {
+                title: 'Material - Physical Substance',
+                quote: 'Material transformations involve processes that reduce the entropy of the material, such as refining or shaping matter for a new use. The work could be mechanical, electrical, thermal (high temperature), or chemical.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.1'
+            },
+            'message': {
+                title: 'Message - Information Flows',
+                quote: 'Messages are specialized versions of energy (and often time material) flows. They are characterized by using very little energy in their transmission from a source to a sink... Messages are flows that are modulated in a way that encodes symbols.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.5.4'
+            },
+            'resource': {
+                title: 'Resource - Beneficial Inputs',
+                quote: 'Every real system imports material and/or messages and energy. It does work on the imported matter, energy, or messages, converting some portion of the energy into a lower form-waste heat.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.1'
+            },
+            'disruption': {
+                title: 'Disruption - Harmful Inputs',
+                quote: 'Systems eventually simply fall apart. On the other hand, more likely scenarios involve systems being disrupted by other systems as when galaxies collide or a prey animal is eaten by a predator.',
+                source: 'Mobus & Kalton - Chapter 3.5.1.2'
+            },
+            'product': {
+                title: 'Product - Beneficial Outputs',
+                quote: 'The work performed will depend on the details of the system (or subsystem) but will involve some form of transformation or translation (moving). In general, the imported material, energy, or messages will be transformed from a high-entropy form into a lower-entropy form.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.1'
+            },
+            'waste': {
+                title: 'Waste - Harmful Outputs',
+                quote: 'In doing work, according to the Second Law of Thermodynamics, some of the energy does not accomplish work, but is transformed to a low-potential form-waste heat. The work produces a "product" or high-quality material.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.1'
+            },
+            'atomic': {
+                title: 'Atomic Components - Indivisible Elements',
+                quote: 'Atomic components are those subsystems that need no further deconstruction in order to understand the SOI internals. What makes them atomic is that they involve a minimum of inputs and outputs and their transformative work is easily handled as an opaque box.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'complex': {
+                title: 'Complex Systems - Emergent Properties',
+                quote: 'Complexity is a measure related to the degree to which a system has both a multiplicity of components (subsystems) at any given level of organization and the number of such levels forming a hierarchy.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.5.2'
+            },
+            'multiset': {
+                title: 'Multiset - Multiple Instances',
+                quote: 'Multisets are allowed. In the figure component c₀.₂,₁, with the tilde, represents a set of components with many instances of that type of component. For example, it could represent the water molecules in a cell.',
+                source: 'Mobus & Kalton - Chapter 4.3.3.1'
+            },
+            'import': {
+                title: 'Import Interface - Input Boundary',
+                quote: 'Interfaces do not typically alter the substance of the flow, that is, do not transform the substances as a process does to create products. In the case of interfaces as subsystems, the φ object is called a protocol which is an algorithm for letting the flow across the boundary in an ordered fashion.',
+                source: 'Mobus & Kalton - Chapter 4.3.3.3'
+            },
+            'export': {
+                title: 'Export Interface - Output Boundary',
+                quote: 'The biggest single mistake that system scientists (or scientists exercising systems thinking) make is to ignore or trivialize the concept of an interface (and its protocol). Examples of how this can lead to trouble in adequately accounting for system behavior will be provided.',
+                source: 'Mobus & Kalton - Chapter 4.3.3.3'
+            },
+            'boundary': {
+                title: 'Boundary - System Enclosure',
+                quote: 'A boundary demarks the difference between the inside of a system and the outside, or environment. A boundary exists whenever components of a system are restrained in time and space to a particular location.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.3'
+            },
+            'stock': {
+                title: 'Stock/Reservoir - Substance Storage',
+                quote: 'Stocks are invariably bounded; they are contained and containers have capacity attributes determined by physical dimensions. You cannot force more of a non-compressible fluid, like water, into a closed container, like a boiler, than it can hold.',
+                source: 'Mobus & Kalton - Chapter 4.2.4'
+            },
+            'sensor': {
+                title: 'Sensor - Information Transduction',
+                quote: 'Sensing is somewhat similar in that it responds to a modulated force or energy flow, where the modulation is a kind of pattern. It outputs a modulated energy flow, usually very low power, which encodes the modulation.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'source': {
+                title: 'Source - Environmental Supply',
+                quote: 'The environment contains all of the sources of inputs (matter, energy, and messages) and the sinks for outputs (same substances). It also contains all of the channels (or fields) through which flows occur.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.1'
+            },
+            'sink': {
+                title: 'Sink - Environmental Disposal',
+                quote: 'The entities of the environment connect directly with the boundary of the SOI... The environment contains all of the sources of inputs (matter, energy, and messages) and the sinks for outputs (same substances).',
+                source: 'Mobus & Kalton - Chapter 3.5.2.1'
+            },
+            'combiner': {
+                title: 'Combiner - Atomic Work Process',
+                quote: 'Simple work includes: combining two substances into a more complex substance (a product) with the loss of some heat and waste substance... These all conform to the principle that all systems are processes that involve work being done.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'splitter': {
+                title: 'Splitter - Atomic Work Process',
+                quote: 'Simple work includes... splitting a single substance flow into two (or more) products with some loss of energy and substance... These are atomic processes that are found throughout the natural and artificial world.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'impeder': {
+                title: 'Impeder - Flow Restriction',
+                quote: 'Simple work includes... impeding a flow or slowing the rate of flow with a consequent back-pressure... All four of these simple work processes involve the consumption of energy and the loss of energy as waste heat.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'buffer': {
+                title: 'Buffer - Flow Smoothing',
+                quote: 'Simple work includes... buffering a flow, used to smooth out the flow volumes over time. A fifth simple component is a "raw" stock being used simply as a buffer and without regulating controls.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'copying': {
+                title: 'Copying - Pattern Replication',
+                quote: 'Copying takes a patterned input substance and an un-patterned one, outputting the original input (think of it as a template) and a copy of the pattern in the second output (plus some waste from imprinting the pattern).',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'propeller': {
+                title: 'Propeller - Gradient Work',
+                quote: 'Propelling is work done to push a substance against a gradient, like a pump pushing water through a pipe... It adds energy (power) to a weak but modulated energy input to produce a "copied" modulated high-powered energy flow output.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'amplifier': {
+                title: 'Amplifier - Signal Boosting',
+                quote: 'Amplification is related. It adds energy (power) to a weak but modulated energy input to produce a "copied" modulated high-powered energy flow output. A modulator is in this same category.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            },
+            'modulator': {
+                title: 'Modulator - Signal Control',
+                quote: 'A modulator is in this same category in applying a modulated energy flow (signal) to a substance flow to produce a modulated output substance flow. Note that when the input substance is a force or energy flow, we have the sensor or amplifier effect.',
+                source: 'Mobus & Kalton - Chapter 3.5.2.2.4'
+            }
+        };
+
+        // Add click functionality to icon cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const iconCards = document.querySelectorAll('.icon-card');
+            
+            iconCards.forEach(card => {
+                // Add click hint
+                const clickHint = document.createElement('div');
+                clickHint.className = 'click-hint';
+                clickHint.textContent = '💡 Click for Mobus insights';
+                card.appendChild(clickHint);
+                
+                // Add click handler
+                card.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    // Close any open tooltips
+                    document.querySelectorAll('.tooltip.show').forEach(tooltip => {
+                        tooltip.classList.remove('show');
+                    });
+                    document.querySelectorAll('.icon-card.active').forEach(activeCard => {
+                        activeCard.classList.remove('active');
+                    });
+                    
+                    // Get icon name from the card
+                    const iconName = card.querySelector('.icon-name').textContent.toLowerCase()
+                        .replace(/[^a-z0-9]/g, '')
+                        .replace('stockreservoir', 'stock');
+                    
+                    const education = iconEducation[iconName];
+                    if (education) {
+                        // Create tooltip if it doesn't exist
+                        let tooltip = card.querySelector('.tooltip');
+                        if (!tooltip) {
+                            tooltip = document.createElement('div');
+                            tooltip.className = 'tooltip';
+                            card.appendChild(tooltip);
+                        }
+                        
+                        // Set tooltip content
+                        tooltip.innerHTML = `
+                            <div class="tooltip-title">${education.title}</div>
+                            <div class="tooltip-quote">"${education.quote}"</div>
+                            <div class="tooltip-source">— ${education.source}</div>
+                        `;
+                        
+                        // Show tooltip and mark card as active
+                        tooltip.classList.add('show');
+                        card.classList.add('active');
+                    }
+                });
+            });
+            
+            // Close tooltips when clicking outside
+            document.addEventListener('click', function() {
+                document.querySelectorAll('.tooltip.show').forEach(tooltip => {
+                    tooltip.classList.remove('show');
+                });
+                document.querySelectorAll('.icon-card.active').forEach(activeCard => {
+                    activeCard.classList.remove('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

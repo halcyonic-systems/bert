@@ -1,0 +1,15 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Disruption: Harmful input - downward arrow with X -->
+  <!-- Main downward arrow -->
+  <path 
+    d="M 16 26 L 12 20 L 14.5 20 L 14.5 8 L 17.5 8 L 17.5 20 L 20 20 Z" 
+    fill="#ef4444" 
+    stroke="#dc2626" 
+    stroke-width="1"
+    stroke-linejoin="round"
+  />
+  <!-- X symbol for harmful -->
+  <circle cx="24" cy="8" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+  <line x1="21.5" y1="5.5" x2="26.5" y2="10.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="26.5" y1="5.5" x2="21.5" y2="10.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+</svg> 

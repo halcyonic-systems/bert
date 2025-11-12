@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Splitter: One input splits into two outputs with waste -->
+  <!-- Process body (inverted funnel shape) -->
+  <path d="M12 16 L20 16 L24 24 L8 24 Z" 
+        fill="#606060" 
+        stroke="#404040" 
+        stroke-width="1.5"/>
+  
+  <!-- Input flow -->
+  <line x1="4" y1="16" x2="12" y2="16" stroke="#2563eb" stroke-width="2"/>
+  
+  <!-- Output flows -->
+  <line x1="24" y1="24" x2="28" y2="26" stroke="#2563eb" stroke-width="2"/>
+  <line x1="8" y1="24" x2="4" y2="26" stroke="#2563eb" stroke-width="2"/>
+  
+  <!-- Waste output -->
+  <line x1="16" y1="12" x2="16" y2="6" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="12" y="4" font-family="Arial, sans-serif" font-size="6" fill="#dc2626">waste</text>
+  
+  <!-- Energy input -->
+  <line x1="16" y1="28" x2="16" y2="24" stroke="#b51b1b" stroke-width="1.5"/>
+  <text x="14" y="31" font-family="Arial, sans-serif" font-size="6" fill="#b51b1b">E</text>
+</svg> 

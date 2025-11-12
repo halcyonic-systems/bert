@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Multiset: Multiple identical circles - collections of identical components -->
+  <!-- Front circle -->
+  <circle cx="14" cy="18" r="6" fill="#606060" stroke="#404040" stroke-width="1.5"/>
+  <!-- Middle circle (partially behind) -->
+  <circle cx="18" cy="14" r="6" fill="#707070" stroke="#404040" stroke-width="1.5"/>
+  <!-- Back circle (furthest behind) -->
+  <circle cx="22" cy="10" r="6" fill="#808080" stroke="#404040" stroke-width="1.5"/>
+  <!-- Count indicator -->
+  <text x="8" y="26" font-family="Arial, sans-serif" font-size="8" fill="#404040" font-weight="bold">×N</text>
+</svg> 
