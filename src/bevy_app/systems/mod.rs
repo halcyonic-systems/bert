@@ -111,6 +111,8 @@
 
 mod camera;
 mod removal;
+#[cfg(not(target_arch = "wasm32"))]
+mod screenshot;
 mod setup;
 mod spatial_sync;
 mod subsystem;
@@ -120,6 +122,8 @@ mod ui;
 use bevy::ecs::system::{RunSystemOnce, SystemState};
 pub use camera::*;
 pub use removal::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use screenshot::*;
 pub use setup::*;
 pub use spatial_sync::*;
 pub use subsystem::*;

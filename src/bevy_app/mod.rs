@@ -193,6 +193,13 @@ pub fn init_bevy_app(
             .in_set(AllSet),
     );
 
+    // Screenshot system - Ctrl/Cmd+P (desktop only, doesn't conflict with existing shortcuts)
+    #[cfg(not(target_arch = "wasm32"))]
+    app.add_systems(
+        Update,
+        take_screenshot.run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyP))),
+    );
+
     app.add_systems(
         Update,
         (
