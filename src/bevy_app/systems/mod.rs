@@ -111,6 +111,7 @@
 
 mod camera;
 mod removal;
+mod screenshot;
 mod setup;
 mod spatial_sync;
 mod subsystem;
@@ -120,6 +121,7 @@ mod ui;
 use bevy::ecs::system::{RunSystemOnce, SystemState};
 pub use camera::*;
 pub use removal::*;
+pub use screenshot::*;
 pub use setup::*;
 pub use spatial_sync::*;
 pub use subsystem::*;
