@@ -29,12 +29,14 @@
 use crate::bevy_app::bundles::spawn_interaction_only;
 use crate::bevy_app::components::{
     EndTargetType, ExternalEntity, Flow, FlowCurve, FlowEndConnection, FlowEndInterfaceConnection,
-    FlowStartConnection, FlowStartInterfaceConnection, InitialPosition, InteractionType,
-    InteractionUsability, Interface, InterfaceBehavior, NestingLevel, Parameter, StartTargetType,
-    SubstanceType, Subsystem,
+    FlowStartConnection, FlowStartInterfaceConnection, InteractionType, InteractionUsability,
+    Interface, InterfaceBehavior, NestingLevel, Parameter, StartTargetType, SubstanceType,
+    Subsystem, System,
 };
+use crate::bevy_app::constants::INTERFACE_WIDTH_HALF;
 use crate::bevy_app::events::DeselectAllEvent;
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
+use crate::bevy_app::utils::compute_end_and_direction_from_subsystem;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use rust_decimal::Decimal;
@@ -192,16 +194,23 @@ pub fn update_connection_ghost(
 /// - Substance: Material
 /// - Usability: Resource
 /// - Amount: Default from spawn_flow
+#[allow(clippy::too_many_arguments)]
 pub fn finalize_connection(
     mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
     mut connection_mode: ResMut<ConnectionMode>,
-    subsystem_query: Query<(&Transform, &InitialPosition, &NestingLevel), With<Subsystem>>,
-    interface_query: Query<(&Transform, &InitialPosition, &NestingLevel), With<Interface>>,
+    // Query subsystems with their parent system reference
+    subsystem_query: Query<(&Subsystem, &NestingLevel)>,
+    // Query interfaces (children of systems)
+    interface_query: Query<&NestingLevel, With<Interface>>,
     interface_behavior_query: Query<&InterfaceBehavior>,
-    external_entity_query: Query<
-        (&Transform, &InitialPosition, &NestingLevel),
-        With<ExternalEntity>,
-    >,
+    // Query external entities
+    external_entity_query: Query<&NestingLevel, With<ExternalEntity>>,
+    // Query System components for radius
+    system_query: Query<&System>,
+    // Query GlobalTransform for world positions and Transform for rotations
+    global_transform_query: Query<&GlobalTransform>,
+    transform_query: Query<&Transform>,
+    parent_query: Query<&Parent>, // Used for finding parent system
     mut commands: Commands,
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -260,29 +269,21 @@ pub fn finalize_connection(
             continue;
         }
 
-        // Get transforms and nesting levels based on element type
-        let (source_transform, source_nesting_level) = if source_is_subsystem {
-            let (t, _, n) = subsystem_query.get(source_entity).unwrap();
-            (t, n)
+        // Get nesting levels for validation
+        let source_nesting_level = if source_is_subsystem {
+            *subsystem_query.get(source_entity).unwrap().1
         } else if source_is_interface {
-            let (t, _, n) = interface_query.get(source_entity).unwrap();
-            (t, n)
+            *interface_query.get(source_entity).unwrap()
         } else {
-            // source_is_external
-            let (t, _, n) = external_entity_query.get(source_entity).unwrap();
-            (t, n)
+            *external_entity_query.get(source_entity).unwrap()
         };
 
-        let (dest_transform, dest_nesting_level) = if dest_is_subsystem {
-            let (t, _, n) = subsystem_query.get(destination_entity).unwrap();
-            (t, n)
+        let dest_nesting_level = if dest_is_subsystem {
+            *subsystem_query.get(destination_entity).unwrap().1
         } else if dest_is_interface {
-            let (t, _, n) = interface_query.get(destination_entity).unwrap();
-            (t, n)
+            *interface_query.get(destination_entity).unwrap()
         } else {
-            // dest_is_external
-            let (t, _, n) = external_entity_query.get(destination_entity).unwrap();
-            (t, n)
+            *external_entity_query.get(destination_entity).unwrap()
         };
 
         // Validate: Same nesting level (only for N network)
@@ -293,24 +294,151 @@ pub fn finalize_connection(
                 // N network requires same level
                 warn!(
                     "❌ Cannot connect elements at different nesting levels ({} vs {})",
-                    **source_nesting_level, **dest_nesting_level
+                    *source_nesting_level, *dest_nesting_level
                 );
                 continue;
             }
             // G network: cross-level is expected and correct, allow it
         }
 
-        // All validation passed - create flow edge
-        let source_world_pos = source_transform.translation.truncate();
-        let dest_world_pos = dest_transform.translation.truncate();
+        // Find the parent system for the flow
+        // Flows are parented to the GRANDPARENT system (subsystem.parent_system),
+        // matching how spawn_interaction works in flow.rs
+        // For N network: find any subsystem among source/dest and use its parent_system
+        // For G network: use the interface's parent's parent_system (if interface is on subsystem)
+        let flow_parent_entity = if source_is_subsystem {
+            // Source is a subsystem - parent flow to its parent_system
+            subsystem_query.get(source_entity).unwrap().0.parent_system
+        } else if dest_is_subsystem {
+            // Dest is a subsystem - parent flow to its parent_system
+            subsystem_query.get(destination_entity).unwrap().0.parent_system
+        } else if source_is_interface {
+            // Interface's parent might be a subsystem - check and get grandparent
+            let interface_parent = parent_query
+                .get(source_entity)
+                .map(|p| p.get())
+                .expect("Interface should have parent");
+            if let Ok((subsystem, _)) = subsystem_query.get(interface_parent) {
+                subsystem.parent_system
+            } else {
+                // Interface is on main system - use the main system as parent
+                interface_parent
+            }
+        } else if dest_is_interface {
+            let interface_parent = parent_query
+                .get(destination_entity)
+                .map(|p| p.get())
+                .expect("Interface should have parent");
+            if let Ok((subsystem, _)) = subsystem_query.get(interface_parent) {
+                subsystem.parent_system
+            } else {
+                interface_parent
+            }
+        } else {
+            // External ↔ External (shouldn't reach here due to validation)
+            warn!("❌ Cannot determine parent system for flow");
+            continue;
+        };
 
-        // Calculate flow curve (simple straight line for now)
-        let direction = (dest_world_pos - source_world_pos).normalize_or_zero();
+        let scale = NestingLevel::compute_scale(*source_nesting_level, **zoom);
+
+        // Get GlobalTransform for world positions
+        let parent_global = global_transform_query
+            .get(flow_parent_entity)
+            .expect("Flow parent should have GlobalTransform");
+        let parent_inverse = parent_global.affine().inverse();
+
+        // Compute flow endpoints in WORLD space first, then transform to parent's local space
+        // This handles cases where source/dest have different immediate parents
+        let (start_world, start_dir) = compute_endpoint_for_entity_world(
+            source_entity,
+            source_is_subsystem,
+            source_is_interface,
+            source_is_external,
+            &global_transform_query,
+            &transform_query,
+            &system_query,
+            is_valid_n_network,
+            scale,
+            None, // No other end yet
+            None,
+        );
+
+        // For subsystems, we need the other endpoint to compute direction
+        // For interfaces/externals, direction is based on rotation
+        let (end_world, end_dir) = compute_endpoint_for_entity_world(
+            destination_entity,
+            dest_is_subsystem,
+            dest_is_interface,
+            dest_is_external,
+            &global_transform_query,
+            &transform_query,
+            &system_query,
+            is_valid_n_network,
+            scale,
+            Some(start_world),
+            Some(start_dir),
+        );
+
+        // If source is a subsystem, recompute with end info for proper direction
+        let (start_world, start_dir) = if source_is_subsystem {
+            compute_endpoint_for_entity_world(
+                source_entity,
+                true,
+                false,
+                false,
+                &global_transform_query,
+                &transform_query,
+                &system_query,
+                is_valid_n_network,
+                scale,
+                Some(end_world),
+                Some(end_dir),
+            )
+        } else {
+            (start_world, start_dir)
+        };
+
+        // Transform from world space to parent system's local space
+        let start_local = parent_inverse
+            .transform_point3(start_world.extend(0.0))
+            .truncate();
+        let end_local = parent_inverse
+            .transform_point3(end_world.extend(0.0))
+            .truncate();
+
+        // DEBUG: Log computed positions
+        info!(
+            "🔍 DEBUG - Source GlobalTransform: {:?}",
+            global_transform_query
+                .get(source_entity)
+                .map(|t| t.translation().truncate())
+        );
+        info!(
+            "🔍 DEBUG - Dest GlobalTransform: {:?}",
+            global_transform_query
+                .get(destination_entity)
+                .map(|t| t.translation().truncate())
+        );
+        info!(
+            "🔍 DEBUG - Parent GlobalTransform: {:?}",
+            parent_global.translation().truncate()
+        );
+        info!("🔍 DEBUG - Zoom: {}, Scale: {}", **zoom, scale);
+        info!(
+            "🔍 Flow world positions - Start: {:?}, End: {:?}",
+            start_world, end_world
+        );
+        info!(
+            "🔍 Flow local positions - Start: {:?}, End: {:?}",
+            start_local, end_local
+        );
+
         let flow_curve = FlowCurve {
-            start: source_world_pos,
-            end: dest_world_pos,
-            start_direction: direction,
-            end_direction: -direction,
+            start: start_local,
+            end: end_local,
+            start_direction: start_dir,
+            end_direction: end_dir,
         };
 
         // Create Flow component with default properties
@@ -326,7 +454,6 @@ pub fn finalize_connection(
         };
 
         // Spawn flow with spawn_interaction_only
-        let scale = NestingLevel::compute_scale(**source_nesting_level, **zoom);
         let flow_entity = spawn_interaction_only(
             &mut commands,
             flow,
@@ -334,11 +461,14 @@ pub fn finalize_connection(
             "New Flow",
             "",
             false, // Not selected initially
-            **source_nesting_level,
+            *source_nesting_level,
             scale,
             &mut stroke_tess,
             &mut meshes,
         );
+
+        // Add flow as child of flow_parent (matches how spawn_interaction works)
+        commands.entity(flow_parent_entity).add_child(flow_entity);
 
         // Determine target types based on element types
         let start_target_type = if source_is_external {
@@ -397,6 +527,65 @@ pub fn finalize_connection(
         info!("✅ Flow created successfully - Connection mode EXITED (Press F to create another)");
 
         return; // Only handle first valid click per frame
+    }
+}
+
+/// Compute endpoint position and direction for an entity in WORLD space.
+///
+/// Returns (world_position, direction) tuple using GlobalTransform.
+/// Caller is responsible for transforming to flow's local space.
+fn compute_endpoint_for_entity_world(
+    entity: Entity,
+    is_subsystem: bool,
+    is_interface: bool,
+    _is_external: bool,
+    global_transform_query: &Query<&GlobalTransform>,
+    transform_query: &Query<&Transform>,
+    system_query: &Query<&System>,
+    is_n_network: bool,
+    scale: f32,
+    other_end: Option<Vec2>,
+    other_end_dir: Option<Vec2>,
+) -> (Vec2, Vec2) {
+    // Get entity's GlobalTransform (world position)
+    let global_transform = global_transform_query
+        .get(entity)
+        .expect("Entity should have GlobalTransform");
+
+    // Get local Transform for rotation (GlobalTransform.right() includes parent rotations)
+    let local_transform = transform_query
+        .get(entity)
+        .expect("Entity should have Transform");
+
+    // GlobalTransform gives us world position
+    let pos = global_transform.translation().truncate();
+    // Use local transform's right vector for entity's own orientation
+    let right = local_transform.right().truncate();
+
+    if is_subsystem {
+        // For subsystems, compute position at boundary facing the other endpoint
+        let system = system_query
+            .get(entity)
+            .expect("Subsystem should have System component");
+
+        if let (Some(other_pos), Some(other_dir)) = (other_end, other_end_dir) {
+            // Use zoomed radius (system.radius * scale)
+            compute_end_and_direction_from_subsystem(pos, system.radius * scale, other_pos, other_dir)
+        } else {
+            // First pass - use a placeholder direction (will be recomputed)
+            (pos, Vec2::X)
+        }
+    } else if is_interface {
+        // For interfaces, position is at edge with direction based on rotation
+        // N network: arrows point inward (toward system center)
+        // G network: arrows point outward (toward environment)
+        let direction = if is_n_network { -right } else { right };
+
+        // Use scaled offset
+        (pos + right * INTERFACE_WIDTH_HALF * scale, direction)
+    } else {
+        // External entity - direction points toward system
+        (pos - right * INTERFACE_WIDTH_HALF * scale, -right)
     }
 }
 
