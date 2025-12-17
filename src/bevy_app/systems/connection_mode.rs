@@ -242,6 +242,12 @@ pub fn finalize_connection(
         let dest_is_interface = interface_query.get(destination_entity).is_ok();
         let dest_is_external = external_entity_query.get(destination_entity).is_ok();
 
+        // Block Interface ↔ Interface connections (deferred - direction logic not stable)
+        if source_is_interface && dest_is_interface {
+            warn!("❌ Interface ↔ Interface connections coming in future version");
+            continue;
+        }
+
         // Phase 3A: Check if entities have InterfaceBehavior (subsystem-capable interfaces)
         let source_has_interface_behavior = interface_behavior_query.get(source_entity).is_ok();
         let dest_has_interface_behavior = interface_behavior_query.get(destination_entity).is_ok();
@@ -311,7 +317,11 @@ pub fn finalize_connection(
             subsystem_query.get(source_entity).unwrap().0.parent_system
         } else if dest_is_subsystem {
             // Dest is a subsystem - parent flow to its parent_system
-            subsystem_query.get(destination_entity).unwrap().0.parent_system
+            subsystem_query
+                .get(destination_entity)
+                .unwrap()
+                .0
+                .parent_system
         } else if source_is_interface {
             // Interface's parent might be a subsystem - check and get grandparent
             let interface_parent = parent_query
@@ -483,16 +493,38 @@ pub fn finalize_connection(
             EndTargetType::System
         };
 
+        // Determine the actual targets for FlowStartConnection/FlowEndConnection
+        // For interfaces: target should be the interface's parent SYSTEM, not the interface itself
+        // This matches how the save system expects flows to be structured
+        let start_target = if source_is_interface {
+            // Get the interface's parent (the system it's attached to)
+            parent_query
+                .get(source_entity)
+                .map(|p| p.get())
+                .expect("Interface should have parent")
+        } else {
+            source_entity
+        };
+
+        let end_target = if dest_is_interface {
+            parent_query
+                .get(destination_entity)
+                .map(|p| p.get())
+                .expect("Interface should have parent")
+        } else {
+            destination_entity
+        };
+
         // Add connection components to link flow to source and destination
         let mut flow_commands = commands.entity(flow_entity);
 
         flow_commands.insert((
             FlowStartConnection {
-                target: source_entity,
+                target: start_target,
                 target_type: start_target_type,
             },
             FlowEndConnection {
-                target: destination_entity,
+                target: end_target,
                 target_type: end_target_type,
             },
         ));
@@ -570,7 +602,12 @@ fn compute_endpoint_for_entity_world(
 
         if let (Some(other_pos), Some(other_dir)) = (other_end, other_end_dir) {
             // Use zoomed radius (system.radius * scale)
-            compute_end_and_direction_from_subsystem(pos, system.radius * scale, other_pos, other_dir)
+            compute_end_and_direction_from_subsystem(
+                pos,
+                system.radius * scale,
+                other_pos,
+                other_dir,
+            )
         } else {
             // First pass - use a placeholder direction (will be recomputed)
             (pos, Vec2::X)

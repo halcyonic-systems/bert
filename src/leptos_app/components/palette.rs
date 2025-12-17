@@ -18,12 +18,12 @@ pub fn Palette(
         <div class="fixed left-0 top-20 bottom-0 w-16 bg-stone-50 shadow-md z-10 flex flex-col items-center py-3 space-y-2">
             <PaletteButton
                 element_type=PaletteElementTypeEvent::Subsystem
-                icon_path="assets/palette-icons/subsystem.png"
+                icon_path="assets/palette-icons/subsystem-icon.png"
                 on_click=on_element_click
             />
             <PaletteButton
                 element_type=PaletteElementTypeEvent::Interface
-                icon_path="assets/palette-icons/interface.png"
+                icon_path="assets/palette-icons/interface-icon.png"
                 on_click=on_element_click
             />
             <PaletteButton

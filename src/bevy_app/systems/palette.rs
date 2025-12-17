@@ -51,8 +51,8 @@ const PALETTE_ICON_SIZE: f32 = 40.0;
 /// Maps PaletteElementType to its icon asset path.
 fn icon_path_for(element_type: PaletteElementType) -> &'static str {
     match element_type {
-        PaletteElementType::Subsystem => "palette-icons/subsystem.png",
-        PaletteElementType::Interface => "palette-icons/interface.png",
+        PaletteElementType::Subsystem => "palette-icons/subsystem-icon.png",
+        PaletteElementType::Interface => "palette-icons/interface-icon.png",
         PaletteElementType::EnvironmentalObject => "palette-icons/source.png", // Reuse source icon for now
     }
 }
@@ -193,7 +193,10 @@ pub fn handle_leptos_palette_click(
             .id();
 
         placement_mode.ghost_entity = Some(ghost);
-        info!("✨ Entered placement mode for {:?} (from Leptos)", element_type);
+        info!(
+            "✨ Entered placement mode for {:?} (from Leptos)",
+            element_type
+        );
     }
 }
 
