@@ -1210,7 +1210,7 @@ pub fn SystemDetails(
             .map(|(_, _, system, _)| ComplexityLevel::from(&system.complexity))
     });
 
-    let system_equivalence = Memo::new(move |_| {
+    let _system_equivalence = Memo::new(move |_| {
         system_query
             .read()
             .as_ref()
@@ -1258,7 +1258,7 @@ pub fn SystemDetails(
             .unwrap_or_default()
     });
 
-    let system_time_unit = Memo::new(move |_| {
+    let _system_time_unit = Memo::new(move |_| {
         system_query
             .read()
             .as_ref()
@@ -1267,7 +1267,7 @@ pub fn SystemDetails(
     });
 
     // H (History/Memory) from Mobus 8-tuple - enabled for structural completeness
-    let system_history = Memo::new(move |_| {
+    let _system_history = Memo::new(move |_| {
         system_query
             .read()
             .as_ref()
@@ -1603,7 +1603,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or_default()
     });
 
-    let complexity_types = vec![
+    let _complexity_types = vec![
         Complexity::Complex {
             adaptable: false,
             evolveable: false,
@@ -1612,7 +1612,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         Complexity::Atomic,
     ];
 
-    let complexity = Signal::derive(move || {
+    let _complexity = Signal::derive(move || {
         sub_system_query
             .read()
             .as_ref()
@@ -1626,7 +1626,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .map(|(_, _, system, _)| ComplexityLevel::from(&system.complexity))
     });
 
-    let membership = Signal::derive(move || {
+    let _membership = Signal::derive(move || {
         sub_system_query
             .read()
             .as_ref()
@@ -1634,7 +1634,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or_default()
     });
 
-    let equivalence = Memo::new(move |_| {
+    let _equivalence = Memo::new(move |_| {
         sub_system_query
             .read()
             .as_ref()
@@ -1642,7 +1642,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or_default()
     });
 
-    let time_unit = Memo::new(move |_| {
+    let _time_unit = Memo::new(move |_| {
         sub_system_query
             .read()
             .as_ref()
