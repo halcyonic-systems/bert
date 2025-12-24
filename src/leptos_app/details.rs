@@ -1,10 +1,8 @@
 use crate::bevy_app::components::SpatialDetailPanelMode;
 use crate::bevy_app::data_model::Complexity;
-use crate::bevy_app::smart_parameters::{
-    ParameterValue, SmartParameter,
-};
+use crate::bevy_app::smart_parameters::{ParameterValue, SmartParameter};
 use crate::leptos_app::components::{
-    Button, Checkbox, DetailsPanelMode, Divider, InputGroup, SelectGroup, Slider, TextArea,
+    Button, Divider, InputGroup, RadioGroup, SelectGroup, Slider, TextArea,
 };
 use crate::{
     DeselectAllEvent, DetachMarkerLabelEvent, ExternalEntityQuery, InteractionQuery,
@@ -20,6 +18,69 @@ use leptos_bevy_canvas::prelude::*;
 use rust_decimal::Decimal;
 use std::str::FromStr;
 use wasm_bindgen::JsValue;
+
+/// Panel mode for details view
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum DetailsPanelMode {
+    System,
+    Boundary,
+    Environment,
+}
+
+/// Complexity levels for systems (Simple → Adaptable → Evolveable)
+/// Based on Mobus systems science: Evolveable implies Adaptable
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+enum ComplexityLevel {
+    #[default]
+    Simple,
+    Adaptable,
+    Evolveable,
+}
+
+impl std::fmt::Display for ComplexityLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ComplexityLevel::Simple => write!(f, "Simple"),
+            ComplexityLevel::Adaptable => write!(f, "Adaptable"),
+            ComplexityLevel::Evolveable => write!(f, "Evolveable"),
+        }
+    }
+}
+
+impl From<&Complexity> for ComplexityLevel {
+    fn from(c: &Complexity) -> Self {
+        match c {
+            Complexity::Complex {
+                adaptable: true,
+                evolveable: true,
+            } => ComplexityLevel::Evolveable,
+            Complexity::Complex {
+                adaptable: true,
+                evolveable: false,
+            } => ComplexityLevel::Adaptable,
+            _ => ComplexityLevel::Simple,
+        }
+    }
+}
+
+impl From<ComplexityLevel> for Complexity {
+    fn from(level: ComplexityLevel) -> Self {
+        match level {
+            ComplexityLevel::Simple => Complexity::Complex {
+                adaptable: false,
+                evolveable: false,
+            },
+            ComplexityLevel::Adaptable => Complexity::Complex {
+                adaptable: true,
+                evolveable: false,
+            },
+            ComplexityLevel::Evolveable => Complexity::Complex {
+                adaptable: true,
+                evolveable: true,
+            },
+        }
+    }
+}
 
 #[derive(Copy, Clone, Default)]
 struct DecimalWrapper(Decimal);
@@ -292,9 +353,12 @@ pub fn SimpleParameterInput(
                 unit: unit.clone(),
             };
 
-            interaction_query.write().as_mut().map(|(_, _, interaction)| {
-                interaction.parameters.push(new_parameter);
-            });
+            interaction_query
+                .write()
+                .as_mut()
+                .map(|(_, _, interaction)| {
+                    interaction.parameters.push(new_parameter);
+                });
 
             // Reset form
             set_new_param_name.set(String::new());
@@ -310,17 +374,55 @@ pub fn SimpleParameterInput(
                 {move || {
                     parameters.get().into_iter().map(|param| {
                         let param_id = param.id;
+                        let initial_name = param.name.clone();
+                        let initial_value = param.value.clone();
+                        let initial_unit = param.unit.clone();
                         view! {
                             <div class="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                                <div class="flex-1 min-w-0">
-                                    <div class="text-sm font-medium text-gray-900 truncate">{param.name.clone()}</div>
-                                    <div class="text-xs text-gray-600">
-                                        {param.value.clone()}
-                                        {if !param.unit.is_empty() {
-                                            format!(" {}", param.unit)
-                                        } else {
-                                            String::new()
-                                        }}
+                                <div class="flex-1 min-w-0 space-y-1">
+                                    <input
+                                        type="text"
+                                        class="w-full px-2 py-0.5 text-sm font-medium text-gray-900 border border-gray-200 rounded focus:ring-cyan-500 focus:border-cyan-500"
+                                        prop:value=initial_name
+                                        on:change=move |ev| {
+                                            let new_name = event_target_value(&ev);
+                                            interaction_query.write().as_mut().map(|(_, _, interaction)| {
+                                                if let Some(p) = interaction.parameters.iter_mut().find(|p| p.id == param_id) {
+                                                    p.name = new_name;
+                                                }
+                                            });
+                                        }
+                                        placeholder="Name"
+                                    />
+                                    <div class="flex gap-1">
+                                        <input
+                                            type="text"
+                                            class="flex-1 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 rounded focus:ring-cyan-500 focus:border-cyan-500"
+                                            prop:value=initial_value
+                                            on:change=move |ev| {
+                                                let new_value = event_target_value(&ev);
+                                                interaction_query.write().as_mut().map(|(_, _, interaction)| {
+                                                    if let Some(p) = interaction.parameters.iter_mut().find(|p| p.id == param_id) {
+                                                        p.value = new_value;
+                                                    }
+                                                });
+                                            }
+                                            placeholder="Value"
+                                        />
+                                        <input
+                                            type="text"
+                                            class="w-16 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 rounded focus:ring-cyan-500 focus:border-cyan-500"
+                                            prop:value=initial_unit
+                                            on:change=move |ev| {
+                                                let new_unit = event_target_value(&ev);
+                                                interaction_query.write().as_mut().map(|(_, _, interaction)| {
+                                                    if let Some(p) = interaction.parameters.iter_mut().find(|p| p.id == param_id) {
+                                                        p.unit = new_unit;
+                                                    }
+                                                });
+                                            }
+                                            placeholder="Unit"
+                                        />
                                     </div>
                                 </div>
                                 <button
@@ -331,7 +433,7 @@ pub fn SimpleParameterInput(
                                         });
                                     }
                                     class="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 flex-shrink-0"
-                                    title="Remove parameter"
+                                    title="Remove attribute"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -344,9 +446,9 @@ pub fn SimpleParameterInput(
             </div>
         </Show>
 
-        // Add new parameter form
+        // Add new attribute form
         <div class="p-3 bg-blue-50 border border-blue-200 rounded">
-            <div class="text-xs font-medium text-blue-900 mb-2">Add Parameter</div>
+            <div class="text-xs font-medium text-blue-900 mb-2">Add Attribute</div>
             <div class="space-y-2">
                 <input
                     type="text"
@@ -376,7 +478,7 @@ pub fn SimpleParameterInput(
                     on:click=add_parameter
                     class="w-full px-3 py-1.5 text-sm font-medium text-white bg-cyan-600 rounded hover:bg-cyan-700"
                 >
-                    Add Parameter
+                    Add Attribute
                 </button>
             </div>
         </div>
@@ -745,40 +847,43 @@ pub fn InteractionDetails(
             />
         </div>
 
-        <div class="mb-4">
-            <label class="flex items-center mb-2">
-                <span class="block text-sm font-medium leading-6 text-gray-900">Substance Type</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                      title="Energy: power/work, Material: physical matter, Message: information">
-                    ?
-                </span>
-            </label>
-            <SelectGroup
-                id="substance-type"
-                label=""
-                options=substance_types
-                selected_option=substance_type
-                on_change=move |value| {
-                    interaction_query
-                        .write()
-                        .as_mut()
-                        .map(|(_, _, interaction)| value.map(|ty| interaction.substance_type = ty));
-                }
-            />
-        </div>
-
-        <SelectGroup
-            id="interaction-usability"
-            label="Interaction Usability"
-            tooltip="Type of interaction based on its utility: Resource (useful input), Disruption (harmful input), Product (useful output), or Waste (harmful output)"
-            options=usability_types
-            selected_option=usability
+        <RadioGroup
+            id="substance-type"
+            label="Substance Type"
+            options=substance_types
+            selected=substance_type
             on_change=move |value| {
                 interaction_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, interaction)| value.map(|u| interaction.usability = u));
+                    .map(|(_, _, interaction)| interaction.substance_type = value);
             }
+            tooltip="The fundamental category of what flows between system elements"
+            option_descriptions=vec![
+                "Power, work capacity, or transformative potential (electrical, thermal, mechanical)",
+                "Physical matter or tangible resources (raw materials, fluids, objects)",
+                "Data, signals, or symbolic content (information, commands, feedback)",
+            ]
+        />
+
+        <RadioGroup
+            id="interaction-usability"
+            label="Usability"
+            options=usability_types
+            selected=usability
+            on_change=move |value| {
+                interaction_query
+                    .write()
+                    .as_mut()
+                    .map(|(_, _, interaction)| interaction.usability = value);
+            }
+            tooltip="Classification based on utility and direction"
+            option_descriptions=vec![
+                "Useful input: enhances system capabilities or provides needed materials/energy",
+                "Harmful input: degrades system performance or introduces unwanted effects",
+                "Useful output: fulfills the system's intended purpose or provides value",
+                "Harmful output: unwanted byproducts or system inefficiency",
+            ]
         />
 
         // Hidden dynamic fields for v0.2.0 - focus on structural analysis
@@ -941,11 +1046,16 @@ pub fn InteractionDetails(
         //     </For>
         // </div>
 
-        // Parameters section - Simple key-value parameters
+        // Attributes section - metadata for documentation and future simulation
         <div class="mt-6">
             <div class="mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Parameters</h3>
-                <p class="text-xs text-gray-500 mt-1">Add domain-specific attributes for this flow</p>
+                <h3 class="flex items-center text-lg font-medium text-gray-900">
+                    <span>Attributes</span>
+                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm" title="Custom attributes for documenting flow characteristics. Stored as metadata for analysis and future simulation.">
+                        "?"
+                    </span>
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Document flow properties (e.g., latency, throughput, protocol)</p>
             </div>
 
             <div class="space-y-4">
@@ -1093,20 +1203,11 @@ pub fn SystemDetails(
             .unwrap_or_default()
     });
 
-    let system_adaptable = Memo::new(move |_| {
+    let system_complexity_level = Memo::new(move |_| {
         system_query
             .read()
             .as_ref()
-            .map(|(_, _, system, _)| system.complexity.is_adaptable())
-            .unwrap_or_default()
-    });
-
-    let system_evolveable = Memo::new(move |_| {
-        system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.complexity.is_evolveable())
-            .unwrap_or_default()
+            .map(|(_, _, system, _)| ComplexityLevel::from(&system.complexity))
     });
 
     let system_equivalence = Memo::new(move |_| {
@@ -1210,100 +1311,84 @@ pub fn SystemDetails(
                 }
             />
 
-            <div class="mb-4">
-                <label class="flex items-center mb-2">
-                    <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
-                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                          title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
-                        ?
-                    </span>
-                </label>
-                <InputGroup
-                    id="system-time-unit"
-                    placeholder="e.g., Second, Minute, Year"
-                    value=system_time_unit
-                    on_input=move |value: String| {
-                        system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
-                    }
-                />
-            </div>
+            // HIDDEN: Time Unit - emergent property, should be derived from flow time units
+            // See session: 2025-12-24/bert-ui-cleanup.md
+            // <div class="mb-4">
+            //     <label class="flex items-center mb-2">
+            //         <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
+            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
+            //               title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
+            //             ?
+            //         </span>
+            //     </label>
+            //     <InputGroup
+            //         id="system-time-unit"
+            //         placeholder="e.g., Second, Minute, Year"
+            //         value=system_time_unit
+            //         on_input=move |value: String| {
+            //             system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
+            //         }
+            //     />
+            // </div>
 
-            <div class="mb-2">
-                <label for="complexity" class="flex items-center font-medium text-gray-900 text-sm/6">
-                    <span>Complexity</span>
-                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                          title="System behavior type: Simple (predictable), Adaptive (responds to environment), Evolveable (can fundamentally change structure)">
-                        ?
-                    </span>
-                </label>
-            </div>
-            <div class="flex justify-evenly">
-                <Checkbox
-                    id="system-adaptable"
-                    label="Adaptable"
-                    checked=system_adaptable
-                    on_toggle=move |value: bool| {
-                        system_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
-                    }
-                />
+            <RadioGroup
+                id="system-complexity"
+                label="Complexity"
+                options=vec![ComplexityLevel::Simple, ComplexityLevel::Adaptable, ComplexityLevel::Evolveable]
+                selected=system_complexity_level
+                tooltip="System behavior type: Simple (predictable), Adaptable (responds to environment), Evolveable (can fundamentally change structure)"
+                on_change=move |level: ComplexityLevel| {
+                    system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| system.complexity = Complexity::from(level));
+                }
+            />
 
-                <Checkbox
-                    id="system-evolveable"
-                    label="Evolveable"
-                    checked=system_evolveable
-                    on_toggle=move |value: bool| {
-                        system_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
-                    }
-                />
-            </div>
+            // HIDDEN: Equivalence - requires formal treatment (isomorphism/homomorphism), confuses users as text field
+            // See session: 2025-12-24/bert-ui-cleanup.md
+            // <div class="mb-4">
+            //     <label class="flex items-center mb-2">
+            //         <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
+            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
+            //               title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
+            //             ?
+            //         </span>
+            //     </label>
+            //     <InputGroup
+            //         id="system-equivalence"
+            //         placeholder="Equivalence"
+            //         value=system_equivalence
+            //         on_input=move |value: String| {
+            //             system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
+            //         }
+            //     />
+            // </div>
 
-            <div class="mb-4">
-                <label class="flex items-center mb-2">
-                    <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
-                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                          title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
-                        ?
-                    </span>
-                </label>
-                <InputGroup
-                    id="system-equivalence"
-                    placeholder="Equivalence"
-                    value=system_equivalence
-                    on_input=move |value: String| {
-                        system_query.write().as_mut().map(|(_, _, system, _)| system.equivalence = value);
-                    }
-                />
-            </div>
-
-            <Divider />
-
-            <div class="space-y-2">
-                <label class="flex items-center mb-2">
-                    <span class="block text-sm font-medium leading-6 text-gray-900">History (H)</span>
-                    <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                          title="Memory/state variables placeholder (under research - will point to stack of system state images per Mobus formalization)">
-                        ?
-                    </span>
-                </label>
-                <p class="text-xs text-gray-500 mb-2">
-                    "Placeholder for system memory - future implementation will track stack of state images over time per history_implementation.txt"
-                </p>
-                <TextArea
-                    id="system-history"
-                    label=""
-                    placeholder="Placeholder: Will contain pointer to state history stack (under research)"
-                    text=system_history
-                    on_input=move |value: String| {
-                        system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
-                    }
-                />
-            </div>
+            // HIDDEN: History (H) - Mobus 8-tuple H should emerge from stocks/state variables, not manual entry
+            // See session: 2025-12-24/bert-ui-cleanup.md
+            // <Divider />
+            // <div class="space-y-2">
+            //     <label class="flex items-center mb-2">
+            //         <span class="block text-sm font-medium leading-6 text-gray-900">History (H)</span>
+            //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
+            //               title="Memory/state variables placeholder (under research - will point to stack of system state images per Mobus formalization)">
+            //             ?
+            //         </span>
+            //     </label>
+            //     <p class="text-xs text-gray-500 mb-2">
+            //         "Placeholder for system memory - future implementation will track stack of state images over time per history_implementation.txt"
+            //     </p>
+            //     <TextArea
+            //         id="system-history"
+            //         label=""
+            //         placeholder="Placeholder: Will contain pointer to state history stack (under research)"
+            //         text=system_history
+            //         on_input=move |value: String| {
+            //             system_query.write().as_mut().map(|(_, _, system, _)| system.history = value);
+            //         }
+            //     />
+            // </div>
 
             // <div class="mb-4">
             //     <label class="flex items-center mb-2">
@@ -1340,7 +1425,8 @@ pub fn SystemDetails(
             <TextArea
                 id="boundary-description"
                 label="Description"
-                placeholder="Add a description"
+                placeholder="Describe what defines this system's boundary—physical enclosure, organizational limits, legal jurisdiction, or conceptual scope."
+                tooltip="The boundary separates the system from its environment. It determines what is inside (components, subsystems) vs outside (sources, sinks). Boundaries can be physical, organizational, or conceptual."
                 text=Memo::new(move |_| system_query
                     .read()
                     .as_ref()
@@ -1400,7 +1486,8 @@ pub fn SystemDetails(
             <TextArea
                 id="environment-description"
                 label="Description"
-                placeholder="Add a description"
+                placeholder="Describe the environment surrounding this system—external entities (sources/sinks) and ambient conditions (milieu) that influence but are not controlled by the system."
+                tooltip="The environment E = (O, M) consists of: O = external objects (sources providing inputs, sinks receiving outputs) and M = milieu (ambient properties like temperature, pressure, market conditions that 'bathe' the system)."
                 text=environment_description
                 on_input=move |value: String| {
                     system_query.write().as_mut().map(|(_, _, _, system_env)| system_env.description = value);
@@ -1532,20 +1619,11 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .map(|(_, _, system, _)| system.complexity)
     });
 
-    let adaptable = Signal::derive(move || {
+    let subsystem_complexity_level = Signal::derive(move || {
         sub_system_query
             .read()
             .as_ref()
-            .map(|(_, _, system, _)| system.complexity.is_adaptable())
-            .unwrap_or_default()
-    });
-
-    let evolveable = Signal::derive(move || {
-        sub_system_query
-            .read()
-            .as_ref()
-            .map(|(_, _, system, _)| system.complexity.is_evolveable())
-            .unwrap_or_default()
+            .map(|(_, _, system, _)| ComplexityLevel::from(&system.complexity))
     });
 
     let membership = Signal::derive(move || {
@@ -1651,7 +1729,8 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         <TextArea
             id="system-description"
             label="Description"
-            placeholder="Add a description"
+            placeholder="Describe this subsystem's role and function within its parent system."
+            tooltip="A component with sufficient complexity to warrant further deconstruction into its own subsystems. What does it do? What inputs does it transform into outputs?"
             text=description
             on_input=move |value: String| {
                 sub_system_query
@@ -1661,122 +1740,83 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             }
         />
 
-        <div class="mb-4">
-            <label class="flex items-center mb-2">
-                <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                      title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
-                    ?
-                </span>
-            </label>
-            <InputGroup
-                id="system-time-unit"
-                placeholder="e.g., Second, Minute, Year"
-                value=time_unit
-                on_input=move |value: String| {
-                    sub_system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
-                }
-            />
-        </div>
+        // HIDDEN for v0.2.0 - Time Unit should be derived from flow time units, not specified upfront
+        // <div class="mb-4">
+        //     <label class="flex items-center mb-2">
+        //         <span class="block text-sm font-medium leading-6 text-gray-900">Time Unit</span>
+        //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
+        //               title="Time scale for system dynamics (e.g., seconds for reactions, years for ecosystems)">
+        //             ?
+        //         </span>
+        //     </label>
+        //     <InputGroup
+        //         id="system-time-unit"
+        //         placeholder="e.g., Second, Minute, Year"
+        //         value=time_unit
+        //         on_input=move |value: String| {
+        //             sub_system_query.write().as_mut().map(|(_, _, system, _)| system.time_unit = value);
+        //         }
+        //     />
+        // </div>
 
-        <div class="mb-4">
-            <label class="flex items-center mb-2">
-                <span class="block text-sm font-medium leading-6 text-gray-900">Complexity</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                      title="System behavior type: Simple (predictable), Adaptive (responds to environment), Evolveable (can fundamentally change structure)">
-                    ?
-                </span>
-            </label>
-            <SelectGroup
-                id="system-complexity"
-                label=""
-                options=complexity_types
-                selected_option=complexity
-                on_change=move |value| {
+        <RadioGroup
+            id="subsystem-complexity-level"
+            label="Complexity"
+            options=vec![ComplexityLevel::Simple, ComplexityLevel::Adaptable, ComplexityLevel::Evolveable]
+            selected=subsystem_complexity_level
+            on_change=move |level: ComplexityLevel| {
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system, _)| system.complexity = value.unwrap_or_default());
+                    .map(|(_, _, system, _)| system.complexity = Complexity::from(level));
             }
+            tooltip="System behavior type: Simple (predictable), Adaptable (responds to environment), Evolveable (can fundamentally change structure)"
         />
-        </div>
 
-        <Show when=move || {
-            sub_system_query
-                .read()
-                .as_ref()
-                .map(|(_, _, system, _)| system.complexity.is_complex())
-                .unwrap_or_default()
-        }>
-            <div class="flex justify-evenly">
-                <Checkbox
-                    id="system-adaptable"
-                    label="Adaptable"
-                    checked=adaptable
-                    on_toggle=move |value: bool| {
-                        sub_system_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, system, _)| system.complexity.set_adaptable(value));
-                    }
-                />
+        // HIDDEN for v0.2.0 - Multiset/Atomic complexity types deferred
+        // <Show when=move || {
+        //     sub_system_query
+        //         .read()
+        //         .as_ref()
+        //         .map(|(_, _, system, _)| system.complexity.is_multiset())
+        //         .unwrap_or_default()
+        // }>
+        //     <Slider
+        //         id="system-membership"
+        //         label="Member Autonomy"
+        //         tooltip="How much individual freedom system members have to act independently (0.0 = tightly controlled/coordinated, 1.0 = completely autonomous)"
+        //         step=0.01
+        //         value=membership
+        //         on_input=move |value: f64| {
+        //             sub_system_query
+        //                 .write()
+        //                 .as_mut()
+        //                 .map(|(_, _, system, _)| system.membership = value as f32);
+        //         }
+        //     />
+        // </Show>
 
-                <Checkbox
-                    id="system-evolveable"
-                    label="Evolveable"
-                    checked=evolveable
-                    on_toggle=move |value: bool| {
-                        sub_system_query
-                            .write()
-                            .as_mut()
-                            .map(|(_, _, system, _)| system.complexity.set_evolveable(value));
-                    }
-                />
-            </div>
-        </Show>
-
-        <Show when=move || {
-            sub_system_query
-                .read()
-                .as_ref()
-                .map(|(_, _, system, _)| system.complexity.is_multiset())
-                .unwrap_or_default()
-        }>
-            <Slider
-                id="system-membership"
-                label="Member Autonomy"
-                tooltip="How much individual freedom system members have to act independently (0.0 = tightly controlled/coordinated, 1.0 = completely autonomous)"
-                step=0.01
-                value=membership
-                on_input=move |value: f64| {
-                    sub_system_query
-                        .write()
-                        .as_mut()
-                        .map(|(_, _, system, _)| system.membership = value as f32);
-                }
-            />
-        </Show>
-
-        <div class="mb-4">
-            <label class="flex items-center mb-2">
-                <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
-                <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
-                      title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
-                    ?
-                </span>
-            </label>
-            <InputGroup
-                id="system-equivalence"
-                placeholder="Equivalence"
-                value=equivalence
-                on_input=move |value: String| {
-                    sub_system_query
-                        .write()
-                        .as_mut()
-                        .map(|(_, _, system, _)| system.equivalence = value);
-                }
-            />
-        </div>
+        // HIDDEN for v0.2.0 - Equivalence requires formal isomorphism/homomorphism treatment
+        // <div class="mb-4">
+        //     <label class="flex items-center mb-2">
+        //         <span class="block text-sm font-medium leading-6 text-gray-900">Equivalence</span>
+        //         <span class="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm"
+        //               title="Component type - what kind of thing this is based on its essential function (e.g., in a cell: 'Ribosome', 'Mitochondria'; in a company: 'Sales Team', 'Finance Department')">
+        //             ?
+        //         </span>
+        //     </label>
+        //     <InputGroup
+        //         id="system-equivalence"
+        //         placeholder="Equivalence"
+        //         value=equivalence
+        //         on_input=move |value: String| {
+        //             sub_system_query
+        //                 .write()
+        //                 .as_mut()
+        //                 .map(|(_, _, system, _)| system.equivalence = value);
+        //         }
+        //     />
+        // </div>
 
 
         // HIDDEN for v0.2.0 "Structural Analysis Mode" - History is dynamic modeling feature
@@ -1816,11 +1856,13 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             }
         />
 
-        <InputGroup
+        <TextArea
             id="boundary-description"
             label="Description"
-            value=boundary_description
-            on_input=move |value| {
+            placeholder="Describe what defines this subsystem's boundary within its parent system."
+            tooltip="The boundary separates this subsystem from sibling subsystems and the parent system's internal space. It determines what is inside vs outside this component."
+            text=boundary_description
+            on_input=move |value: String| {
                 sub_system_query
                     .write()
                     .as_mut()
@@ -1831,6 +1873,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         <Slider
             id="boundary-porosity"
             label="Porosity"
+            tooltip="How permeable the boundary is to substances, energy, and messages (0.0 = impermeable, 1.0 = completely open)"
             value=boundary_porosity
             step=0.01
             on_input=move |value: f64| {
@@ -1844,6 +1887,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         <Slider
             id="boundary-perceptive-fuzziness"
             label="Perceptive Fuzziness"
+            tooltip="How difficult it is to determine exactly where the boundary lies (0.0 = sharp/clear boundary, 1.0 = very fuzzy/gradual boundary)"
             value=perceptive_fuzziness
             step=0.01
             on_input=move |value: f64| {

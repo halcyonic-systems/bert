@@ -340,7 +340,7 @@ pub fn finalize_placement(
                     &mut stroke_tess,
                     **zoom,
                     "New Subsystem",
-                    "", // Empty description
+                    "A component with sufficient complexity to warrant further deconstruction into its own subsystems.",
                     local_pos,
                 );
                 info!("✅ Subsystem placed at {:?}", local_pos);
@@ -378,7 +378,7 @@ pub fn finalize_placement(
                     **zoom,
                     false, // Not selected initially
                     "New Interface",
-                    "",                    // Empty description
+                    "A boundary crossing point that acts as a pass-way for inputs and outputs between the system and its environment.",
                     "default".to_string(), // Default protocol
                     transform,
                     initial_position,
@@ -413,7 +413,7 @@ pub fn finalize_placement(
                     SubstanceType::default(), // Default substance, user can change later
                     false,                    // Not selected initially
                     "New Environmental Object",
-                    "", // Empty description
+                    "An external entity in the environment—a source that provides inputs or a sink that receives outputs. Unmodeled in terms of internal workings.",
                     "", // Empty equivalence
                     "", // Empty model
                     transform,

@@ -19,16 +19,19 @@ pub fn Palette(
             <PaletteButton
                 element_type=PaletteElementTypeEvent::Subsystem
                 icon_path="assets/palette-icons/subsystem-icon.png"
+                tooltip="Subsystem: A component with sufficient complexity to warrant further deconstruction. Click to place inside the focused system."
                 on_click=on_element_click
             />
             <PaletteButton
                 element_type=PaletteElementTypeEvent::Interface
                 icon_path="assets/palette-icons/interface-icon.png"
+                tooltip="Interface: A boundary crossing point that acts as a pass-way for inputs and outputs. Click to place on the system boundary."
                 on_click=on_element_click
             />
             <PaletteButton
                 element_type=PaletteElementTypeEvent::EnvironmentalObject
                 icon_path="assets/palette-icons/source.png"
+                tooltip="External Entity: A source (provides inputs) or sink (receives outputs) in the environment. Unmodeled in terms of internal workings."
                 on_click=on_element_click
             />
         </div>
@@ -39,11 +42,13 @@ pub fn Palette(
 fn PaletteButton(
     element_type: PaletteElementTypeEvent,
     icon_path: &'static str,
+    tooltip: &'static str,
     on_click: Callback<PaletteElementTypeEvent>,
 ) -> impl IntoView {
     view! {
         <button
             class="w-12 h-12 rounded hover:bg-gray-100 active:bg-gray-200 transition-colors flex items-center justify-center"
+            title=tooltip
             on:click=move |_| {
                 on_click.run(element_type);
             }

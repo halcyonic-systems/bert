@@ -469,7 +469,7 @@ pub fn finalize_connection(
             flow,
             flow_curve,
             "New Flow",
-            "",
+            "A connection carrying a flow of real substance (matter, energy, or messages) with causal influence.",
             false, // Not selected initially
             *source_nesting_level,
             scale,

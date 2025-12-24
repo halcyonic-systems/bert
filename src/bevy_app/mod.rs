@@ -222,9 +222,9 @@ pub fn init_bevy_app(
             (drag_external_entity, drag_interface, drag_subsystem),
             // Palette placement mode systems
             (
-                handle_leptos_palette_click,   // Leptos palette clicks → enter mode
-                update_placement_ghost,        // Ghost follows cursor
-                finalize_placement,            // Click canvas → spawn element OR ESC → cancel
+                handle_leptos_palette_click, // Leptos palette clicks → enter mode
+                update_placement_ghost,      // Ghost follows cursor
+                finalize_placement,          // Click canvas → spawn element OR ESC → cancel
             ),
             // Connection mode systems - PHASE 4: Full workflow enabled
             (

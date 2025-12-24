@@ -294,12 +294,15 @@ fn spawn_systems_interfaces_and_external_entities(
         };
 
         for interface in &system.boundary.interfaces {
+            // Interfaces are at parent system's level + 1 (same as subsystems)
+            // This matches palette.rs:370-371 and ensures correct geometry scaling
+            let interface_nesting_level = nesting_level + 1;
             let interface_entity = spawn_loaded_interface(
                 ctx,
                 commands,
                 interface,
                 system,
-                nesting_level,
+                interface_nesting_level,
                 system_entity,
                 zoom,
                 meshes,

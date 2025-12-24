@@ -33,7 +33,9 @@ pub type IsSameAsIdQuery = (IsSameAsId,);
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
-use crate::events::{DeselectAllEvent, PaletteClickEvent, SaveSuccessEvent, TreeEvent, TriggerEvent, ZoomEvent};
+use crate::events::{
+    DeselectAllEvent, PaletteClickEvent, SaveSuccessEvent, TreeEvent, TriggerEvent, ZoomEvent,
+};
 use crate::leptos_app::tree::Tree;
 use leptos_bevy_canvas::prelude::*;
 
