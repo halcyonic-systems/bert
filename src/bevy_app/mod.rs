@@ -355,6 +355,7 @@ pub fn init_bevy_app(
             */
             (
                 update_flow_from_interface,
+                initialize_flow_curves_on_load,
                 update_flow_from_external_entity,
                 update_label_offset_from_interface
                     .before(copy_position)

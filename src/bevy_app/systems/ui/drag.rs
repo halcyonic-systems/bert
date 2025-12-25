@@ -201,6 +201,89 @@ pub fn update_flow_from_interface(
     }
 }
 
+/// Initializes flow curves for newly-added flows with interface connections.
+///
+/// This handles the case where flows are loaded from a file - the regular
+/// `update_flow_from_interface` system uses `Changed<GlobalTransform>` which
+/// may not fire on first load in web WASM due to transform propagation timing.
+pub fn initialize_flow_curves_on_load(
+    interface_query: Query<(Entity, &NestingLevel), With<Interface>>,
+    transform_query: Query<&Transform>,
+    parent_query: Query<&Parent>,
+    mut flow_query: Query<
+        (
+            &mut FlowCurve,
+            Option<&Parent>,
+            Option<&FlowStartInterfaceConnection>,
+            Option<&FlowEndInterfaceConnection>,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+        ),
+        Or<(
+            Added<FlowStartInterfaceConnection>,
+            Added<FlowEndInterfaceConnection>,
+        )>,
+    >,
+    zoom: Res<Zoom>,
+) {
+    for (
+        mut flow_curve,
+        flow_parent,
+        flow_start_interface_conn,
+        flow_end_interface_conn,
+        flow_start_conn,
+        flow_end_conn,
+    ) in &mut flow_query
+    {
+        let flow_parent = flow_parent.map(|p| p.get());
+
+        // Handle end interface connection
+        if let Some(flow_end_interface_conn) = flow_end_interface_conn {
+            if let Ok((target, nesting_level)) = interface_query.get(flow_end_interface_conn.target)
+            {
+                let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
+                let is_n_network = flow_start_conn
+                    .map(|c| !c.target_is_external_entity())
+                    .unwrap_or(false);
+
+                let (end, dir) = compute_end_and_direction_from_system_child(
+                    target,
+                    &transform_query,
+                    &parent_query,
+                    flow_parent,
+                    scale,
+                    is_n_network,
+                );
+                flow_curve.end = end;
+                flow_curve.end_direction = dir;
+            }
+        }
+
+        // Handle start interface connection
+        if let Some(flow_start_interface_conn) = flow_start_interface_conn {
+            if let Ok((target, nesting_level)) =
+                interface_query.get(flow_start_interface_conn.target)
+            {
+                let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
+                let is_n_network = flow_end_conn
+                    .map(|c| !c.target_is_external_entity())
+                    .unwrap_or(false);
+
+                let (start, dir) = compute_end_and_direction_from_system_child(
+                    target,
+                    &transform_query,
+                    &parent_query,
+                    flow_parent,
+                    scale,
+                    is_n_network,
+                );
+                flow_curve.start = start;
+                flow_curve.start_direction = dir;
+            }
+        }
+    }
+}
+
 pub fn update_flow_from_subsystem_without_interface(
     system_query: Query<
         (
