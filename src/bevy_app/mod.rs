@@ -288,6 +288,11 @@ pub fn init_bevy_app(
             .in_set(AllSet),
     )
     .add_systems(Update, (react_to_trigger_event, toggle_theme_system)) // , handle_save_success_events))
+    // Screenshot capture - Ctrl/Cmd+P triggers browser download
+    .add_systems(
+        Update,
+        take_screenshot.run_if(input_pressed(MODIFIER).and(input_just_pressed(KeyCode::KeyP))),
+    )
     .add_systems(
         PostUpdate,
         (

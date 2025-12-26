@@ -17,6 +17,7 @@ bevy_prototype_lyon = "0.13.0"
 console_error_panic_hook = "0.1.7"
 enum-iterator = "2.1.0"
 gloo-file = "0.3"
+image = "0.25"
 js-sys = "0.3"
 leptos = { version = "0.7", features = ["csr"] }
 leptos-bevy-canvas = { git = "https://github.com/Synphonyte/leptos-bevy-canvas.git" }
@@ -36,7 +37,17 @@ tauri-sys = { git = "https://github.com/JonasKruckenberg/tauri-sys", branch = "v
 ] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["console"] }
+web-sys = { version = "0.3", features = [
+    "console",
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlAnchorElement",
+    "Blob",
+    "BlobPropertyBag",
+    "Url",
+] }
 uuid = { version = "1.12.1", features = ["v4"] }
 
 [workspace]
