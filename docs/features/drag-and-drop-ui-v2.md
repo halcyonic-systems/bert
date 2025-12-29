@@ -4,10 +4,10 @@
 
 **Feature Name**: Click-to-Place UI V2 (formerly "Drag-and-Drop UI V2")
 **Branch**: `feature/drag-and-drop-v2`
-**Status**: Phase 2 Complete ✅ (Ready for Phase 3: Intelligence & Guidance)
+**Status**: Phase 2E Complete ✅ (Optional Internal Interfaces)
 **Contributors**: Claude Code
 **Started**: 2025-11-01
-**Last Updated**: 2025-11-04
+**Last Updated**: 2025-12-29
 
 ## Description
 
@@ -92,10 +92,17 @@ Users learn Mobus formalization through muscle memory, not paper citations. Same
 - ✅ Invalid connection rejection with specific error messages:
   - EO ↔ EO: "no direct environment-to-environment flows"
   - EO ↔ Subsystem: "must connect to Interface per G network"
-  - Interface ↔ Interface: "Cannot connect Interface to Interface directly"
 - ✅ Proper StartTargetType/EndTargetType mapping (Source/Sink for external, System for internal)
 - ✅ Network type logging (N vs G) for debugging
 - ✅ Commit: `4f59d1a` - "feat(connection-mode): implement G network validation"
+
+**Phase 2E: Optional Internal Interfaces** (Completed 2025-12-29)
+- ✅ Interface ↔ Interface connections enabled (previously blocked)
+- ✅ N network flows no longer require interfaces for "completeness"
+- ✅ Flow curve visualization fixed for Interface ↔ Interface (directions point toward each other)
+- ✅ Users can now model internal flows with OR without explicit interface elements
+- ✅ G network flows (external boundary) still require interfaces per Mobus
+- ✅ Commit: `b1406d4` - "feat(flows): enable Interface ↔ Interface connections with proper visualization"
 
 ### Phase 2: Core Validation & UX ✅ COMPLETE (2025-11-04)
 - ✅ **Structural validation** (connection mode): N and G network rules enforced
@@ -259,7 +266,8 @@ pub struct ConnectionMode {
 - ✅ Connection mode entry/exit (F key and ESC)
 - ✅ N network flows (Subsystem ↔ Subsystem)
 - ✅ G network flows (EnvironmentalObject ↔ Interface bidirectional)
-- ✅ Invalid connection rejection (EO↔EO, EO↔Subsystem, Interface↔Interface)
+- ✅ Invalid connection rejection (EO↔EO, EO↔Subsystem)
+- ✅ Interface↔Interface connections (enabled Phase 2E)
 - ✅ Self-connection prevention
 - ✅ Nesting level validation
 
