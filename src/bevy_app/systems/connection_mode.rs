@@ -242,11 +242,9 @@ pub fn finalize_connection(
         let dest_is_interface = interface_query.get(destination_entity).is_ok();
         let dest_is_external = external_entity_query.get(destination_entity).is_ok();
 
-        // Block Interface ↔ Interface connections (deferred - direction logic not stable)
-        if source_is_interface && dest_is_interface {
-            warn!("❌ Interface ↔ Interface connections coming in future version");
-            continue;
-        }
+        // Phase 3A: Interface ↔ Interface connections now allowed
+        // Interfaces with InterfaceBehavior are treated as subsystem-capable (I ⊆ C per Mobus)
+        // Direction logic: N network flows use inward-pointing arrows
 
         // Phase 3A: Check if entities have InterfaceBehavior (subsystem-capable interfaces)
         let source_has_interface_behavior = interface_behavior_query.get(source_entity).is_ok();
@@ -408,6 +406,29 @@ pub fn finalize_connection(
         } else {
             (start_world, start_dir)
         };
+
+        // For Interface ↔ Interface connections, fix DIRECTIONS only
+        // Positions are correct (outer edges face each other for interfaces on different subsystems)
+        // But default N network direction (-right = toward subsystem center) is wrong
+        // We need directions pointing toward each other for proper bezier curve
+        let (start_world, start_dir, end_world, end_dir) =
+            if source_is_interface && dest_is_interface {
+                info!("🔧 Interface ↔ Interface: fixing directions to point toward each other");
+
+                // Keep original positions (outer edge), just fix directions
+                let to_end = (end_world - start_world).normalize_or_zero();
+                let to_start = -to_end;
+
+                info!(
+                    "🔧 start_world: {:?}, end_world: {:?}",
+                    start_world, end_world
+                );
+                info!("🔧 to_end: {:?}, to_start: {:?}", to_end, to_start);
+
+                (start_world, to_end, end_world, to_start)
+            } else {
+                (start_world, start_dir, end_world, end_dir)
+            };
 
         // Transform from world space to parent system's local space
         let start_local = parent_inverse

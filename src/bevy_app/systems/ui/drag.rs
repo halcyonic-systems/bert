@@ -129,8 +129,10 @@ pub fn update_flow_from_external_entity(
 /// Phase 3A+: Handles directional arrow rendering for N vs G networks:
 /// - **G network** (Interface ↔ ExternalEntity): Arrows point outward (toward environment)
 /// - **N network** (Interface ↔ Subsystem): Arrows point inward (toward system center)
+/// - **Interface ↔ Interface**: Arrows point toward each other (special case)
 pub fn update_flow_from_interface(
     interface_query: Query<(Entity, &NestingLevel), (With<Interface>, Changed<GlobalTransform>)>,
+    all_interface_query: Query<(Entity, &NestingLevel), With<Interface>>,
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>,
     mut flow_query: Query<(
@@ -157,44 +159,92 @@ pub fn update_flow_from_interface(
         {
             let flow_parent = flow_parent.map(|p| p.get());
 
-            if let Some(flow_end_interface_conn) = flow_end_interface_conn {
-                if flow_end_interface_conn.target == target {
-                    // Determine if this is N network (invert direction) or G network (normal)
-                    // N network: Interface connected to System (not external entity)
-                    // G network: Interface connected to Source/Sink (external entity)
-                    let is_n_network = flow_start_conn
-                        .map(|c| !c.target_is_external_entity())
-                        .unwrap_or(false);
+            // Check if this is Interface ↔ Interface connection
+            let is_interface_to_interface =
+                flow_start_interface_conn.is_some() && flow_end_interface_conn.is_some();
 
-                    let (end, dir) = compute_end_and_direction_from_system_child(
-                        target,
-                        &transform_query,
-                        &parent_query,
-                        flow_parent,
-                        scale,
-                        is_n_network, // Invert direction for N network
-                    );
-                    flow_curve.end = end;
-                    flow_curve.end_direction = dir;
+            if is_interface_to_interface {
+                let start_interface = flow_start_interface_conn.unwrap();
+                let end_interface = flow_end_interface_conn.unwrap();
+
+                // Only update if the changed interface is one of the endpoints
+                if start_interface.target == target || end_interface.target == target {
+                    if let (Ok((start_target, start_nesting)), Ok((end_target, end_nesting))) = (
+                        all_interface_query.get(start_interface.target),
+                        all_interface_query.get(end_interface.target),
+                    ) {
+                        let start_scale = NestingLevel::compute_scale(**start_nesting, **zoom);
+                        let end_scale = NestingLevel::compute_scale(**end_nesting, **zoom);
+
+                        // Get positions (outer edges of interfaces)
+                        let (start_pos, _) = compute_end_and_direction_from_system_child(
+                            start_target,
+                            &transform_query,
+                            &parent_query,
+                            flow_parent,
+                            start_scale,
+                            false,
+                        );
+                        let (end_pos, _) = compute_end_and_direction_from_system_child(
+                            end_target,
+                            &transform_query,
+                            &parent_query,
+                            flow_parent,
+                            end_scale,
+                            false,
+                        );
+
+                        // Compute directions pointing toward each other
+                        let to_end = (end_pos - start_pos).normalize_or_zero();
+                        let to_start = -to_end;
+
+                        flow_curve.start = start_pos;
+                        flow_curve.start_direction = to_end;
+                        flow_curve.end = end_pos;
+                        flow_curve.end_direction = to_start;
+                    }
                 }
-            }
-            if let Some(flow_start_interface_conn) = flow_start_interface_conn {
-                if flow_start_interface_conn.target == target {
-                    // Determine if this is N network (invert direction) or G network (normal)
-                    let is_n_network = flow_end_conn
-                        .map(|c| !c.target_is_external_entity())
-                        .unwrap_or(false);
+            } else {
+                // Standard handling: Interface ↔ Subsystem or Interface ↔ ExternalEntity
+                if let Some(flow_end_interface_conn) = flow_end_interface_conn {
+                    if flow_end_interface_conn.target == target {
+                        // Determine if this is N network (invert direction) or G network (normal)
+                        // N network: Interface connected to System (not external entity)
+                        // G network: Interface connected to Source/Sink (external entity)
+                        let is_n_network = flow_start_conn
+                            .map(|c| !c.target_is_external_entity())
+                            .unwrap_or(false);
 
-                    let (start, dir) = compute_end_and_direction_from_system_child(
-                        target,
-                        &transform_query,
-                        &parent_query,
-                        flow_parent,
-                        scale,
-                        is_n_network, // Invert direction for N network
-                    );
-                    flow_curve.start = start;
-                    flow_curve.start_direction = dir;
+                        let (end, dir) = compute_end_and_direction_from_system_child(
+                            target,
+                            &transform_query,
+                            &parent_query,
+                            flow_parent,
+                            scale,
+                            is_n_network, // Invert direction for N network
+                        );
+                        flow_curve.end = end;
+                        flow_curve.end_direction = dir;
+                    }
+                }
+                if let Some(flow_start_interface_conn) = flow_start_interface_conn {
+                    if flow_start_interface_conn.target == target {
+                        // Determine if this is N network (invert direction) or G network (normal)
+                        let is_n_network = flow_end_conn
+                            .map(|c| !c.target_is_external_entity())
+                            .unwrap_or(false);
+
+                        let (start, dir) = compute_end_and_direction_from_system_child(
+                            target,
+                            &transform_query,
+                            &parent_query,
+                            flow_parent,
+                            scale,
+                            is_n_network, // Invert direction for N network
+                        );
+                        flow_curve.start = start;
+                        flow_curve.start_direction = dir;
+                    }
                 }
             }
         }
@@ -206,6 +256,10 @@ pub fn update_flow_from_interface(
 /// This handles the case where flows are loaded from a file - the regular
 /// `update_flow_from_interface` system uses `Changed<GlobalTransform>` which
 /// may not fire on first load in web WASM due to transform propagation timing.
+///
+/// Special handling for Interface ↔ Interface connections:
+/// - Both ends connect to interfaces on different subsystems
+/// - Directions must point toward each other, not toward subsystem centers
 pub fn initialize_flow_curves_on_load(
     interface_query: Query<(Entity, &NestingLevel), With<Interface>>,
     transform_query: Query<&Transform>,
@@ -237,48 +291,96 @@ pub fn initialize_flow_curves_on_load(
     {
         let flow_parent = flow_parent.map(|p| p.get());
 
-        // Handle end interface connection
-        if let Some(flow_end_interface_conn) = flow_end_interface_conn {
-            if let Ok((target, nesting_level)) = interface_query.get(flow_end_interface_conn.target)
-            {
-                let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-                let is_n_network = flow_start_conn
-                    .map(|c| !c.target_is_external_entity())
-                    .unwrap_or(false);
+        // Check if this is Interface ↔ Interface connection
+        let is_interface_to_interface =
+            flow_start_interface_conn.is_some() && flow_end_interface_conn.is_some();
 
-                let (end, dir) = compute_end_and_direction_from_system_child(
-                    target,
+        if is_interface_to_interface {
+            // Interface ↔ Interface: compute positions first, then directions toward each other
+            let start_interface = flow_start_interface_conn.unwrap();
+            let end_interface = flow_end_interface_conn.unwrap();
+
+            if let (Ok((start_target, start_nesting)), Ok((end_target, end_nesting))) = (
+                interface_query.get(start_interface.target),
+                interface_query.get(end_interface.target),
+            ) {
+                let start_scale = NestingLevel::compute_scale(**start_nesting, **zoom);
+                let end_scale = NestingLevel::compute_scale(**end_nesting, **zoom);
+
+                // Get positions (outer edges of interfaces)
+                let (start_pos, _) = compute_end_and_direction_from_system_child(
+                    start_target,
                     &transform_query,
                     &parent_query,
                     flow_parent,
-                    scale,
-                    is_n_network,
+                    start_scale,
+                    false, // direction doesn't matter, we'll override
                 );
-                flow_curve.end = end;
-                flow_curve.end_direction = dir;
+                let (end_pos, _) = compute_end_and_direction_from_system_child(
+                    end_target,
+                    &transform_query,
+                    &parent_query,
+                    flow_parent,
+                    end_scale,
+                    false,
+                );
+
+                // Compute directions pointing toward each other
+                let to_end = (end_pos - start_pos).normalize_or_zero();
+                let to_start = -to_end;
+
+                flow_curve.start = start_pos;
+                flow_curve.start_direction = to_end;
+                flow_curve.end = end_pos;
+                flow_curve.end_direction = to_start;
             }
-        }
+        } else {
+            // Standard handling: Interface ↔ Subsystem or Interface ↔ ExternalEntity
 
-        // Handle start interface connection
-        if let Some(flow_start_interface_conn) = flow_start_interface_conn {
-            if let Ok((target, nesting_level)) =
-                interface_query.get(flow_start_interface_conn.target)
-            {
-                let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-                let is_n_network = flow_end_conn
-                    .map(|c| !c.target_is_external_entity())
-                    .unwrap_or(false);
+            // Handle end interface connection
+            if let Some(flow_end_interface_conn) = flow_end_interface_conn {
+                if let Ok((target, nesting_level)) =
+                    interface_query.get(flow_end_interface_conn.target)
+                {
+                    let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
+                    let is_n_network = flow_start_conn
+                        .map(|c| !c.target_is_external_entity())
+                        .unwrap_or(false);
 
-                let (start, dir) = compute_end_and_direction_from_system_child(
-                    target,
-                    &transform_query,
-                    &parent_query,
-                    flow_parent,
-                    scale,
-                    is_n_network,
-                );
-                flow_curve.start = start;
-                flow_curve.start_direction = dir;
+                    let (end, dir) = compute_end_and_direction_from_system_child(
+                        target,
+                        &transform_query,
+                        &parent_query,
+                        flow_parent,
+                        scale,
+                        is_n_network,
+                    );
+                    flow_curve.end = end;
+                    flow_curve.end_direction = dir;
+                }
+            }
+
+            // Handle start interface connection
+            if let Some(flow_start_interface_conn) = flow_start_interface_conn {
+                if let Ok((target, nesting_level)) =
+                    interface_query.get(flow_start_interface_conn.target)
+                {
+                    let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
+                    let is_n_network = flow_end_conn
+                        .map(|c| !c.target_is_external_entity())
+                        .unwrap_or(false);
+
+                    let (start, dir) = compute_end_and_direction_from_system_child(
+                        target,
+                        &transform_query,
+                        &parent_query,
+                        flow_parent,
+                        scale,
+                        is_n_network,
+                    );
+                    flow_curve.start = start;
+                    flow_curve.start_direction = dir;
+                }
             }
         }
     }
