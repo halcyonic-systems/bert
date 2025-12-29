@@ -362,6 +362,15 @@ Priority issues:
 ### Phase 6: Advanced Features (Optional) ⏸️ NOT STARTED
 - Classic mode toggle
 - Model templates
+
+### 2.6+ Backlog (Deferred from 2.5)
+- **Cross-level Interface connections**: Parent boundary interface → child interface/subsystem
+  - Currently blocked by nesting level validation (N network same-level requirement)
+  - Theoretically valid per Mobus (boundary interface visible to internal elements)
+  - Implementation complex: flow parenting, curve rendering across levels
+- **InterfaceSubsystem button**: Reactivate convenience feature from old workflow
+  - Spawns subsystem "behind" interface automatically
+  - Workaround exists: manually place subsystem and connect
 - Collaborative hints (AI)
 
 ## Related Documentation
