@@ -281,12 +281,56 @@ pub struct SystemBoundary {
 pub struct SystemEnvironment {
     pub name: String,
     pub description: String,
+    /// Milieu (M in Mobus 8-tuple): Ambient environmental properties that "bathe" the system
+    /// but don't flow through discrete interfaces. Examples: Temperature, Humidity, Salinity, pH, Pressure.
+    /// Stored as key-value pairs (property name, property value with unit).
+    pub milieu: Vec<(String, String)>,
 }
 
 /// Attached to entities with a SystemElement::Interface component to hold modeling data related to the interface.
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Eq, Default)]
 #[reflect(Component)]
 pub struct Interface {
+    pub protocol: String,
+}
+
+/// Marks a Subsystem as having Interface behavior (I ⊆ C per Mobus 8-tuple).
+///
+/// Phase 3A: Enables Interface ↔ Subsystem flows by treating interfaces as special subsystems.
+/// Interfaces have dual role: boundary component (Interface) + internal node (Subsystem).
+///
+/// # Mobus Theory Foundation
+///
+/// Per Mobus systems theory: "Interfaces are special subsystems" (I ⊆ C).
+/// This component implements that principle through composition pattern:
+/// - Interface = Subsystem + InterfaceBehavior
+///
+/// # Usage
+///
+/// Attach this component to a Subsystem entity to mark it as capable of:
+/// - Import/export process modeling (receiving flows from environment)
+/// - Internal transformation (processing substances)
+/// - Distribution to other subsystems (passing processed substances)
+///
+/// # Examples
+///
+/// ```rust
+/// // Interface entity that can act as subsystem node in N network
+/// commands.spawn((
+///     Subsystem { parent_system },
+///     InterfaceBehavior {
+///         substance_type: SubstanceType::Energy,
+///         protocol: "HTTP/2".to_string(),
+///     },
+///     // ... other components
+/// ));
+/// ```
+#[derive(Clone, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct InterfaceBehavior {
+    /// Type of substance this interface handles (Energy, Material, Message).
+    pub substance_type: SubstanceType,
+    /// Communication protocol or interaction mechanism.
     pub protocol: String,
 }
 

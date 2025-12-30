@@ -222,7 +222,7 @@ pub fn spawn_subsystem(
     name: &str,
     description: &str,
     position: Vec2,
-) {
+) -> Entity {
     let (subsystem_entity, radius, nesting_level) = spawn_subsystem_common(
         commands,
         system_query,
@@ -308,6 +308,8 @@ pub fn spawn_subsystem(
             target_type: StartTargetType::System,
         });
     }
+
+    subsystem_entity
 }
 
 pub fn auto_spawn_subsystem_label(

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Amplifier: Adds energy to weak signal for high-power output -->
+  <!-- Amplifier body (triangle) -->
+  <path d="M8 12 L8 20 L20 16 Z" 
+        fill="#606060" 
+        stroke="#404040" 
+        stroke-width="1.5"/>
+  
+  <!-- Weak signal input -->
+  <line x1="4" y1="16" x2="8" y2="16" stroke="#2563eb" stroke-width="1"/>
+  <path d="M2 16 Q3 15 4 16 Q5 17 6 16" fill="none" stroke="#2563eb" stroke-width="1"/>
+  
+  <!-- Strong signal output -->
+  <line x1="20" y1="16" x2="26" y2="16" stroke="#2563eb" stroke-width="3"/>
+  <path d="M24 16 Q26 14 28 16 Q30 18 32 16" fill="none" stroke="#2563eb" stroke-width="2"/>
+  
+  <!-- Energy input for amplification -->
+  <line x1="14" y1="10" x2="14" y2="12" stroke="#b51b1b" stroke-width="2"/>
+  <text x="12" y="9" font-family="Arial, sans-serif" font-size="6" fill="#b51b1b">E</text>
+  
+  <!-- Gain indicator -->
+  <text x="11" y="18" font-family="Arial, sans-serif" font-size="8" fill="#ffffff">×G</text>
+  
+  <!-- Power level indicators -->
+  <text x="1" y="12" font-family="Arial, sans-serif" font-size="6" fill="#2563eb">-</text>
+  <text x="28" y="12" font-family="Arial, sans-serif" font-size="6" fill="#2563eb">+</text>
+</svg> 

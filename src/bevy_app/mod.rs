@@ -96,8 +96,11 @@ pub fn init_bevy_app(
     zoom_event_receiver: BevyEventReceiver<ZoomEvent>,
     deselect_event_receiver: BevyEventReceiver<DeselectAllEvent>,
     trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
+    palette_click_receiver: BevyEventReceiver<PaletteClickEvent>,
     save_success_event_receiver: BevyEventReceiver<SaveSuccessEvent>,
     save_success_bevy_sender: BevyEventSender<SaveSuccessEvent>,
+    mode_change_sender: BevyEventSender<ModeChangeEvent>,
+    cancel_mode_receiver: BevyEventReceiver<CancelModeEvent>,
 ) -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -130,6 +133,7 @@ pub fn init_bevy_app(
     .init_resource::<CurrentFile>()
     .init_resource::<Theme>()
     .init_resource::<Zoom>()
+    .init_resource::<ZoomTarget>() // Phase 3B: auto-zoom animation state
     .init_resource::<FixedSystemElementGeometriesByNestingLevel>()
     .init_resource::<IsSameAsIdCounter>()
     // .add_systems(Startup, |mut commands: Commands| {
@@ -138,12 +142,22 @@ pub fn init_bevy_app(
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
+    .init_resource::<PlacementMode>()
+    .init_resource::<ConnectionMode>() // PHASE 1: Resource enabled
+    .insert_resource(CommandHistory::new(50)) // PHASE 2: Undo/redo with 50-command history
+    .init_resource::<UndoEventReader>() // PHASE 2: Persistent event readers for undo/redo
+    .init_resource::<RedoEventReader>()
     .add_event::<RemoveEvent>()
     .add_event::<DetachMarkerLabelEvent>()
     .add_event::<LoadFileEvent>()
     .add_event::<ZoomEvent>()
     .add_event::<DeselectAllEvent>()
+    .add_event::<PaletteClickEvent>()
     .add_event::<SaveSuccessEvent>()
+    .add_event::<UndoEvent>() // PHASE 2: Undo/redo events
+    .add_event::<RedoEvent>()
+    .add_event::<ModeChangeEvent>() // Bottom toolbar mode indicator
+    .add_event::<CancelModeEvent>() // ESC cancel from JavaScript
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -158,9 +172,12 @@ pub fn init_bevy_app(
     .import_event_from_leptos(zoom_event_receiver)
     .import_event_from_leptos(deselect_event_receiver)
     .import_event_from_leptos(trigger_event_receiver)
+    .import_event_from_leptos(palette_click_receiver)
     .import_event_from_leptos(save_success_event_receiver)
+    .import_event_from_leptos(cancel_mode_receiver)
     .export_event_to_leptos(tree_event_sender)
     .export_event_to_leptos(save_success_bevy_sender)
+    .export_event_to_leptos(mode_change_sender)
     .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
@@ -209,6 +226,22 @@ pub fn init_bevy_app(
             )
                 .in_set(FlowTerminalSelectingSet),
             (drag_external_entity, drag_interface, drag_subsystem),
+            // Palette placement mode systems
+            (
+                handle_leptos_palette_click, // Leptos palette clicks → enter mode
+                update_placement_ghost,      // Ghost follows cursor
+                finalize_placement,          // Click canvas → spawn element OR ESC → cancel
+            ),
+            // Connection mode systems - PHASE 4: Full workflow enabled
+            (
+                enter_connection_mode,      // F key → enter mode
+                select_connection_source,   // Click subsystem → select source
+                update_connection_ghost,    // Ghost line rendering (Gizmos)
+                finalize_connection, // PHASE 4: Click destination → create flow OR ESC → cancel
+                clear_connection_exit_flag, // Phase 3C: Clear just_exited flag next frame
+                send_mode_change_events, // Bottom toolbar mode indicator
+                handle_cancel_mode_event, // ESC from JavaScript → cancel placement/connection
+            ),
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),
@@ -230,6 +263,11 @@ pub fn init_bevy_app(
                         .and(input_just_pressed(KeyCode::KeyS)),
                 ),
             ),
+            // PHASE 2: Undo/Redo keyboard shortcuts
+            handle_undo_redo_shortcuts,
+            // PHASE 2: Undo/Redo execution systems (exclusive world access)
+            execute_undo,
+            execute_redo,
             (
                 hide_selected
                     .run_if(in_state(AppState::Normal).and(input_just_pressed(KeyCode::KeyH))),
@@ -249,8 +287,12 @@ pub fn init_bevy_app(
             )
                 .in_set(RemovalCleanupSet),
             (
+                // PHASE 3D: Auto-zoom disabled - causes unwanted camera movement on canvas clicks
+                // auto_zoom_on_focus_change, // Phase 3B: detect focus change, set zoom target
+                // animate_zoom_to_target,    // Phase 3B: smooth animation to target
                 apply_zoom,
                 apply_zoom_to_camera_position,
+                apply_zoom_to_palette_compensation, // Counter-adjust palette for camera zoom scaling
                 apply_zoom_to_incomplete_flows,
                 apply_zoom_to_system_geometries,
                 apply_zoom_to_strokes,
@@ -305,6 +347,11 @@ pub fn init_bevy_app(
                 auto_spawn_source_sink_equivalence.after(auto_spawn_external_entity_label),
             )
                 .in_set(AutoSpawnLabelSet),
+            // DISABLED: CreateButtonSet - Button-based UI workflow disabled for drag-and-drop transition (Phase 0)
+            // All 9 button systems are purely UI affordances, safe to disable without affecting core rendering.
+            // Core selection handler (change_focused_system) remains active in Update schedule.
+            // See docs/architecture/button-system-analysis-unified.md for full dependency analysis.
+            /*
             (
                 add_outflow_interface_create_button,
                 add_inflow_interface_create_button,
@@ -318,8 +365,10 @@ pub fn init_bevy_app(
                 remove_unfocused_system_buttons,
             )
                 .in_set(CreateButtonSet),
+            */
             (
                 update_flow_from_interface,
+                initialize_flow_curves_on_load,
                 update_flow_from_external_entity,
                 update_label_offset_from_interface
                     .before(copy_position)
@@ -343,10 +392,11 @@ pub fn init_bevy_app(
         OnEnter(AppState::FlowTerminalSelection),
         (disable_selection,),
     )
-    .add_systems(
-        OnExit(AppState::FlowTerminalSelection),
-        (add_inflow_create_button, add_outflow_create_button),
-    )
+    // DISABLED: Button spawning on FlowTerminalSelection exit (Phase 0)
+    // .add_systems(
+    //     OnExit(AppState::FlowTerminalSelection),
+    //     (add_inflow_create_button, add_outflow_create_button),
+    // )
     .add_systems(OnEnter(AppState::Normal), (enable_selection,))
     // .configure_sets(PreUpdate, (AllSet.run_if(in_state(FileState::Inactive)),))
     .configure_sets(

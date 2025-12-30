@@ -12,6 +12,12 @@ use tauri_sys::core::invoke;
 use wasm_bindgen::JsCast;
 use web_sys::{Blob, HtmlAnchorElement, Url};
 
+/// Flow deferred because target subsystem wasn't registered yet
+struct DeferredFlow {
+    flow_entity: Entity,
+    system_entity: Entity, // The system context we were processing
+}
+
 /// Context for bookkeeping while we traverse the ECS and build the data model that is serialized.
 struct Context {
     /// Remember how many objects of the given type and the index list of the parent have been created.
@@ -23,6 +29,8 @@ struct Context {
     interactions: Vec<Interaction>,
     /// Map bevy entities to their index in `interactions`.
     entity_to_interaction_idx: HashMap<Entity, usize>,
+    /// Flows deferred because target subsystem wasn't registered yet
+    deferred_flows: Vec<DeferredFlow>,
 }
 
 impl Context {
@@ -32,6 +40,7 @@ impl Context {
             entity_to_id: HashMap::new(),
             interactions: vec![],
             entity_to_interaction_idx: HashMap::new(),
+            deferred_flows: Vec::new(),
         }
     }
 
@@ -354,6 +363,14 @@ pub fn serialize_world(
         &mut entity_to_system,
     );
 
+    // Phase 4: Process deferred internal flows (subsystems now registered)
+    process_deferred_flows(
+        &mut ctx,
+        &entity_to_system,
+        &name_and_description_query,
+        &flow_query,
+    );
+
     // Add the source and sink interface connections to all interactions after all
     // interfaces and interactions have been created.
     for (flow_entity, _, _, _, flow_start_interface_connection, flow_end_interface_connection) in
@@ -551,6 +568,52 @@ fn build_subsystems(
     }
 }
 
+/// Process flows that were deferred because their target subsystem wasn't registered yet.
+/// Called after all subsystems are built, so all entity IDs are now available.
+fn process_deferred_flows(
+    ctx: &mut Context,
+    entity_to_system: &HashMap<Entity, System>,
+    name_and_description_query: &Query<(&Name, &ElementDescription)>,
+    flow_query: &Query<(
+        Entity,
+        &Flow,
+        &FlowStartConnection,
+        &FlowEndConnection,
+        Option<&FlowStartInterfaceConnection>,
+        Option<&FlowEndInterfaceConnection>,
+    )>,
+) {
+    let deferred = std::mem::take(&mut ctx.deferred_flows);
+
+    for DeferredFlow {
+        flow_entity,
+        system_entity,
+    } in deferred
+    {
+        if let Ok((_, flow, flow_start_connection, flow_end_connection, _, _)) =
+            flow_query.get(flow_entity)
+        {
+            // Now all subsystems are registered - get the IDs
+            let source_id = ctx.entity_to_id[&flow_start_connection.target].clone();
+            let sink_id = ctx.entity_to_id[&flow_end_connection.target].clone();
+
+            // Find the parent system for this interaction (the system we were processing)
+            if let Some(parent_system) = entity_to_system.get(&system_entity) {
+                // Reuse existing build_interaction function
+                build_interaction(
+                    ctx,
+                    flow_entity,
+                    flow,
+                    parent_system,
+                    source_id,
+                    sink_id,
+                    name_and_description_query,
+                );
+            }
+        }
+    }
+}
+
 /// Create all interfaces that are part of the given system together with connected
 /// interactions and external entities.
 fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAndSinks>(
@@ -584,6 +647,26 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         flow_end_interface_connection,
     ) in flow_query
     {
+        // Check if this flow connects to an unregistered subsystem - defer if so
+        // This handles internal flows where the other end is a subsystem not yet registered
+        let start_is_unregistered_subsystem =
+            matches!(flow_start_connection.target_type, StartTargetType::System)
+                && flow_start_connection.target != system_entity
+                && !ctx.entity_to_id.contains_key(&flow_start_connection.target);
+
+        let end_is_unregistered_subsystem =
+            matches!(flow_end_connection.target_type, EndTargetType::System)
+                && flow_end_connection.target != system_entity
+                && !ctx.entity_to_id.contains_key(&flow_end_connection.target);
+
+        if start_is_unregistered_subsystem || end_is_unregistered_subsystem {
+            ctx.deferred_flows.push(DeferredFlow {
+                flow_entity,
+                system_entity,
+            });
+            continue;
+        }
+
         // if it's connected at the start to this system ...
         if flow_start_connection.target == system_entity {
             // ... first we build the start interface ...

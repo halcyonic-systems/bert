@@ -91,10 +91,19 @@ pub fn spawn_interface_only(
 
     let interface_entity = commands
         .spawn((
-            Interface { protocol },
+            Interface {
+                protocol: protocol.clone(),
+            },
+            InterfaceBehavior {
+                substance_type,
+                protocol,
+            },
             transform,
             Fill::color(substance_type.interface_color_default()),
-            PickingBehavior::default(),
+            PickingBehavior {
+                should_block_lower: true, // PHASE 3D FIX: Block clicks from passing through to parent system
+                is_hoverable: true,
+            },
             RayCastPickable::default(),
             PickSelection { is_selected },
             HighlightBundles {

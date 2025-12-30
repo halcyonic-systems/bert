@@ -27,6 +27,7 @@ macro_rules! impl_drag_event {
 impl_drag_event!(ExternalEntityDrag);
 impl_drag_event!(InterfaceDrag);
 impl_drag_event!(SubsystemDrag);
+impl_drag_event!(PaletteDrag);
 
 /// Fires when an entity is removed from the world. Used in system control flow.
 #[derive(Event, Debug, Clone, Copy)]
@@ -71,3 +72,26 @@ pub enum ZoomEvent {
 /// Fires from Leptos to Bevy to deselect all elements (clear selection state)
 #[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DeselectAllEvent;
+
+/// Fires from Leptos palette panel to Bevy to enter placement mode
+#[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct PaletteClickEvent {
+    pub element_type: PaletteElementTypeEvent,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum PaletteElementTypeEvent {
+    Subsystem,
+    Interface,
+    EnvironmentalObject,
+}
+
+/// Fires from Bevy to Leptos when interaction mode changes
+#[derive(Event, Debug, Clone, Serialize, Deserialize)]
+pub struct ModeChangeEvent {
+    pub mode_text: String,
+}
+
+/// Fires from Leptos/JavaScript to Bevy to cancel current mode (placement or connection)
+#[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct CancelModeEvent;

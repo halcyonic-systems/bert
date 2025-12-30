@@ -2,6 +2,42 @@ use crate::bevy_app::components::{InitialPosition, InterfaceType, SubstanceType}
 use crate::bevy_app::constants::FLOW_LENGTH;
 use bevy::prelude::*;
 
+// ============================================================================
+// Drag-and-Drop Palette Components (Phase 1)
+// ============================================================================
+
+/// Marks an entity as a draggable palette element in the sidebar.
+/// Palette elements spawn new diagram elements when dragged to canvas.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
+pub struct PaletteElement {
+    pub element_type: PaletteElementType,
+}
+
+/// Types of elements available in the drag-and-drop palette.
+///
+/// Aligned with Mobus 8-tuple formalization:
+/// - Subsystem: Components (c ∈ C, internal processing)
+/// - Interface: Boundary components (c ∈ I ⊂ C, protocol-mediated exchange)
+/// - EnvironmentalObject: External entities (o ∈ O, unified sources/sinks)
+///
+/// Flows are NOT palette items - they are edges in N (internal) or G (external)
+/// networks, created via connection mode.
+///
+/// Key insight: Direction determined by flow edges, not node types.
+/// Environmental objects can be BOTH source AND sink simultaneously.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+pub enum PaletteElementType {
+    /// Internal component (c ∈ C, not interface) - processes within system
+    Subsystem,
+
+    /// Boundary component (c ∈ I ⊂ C) - mediates flows across boundary
+    Interface,
+
+    /// External entity (o ∈ O) - environmental object, unified source/sink
+    EnvironmentalObject,
+}
+
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
 #[reflect(Component)]
 pub struct CreateButton {

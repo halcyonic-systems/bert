@@ -1,4 +1,4 @@
-mod add_remove_buttons;
+mod add_remove_buttons; // DISABLED: Button systems not used in drag-and-drop workflow (Phase 0)
 mod color;
 mod drag;
 mod flow;
@@ -9,6 +9,7 @@ mod source_sink_equivalence;
 mod zoom;
 
 use crate::bevy_app::plugins::mouse_interaction::{do_deselect_all, PickSelection};
+// Button module still needed for helper functions (has_incomplete_interactions, etc.) used by other systems
 pub use add_remove_buttons::*;
 pub use color::*;
 pub use drag::*;
@@ -32,31 +33,31 @@ use crate::bevy_app::utils::combined_transform_of_entity_until_ancestor;
 use bevy::prelude::*;
 use rust_decimal_macros::dec;
 
+/// Updates FocusedSystem resource when user selects a system.
+///
+/// Core selection handler (not button-specific) - must remain active for correct
+/// subsystem placement, flow creation, and other FocusedSystem-dependent systems.
+///
+/// Button validation removed in drag-and-drop transition - original logic prevented
+/// selecting interface subsystems before all buttons created, unnecessary without buttons.
 pub fn change_focused_system(
     selected_query: Query<
-        (Entity, &PickSelection, Option<&Subsystem>),
+        (Entity, &PickSelection),
         (
             Changed<PickSelection>,
             With<crate::bevy_app::components::System>,
         ),
     >,
-    button_query: Query<&CreateButton>,
     mut focused_system: ResMut<FocusedSystem>,
 ) {
-    for (entity, selection, subsystem) in &selected_query {
+    for (entity, selection) in &selected_query {
         if selection.is_selected {
-            if let Some(subsystem) = subsystem {
-                for button in &button_query {
-                    if matches!(button.ty, CreateButtonType::InterfaceSubsystem { .. })
-                        && button.system == subsystem.parent_system
-                    {
-                        // Do not allow selecting an interface subsystem while not all interface subsystems are created for the parent
-                        return;
-                    }
-                }
+            // PHASE 3D FIX: Only assign if entity actually changed to prevent spurious auto-zoom triggers.
+            // Clicking canvas to refocus keyboard was causing FocusedSystem reassignment to same entity,
+            // triggering Bevy change detection → auto-zoom → jittery camera during manual zoom.
+            if **focused_system != entity {
+                **focused_system = entity;
             }
-
-            **focused_system = entity;
         }
     }
 }

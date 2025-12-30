@@ -23,12 +23,21 @@ pub fn ui_transform_from_button(
     )
 }
 
+/// Computes flow endpoint position and direction for interface connections.
+///
+/// # Parameters
+/// - `invert_direction`: If true, reverses direction (for N network flows pointing inward)
+///
+/// # Direction Logic
+/// - **G network** (Interface ↔ ExternalEntity): `invert_direction = false` → Arrow points outward
+/// - **N network** (Interface ↔ Subsystem): `invert_direction = true` → Arrow points inward
 pub fn compute_end_and_direction_from_system_child(
     system_child: Entity,
     transform_query: &Query<&Transform>,
     parent_query: &Query<&Parent>,
     flow_parent: Option<Entity>,
     scale: f32,
+    invert_direction: bool,
 ) -> (Vec2, Vec2) {
     let combined_transform = combined_transform_of_entity_until_ancestor(
         system_child,
@@ -38,10 +47,11 @@ pub fn compute_end_and_direction_from_system_child(
     );
 
     let right = combined_transform.right().truncate();
+    let direction = if invert_direction { -right } else { right };
 
     (
         combined_transform.translation.truncate() + right * INTERFACE_WIDTH_HALF * scale,
-        right,
+        direction,
     )
 }
 

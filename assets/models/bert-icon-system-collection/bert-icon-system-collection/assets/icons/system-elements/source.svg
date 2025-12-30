@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Source: Open-ended rectangle representing environmental supply -->
+  <!-- Main source body (open on right side) -->
+  <path d="M4 8 L4 24 L20 24 L20 20 L24 20 L24 12 L20 12 L20 8 Z" 
+        fill="none" 
+        stroke="#404040" 
+        stroke-width="2"/>
+  
+  <!-- Output flow arrow -->
+  <path d="M20 16 L28 16 M24 12 L28 16 L24 20" 
+        fill="none" 
+        stroke="#2563eb" 
+        stroke-width="2" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Source indicator (plus symbol) -->
+  <line x1="12" y1="12" x2="12" y2="20" stroke="#404040" stroke-width="2"/>
+  <line x1="8" y1="16" x2="16" y2="16" stroke="#404040" stroke-width="2"/>
+</svg> 

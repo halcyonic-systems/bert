@@ -74,6 +74,7 @@
 pub mod debug;
 
 use crate::bevy_app::components::{BoundaryRegion, EnvironmentRegion, SpatialDetailPanelMode};
+use crate::bevy_app::systems::connection_mode::ConnectionMode;
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::prelude::*;
 use bevy::utils::HashSet;
@@ -87,17 +88,27 @@ use bevy_picking::focus::PickingInteraction;
 /// the SpatialDetailPanelMode resource accordingly, enabling contextual property panels.
 ///
 /// - System interior clicks → SpatialDetailPanelMode::System
-/// - Boundary ring clicks → SpatialDetailPanelMode::Boundary  
+/// - Boundary ring clicks → SpatialDetailPanelMode::Boundary
 /// - Environment area clicks → SpatialDetailPanelMode::Environment
 ///
 /// This implements the core spatial interaction UX where users click WHERE they want to edit.
+///
+/// Suppressed during connection mode to avoid panel switching during flow creation.
 fn handle_spatial_panel_switching(
     mut click_events: EventReader<Pointer<Click>>,
     mut panel_mode: ResMut<SpatialDetailPanelMode>,
+    connection_mode: Res<ConnectionMode>,
     boundary_query: Query<&BoundaryRegion>,
     environment_query: Query<&EnvironmentRegion>,
     system_query: Query<Entity, With<crate::bevy_app::components::System>>,
 ) {
+    // Suppress panel switching during connection mode or just after exit (Phase 3C UX improvement)
+    // - Active: User is connecting elements, not exploring spatial regions
+    // - Just exited: Prevents final connection click from switching panels on same frame
+    if connection_mode.active || connection_mode.just_exited {
+        return;
+    }
+
     for event in click_events.read() {
         // Check what type of entity was clicked and update panel mode accordingly
         if boundary_query.get(event.target).is_ok() {
@@ -651,6 +662,7 @@ fn handle_mouse_up(
     mut dragging: ResMut<Dragging>,
     mut selection: ResMut<Selection>,
     selection_enabled: Res<SelectionEnabled>,
+    connection_mode: Res<ConnectionMode>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
     if dragging.started {
@@ -661,7 +673,11 @@ fn handle_mouse_up(
 
     let multi_select = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
 
-    if **selection_enabled {
+    // Suppress selection when connection mode is active or just exited (Phase 3C UX improvement)
+    // - Active: Users are connecting elements, not inspecting properties
+    // - Just exited: Prevents final connection click from opening panel on same frame
+    // Connection mode handles clicks for source/destination selection, not entity selection
+    if **selection_enabled && !connection_mode.active && !connection_mode.just_exited {
         selection.clear();
 
         let mut deselect = true;

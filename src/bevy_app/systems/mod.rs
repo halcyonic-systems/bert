@@ -110,6 +110,8 @@
 //! - [`crate::events`]: Event types and communication patterns
 
 mod camera;
+pub mod connection_mode; // PHASE 3C: Public for mouse interaction integration
+mod palette;
 mod removal;
 mod screenshot;
 mod setup;
@@ -117,9 +119,12 @@ mod spatial_sync;
 mod subsystem;
 mod toast_handler;
 mod ui;
+mod undo_redo; // PHASE 2: Undo/Redo system with command pattern
 
 use bevy::ecs::system::{RunSystemOnce, SystemState};
 pub use camera::*;
+pub use connection_mode::*; // PHASE 1: Exporting ConnectionMode + enter_connection_mode only
+pub use palette::*;
 pub use removal::*;
 pub use screenshot::*;
 pub use setup::*;
@@ -127,6 +132,7 @@ pub use spatial_sync::*;
 pub use subsystem::*;
 // pub use toast_handler::*; // Disabled - desktop async notifications need different approach
 pub use ui::*;
+pub use undo_redo::*; // PHASE 2: Exporting CommandHistory and undo/redo systems
 
 use crate::bevy_app::data_model::save::serialize_world;
 use crate::bevy_app::data_model::WorldModel;

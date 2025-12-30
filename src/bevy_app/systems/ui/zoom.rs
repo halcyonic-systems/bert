@@ -14,7 +14,7 @@ use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::resources::{
     build_external_entity_aabb_half_extents, build_external_entity_path,
     build_interface_aabb_half_extends, build_interface_path, build_interface_simplified_mesh,
-    FixedSystemElementGeometriesByNestingLevel, StrokeTessellator, Zoom,
+    FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom, ZoomTarget,
 };
 use crate::bevy_app::systems::tessellate_simplified_mesh;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -27,7 +27,10 @@ use bevy_prototype_lyon::prelude::*;
 /// Applies the current zoom value to the x and y translations of all non-camera entities.
 /// The z component of the translation remains unchanged.
 pub fn apply_zoom(
-    mut query: Query<(&mut Transform, &InitialPosition), Without<Camera>>,
+    mut query: Query<
+        (&mut Transform, &InitialPosition),
+        (Without<Camera>, Without<PaletteElement>),
+    >,
     zoom: Res<Zoom>,
     time: Res<Time>,
 ) {
@@ -102,6 +105,10 @@ pub fn apply_zoom_to_system_radii(
 }
 
 /// Moves the camera to always be centered on the same point relative to the world entities.
+///
+/// This maintains zoom centering by scaling camera position with zoom changes.
+/// Note: Palette elements are counter-adjusted in `apply_zoom_to_palette_compensation`
+/// to remain fixed in screen space despite camera position scaling.
 pub fn apply_zoom_to_camera_position(
     mut query: Query<&mut Transform, With<Camera>>,
     zoom: Res<Zoom>,
@@ -110,6 +117,44 @@ pub fn apply_zoom_to_camera_position(
     query.single_mut().translation *= **zoom / **prev_zoom;
 
     **prev_zoom = **zoom;
+}
+
+/// Maintains palette position relative to camera to keep it screen-fixed.
+///
+/// Palette elements are in world-space but should appear screen-fixed (like UI).
+/// This system tracks camera position changes and moves palette elements to compensate,
+/// maintaining their fixed screen-space position despite camera panning and zoom scaling.
+///
+/// Without this: Camera pans to (500, 500) and palette at world (-550, 300) goes off-screen.
+/// With this: Palette moves to (450, 800) in world space to stay at same screen position.
+pub fn apply_zoom_to_palette_compensation(
+    mut palette_query: Query<(&mut Transform, &InitialPosition), With<PaletteElement>>,
+    camera_query: Query<&Transform, (With<Camera>, Without<PaletteElement>)>,
+    mut prev_camera_pos: Local<Vec2>,
+) {
+    let Ok(camera_transform) = camera_query.get_single() else {
+        return;
+    };
+
+    let camera_pos = camera_transform.translation.truncate();
+
+    // Initialize on first run
+    if *prev_camera_pos == Vec2::ZERO && camera_pos == Vec2::ZERO {
+        *prev_camera_pos = camera_pos;
+        return;
+    }
+
+    // Calculate camera movement delta
+    let camera_delta = camera_pos - *prev_camera_pos;
+
+    if camera_delta.length() > 0.01 {
+        // Move palette by same delta to counteract camera pan
+        for (mut transform, _initial_position) in &mut palette_query {
+            transform.translation += camera_delta.extend(0.0);
+        }
+    }
+
+    *prev_camera_pos = camera_pos;
 }
 
 /// Adjusts the position of flow endpoints that are not connected to anything.
@@ -445,5 +490,109 @@ pub fn apply_zoom_to_added_label(
             **zoom,
             LABEL_SCALE_VISIBILITY_THRESHOLD,
         );
+    }
+}
+
+/// Phase 3B: Auto-zoom on focus change - calculates target zoom to make focused system ~300px radius.
+///
+/// When user focuses a nested subsystem (double-click), this system:
+/// 1. Detects the focus change
+/// 2. Calculates zoom to make focused system 300px screen radius
+/// 3. Sets ZoomTarget for smooth animation
+///
+/// Solves "subsystems too tiny at deep nesting" UX issue.
+///
+/// IMPORTANT: Only triggers on actual FocusedSystem entity changes, NOT on manual zoom changes.
+/// Uses change detection on FocusedSystem resource to detect when user focuses a different system.
+pub fn auto_zoom_on_focus_change(
+    focused_system: Res<FocusedSystem>,
+    mut previous_focus: Local<Option<Entity>>,
+    system_query: Query<(
+        &GlobalTransform,
+        &crate::bevy_app::components::System,
+        &NestingLevel,
+    )>,
+    mut zoom_target: ResMut<ZoomTarget>,
+) {
+    // Only trigger if FocusedSystem resource changed AND the entity is different
+    if !focused_system.is_changed() {
+        return;
+    }
+
+    let current_focus = **focused_system;
+
+    // Check if this is actually a NEW focus (entity changed, not just resource marked changed)
+    if Some(current_focus) == *previous_focus {
+        return; // Same entity, no actual focus change
+    }
+
+    // Skip placeholder entity (no real system focused)
+    if current_focus == Entity::PLACEHOLDER {
+        *previous_focus = None;
+        return;
+    }
+
+    let Ok((global_transform, system, _nesting_level)) = system_query.get(current_focus) else {
+        warn!("Failed to get system data for focused entity");
+        return;
+    };
+
+    // Target: make focused system appear as 300px radius on screen
+    let desired_screen_radius = 300.0;
+    let target_zoom: f32 = desired_screen_radius / system.radius;
+
+    // Clamp zoom to reasonable bounds
+    zoom_target.target_zoom = target_zoom.clamp(0.1, 10.0);
+    // CRITICAL FIX: Use GlobalTransform for world position, not local Transform
+    zoom_target.target_pan = global_transform.translation().truncate();
+    zoom_target.animating = true;
+    zoom_target.progress = 0.0;
+
+    info!(
+        "🔍 Auto-zoom triggered: entity {:?}, target zoom {:.2}x (system radius {:.1} → screen radius {:.1}px), world pos {:?}",
+        current_focus, target_zoom, system.radius, desired_screen_radius, global_transform.translation().truncate()
+    );
+
+    *previous_focus = Some(current_focus);
+}
+
+/// Phase 3B: Animate zoom and camera pan toward target over ~300ms.
+///
+/// Smoothly lerps Zoom resource and Camera transform from current to target values.
+/// Uses ease-out interpolation for natural feel.
+pub fn animate_zoom_to_target(
+    mut zoom: ResMut<Zoom>,
+    mut zoom_target: ResMut<ZoomTarget>,
+    mut camera_query: Query<&mut Transform, With<Camera2d>>,
+    time: Res<Time>,
+) {
+    if !zoom_target.animating {
+        return;
+    }
+
+    // Animation duration: 300ms
+    let animation_speed = 3.33; // 1.0 / 0.3 seconds
+    zoom_target.progress += time.delta_secs() * animation_speed;
+
+    // Ease-out cubic interpolation for smooth deceleration
+    let t = zoom_target.progress.min(1.0);
+    let ease_t = 1.0 - (1.0 - t).powi(3);
+
+    // Lerp zoom
+    let start_zoom = **zoom;
+    let new_zoom = start_zoom + (zoom_target.target_zoom - start_zoom) * ease_t;
+    **zoom = new_zoom;
+
+    // Lerp camera pan
+    if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+        let start_pan = camera_transform.translation.truncate();
+        let new_pan = start_pan + (zoom_target.target_pan - start_pan) * ease_t;
+        camera_transform.translation = new_pan.extend(camera_transform.translation.z);
+    }
+
+    // Complete animation when progress reaches 1.0
+    if zoom_target.progress >= 1.0 {
+        zoom_target.animating = false;
+        info!("✅ Auto-zoom animation complete at {:.2}x", **zoom);
     }
 }

@@ -45,6 +45,7 @@ pub fn spawn_main_system(
             SystemEnvironment {
                 name: environment_name.to_string(),
                 description: environment_description.to_string(),
+                milieu: Vec::new(), // Empty milieu properties on new system creation
             },
         ))
         .id();

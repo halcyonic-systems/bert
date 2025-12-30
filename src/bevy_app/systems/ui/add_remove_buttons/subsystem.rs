@@ -225,18 +225,24 @@ pub fn add_interface_subsystem_create_buttons(
         let interface_entity = if flow_end_connection.target == **focused_system {
             if let Some(conn) = flow_end_interface_connection {
                 Some((conn.target, InterfaceType::Import))
-            } else {
-                // incomplete flow (missing interface)
+            } else if flow_start_connection.target_is_external_entity() {
+                // G network flow (external → system) requires interface at boundary
                 show_interface_buttons = false;
                 break;
+            } else {
+                // N network flow (system → system) - interface is optional
+                None
             }
         } else if flow_start_connection.target == **focused_system {
             if let Some(conn) = flow_start_interface_connection {
                 Some((conn.target, InterfaceType::Export))
-            } else {
-                // incomplete flow (missing interface)
+            } else if flow_end_connection.target_is_external_entity() {
+                // G network flow (system → external) requires interface at boundary
                 show_interface_buttons = false;
                 break;
+            } else {
+                // N network flow (system → system) - interface is optional
+                None
             }
         } else {
             None

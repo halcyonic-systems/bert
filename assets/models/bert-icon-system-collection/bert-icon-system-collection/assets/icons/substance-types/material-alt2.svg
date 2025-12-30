@@ -1,0 +1,21 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Material Alternative 2: Hexagon representing molecular/material structure -->
+  <!-- Main hexagon -->
+  <path 
+    d="M 16 6 L 24 11 L 24 21 L 16 26 L 8 21 L 8 11 Z" 
+    fill="#808080" 
+    stroke="#606060" 
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  <!-- Inner hexagon for depth -->
+  <path 
+    d="M 16 10 L 20 12.5 L 20 19.5 L 16 22 L 12 19.5 L 12 12.5 Z" 
+    fill="#a0a0a0" 
+    stroke="#707070" 
+    stroke-width="1"
+    stroke-linejoin="round"
+  />
+  <!-- Center dot -->
+  <circle cx="16" cy="16" r="2" fill="#606060"/>
+</svg> 

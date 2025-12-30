@@ -1,0 +1,128 @@
+{
+  "version": "0.2.2",
+  "metadata": {
+    "title": "Motivational Field Dynamics System Model",
+    "description": "BERT systems analysis of individual motivation as emergent property of consciousness-field interaction",
+    "author": "Nora Research Integration",
+    "created": "2025-09-08",
+    "research_basis": "Fielded Selves: A Systems Approach to Motivation, Cultural Conditioning, and Consciousness Development"
+  },
+  "system": {
+    "name": "Individual Human Person",
+    "description": "Human individual experiencing motivational field dynamics through consciousness-culture interaction",
+    "boundary": {
+      "name": "Individual Boundary",
+      "description": "Skin and neural system defining the physical-cognitive boundary of the individual person"
+    },
+    "environment": {
+      "name": "Cultural-Field Environment", 
+      "description": "Multi-layered cultural morphic fields, family systems, social structures, and consciousness development influences"
+    }
+  },
+  "interfaces": [
+    {
+      "id": "corticolimbic-interface",
+      "name": "Corticolimbic System Interface",
+      "description": "Neurological interface processing emotional-motivational information from field influences",
+      "type": "biological",
+      "location": "Neural boundary"
+    },
+    {
+      "id": "social-brain-network",
+      "name": "Social Brain Network Interface", 
+      "description": "Neural networks specialized for social cognition and cultural pattern recognition",
+      "type": "cognitive",
+      "location": "Neural boundary"
+    },
+    {
+      "id": "consciousness-development-interface",
+      "name": "Consciousness Development Interface",
+      "description": "Stage-based meaning-making systems that reprocess inherited motivational patterns",
+      "type": "developmental", 
+      "location": "Cognitive boundary"
+    }
+  ],
+  "flows": [
+    {
+      "id": "cultural-transmission-flow",
+      "name": "Cultural Pattern Transmission",
+      "description": "Information flow carrying motivational patterns from cultural fields to individual awareness",
+      "type": "information",
+      "direction": "inbound",
+      "source": "Cultural-Field Environment",
+      "sink": "Corticolimbic System Interface",
+      "protocol": "Morphic field entrainment and social transmission mechanisms"
+    },
+    {
+      "id": "motivational-expression-flow", 
+      "name": "Motivational Expression",
+      "description": "Behavioral and value expressions flowing from integrated motivation to environment",
+      "type": "information",
+      "direction": "outbound", 
+      "source": "Social Brain Network Interface",
+      "sink": "Cultural-Field Environment",
+      "protocol": "Conscious and unconscious behavioral expression"
+    },
+    {
+      "id": "developmental-reprocessing-flow",
+      "name": "Developmental Reprocessing",
+      "description": "Internal flow where consciousness development stages reprocess inherited motivational patterns",
+      "type": "information",
+      "direction": "internal",
+      "source": "Corticolimbic System Interface", 
+      "sink": "Consciousness Development Interface",
+      "protocol": "Stage-based meaning-making and value reconstruction"
+    }
+  ],
+  "feedback_loops": [
+    {
+      "id": "motivation-field-feedback",
+      "name": "Individual-Field Feedback Loop",
+      "description": "How individual motivational expressions influence and modify cultural field patterns",
+      "flows": ["cultural-transmission-flow", "motivational-expression-flow"],
+      "type": "reinforcing",
+      "delay": "medium"
+    },
+    {
+      "id": "consciousness-motivation-loop",
+      "name": "Consciousness-Motivation Development Loop", 
+      "description": "How consciousness development changes motivational processing, which enables further development",
+      "flows": ["developmental-reprocessing-flow", "cultural-transmission-flow"],
+      "type": "balancing",
+      "delay": "long"
+    }
+  ],
+  "parameters": {
+    "consciousness_stage": {
+      "type": "categorical",
+      "description": "Current consciousness development stage affecting meaning-making capacity",
+      "categories": ["Conventional", "Postconventional", "Integral", "Transpersonal"]
+    },
+    "field_coherence": {
+      "type": "numeric", 
+      "description": "Degree of alignment between cultural field patterns and individual development",
+      "range": [0, 1],
+      "unit": "coherence_ratio"
+    },
+    "motivational_friction": {
+      "type": "numeric",
+      "description": "Level of internal conflict between inherited and authentic motivations",
+      "range": [0, 10], 
+      "unit": "friction_index"
+    }
+  },
+  "emergent_properties": [
+    {
+      "name": "Authentic Motivation",
+      "description": "Motivational patterns aligned with individual consciousness development rather than field inheritance"
+    },
+    {
+      "name": "Motivational Friction",
+      "description": "Internal conflict arising from misalignment between inherited field patterns and developmental trajectory"
+    },
+    {
+      "name": "Field Entrainment",
+      "description": "Degree to which individual motivation synchronizes with dominant cultural patterns"
+    }
+  ]
+}
