@@ -85,3 +85,13 @@ pub enum PaletteElementTypeEvent {
     Interface,
     EnvironmentalObject,
 }
+
+/// Fires from Bevy to Leptos when interaction mode changes
+#[derive(Event, Debug, Clone, Serialize, Deserialize)]
+pub struct ModeChangeEvent {
+    pub mode_text: String,
+}
+
+/// Fires from Leptos/JavaScript to Bevy to cancel current mode (placement or connection)
+#[derive(Event, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct CancelModeEvent;

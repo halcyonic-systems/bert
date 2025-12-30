@@ -13,9 +13,11 @@ pub fn RadioGroup<Opt, F>(
     #[prop(into)] selected: Signal<Option<Opt>>,
     on_change: F,
     /// Tooltip for the overall label (shown as ? icon)
-    #[prop(optional, into)] tooltip: Option<String>,
+    #[prop(optional, into)]
+    tooltip: Option<String>,
     /// Per-option descriptions shown as tooltips on each radio label
-    #[prop(optional)] option_descriptions: Option<Vec<&'static str>>,
+    #[prop(optional)]
+    option_descriptions: Option<Vec<&'static str>>,
 ) -> impl IntoView
 where
     Opt: Display + Sync + Send + Clone + PartialEq + Eq + 'static,

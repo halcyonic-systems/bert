@@ -34,7 +34,8 @@ pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
 pub type SubSystemFilter = With<Subsystem>;
 pub type ExternalEntityFilter = With<ExternalEntity>;
 use crate::events::{
-    DeselectAllEvent, PaletteClickEvent, SaveSuccessEvent, TreeEvent, TriggerEvent, ZoomEvent,
+    CancelModeEvent, DeselectAllEvent, ModeChangeEvent, PaletteClickEvent, SaveSuccessEvent,
+    TreeEvent, TriggerEvent, ZoomEvent,
 };
 use crate::leptos_app::tree::Tree;
 use leptos_bevy_canvas::prelude::*;
@@ -54,6 +55,9 @@ pub fn App() -> impl IntoView {
 
     // Palette click event system for Leptos palette panel
     let (palette_click_writer, palette_click_receiver) = event_l2b::<PaletteClickEvent>();
+
+    // Cancel mode event system for ESC key bypass
+    let (cancel_mode_writer, cancel_mode_receiver) = event_l2b::<CancelModeEvent>();
 
     // Save success event system for user feedback
     let (_save_success_event_writer, save_success_event_receiver) = event_l2b::<SaveSuccessEvent>();
@@ -166,7 +170,11 @@ pub fn App() -> impl IntoView {
 
     let (tree_event_receiver, tree_event_sender) = event_b2l::<TreeEvent>();
     let (save_success_receiver, save_success_bevy_sender) = event_b2l::<SaveSuccessEvent>();
+    let (mode_change_receiver, mode_change_sender) = event_b2l::<ModeChangeEvent>();
     let (trigger_event_sender, trigger_event_receiver) = event_l2b::<TriggerEvent>();
+
+    // Mode indicator signal for bottom toolbar
+    let (mode_text, set_mode_text) = signal(String::new());
 
     // Handle save success events from Bevy
     Effect::new(move |_| {
@@ -175,6 +183,39 @@ pub fn App() -> impl IntoView {
             set_toast_visible.set(true);
         }
     });
+
+    // Handle mode change events from Bevy
+    Effect::new(move |_| {
+        if let Some(event) = mode_change_receiver.read().as_ref() {
+            set_mode_text.set(event.mode_text.clone());
+        }
+    });
+
+    // Global ESC key handler - works regardless of focus
+    {
+        let cancel_mode_writer = cancel_mode_writer.clone();
+        Effect::new(move |_| {
+            use wasm_bindgen::prelude::*;
+            use wasm_bindgen::JsCast;
+
+            let cancel_writer = cancel_mode_writer.clone();
+            let closure = Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
+                if event.key() == "Escape" {
+                    leptos::logging::log!("🌐 Global ESC detected - cancelling mode");
+                    cancel_writer.send(CancelModeEvent).ok();
+                }
+            }) as Box<dyn FnMut(_)>);
+
+            let window = web_sys::window().unwrap();
+            let document = window.document().unwrap();
+            document
+                .add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())
+                .unwrap();
+
+            // Leak the closure to keep it alive (simple approach for app lifetime)
+            closure.forget();
+        });
+    }
 
     let (tree_visible, set_tree_visible) = signal(false);
     let (controls_visible, set_controls_visible) = signal(false);
@@ -260,6 +301,7 @@ pub fn App() -> impl IntoView {
                     palette_click_writer.send(PaletteClickEvent { element_type }).ok();
                 }
             })
+            mode_text=Signal::derive(move || mode_text.get())
         />
         <Tree visible=tree_visible event_receiver=tree_event_receiver />
         <ControlsMenu
@@ -292,19 +334,26 @@ pub fn App() -> impl IntoView {
              on:click=move |_| {
                  leptos::logging::log!("🎯 Container clicked - should be focused for key events");
              }
-             on:keydown=move |ev| {
-                 // Log all key presses for debugging
-                 leptos::logging::log!("Key pressed: {} (code: {})", ev.key(), ev.code());
+             on:keydown={
+                 let cancel_mode_writer = cancel_mode_writer.clone();
+                 move |ev| {
+                     // Log all key presses for debugging
+                     leptos::logging::log!("Key pressed: {} (code: {})", ev.key(), ev.code());
 
-                 // Handle zoom keys directly in JavaScript to bypass Bevy keyboard focus issues
-                 if ev.key() == "=" || ev.key() == "+" || ev.code() == "NumpadAdd" {
-                     ev.prevent_default();
-                     leptos::logging::log!("🔍 ZOOM IN detected via JavaScript - sending to Bevy");
-                     zoom_event_writer.send(ZoomEvent::ZoomIn).ok();
-                 } else if ev.key() == "-" || ev.key() == "_" || ev.code() == "NumpadSubtract" {
-                     ev.prevent_default();
-                     leptos::logging::log!("🔍 ZOOM OUT detected via JavaScript - sending to Bevy");
-                     zoom_event_writer.send(ZoomEvent::ZoomOut).ok();
+                     // Handle zoom keys directly in JavaScript to bypass Bevy keyboard focus issues
+                     if ev.key() == "=" || ev.key() == "+" || ev.code() == "NumpadAdd" {
+                         ev.prevent_default();
+                         leptos::logging::log!("🔍 ZOOM IN detected via JavaScript - sending to Bevy");
+                         zoom_event_writer.send(ZoomEvent::ZoomIn).ok();
+                     } else if ev.key() == "-" || ev.key() == "_" || ev.code() == "NumpadSubtract" {
+                         ev.prevent_default();
+                         leptos::logging::log!("🔍 ZOOM OUT detected via JavaScript - sending to Bevy");
+                         zoom_event_writer.send(ZoomEvent::ZoomOut).ok();
+                     } else if ev.key() == "Escape" {
+                         ev.prevent_default();
+                         leptos::logging::log!("❌ ESC detected via JavaScript - cancelling mode");
+                         cancel_mode_writer.send(CancelModeEvent).ok();
+                     }
                  }
              }>
             <BevyCanvas init=move || {
@@ -326,6 +375,8 @@ pub fn App() -> impl IntoView {
                     palette_click_receiver,
                     save_success_event_receiver,
                     save_success_bevy_sender,
+                    mode_change_sender,
+                    cancel_mode_receiver,
                 )
             } />
         </div>

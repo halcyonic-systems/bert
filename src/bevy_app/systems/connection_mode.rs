@@ -656,3 +656,34 @@ pub fn clear_connection_exit_flag(mut connection_mode: ResMut<ConnectionMode>) {
         connection_mode.just_exited = false;
     }
 }
+
+/// Monitors mode changes and sends events to Leptos for UI indicator.
+///
+/// Tracks ConnectionMode and PlacementMode, sending ModeChangeEvent when state changes.
+pub fn send_mode_change_events(
+    connection_mode: Res<ConnectionMode>,
+    placement_mode: Res<super::palette::PlacementMode>,
+    mut mode_event_writer: EventWriter<crate::bevy_app::events::ModeChangeEvent>,
+    mut last_mode_text: Local<String>,
+) {
+    // Determine current mode text
+    let current_mode_text = if connection_mode.active {
+        if connection_mode.source_entity.is_some() {
+            "Connection Mode - Click destination".to_string()
+        } else {
+            "Connection Mode (F) - Click source".to_string()
+        }
+    } else if let Some(element_type) = &placement_mode.active_element {
+        format!("Placing {:?} - Click to place, ESC to cancel", element_type)
+    } else {
+        String::new()
+    };
+
+    // Only send event if mode changed
+    if current_mode_text != *last_mode_text {
+        mode_event_writer.send(crate::bevy_app::events::ModeChangeEvent {
+            mode_text: current_mode_text.clone(),
+        });
+        *last_mode_text = current_mode_text;
+    }
+}

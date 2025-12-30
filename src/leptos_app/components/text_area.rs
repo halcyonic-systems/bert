@@ -8,7 +8,8 @@ pub fn TextArea<F>(
     #[prop(into)] text: Signal<String>,
     #[prop(into, optional)] disabled: Signal<bool>,
     /// Tooltip for the label (shown as ? icon)
-    #[prop(optional, into)] tooltip: Option<String>,
+    #[prop(optional, into)]
+    tooltip: Option<String>,
     on_input: F,
 ) -> impl IntoView
 where

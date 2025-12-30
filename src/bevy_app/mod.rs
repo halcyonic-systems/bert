@@ -99,6 +99,8 @@ pub fn init_bevy_app(
     palette_click_receiver: BevyEventReceiver<PaletteClickEvent>,
     save_success_event_receiver: BevyEventReceiver<SaveSuccessEvent>,
     save_success_bevy_sender: BevyEventSender<SaveSuccessEvent>,
+    mode_change_sender: BevyEventSender<ModeChangeEvent>,
+    cancel_mode_receiver: BevyEventReceiver<CancelModeEvent>,
 ) -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -154,6 +156,8 @@ pub fn init_bevy_app(
     .add_event::<SaveSuccessEvent>()
     .add_event::<UndoEvent>() // PHASE 2: Undo/redo events
     .add_event::<RedoEvent>()
+    .add_event::<ModeChangeEvent>() // Bottom toolbar mode indicator
+    .add_event::<CancelModeEvent>() // ESC cancel from JavaScript
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -170,8 +174,10 @@ pub fn init_bevy_app(
     .import_event_from_leptos(trigger_event_receiver)
     .import_event_from_leptos(palette_click_receiver)
     .import_event_from_leptos(save_success_event_receiver)
+    .import_event_from_leptos(cancel_mode_receiver)
     .export_event_to_leptos(tree_event_sender)
     .export_event_to_leptos(save_success_bevy_sender)
+    .export_event_to_leptos(mode_change_sender)
     .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
@@ -233,6 +239,8 @@ pub fn init_bevy_app(
                 update_connection_ghost,    // Ghost line rendering (Gizmos)
                 finalize_connection, // PHASE 4: Click destination → create flow OR ESC → cancel
                 clear_connection_exit_flag, // Phase 3C: Clear just_exited flag next frame
+                send_mode_change_events, // Bottom toolbar mode indicator
+                handle_cancel_mode_event, // ESC from JavaScript → cancel placement/connection
             ),
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),

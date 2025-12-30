@@ -439,3 +439,33 @@ pub fn finalize_placement(
         *placement_mode = PlacementMode::default();
     }
 }
+
+/// Handles CancelModeEvent from JavaScript/Leptos (ESC key bypass).
+///
+/// Cancels placement mode and connection mode when ESC is pressed, regardless
+/// of keyboard focus state. This works around Bevy keyboard focus issues in web.
+pub fn handle_cancel_mode_event(
+    mut cancel_events: EventReader<crate::bevy_app::events::CancelModeEvent>,
+    mut placement_mode: ResMut<PlacementMode>,
+    mut connection_mode: ResMut<super::connection_mode::ConnectionMode>,
+    mut commands: Commands,
+) {
+    for _event in cancel_events.read() {
+        // Cancel placement mode
+        if placement_mode.active_element.is_some() {
+            if let Some(ghost) = placement_mode.ghost_entity {
+                commands.entity(ghost).despawn();
+            }
+            *placement_mode = PlacementMode::default();
+            info!("❌ Placement cancelled via ESC event");
+        }
+
+        // Cancel connection mode
+        if connection_mode.active {
+            connection_mode.active = false;
+            connection_mode.source_entity = None;
+            connection_mode.just_exited = true;
+            info!("❌ Connection mode cancelled via ESC event");
+        }
+    }
+}
