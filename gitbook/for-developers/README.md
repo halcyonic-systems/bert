@@ -29,8 +29,7 @@ bert/
 │   └── main.rs             # Application entry point
 ├── src-tauri/              # Tauri desktop integration
 ├── assets/                 # Static assets (icons, fonts)
-├── docs/                   # Technical documentation
-└── private-dev/            # Research and development notes
+└── docs/                   # Technical documentation
 ```
 
 ### Key Modules
