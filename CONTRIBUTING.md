@@ -30,21 +30,18 @@ Welcome to BERT development! This guide helps systems scientists, engineers, and
 
 ### Development Setup
 
-1. **Install Dependencies**:
-   ```bash
-   cargo install cargo-watch
-   npm install
-   ```
+**Option A: Direct Setup**
+```bash
+npm install
+cargo tauri dev        # Desktop app
+# OR
+trunk serve            # Web at localhost:1320
+```
 
-2. **Run Development Server**:
-   ```bash
-   cargo tauri dev
-   ```
+**Option B: Dev Container**
+Open in VS Code → "Reopen in Container" for pre-configured environment.
 
-3. **Verify Installation**:
-   - Application should open with the BERT interface
-   - Try creating a simple system model
-   - Verify save/load functionality
+**Verify**: App window opens, toolbar visible, can create/save models.
 
 ### First Contribution
 
@@ -199,6 +196,18 @@ git checkout -b docs/area-being-documented
 ```
 
 > **Note:** After creating a feature branch, immediately generate feature documentation using `./scripts/bert.sh feature "Feature Name"` to establish the documentation for your work.
+
+### Exploration Branches
+
+These branches contain valuable but incomplete exploration work. They are kept as architectural reference for future development, not for direct merging.
+
+| Branch | Purpose | Status |
+|--------|---------|--------|
+| `feature/concept-dictionary` | Chat UI + ontology service for concept learning | Needs scoping |
+| `feature/agent-dynamics` | Temporal simulation, conservation laws, flow animations | Needs scoping |
+| `feature/agent-params-v2` | Agent configuration UI and parameters schema | Needs scoping |
+
+**Before resuming work on these features:** Review the branch history and consider starting fresh while referencing architectural decisions made in these branches. They are 80+ commits behind `main`.
 
 ### Commit Standards
 

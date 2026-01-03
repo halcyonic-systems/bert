@@ -45,3 +45,9 @@ Thumbs.db
 # Claude specific
 **/.claude/settings.local.json
 private-dev/
+
+# GitBook build output
+gitbook/_book/
+
+# Local models (personal experiments, not shipped)
+assets/models/local/

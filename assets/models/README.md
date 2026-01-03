@@ -1,34 +1,39 @@
-# BERT Example Models
+# BERT Models
 
-This directory contains example BERT models that are bundled with the application and accessible through the Model Browser.
+## Structure
 
-## Model Format
-
-Models are stored as JSON files following the BERT WorldModel structure:
-
-```json
-{
-  "systems": [...],
-  "interactions": [...],
-  "environment": {...},
-  "hidden_entities": [],
-  "is_same_as_id_counter": 0
-}
+```
+models/
+├── examples/   # Public examples shipped with BERT
+└── local/      # Personal experiments (gitignored)
 ```
 
-## Planned Models
+## examples/
 
-- **cell.json** - A simple biological cell system
-- **organization.json** - An organizational structure example
-- **circuit.json** - A basic electrical circuit
+Educational models accessible through the Model Browser:
 
-## Adding New Models
+| Model | Domain |
+|-------|--------|
+| bert.json | BERT's own architecture |
+| bitcoin.json | Cryptocurrency |
+| cell.json | Biology |
+| cosmos-hub.json | Cryptocurrency |
+| ecosystem.json | Ecology |
+| ethereum.json | Cryptocurrency |
+| llm.json | AI/ML |
+| neuron.json | Biology |
+| ontology.json | Systems theory |
+| organization.json | Social systems |
+| solana.json | Cryptocurrency |
+| solar-panel.json | Energy |
+| system.json | General systems |
 
-1. Create a model in BERT
-2. Save it as a .json file
-3. Place it in this directory
-4. Update the Model Browser component to include it
+## local/
 
-## Notes
+Personal models for experimentation. Gitignored - won't be committed or shipped.
 
-Currently waiting for example models to be created using the BERT UI.
+## Adding Models
+
+**Public example**: Save to `examples/`, update Model Browser component.
+
+**Personal experiment**: Save to `local/` (or save anywhere, then move here).

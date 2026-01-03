@@ -1,74 +1,36 @@
 # BERT - Bounded Entity Reasoning Toolkit
 
-The systems scientists tookit.
+[![Release](https://img.shields.io/github/v/release/halcyonic-systems/bert)](https://github.com/halcyonic-systems/bert/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Website](https://bert.systems) • [Documentation](https://bert.gitbook.io/bert-documentation) • [Downloads](https://github.com/halcyonic-systems/bert/releases)
+A visual toolkit for modeling complex adaptive systems.
 
-## What is BERT?
+[Try it →](https://bert.systems) · [Documentation](https://bert.gitbook.io) · [Download](https://github.com/halcyonic-systems/bert/releases)
 
-BERT is a desktop application that supports deep analysis of complex adaptive systems. It implements the [System Language](https://bert.gitbook.io/bert-documentation/system-language) framework, allowing you to:
+![BERT Screenshot](assets/screenshot.png)
 
-- Understand how a system relates to its environment
-- Map internal flows of energy, information, and matter between a system's components 
-- View the hierarchical structure of systems composed of systems
-- Identify and understand the properties of system boundaries
+## Quick Start
 
-## Installation
+**Web**: [bert.systems](https://bert.systems)
 
-### Desktop Application
+**Desktop**: Download from [Releases](https://github.com/halcyonic-systems/bert/releases) (macOS, Windows, Linux)
 
-Download the latest release for your platform:
-
-- **Windows**: Download the `.msi` installer from [Releases](https://github.com/halcyonic-systems/bert/releases)
-- **macOS**: Download the `.dmg` file from [Releases](https://github.com/halcyonic-systems/bert/releases)  
-- **Linux**: Download the `.AppImage` or `.deb` from [Releases](https://github.com/halcyonic-systems/bert/releases)
-
-Note: macOS users may need to allow the app in Security & Privacy settings on first run.
-
-### Web Version
-
-Try BERT in your browser at [bert.systems](https://bert.systems).
-
-### Build from Source
-
-Requirements: Rust, Node.js, npm
-
+**Build from source**:
 ```bash
-git clone https://github.com/halcyonic-systems/bert.git
-cd bert
-npm install
-cargo tauri dev    # Development
-cargo tauri build  # Production build
+git clone https://github.com/halcyonic-systems/bert.git && cd bert
+npm install && cargo tauri dev
 ```
 
-## Features
+## What You Can Do
 
-**v0.2.0 - Current Release**
-- Interactive graph visualization of system structure
-- Built in model browser with example systems
-- Cross-platform desktop application
-- System complexity counter
-- Simplified element details panel
+- Map flows of energy, information, and matter between components
+- Visualize hierarchical system structure
+- Analyze system boundaries and interfaces
 
 ## Documentation
 
-- [Documentation Guide](documentation_guide.md)
-- [Documentation Policy](docs_policy.md)
-- [User Guide](https://bert.gitbook.io/bert-documentation)
-- [System Language Overview](https://bert.gitbook.io/bert-documentation/system-language)
-- [Contributing Guide](https://bert.gitbook.io/bert-documentation/for-developers/contributing)
-
-## Contributing
-
-New contributors can start with issues labeled [`good first issue`](https://github.com/halcyonic-systems/bert/labels/good%20first%20issue).
-
-**Quick start**: [Getting Started Developing](getting_started_developing.md) (5-minute setup verification)
-
-See our [Contributing Guide](CONTRIBUTING.md) for:
-- Development setup
-- Code standards
-- Pull request process
+[User Guide](https://bert.gitbook.io) · [Contributing](CONTRIBUTING.md) · [Developer Docs](docs/)
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT

@@ -264,7 +264,7 @@ mod tests {
         use std::fs;
 
         // Load and test the actual cell.json model
-        if let Ok(cell_json_bytes) = fs::read("assets/models/cell.json") {
+        if let Ok(cell_json_bytes) = fs::read("assets/models/examples/cell.json") {
             // Parse directly with serde_json since load functions are complex
             if let Ok(world_model) = serde_json::from_slice::<WorldModel>(&cell_json_bytes) {
                 println!("\n=== Testing cell.json complexity ===");
