@@ -212,6 +212,13 @@ pub struct System {
     /// Specifies the time scale at which the system operates, enabling
     /// proper temporal modeling and analysis of system behaviors.
     pub time_unit: String,
+
+    /// HCGS archetype classification (Mobus 2022).
+    ///
+    /// Categorizes the system according to the Hierarchical Cybernetic
+    /// Governance System framework: Governance (coordination/control),
+    /// Economy (production/exchange), or Agent (autonomous actors).
+    pub archetype: HcgsArchetype,
 }
 
 /// Defines the boundary properties of a system, controlling interaction capabilities.
@@ -836,6 +843,81 @@ pub enum SubstanceType {
     /// Examples: control signals, data transmissions, communication protocols,
     /// sensor readings, commands, or any form of information exchange.
     Message,
+}
+
+/// HCGS (Hierarchical Cybernetic Governance System) archetype classification.
+///
+/// Classifies subsystems according to their functional role in a complex adaptive system,
+/// based on the Mobus framework from "Systems Science: Theory, Analysis, Modeling, and Design" (2022).
+///
+/// # Archetype Definitions
+///
+/// - **Governance**: Policy, rules, coordination, and control mechanisms
+/// - **Economy**: Resource allocation, production, and value flows
+/// - **Agent**: Active actors that make decisions and take actions
+/// - **Unspecified**: Default classification for subsystems not yet categorized
+///
+/// # Visual Representation
+///
+/// Each archetype has a distinct stroke color for visual identification:
+/// - Governance: Blue (#3B82F6)
+/// - Economy: Green (#22C55E)
+/// - Agent: Orange (#F97316)
+/// - Unspecified: Black (default)
+#[derive(
+    Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash,
+)]
+pub enum HcgsArchetype {
+    /// Default classification for subsystems not yet categorized.
+    #[default]
+    Unspecified,
+
+    /// Governance subsystems: policy, rules, coordination, control mechanisms.
+    ///
+    /// Examples: consensus protocols, voting mechanisms, access control,
+    /// rule enforcement, coordination layers.
+    Governance,
+
+    /// Economy subsystems: resource allocation, production, value flows.
+    ///
+    /// Examples: token economics, fee markets, resource pools,
+    /// transaction processing, value transfer mechanisms.
+    Economy,
+
+    /// Agent subsystems: active actors that make decisions and take actions.
+    ///
+    /// Examples: validators, miners, users, smart contracts,
+    /// autonomous processes, decision-making entities.
+    Agent,
+}
+
+impl HcgsArchetype {
+    /// Returns the stroke color for visual representation of this archetype.
+    ///
+    /// Colors follow Tailwind CSS conventions for consistency:
+    /// - Governance: Blue-500 (#3B82F6)
+    /// - Economy: Green-500 (#22C55E)
+    /// - Agent: Orange-500 (#F97316)
+    /// - Unspecified: Black (default system stroke)
+    pub fn stroke_color(&self) -> Color {
+        match self {
+            HcgsArchetype::Unspecified => Color::BLACK,
+            HcgsArchetype::Governance => Color::srgb_u8(59, 130, 246),  // Blue-500
+            HcgsArchetype::Economy => Color::srgb_u8(34, 197, 94),      // Green-500
+            HcgsArchetype::Agent => Color::srgb_u8(249, 115, 22),       // Orange-500
+        }
+    }
+}
+
+impl std::fmt::Display for HcgsArchetype {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HcgsArchetype::Unspecified => write!(f, "Unspecified"),
+            HcgsArchetype::Governance => write!(f, "Governance"),
+            HcgsArchetype::Economy => write!(f, "Economy"),
+            HcgsArchetype::Agent => write!(f, "Agent"),
+        }
+    }
 }
 
 impl SubstanceType {

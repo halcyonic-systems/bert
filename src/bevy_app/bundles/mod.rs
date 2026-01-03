@@ -59,6 +59,7 @@ impl SystemBundle {
         description: &str,
         equivalence: &str,
         time_unit: &str,
+        archetype: HcgsArchetype,
     ) -> Self {
         let zoomed_radius = radius * zoom;
 
@@ -74,6 +75,7 @@ impl SystemBundle {
                 history: "".to_string(),
                 boundary,
                 time_unit: time_unit.to_string(),
+                archetype,
             },
             name: Name::new(name.to_string()),
             description: ElementDescription::new(description),

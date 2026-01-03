@@ -320,6 +320,7 @@ pub fn init_bevy_app(
                 update_interface_color_from_flow::<FlowStartInterfaceConnection>,
                 update_interface_color_from_flow::<FlowEndInterfaceConnection>,
                 update_system_color_from_subsystem,
+                update_subsystem_stroke_from_archetype,
                 update_background_color_on_theme_change,
                 apply_zoom_to_system_radii, // this is not in ZoomSet on purpose
                 update_is_same_as_id_label,

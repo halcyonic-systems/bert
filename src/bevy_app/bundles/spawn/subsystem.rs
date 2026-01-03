@@ -189,6 +189,7 @@ fn spawn_subsystem_common(
                     description,
                     "",
                     "Second",
+                    HcgsArchetype::default(),
                 ),
             ))
             .observe(

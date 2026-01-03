@@ -536,30 +536,33 @@ fn spawn_loaded_subsystem(
         SUBSYSTEM_Z
     };
 
-    commands
-        .spawn((
-            NestingLevel::new(nesting_level),
-            SystemBundle::new(
-                position,
-                z,
-                system.radius,
-                angle,
-                system.complexity,
-                SystemBoundary {
-                    porosity: system.boundary.porosity,
-                    perceptive_fuzziness: system.boundary.perceptive_fuzziness,
-                    name: system.boundary.info.name.clone(),
-                    description: system.boundary.info.description.clone(),
-                },
-                meshes,
-                zoom,
-                nesting_level,
-                &system.info.name,
-                &system.info.description,
-                &system.equivalence,
-                &system.time_constant,
-            ),
-        ))
+    let mut entity_commands = commands.spawn((
+        NestingLevel::new(nesting_level),
+        SystemBundle::new(
+            position,
+            z,
+            system.radius,
+            angle,
+            system.complexity,
+            SystemBoundary {
+                porosity: system.boundary.porosity,
+                perceptive_fuzziness: system.boundary.perceptive_fuzziness,
+                name: system.boundary.info.name.clone(),
+                description: system.boundary.info.description.clone(),
+            },
+            meshes,
+            zoom,
+            nesting_level,
+            &system.info.name,
+            &system.info.description,
+            &system.equivalence,
+            &system.time_constant,
+            // Convert Option<HcgsArchetype> to HcgsArchetype (None = Unspecified)
+            system.archetype.unwrap_or_default(),
+        ),
+    ));
+
+    entity_commands
         .observe(
             |trigger: Trigger<DragPosition>, mut writer: EventWriter<SubsystemDrag>| {
                 writer.send(trigger.into());

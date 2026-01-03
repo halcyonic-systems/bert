@@ -3,10 +3,10 @@ use crate::bevy_app::components::{
     Connection, CreateButton, Flow, HasFlowOtherEndButton, TargetTypeConnection,
 };
 use crate::bevy_app::constants::theme::*;
-use crate::bevy_app::constants::HIDDING_TRANSPARENCY;
+use crate::bevy_app::constants::{HIDDING_TRANSPARENCY, SYSTEM_LINE_WIDTH, SYSTEM_SELECTED_LINE_WIDTH};
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
-use crate::bevy_app::resources::Theme;
-use crate::bevy_app::{Hidden, Interface, Subsystem};
+use crate::bevy_app::resources::{Theme, Zoom};
+use crate::bevy_app::{Hidden, Interface, NestingLevel, Subsystem};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -137,4 +137,32 @@ pub fn update_background_color_on_theme_change(
         Theme::Normal => NORMAL_BACKGROUND,
         Theme::White => WHITE_BACKGROUND,
     };
+}
+
+/// Update subsystem stroke color based on HCGS archetype classification.
+///
+/// Stroke color reflects the system's archetype: Governance (blue), Economy (green),
+/// Agent (orange). Systems with `Unspecified` archetype use black stroke.
+pub fn update_subsystem_stroke_from_archetype(
+    zoom: Res<Zoom>,
+    mut query: Query<
+        (
+            &NestingLevel,
+            &crate::bevy_app::components::System,
+            &mut HighlightBundles<Stroke, Stroke>,
+        ),
+        Or<(
+            Added<crate::bevy_app::components::System>,
+            Changed<crate::bevy_app::components::System>,
+            Added<HighlightBundles<Stroke, Stroke>>,
+        )>,
+    >,
+) {
+    for (nesting_level, system, mut highlight) in &mut query {
+        let color = system.archetype.stroke_color();
+
+        let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
+        highlight.idle = Stroke::new(color, SYSTEM_LINE_WIDTH * scale);
+        highlight.selected = Stroke::new(color, SYSTEM_SELECTED_LINE_WIDTH);
+    }
 }

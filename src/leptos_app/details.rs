@@ -1,4 +1,4 @@
-use crate::bevy_app::components::SpatialDetailPanelMode;
+use crate::bevy_app::components::{HcgsArchetype, SpatialDetailPanelMode};
 use crate::bevy_app::data_model::Complexity;
 use crate::bevy_app::smart_parameters::{ParameterValue, SmartParameter};
 use crate::leptos_app::components::{
@@ -1626,6 +1626,13 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .map(|(_, _, system, _)| ComplexityLevel::from(&system.complexity))
     });
 
+    let subsystem_archetype = Signal::derive(move || {
+        sub_system_query
+            .read()
+            .as_ref()
+            .map(|(_, _, system, _)| system.archetype)
+    });
+
     let _membership = Signal::derive(move || {
         sub_system_query
             .read()
@@ -1771,6 +1778,20 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                     .map(|(_, _, system, _)| system.complexity = Complexity::from(level));
             }
             tooltip="System behavior type: Simple (predictable), Adaptable (responds to environment), Evolveable (can fundamentally change structure)"
+        />
+
+        <RadioGroup
+            id="subsystem-archetype"
+            label="Archetype"
+            options=vec![HcgsArchetype::Unspecified, HcgsArchetype::Governance, HcgsArchetype::Economy, HcgsArchetype::Agent]
+            selected=subsystem_archetype
+            on_change=move |archetype: HcgsArchetype| {
+                sub_system_query
+                    .write()
+                    .as_mut()
+                    .map(|(_, _, system, _)| system.archetype = archetype);
+            }
+            tooltip="HCGS archetype classification (Mobus 2022): Governance (coordination/control), Economy (production/exchange), Agent (autonomous actors)"
         />
 
         // HIDDEN for v0.2.0 - Multiset/Atomic complexity types deferred

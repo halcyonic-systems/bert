@@ -525,6 +525,10 @@ pub struct System {
     pub transformation: String,
     pub member_autonomy: f32,
     pub time_constant: String,
+    /// HCGS archetype classification (Governance, Economy, Agent).
+    /// None = Unspecified (backward compatible with older models).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub archetype: Option<HcgsArchetype>,
 }
 
 /// Boundary of a system.

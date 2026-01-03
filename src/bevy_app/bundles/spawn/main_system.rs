@@ -1,6 +1,8 @@
 use crate::bevy_app::bundles::spawn::spatial_interaction::spawn_system_with_spatial_regions;
 use crate::bevy_app::bundles::SystemBundle;
-use crate::bevy_app::components::{NestingLevel, Subsystem, SystemBoundary, SystemEnvironment};
+use crate::bevy_app::components::{
+    HcgsArchetype, NestingLevel, Subsystem, SystemBoundary, SystemEnvironment,
+};
 use crate::bevy_app::constants::MAIN_SYSTEM_RADIUS;
 use crate::bevy_app::data_model::Complexity;
 use crate::bevy_app::plugins::label::{
@@ -41,6 +43,7 @@ pub fn spawn_main_system(
                 description,
                 equivalence,
                 time_unit,
+                HcgsArchetype::default(),
             ),
             SystemEnvironment {
                 name: environment_name.to_string(),

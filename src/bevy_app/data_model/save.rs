@@ -940,6 +940,12 @@ fn build_system(
         parent_interface,
     };
 
+    // Convert archetype to Option for serialization (Unspecified = None for backward compatibility)
+    let archetype = match system.archetype {
+        HcgsArchetype::Unspecified => None,
+        other => Some(other),
+    };
+
     let root_system = crate::bevy_app::data_model::System {
         info: info_from_entity(system_entity, id, level, &name_and_description_query),
         parent: parent_id,
@@ -954,6 +960,7 @@ fn build_system(
         transformation: system.transformation.clone(),
         member_autonomy: 1.0,
         time_constant: system.time_unit.clone(),
+        archetype,
     };
 
     ctx.entity_to_id
