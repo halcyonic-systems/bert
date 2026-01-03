@@ -12,6 +12,7 @@ Welcome to BERT development! BERT is built with Rust + Leptos + Bevy using profe
 ```bash
 git clone git@github.com:halcyonic-systems/bert.git
 cd bert
+npm install
 cargo tauri dev
 ```
 
@@ -98,18 +99,14 @@ cargo test --all
 
 ## Essential Resources
 
-- [Contributing Guide](bert/bert/gitbook/for-developers/contributing.md) - Complete development workflow
-- [Architecture Overview](bert/bert/gitbook/for-developers/architecture.md) - High-level technical overview  
-- [Current Capabilities](../releases/README.md#current-capabilities-v020) - See what's available in v0.2.0
-
-**External Documentation:**
-- [Architecture Overview](https://github.com/halcyonic-systems/bert/blob/main/docs/architecture/comprehensive-architecture-overview.md)
-- [Feature Documentation](https://github.com/halcyonic-systems/bert/tree/main/docs/features)
-- [Documentation Standards](https://github.com/halcyonic-systems/bert/blob/main/docs/technical/rust-documentation-guidelines.md)
+- [Contributing Guide](contributing.md) - Development workflow and standards
+- [Architecture Overview](architecture.md) - Technical overview
+- [Deep Architecture](architecture/comprehensive-architecture-overview.md) - Detailed system design
+- [Documentation Standards](https://github.com/halcyonic-systems/bert/blob/main/docs/DOCUMENTATION_GUIDELINES.md) - Code documentation templates
 
 ## First Contribution
 
-1. **Read the [Contributing Guide](bert/bert/gitbook/for-developers/contributing.md)** - Complete workflow details
-2. **Review Documentation Standards** - Template requirements (link above)
-3. **Create Feature Branch** - Follow `feature/descriptive-name` pattern
-4. **Generate Documentation** - Use `./scripts/bert.sh feature "Feature Name"`
+1. Pick an issue labeled `good first issue` on GitHub
+2. Fork and clone the repo, run setup above
+3. Create a feature branch: `git checkout -b feature/my-fix`
+4. Make changes, run quality checks, submit PR

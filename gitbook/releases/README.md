@@ -4,21 +4,23 @@ BERT development follows semantic versioning with regular feature releases.
 
 ## Released Versions
 
-- [v0.1.0 - Foundation](v0.1.0.md) - Initial research prototype and core concepts
+- [v0.2.2 - Drag & Drop](v0.2.2.md) - Click-to-place UI and improved interactions
 - [v0.2.0 - Model Browser](v0.2.0.md) - Example models and enhanced user experience
+- [v0.1.0 - Foundation](v0.1.0.md) - Initial research prototype and core concepts
 
 ## Planned Releases
 
 - [v0.3.0 - Agent Archetype](v0.3.0.md) - Agent modeling capabilities
 - [v0.4.0 - Simulation Bridge](v0.4.0.md) - Integration with simulation frameworks
 
-## Current Capabilities (v0.2.0)
+## Current Capabilities (v0.2.5)
 
+- **Click-to-Place UI** - Intuitive element placement with visual guides
 - **Visual System Modeling** - Interactive system design with real-time rendering
-- **Hierarchical Decomposition** - Infinite nesting with automatic scaling  
-- **Model Browser** - Browse and load example systems directly in the application
-- **Cross-Platform Deployment** - Web and desktop applications
-- **JSON Persistence** - Human-readable save/load system
+- **Hierarchical Decomposition** - Infinite nesting with automatic scaling
+- **Model Browser** - Browse and load example systems
+- **Cross-Platform** - Web and desktop applications
+- **JSON Persistence** - Human-readable save/load
 
 ## Future Vision
 
