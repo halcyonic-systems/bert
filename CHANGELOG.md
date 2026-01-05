@@ -5,6 +5,65 @@ All notable changes to BERT will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-01-05
+
+### Added
+- **Subsystem Archetypes** - Classify subsystems by HCGS role (Mobus framework)
+  - Governance (blue stroke), Economy (green), Agent (orange), Unspecified (black)
+  - RadioGroup in subsystem details panel
+  - Backward-compatible serialization (older models load without archetype)
+  - See [System Archetypes](https://bert.gitbook.io/for-researchers/system-archetypes) for theory
+
+### Changed
+- **Repository Cleanup** - Major reduction in repository size and complexity
+  - Root: 23 → 18 files
+  - Deleted `archive/` (31 obsolete docs) and `gitbook/_book/` (62 build artifacts)
+  - Consolidated `docs/` from 8 files + 3 subdirs → 5 files
+  - Reorganized `assets/models/` into `examples/` (tracked) + `local/` (gitignored)
+  - README: 74 → 36 lines
+
+- **Developer Experience** - Improved onboarding for new contributors
+  - CONTRIBUTING.md: 685 → 149 lines (removed intimidating templates)
+  - Restored DOCUMENTATION_GUIDELINES.md with practical templates
+  - Fixed dead links in gitbook
+  - Added MOBUS_REFERENCE.md quick reference
+
+### Removed
+- `private-dev/` folder (1.5GB of Python venvs, node_modules, PDFs)
+- Stale exploration branches (kept 3 as architectural reference)
+
+## [0.2.4] - 2025-12-17
+
+### Added
+- **Click-to-Place Palette** - Redesigned element creation workflow
+  - Floating palette with ghost preview
+  - Click canvas to place elements
+  - Mobus-aligned 3-icon layout
+
+- **Interface as Subsystem** - Optional interface behavior per Mobus I ⊆ C
+  - Interfaces can be marked as subsystems
+  - Enables proper boundary handler modeling
+
+- **Interface Connections** - Connect interfaces directly
+  - Interface ↔ Interface flows now supported
+  - G network cross-level connections per Mobus boundary theory
+
+- **Undo/Redo** - Command pattern implementation
+  - Ctrl+Z / Ctrl+Y support
+  - Event-based execution
+
+- **Screenshot Export** - Save canvas as PNG (Ctrl+P)
+
+### Changed
+- Improved visual hierarchy with size adjustments
+- Auto-zoom on focus for nested subsystems
+- Connection mode UX improvements (auto-deselect, exit after creation)
+
+### Fixed
+- Flow curve rendering on first load in web WASM
+- N-network flow positioning with correct parenting
+- Interface picking at nested levels
+
 ## [0.2.3] - 2025-09-08
 
 ### Added

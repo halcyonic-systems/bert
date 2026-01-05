@@ -55,6 +55,26 @@
 - **Click boundary**: Selects the system
 - **Environment**: Space outside your system boundary
 
+### Subsystem Archetypes (v0.2.5)
+
+Classify subsystems by their role in the system using the HCGS framework:
+
+| Archetype | Color | Purpose |
+|-----------|-------|---------|
+| **Governance** | Blue | Policy, rules, coordination, control |
+| **Economy** | Green | Resource allocation, production, value flows |
+| **Agent** | Orange | Active actors that make decisions |
+| **Unspecified** | Black | Default (backward compatible) |
+
+**To assign an archetype:**
+1. Select a subsystem
+2. In the properties panel, find "Archetype"
+3. Choose from the radio buttons
+
+The subsystem's stroke color changes to reflect its archetype.
+
+For theoretical background, see [System Archetypes](../for-researchers/system-archetypes.md).
+
 ## Keyboard Shortcuts
 
 | Action | Shortcut |

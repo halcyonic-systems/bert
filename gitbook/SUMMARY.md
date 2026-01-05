@@ -39,6 +39,7 @@
 * [System Language](for-researchers/system-language.md)
 * [Deep Systems Analysis](for-researchers/deep-systems-analysis.md)
 * [System Ontology](for-researchers/system-ontology.md)
+* [System Archetypes](for-researchers/system-archetypes.md)
 
 ## For Developers
 
