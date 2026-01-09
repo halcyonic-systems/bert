@@ -433,21 +433,24 @@ pub fn update_flow_from_subsystem_without_interface(
                 .transform_point3(system_transform.translation())
                 .truncate();
 
-            // Get offset if present (applied after base computation)
+            // Get offset if present - offsets shift WHERE on the subsystem boundary
+            // the flow connects, not the final position (which stays on boundary)
             let offset = endpoint_offset.copied().unwrap_or_default();
 
             if let (Some(flow_end_connection), None) =
                 (flow_end_connection, flow_end_interface_connection)
             {
                 if flow_end_connection.target == target {
+                    // Offset the "other end" position to change the connection angle
+                    // This keeps the endpoint ON the subsystem boundary
                     let (end, end_direction) = compute_end_and_direction_from_subsystem(
                         system_pos,
                         system.radius * **zoom,
-                        flow_curve.start - offset.start, // Use un-offset start for direction calc
+                        flow_curve.start + offset.end, // Offset affects connection angle
                         flow_curve.start_direction,
                     );
 
-                    flow_curve.end = end + offset.end; // Apply offset to result
+                    flow_curve.end = end;
                     flow_curve.end_direction = end_direction;
                 }
             }
@@ -456,14 +459,15 @@ pub fn update_flow_from_subsystem_without_interface(
                 (flow_start_connection, flow_start_interface_connection)
             {
                 if flow_start_connection.target == target {
+                    // Offset the "other end" position to change the connection angle
                     let (start, start_direction) = compute_end_and_direction_from_subsystem(
                         system_pos,
                         system.radius * **zoom,
-                        flow_curve.end - offset.end, // Use un-offset end for direction calc
+                        flow_curve.end + offset.start, // Offset affects connection angle
                         flow_curve.end_direction,
                     );
 
-                    flow_curve.start = start + offset.start; // Apply offset to result
+                    flow_curve.start = start;
                     flow_curve.start_direction = start_direction;
                 }
             }
