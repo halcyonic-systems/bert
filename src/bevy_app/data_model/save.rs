@@ -590,6 +590,13 @@ fn process_deferred_flows(
         system_entity,
     } in deferred
     {
+        // Skip if this flow was already processed during subsystem iteration
+        // (flows are deferred when root is processed, but may be built when
+        // subsystems are processed if they have interface connections)
+        if ctx.entity_to_id.contains_key(&flow_entity) {
+            continue;
+        }
+
         if let Ok((_, flow, flow_start_connection, flow_end_connection, _, _)) =
             flow_query.get(flow_entity)
         {

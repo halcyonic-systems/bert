@@ -61,13 +61,22 @@ pub fn compute_end_and_direction_from_subsystem(
     other_end: Vec2,
     other_end_direction: Vec2,
 ) -> (Vec2, Vec2) {
-    let direction = compute_smooth_flow_terminal_direction(
+    let raw_direction = compute_smooth_flow_terminal_direction(
         system_pos,
         other_end,
         other_end_direction,
         FlowCurve::compute_tangent_length_from_points(system_pos, other_end),
-    )
-    .normalize();
+    );
+
+    // Use normalize_or_zero to avoid NaN, then fall back to a default direction
+    // if the result is zero (e.g., when other_end == system_pos on initial load)
+    let direction = raw_direction.normalize_or_zero();
+    let direction = if direction == Vec2::ZERO {
+        // Fall back to direction pointing toward other_end, or Vec2::X if coincident
+        (other_end - system_pos).normalize_or(Vec2::X)
+    } else {
+        direction
+    };
 
     (system_pos + direction * system_radius, direction)
 }
