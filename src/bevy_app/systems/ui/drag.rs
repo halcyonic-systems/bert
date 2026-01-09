@@ -658,11 +658,20 @@ pub fn update_interface_button_from_interaction(
 }
 
 /// Handle dragging of flow endpoint handles.
-/// Updates the FlowEndpointOffset component based on drag delta from current position.
+/// Updates the FlowEndpointOffset component, constraining to subsystem boundaries.
 pub fn drag_flow_endpoint_handle(
     mut events: EventReader<FlowEndpointHandleDrag>,
     handle_query: Query<&FlowEndpointHandle>,
-    mut flow_query: Query<(&FlowCurve, &mut FlowEndpointOffset)>,
+    mut flow_query: Query<(
+        &FlowCurve,
+        &mut FlowEndpointOffset,
+        &FlowStartConnection,
+        &FlowEndConnection,
+        &NestingLevel,
+    )>,
+    // Query subsystem data: position and radius
+    subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
+    zoom: Res<Zoom>,
 ) {
     for event in events.read() {
         info!(
@@ -673,26 +682,91 @@ pub fn drag_flow_endpoint_handle(
             continue;
         };
 
-        let Ok((flow_curve, mut offset)) = flow_query.get_mut(handle.flow) else {
+        let Ok((flow_curve, mut offset, start_conn, end_conn, nesting_level)) =
+            flow_query.get_mut(handle.flow)
+        else {
             continue;
         };
 
-        // Compute how far the user dragged from the current handle position
-        // (which includes existing offset) and add that delta to the offset
+        // Determine which subsystem to constrain to based on endpoint
+        let (subsystem_entity, base_pos) = match handle.endpoint {
+            FlowEndpoint::Start => (start_conn.target, flow_curve.start),
+            FlowEndpoint::End => (end_conn.target, flow_curve.end),
+        };
+
+        // Get subsystem position and radius
+        let Ok((subsystem_transform, subsystem_system)) = subsystem_query.get(subsystem_entity)
+        else {
+            // Fallback to unconstrained if subsystem not found
+            warn!("Subsystem {:?} not found for constraint", subsystem_entity);
+            match handle.endpoint {
+                FlowEndpoint::Start => {
+                    let current_pos = flow_curve.start + offset.start;
+                    offset.start += event.position - current_pos;
+                }
+                FlowEndpoint::End => {
+                    let current_pos = flow_curve.end + offset.end;
+                    offset.end += event.position - current_pos;
+                }
+            }
+            continue;
+        };
+
+        // Get subsystem center in world space
+        let subsystem_center = subsystem_transform.translation().truncate();
+
+        // Calculate effective radius - subsystem radius scaled by zoom only
+        // (nesting scale is already baked into the subsystem's visual size)
+        let effective_radius = subsystem_system.radius * **zoom;
+
+        info!(
+            "Constraint debug: subsystem_center={:?}, radius={}, zoom={}, effective_radius={}",
+            subsystem_center, subsystem_system.radius, **zoom, effective_radius
+        );
+
+        // Project drag position onto subsystem boundary
+        let drag_pos = event.position;
+        let to_drag = drag_pos - subsystem_center;
+        let distance = to_drag.length();
+
+        // Constrain to boundary: if outside, project to boundary; if inside, allow
+        // For flow endpoints, we want them ON the boundary, not inside
+        let constrained_pos = if distance > 0.001 {
+            // Project to boundary circle
+            subsystem_center + to_drag.normalize() * effective_radius
+        } else {
+            // Drag is at center, keep current direction
+            let current_offset = match handle.endpoint {
+                FlowEndpoint::Start => offset.start,
+                FlowEndpoint::End => offset.end,
+            };
+            let current_pos = base_pos + current_offset;
+            let to_current = current_pos - subsystem_center;
+            if to_current.length() > 0.001 {
+                subsystem_center + to_current.normalize() * effective_radius
+            } else {
+                // Default to right side if everything is at center
+                subsystem_center + Vec2::X * effective_radius
+            }
+        };
+
+        // Calculate new offset from base position
+        let new_offset = constrained_pos - base_pos;
+
         match handle.endpoint {
             FlowEndpoint::Start => {
-                // Current position includes base + existing offset
-                let current_pos = flow_curve.start + offset.start;
-                let delta = event.position - current_pos;
-                offset.start += delta;
-                info!("Start offset updated: delta={:?}, new_offset={:?}", delta, offset.start);
+                offset.start = new_offset;
+                info!(
+                    "Start constrained: drag={:?}, constrained={:?}, offset={:?}",
+                    drag_pos, constrained_pos, new_offset
+                );
             }
             FlowEndpoint::End => {
-                // Current position includes base + existing offset
-                let current_pos = flow_curve.end + offset.end;
-                let delta = event.position - current_pos;
-                offset.end += delta;
-                info!("End offset updated: delta={:?}, new_offset={:?}", delta, offset.end);
+                offset.end = new_offset;
+                info!(
+                    "End constrained: drag={:?}, constrained={:?}, offset={:?}",
+                    drag_pos, constrained_pos, new_offset
+                );
             }
         }
     }
