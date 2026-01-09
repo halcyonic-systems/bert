@@ -281,6 +281,7 @@ pub fn serialize_world(
         &FlowEndConnection,
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
+        Option<&FlowEndpointOffset>,
     )>,
     interface_query: Query<(&crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: Query<(
@@ -373,7 +374,7 @@ pub fn serialize_world(
 
     // Add the source and sink interface connections to all interactions after all
     // interfaces and interactions have been created.
-    for (flow_entity, _, _, _, flow_start_interface_connection, flow_end_interface_connection) in
+    for (flow_entity, _, _, _, flow_start_interface_connection, flow_end_interface_connection, _) in
         &flow_query
     {
         let source_interface =
@@ -418,6 +419,7 @@ fn build_subsystems(
         &FlowEndConnection,
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
+        Option<&FlowEndpointOffset>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: &Query<(
@@ -581,6 +583,7 @@ fn process_deferred_flows(
         &FlowEndConnection,
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
+        Option<&FlowEndpointOffset>,
     )>,
 ) {
     let deferred = std::mem::take(&mut ctx.deferred_flows);
@@ -597,7 +600,7 @@ fn process_deferred_flows(
             continue;
         }
 
-        if let Ok((_, flow, flow_start_connection, flow_end_connection, _, _)) =
+        if let Ok((_, flow, flow_start_connection, flow_end_connection, _, _, endpoint_offset)) =
             flow_query.get(flow_entity)
         {
             // Now all subsystems are registered - get the IDs
@@ -614,6 +617,7 @@ fn process_deferred_flows(
                     parent_system,
                     source_id,
                     sink_id,
+                    endpoint_offset.copied(),
                     name_and_description_query,
                 );
             }
@@ -637,6 +641,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         &FlowEndConnection,
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
+        Option<&FlowEndpointOffset>,
     )>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: &Query<(
@@ -652,6 +657,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         flow_end_connection,
         flow_start_interface_connection,
         flow_end_interface_connection,
+        endpoint_offset,
     ) in flow_query
     {
         // Check if this flow connects to an unregistered subsystem - defer if so
@@ -734,6 +740,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     parent,
                     system.info.id.clone(),
                     sink_id.clone(),
+                    endpoint_offset.copied(),
                     name_and_description_query,
                 );
             }
@@ -797,6 +804,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     parent,
                     source_id.clone(),
                     system.info.id.clone(),
+                    endpoint_offset.copied(),
                     name_and_description_query,
                 );
             }
@@ -844,9 +852,18 @@ fn build_interaction<P: HasInfo>(
     parent: &P,
     source_id: Id,
     sink_id: Id,
+    endpoint_offset: Option<FlowEndpointOffset>,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
 ) {
     let parent_level = parent.info().level;
+
+    // Convert FlowEndpointOffset component to serializable EndpointOffset
+    let serializable_offset = endpoint_offset
+        .filter(|o| o.has_offset())
+        .map(|o| EndpointOffset {
+            start: o.start,
+            end: o.end,
+        });
 
     let interaction = Interaction {
         info: info_from_entity(
@@ -873,6 +890,7 @@ fn build_interaction<P: HasInfo>(
         unit: flow.unit.clone(),
         parameters: flow.parameters.clone(),
         smart_parameters: flow.smart_parameters.clone(),
+        endpoint_offset: serializable_offset,
     };
 
     ctx.interactions.push(interaction);

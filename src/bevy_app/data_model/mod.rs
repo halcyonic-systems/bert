@@ -634,6 +634,20 @@ pub struct Interaction {
     pub parameters: Vec<Parameter>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub smart_parameters: Vec<crate::bevy_app::smart_parameters::SmartParameter>,
+    /// User-defined endpoint offsets for flow positioning.
+    /// Only serialized when non-zero to maintain backward compatibility.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint_offset: Option<EndpointOffset>,
+}
+
+/// Serializable representation of flow endpoint offsets.
+/// Used to persist user-defined or auto-computed flow positioning adjustments.
+#[derive(Serialize, Deserialize, Clone, Copy, Default, PartialEq, Debug)]
+pub struct EndpointOffset {
+    /// Offset to apply at flow start position
+    pub start: Vec2,
+    /// Offset to apply at flow end position
+    pub end: Vec2,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

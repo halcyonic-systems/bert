@@ -2,6 +2,7 @@ use crate::bevy_app::bundles::{
     spawn_external_entity_only, spawn_interaction_only, spawn_interface_only,
     spawn_is_same_as_id_counter, spawn_main_system, SystemBundle,
 };
+use crate::bevy_app::components::FlowEndpointOffset;
 use crate::bevy_app::constants::{EXTERNAL_ENTITY_Z, INTERFACE_Z, SUBSYSTEM_Z};
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::events::SubsystemDrag;
@@ -175,6 +176,16 @@ fn spawn_interactions(
 
         if ctx.hidden_entities.contains(&interaction.info.id) {
             commands.entity(interaction_entity).insert(Hidden);
+        }
+
+        // Insert endpoint offset if saved in the model
+        if let Some(offset) = &interaction.endpoint_offset {
+            commands
+                .entity(interaction_entity)
+                .insert(FlowEndpointOffset {
+                    start: offset.start,
+                    end: offset.end,
+                });
         }
 
         let mut interaction_commands = commands.entity(interaction_entity);
