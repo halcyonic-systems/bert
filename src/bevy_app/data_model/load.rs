@@ -183,8 +183,8 @@ fn spawn_interactions(
             commands
                 .entity(interaction_entity)
                 .insert(FlowEndpointOffset {
-                    start: offset.start,
-                    end: offset.end,
+                    start_angle: offset.start_angle,
+                    end_angle: offset.end_angle,
                 });
         }
 

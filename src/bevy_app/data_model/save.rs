@@ -861,8 +861,8 @@ fn build_interaction<P: HasInfo>(
     let serializable_offset = endpoint_offset
         .filter(|o| o.has_offset())
         .map(|o| EndpointOffset {
-            start: o.start,
-            end: o.end,
+            start_angle: o.start_angle,
+            end_angle: o.end_angle,
         });
 
     let interaction = Interaction {

@@ -539,24 +539,61 @@ fn build_circle_picking_mesh(meshes: &mut ResMut<Assets<Mesh>>, radius: f32) -> 
     meshes.add(mesh)
 }
 
-/// Update handle positions to follow flow curve endpoints + offset.
-/// Runs every frame to keep handles in sync with flow positions and user drag offsets.
+/// Update handle positions to follow flow curve endpoints.
+/// Uses angle-based offsets for zoom-independent positioning.
 pub fn update_flow_endpoint_handle_positions(
-    flow_query: Query<(&FlowCurve, Option<&FlowEndpointOffset>)>,
+    flow_query: Query<(
+        &FlowCurve,
+        Option<&FlowEndpointOffset>,
+        Option<&FlowStartConnection>,
+        Option<&FlowEndConnection>,
+    )>,
+    subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
     mut handle_query: Query<(&FlowEndpointHandle, &mut Transform)>,
+    zoom: Res<crate::bevy_app::resources::Zoom>,
 ) {
     for (handle, mut transform) in handle_query.iter_mut() {
-        let Ok((flow_curve, offset)) = flow_query.get(handle.flow) else {
+        let Ok((flow_curve, offset, start_conn, end_conn)) = flow_query.get(handle.flow) else {
             continue;
         };
 
-        // Apply offset if present (from user drag)
+        // Compute position based on angle offset if set, otherwise use natural curve position
         let target_pos = match handle.endpoint {
             FlowEndpoint::Start => {
-                flow_curve.start + offset.map_or(Vec2::ZERO, |o| o.start)
+                if let Some(Some(angle)) = offset.map(|o| o.start_angle) {
+                    // Use angle-based position
+                    if let Some(conn) = start_conn {
+                        if let Ok((subsys_transform, system)) = subsystem_query.get(conn.target) {
+                            let center = subsys_transform.translation().truncate();
+                            let radius = system.radius * **zoom;
+                            center + Vec2::from_angle(angle) * radius
+                        } else {
+                            flow_curve.start
+                        }
+                    } else {
+                        flow_curve.start
+                    }
+                } else {
+                    flow_curve.start
+                }
             }
             FlowEndpoint::End => {
-                flow_curve.end + offset.map_or(Vec2::ZERO, |o| o.end)
+                if let Some(Some(angle)) = offset.map(|o| o.end_angle) {
+                    // Use angle-based position
+                    if let Some(conn) = end_conn {
+                        if let Ok((subsys_transform, system)) = subsystem_query.get(conn.target) {
+                            let center = subsys_transform.translation().truncate();
+                            let radius = system.radius * **zoom;
+                            center + Vec2::from_angle(angle) * radius
+                        } else {
+                            flow_curve.end
+                        }
+                    } else {
+                        flow_curve.end
+                    }
+                } else {
+                    flow_curve.end
+                }
             }
         };
 

@@ -641,13 +641,13 @@ pub struct Interaction {
 }
 
 /// Serializable representation of flow endpoint offsets.
-/// Used to persist user-defined or auto-computed flow positioning adjustments.
+/// Uses angles (radians) for zoom-independent positioning.
 #[derive(Serialize, Deserialize, Clone, Copy, Default, PartialEq, Debug)]
 pub struct EndpointOffset {
-    /// Offset to apply at flow start position
-    pub start: Vec2,
-    /// Offset to apply at flow end position
-    pub end: Vec2,
+    /// Angular position (radians) for start endpoint on its subsystem boundary
+    pub start_angle: Option<f32>,
+    /// Angular position (radians) for end endpoint on its subsystem boundary
+    pub end_angle: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

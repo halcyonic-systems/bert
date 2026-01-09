@@ -441,17 +441,22 @@ pub fn update_flow_from_subsystem_without_interface(
                 (flow_end_connection, flow_end_interface_connection)
             {
                 if flow_end_connection.target == target {
-                    // Offset the "other end" position to change the connection angle
-                    // This keeps the endpoint ON the subsystem boundary
-                    let (end, end_direction) = compute_end_and_direction_from_subsystem(
-                        system_pos,
-                        system.radius * **zoom,
-                        flow_curve.start + offset.end, // Offset affects connection angle
-                        flow_curve.start_direction,
-                    );
-
-                    flow_curve.end = end;
-                    flow_curve.end_direction = end_direction;
+                    // If angle offset is set, use it; otherwise compute natural position
+                    if let Some(end_angle) = offset.end_angle {
+                        // Use angle-based position
+                        flow_curve.end = system_pos + Vec2::from_angle(end_angle) * system.radius * **zoom;
+                        flow_curve.end_direction = Vec2::from_angle(end_angle);
+                    } else {
+                        // Compute natural connection position
+                        let (end, end_direction) = compute_end_and_direction_from_subsystem(
+                            system_pos,
+                            system.radius * **zoom,
+                            flow_curve.start,
+                            flow_curve.start_direction,
+                        );
+                        flow_curve.end = end;
+                        flow_curve.end_direction = end_direction;
+                    }
                 }
             }
 
@@ -459,16 +464,22 @@ pub fn update_flow_from_subsystem_without_interface(
                 (flow_start_connection, flow_start_interface_connection)
             {
                 if flow_start_connection.target == target {
-                    // Offset the "other end" position to change the connection angle
-                    let (start, start_direction) = compute_end_and_direction_from_subsystem(
-                        system_pos,
-                        system.radius * **zoom,
-                        flow_curve.end + offset.start, // Offset affects connection angle
-                        flow_curve.end_direction,
-                    );
-
-                    flow_curve.start = start;
-                    flow_curve.start_direction = start_direction;
+                    // If angle offset is set, use it; otherwise compute natural position
+                    if let Some(start_angle) = offset.start_angle {
+                        // Use angle-based position
+                        flow_curve.start = system_pos + Vec2::from_angle(start_angle) * system.radius * **zoom;
+                        flow_curve.start_direction = Vec2::from_angle(start_angle);
+                    } else {
+                        // Compute natural connection position
+                        let (start, start_direction) = compute_end_and_direction_from_subsystem(
+                            system_pos,
+                            system.radius * **zoom,
+                            flow_curve.end,
+                            flow_curve.end_direction,
+                        );
+                        flow_curve.start = start;
+                        flow_curve.start_direction = start_direction;
+                    }
                 }
             }
         }
@@ -697,75 +708,46 @@ pub fn drag_flow_endpoint_handle(
         // Get subsystem position and radius
         let Ok((subsystem_transform, subsystem_system)) = subsystem_query.get(subsystem_entity)
         else {
-            // Fallback to unconstrained if subsystem not found
+            // Fallback: use natural curve direction if subsystem not found
             warn!("Subsystem {:?} not found for constraint", subsystem_entity);
-            match handle.endpoint {
-                FlowEndpoint::Start => {
-                    let current_pos = flow_curve.start + offset.start;
-                    offset.start += event.position - current_pos;
-                }
-                FlowEndpoint::End => {
-                    let current_pos = flow_curve.end + offset.end;
-                    offset.end += event.position - current_pos;
-                }
-            }
             continue;
         };
 
         // Get subsystem center in world space
         let subsystem_center = subsystem_transform.translation().truncate();
 
-        // Calculate effective radius - subsystem radius scaled by zoom only
-        // (nesting scale is already baked into the subsystem's visual size)
-        let effective_radius = subsystem_system.radius * **zoom;
-
-        info!(
-            "Constraint debug: subsystem_center={:?}, radius={}, zoom={}, effective_radius={}",
-            subsystem_center, subsystem_system.radius, **zoom, effective_radius
-        );
-
-        // Project drag position onto subsystem boundary
+        // Calculate angle from subsystem center to drag position
         let drag_pos = event.position;
         let to_drag = drag_pos - subsystem_center;
-        let distance = to_drag.length();
 
-        // Constrain to boundary: if outside, project to boundary; if inside, allow
-        // For flow endpoints, we want them ON the boundary, not inside
-        let constrained_pos = if distance > 0.001 {
-            // Project to boundary circle
-            subsystem_center + to_drag.normalize() * effective_radius
+        // Compute angle (radians from positive X-axis)
+        let angle = if to_drag.length() > 0.001 {
+            to_drag.to_angle()
         } else {
-            // Drag is at center, keep current direction
-            let current_offset = match handle.endpoint {
-                FlowEndpoint::Start => offset.start,
-                FlowEndpoint::End => offset.end,
-            };
-            let current_pos = base_pos + current_offset;
-            let to_current = current_pos - subsystem_center;
-            if to_current.length() > 0.001 {
-                subsystem_center + to_current.normalize() * effective_radius
-            } else {
-                // Default to right side if everything is at center
-                subsystem_center + Vec2::X * effective_radius
+            // Drag is at center - keep current angle or default to natural direction
+            match handle.endpoint {
+                FlowEndpoint::Start => offset.start_angle.unwrap_or_else(|| {
+                    (base_pos - subsystem_center).to_angle()
+                }),
+                FlowEndpoint::End => offset.end_angle.unwrap_or_else(|| {
+                    (base_pos - subsystem_center).to_angle()
+                }),
             }
         };
 
-        // Calculate new offset from base position
-        let new_offset = constrained_pos - base_pos;
-
         match handle.endpoint {
             FlowEndpoint::Start => {
-                offset.start = new_offset;
+                offset.start_angle = Some(angle);
                 info!(
-                    "Start constrained: drag={:?}, constrained={:?}, offset={:?}",
-                    drag_pos, constrained_pos, new_offset
+                    "Start angle set: drag={:?}, center={:?}, angle={:.3} rad ({:.1}°)",
+                    drag_pos, subsystem_center, angle, angle.to_degrees()
                 );
             }
             FlowEndpoint::End => {
-                offset.end = new_offset;
+                offset.end_angle = Some(angle);
                 info!(
-                    "End constrained: drag={:?}, constrained={:?}, offset={:?}",
-                    drag_pos, constrained_pos, new_offset
+                    "End angle set: drag={:?}, center={:?}, angle={:.3} rad ({:.1}°)",
+                    drag_pos, subsystem_center, angle, angle.to_degrees()
                 );
             }
         }
@@ -830,20 +812,10 @@ pub fn auto_offset_stacking_flows(
         }
 
         // Compute perpendicular direction from subsystem positions
-        let (_, first_start, first_end) = flow_data[0];
-        let flow_axis = (first_end - first_start).normalize_or(Vec2::X);
-        let perpendicular = Vec2::new(-flow_axis.y, flow_axis.x);
-
-        let count = flow_data.len() as f32;
-        for (i, (flow_entity, _, _)) in flow_data.iter().enumerate() {
-            let offset_index = i as f32 - (count - 1.0) / 2.0;
-            let offset_vec = perpendicular * offset_index * offset_spacing;
-
-            // Add offset component - same offset to both ends keeps flow parallel
-            commands
-                .entity(*flow_entity)
-                .insert(FlowEndpointOffset::with_both(offset_vec, offset_vec));
-        }
+        // TODO: Implement angle-based auto-stacking for multiple flows between same subsystems
+        // With angle-based offsets, we need to compute angular separation around subsystem boundaries
+        // For now, auto-stacking is disabled - flows will overlap until manually adjusted
+        let _ = (flow_data, offset_spacing); // Suppress unused warnings
     }
 }
 

@@ -1,4 +1,6 @@
-use crate::bevy_app::components::{FlowCurve, FlowEndpointOffset, NestingLevel};
+use crate::bevy_app::components::{
+    FlowCurve, FlowEndConnection, FlowEndpointOffset, FlowStartConnection, NestingLevel,
+};
 use crate::bevy_app::constants::{FLOW_ARROW_HEAD_LENGTH, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH};
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
 use bevy::prelude::*;
@@ -16,6 +18,8 @@ pub fn draw_flow_curve(
         (
             &FlowCurve,
             Option<&FlowEndpointOffset>,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
             &mut Path,
             &mut SimplifiedMesh,
             &mut Aabb,
@@ -24,22 +28,22 @@ pub fn draw_flow_curve(
         ),
         Or<(Changed<FlowCurve>, Changed<FlowEndpointOffset>)>,
     >,
+    subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
     mut transform_query: Query<&mut Transform, With<Path>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut meshes: ResMut<Assets<Mesh>>,
     zoom: Res<Zoom>,
 ) {
-    for (flow_curve, offset, path, simplified_mesh, aabb, children, nesting_level) in &mut query {
-        // Apply offset to flow curve for rendering
-        let adjusted_curve = if let Some(offset) = offset {
-            FlowCurve {
-                start: flow_curve.start + offset.start,
-                end: flow_curve.end + offset.end,
-                ..*flow_curve
-            }
-        } else {
-            flow_curve.clone()
-        };
+    for (flow_curve, offset, start_conn, end_conn, path, simplified_mesh, aabb, children, nesting_level) in &mut query {
+        // Compute adjusted start/end positions based on angle offsets
+        let adjusted_curve = compute_adjusted_curve(
+            flow_curve,
+            offset,
+            start_conn,
+            end_conn,
+            &subsystem_query,
+            **zoom,
+        );
 
         update_flow_curve(
             &mut transform_query,
@@ -54,6 +58,51 @@ pub fn draw_flow_curve(
             &mut meshes,
         );
     }
+}
+
+/// Compute flow curve with angle-based offsets applied.
+/// If an angle is set, position = subsystem_center + Vec2::from_angle(angle) * radius
+fn compute_adjusted_curve(
+    flow_curve: &FlowCurve,
+    offset: Option<&FlowEndpointOffset>,
+    start_conn: Option<&FlowStartConnection>,
+    end_conn: Option<&FlowEndConnection>,
+    subsystem_query: &Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
+    zoom: f32,
+) -> FlowCurve {
+    let Some(offset) = offset else {
+        return flow_curve.clone();
+    };
+
+    let mut adjusted = flow_curve.clone();
+
+    // Compute adjusted start position from angle
+    if let Some(start_angle) = offset.start_angle {
+        if let Some(start_conn) = start_conn {
+            if let Ok((transform, system)) = subsystem_query.get(start_conn.target) {
+                let center = transform.translation().truncate();
+                let radius = system.radius * zoom;
+                adjusted.start = center + Vec2::from_angle(start_angle) * radius;
+                // Update direction to point outward from center
+                adjusted.start_direction = Vec2::from_angle(start_angle);
+            }
+        }
+    }
+
+    // Compute adjusted end position from angle
+    if let Some(end_angle) = offset.end_angle {
+        if let Some(end_conn) = end_conn {
+            if let Ok((transform, system)) = subsystem_query.get(end_conn.target) {
+                let center = transform.translation().truncate();
+                let radius = system.radius * zoom;
+                adjusted.end = center + Vec2::from_angle(end_angle) * radius;
+                // Update direction to point outward from center (into subsystem)
+                adjusted.end_direction = Vec2::from_angle(end_angle);
+            }
+        }
+    }
+
+    adjusted
 }
 
 pub fn update_flow_curve(

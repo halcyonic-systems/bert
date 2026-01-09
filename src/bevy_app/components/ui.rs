@@ -159,37 +159,43 @@ impl FlowCurve {
 /// These offsets are ADDED to the computed base positions each frame,
 /// providing stable positioning without feedback loops.
 ///
-/// Offsets are in flow-local coordinates (same space as FlowCurve).
+/// Angles are stored in radians, measured from positive X-axis (standard math convention).
+/// Using angles makes the offset zoom-independent - positions scale correctly when zooming.
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Default)]
 #[reflect(Component)]
 pub struct FlowEndpointOffset {
-    /// Offset to add to computed start position
-    pub start: Vec2,
-    /// Offset to add to computed end position
-    pub end: Vec2,
+    /// Angular position (radians) of start endpoint on its subsystem boundary.
+    /// None = use natural/computed position from FlowCurve
+    pub start_angle: Option<f32>,
+    /// Angular position (radians) of end endpoint on its subsystem boundary.
+    /// None = use natural/computed position from FlowCurve
+    pub end_angle: Option<f32>,
 }
 
 impl FlowEndpointOffset {
     pub fn has_offset(&self) -> bool {
-        self.start != Vec2::ZERO || self.end != Vec2::ZERO
+        self.start_angle.is_some() || self.end_angle.is_some()
     }
 
-    pub fn with_start(start: Vec2) -> Self {
+    pub fn with_start_angle(angle: f32) -> Self {
         Self {
-            start,
-            end: Vec2::ZERO,
+            start_angle: Some(angle),
+            end_angle: None,
         }
     }
 
-    pub fn with_end(end: Vec2) -> Self {
+    pub fn with_end_angle(angle: f32) -> Self {
         Self {
-            start: Vec2::ZERO,
-            end,
+            start_angle: None,
+            end_angle: Some(angle),
         }
     }
 
-    pub fn with_both(start: Vec2, end: Vec2) -> Self {
-        Self { start, end }
+    pub fn with_both_angles(start: f32, end: f32) -> Self {
+        Self {
+            start_angle: Some(start),
+            end_angle: Some(end),
+        }
     }
 }
 
