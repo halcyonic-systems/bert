@@ -2,9 +2,10 @@ use crate::bevy_app::bundles::{spawn_external_entity, spawn_interface};
 use crate::bevy_app::components::*;
 use crate::bevy_app::constants::*;
 use crate::bevy_app::data_model::Transform2d;
+use crate::bevy_app::events::FlowEndpointHandleDrag;
 use crate::bevy_app::plugins::label::{add_name_label, BackgroundArgs};
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
-use crate::bevy_app::plugins::mouse_interaction::PickSelection;
+use crate::bevy_app::plugins::mouse_interaction::{DragPosition, PickSelection};
 use crate::bevy_app::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Theme,
 };
@@ -356,5 +357,115 @@ pub fn auto_spawn_flow_label(
             None,
             *nesting_level,
         );
+    }
+}
+
+/// Auto-spawn draggable handle entities at flow endpoints.
+/// Only spawns for internal flows (subsystem-to-subsystem connections).
+/// Uses FlowEndpointHandlesSpawned marker to track which flows have handles.
+pub fn auto_spawn_flow_endpoint_handles(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    flow_query: Query<
+        (Entity, &FlowCurve, &NestingLevel),
+        (
+            With<Flow>,
+            With<FlowStartConnection>,
+            With<FlowEndConnection>,
+            Without<FlowStartInterfaceConnection>,
+            Without<FlowEndInterfaceConnection>,
+            Without<FlowEndpointHandlesSpawned>, // Only spawn once
+        ),
+    >,
+) {
+    for (flow_entity, flow_curve, nesting_level) in flow_query.iter() {
+        // Mark flow as having handles and ensure offset component for dragging
+        commands
+            .entity(flow_entity)
+            .insert((FlowEndpointHandlesSpawned, FlowEndpointOffset::default()));
+
+        let scale = NestingLevel::compute_scale(**nesting_level, 1.0);
+        let handle_radius = FLOW_ENDPOINT_HANDLE_RADIUS * scale;
+
+        // Create a shared mesh for the handle circles
+        let handle_mesh = meshes.add(Circle::new(handle_radius));
+        let handle_material = materials.add(ColorMaterial::from(Color::srgba(0.3, 0.3, 0.8, 0.7)));
+
+        // Spawn start handle
+        let start_handle = commands
+            .spawn((
+                FlowEndpointHandle {
+                    flow: flow_entity,
+                    endpoint: FlowEndpoint::Start,
+                },
+                Mesh2d(handle_mesh.clone()),
+                MeshMaterial2d(handle_material.clone()),
+                Transform::from_translation(flow_curve.start.extend(FLOW_ENDPOINT_HANDLE_Z)),
+                PickingBehavior {
+                    should_block_lower: true,
+                    is_hoverable: true,
+                },
+                RayCastPickable::default(),
+                NestingLevel::new(**nesting_level),
+            ))
+            .observe(
+                |on_drag: Trigger<DragPosition>,
+                 mut writer: EventWriter<FlowEndpointHandleDrag>| {
+                    writer.send(on_drag.into());
+                },
+            )
+            .id();
+
+        // Spawn end handle
+        let end_handle = commands
+            .spawn((
+                FlowEndpointHandle {
+                    flow: flow_entity,
+                    endpoint: FlowEndpoint::End,
+                },
+                Mesh2d(handle_mesh),
+                MeshMaterial2d(handle_material),
+                Transform::from_translation(flow_curve.end.extend(FLOW_ENDPOINT_HANDLE_Z)),
+                PickingBehavior {
+                    should_block_lower: true,
+                    is_hoverable: true,
+                },
+                RayCastPickable::default(),
+                NestingLevel::new(**nesting_level),
+            ))
+            .observe(
+                |on_drag: Trigger<DragPosition>,
+                 mut writer: EventWriter<FlowEndpointHandleDrag>| {
+                    writer.send(on_drag.into());
+                },
+            )
+            .id();
+
+        // Make handles children of the flow
+        commands
+            .entity(flow_entity)
+            .add_children(&[start_handle, end_handle]);
+    }
+}
+
+/// Update handle positions to follow flow curve endpoints.
+/// Runs every frame to keep handles in sync with flow positions.
+pub fn update_flow_endpoint_handle_positions(
+    flow_query: Query<&FlowCurve>,
+    mut handle_query: Query<(&FlowEndpointHandle, &mut Transform)>,
+) {
+    for (handle, mut transform) in handle_query.iter_mut() {
+        let Ok(flow_curve) = flow_query.get(handle.flow) else {
+            continue;
+        };
+
+        let target_pos = match handle.endpoint {
+            FlowEndpoint::Start => flow_curve.start,
+            FlowEndpoint::End => flow_curve.end,
+        };
+
+        transform.translation.x = target_pos.x;
+        transform.translation.y = target_pos.y;
     }
 }

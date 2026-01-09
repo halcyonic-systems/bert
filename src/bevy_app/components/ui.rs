@@ -209,6 +209,11 @@ pub enum FlowEndpoint {
     End,
 }
 
+/// Marker component indicating that endpoint handles have been spawned for this flow.
+#[derive(Copy, Clone, Debug, Component, Reflect, Default, PartialEq, Eq)]
+#[reflect(Component)]
+pub struct FlowEndpointHandlesSpawned;
+
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq, Eq)]
 #[reflect(Component)]
 pub enum FlowTerminalSelecting {

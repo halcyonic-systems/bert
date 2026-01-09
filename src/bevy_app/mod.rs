@@ -351,6 +351,7 @@ pub fn init_bevy_app(
                 auto_spawn_system_label,
                 auto_spawn_interface_label,
                 auto_spawn_flow_label,
+                auto_spawn_flow_endpoint_handles,
                 auto_spawn_source_sink_equivalence.after(auto_spawn_external_entity_label),
             )
                 .in_set(AutoSpawnLabelSet),
@@ -388,6 +389,7 @@ pub fn init_bevy_app(
                 update_flow_from_subsystem_without_interface
                     .after(update_subsystem_radius_from_interface_count),
                 auto_offset_stacking_flows.after(update_flow_from_subsystem_without_interface),
+                update_flow_endpoint_handle_positions.after(auto_offset_stacking_flows),
                 update_interface_button_from_interaction,
                 update_text_color,
             )

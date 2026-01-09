@@ -658,29 +658,33 @@ pub fn update_interface_button_from_interaction(
 }
 
 /// Handle dragging of flow endpoint handles.
-/// Updates the FlowEndpointOffset component with the drag delta.
+/// Updates the FlowEndpointOffset component based on drag delta from current position.
 pub fn drag_flow_endpoint_handle(
     mut events: EventReader<FlowEndpointHandleDrag>,
     handle_query: Query<&FlowEndpointHandle>,
-    mut flow_query: Query<&mut FlowEndpointOffset>,
+    mut flow_query: Query<(&FlowCurve, &mut FlowEndpointOffset)>,
 ) {
     for event in events.read() {
         let Ok(handle) = handle_query.get(event.target) else {
             continue;
         };
 
-        let Ok(mut offset) = flow_query.get_mut(handle.flow) else {
+        let Ok((flow_curve, mut offset)) = flow_query.get_mut(handle.flow) else {
             continue;
         };
 
-        // For now, interpret drag position as offset delta
-        // TODO: Track previous position and compute actual delta
+        // Compute how far the user dragged from the current flow endpoint position
+        // and add that delta to the offset
         match handle.endpoint {
             FlowEndpoint::Start => {
-                offset.start = event.position;
+                let current_pos = flow_curve.start;
+                let delta = event.position - current_pos;
+                offset.start += delta;
             }
             FlowEndpoint::End => {
-                offset.end = event.position;
+                let current_pos = flow_curve.end;
+                let delta = event.position - current_pos;
+                offset.end += delta;
             }
         }
     }
