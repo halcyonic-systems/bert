@@ -1,6 +1,8 @@
 use crate::bevy_app::components::*;
 use crate::bevy_app::constants::EXTERNAL_ENTITY_WIDTH_HALF;
-use crate::bevy_app::events::*;
+use crate::bevy_app::events::{
+    ExternalEntityDrag, FlowEndpointHandleDrag, InterfaceDrag, SubsystemDrag,
+};
 use crate::bevy_app::resources::Zoom;
 use crate::bevy_app::utils::{
     compute_end_and_direction_from_subsystem, compute_end_and_direction_from_system_child,
@@ -406,6 +408,7 @@ pub fn update_flow_from_subsystem_without_interface(
             Option<&FlowEndConnection>,
             Option<&FlowStartInterfaceConnection>,
             Option<&FlowEndInterfaceConnection>,
+            Option<&FlowEndpointOffset>,
         ),
         Or<(
             Without<FlowStartInterfaceConnection>,
@@ -422,12 +425,16 @@ pub fn update_flow_from_subsystem_without_interface(
             flow_end_connection,
             flow_start_interface_connection,
             flow_end_interface_connection,
+            endpoint_offset,
         ) in &mut flow_query
         {
             let flow_transform_inverse = flow_transform.affine().inverse();
             let system_pos = flow_transform_inverse
                 .transform_point3(system_transform.translation())
                 .truncate();
+
+            // Get offset if present (applied after base computation)
+            let offset = endpoint_offset.copied().unwrap_or_default();
 
             if let (Some(flow_end_connection), None) =
                 (flow_end_connection, flow_end_interface_connection)
@@ -436,11 +443,11 @@ pub fn update_flow_from_subsystem_without_interface(
                     let (end, end_direction) = compute_end_and_direction_from_subsystem(
                         system_pos,
                         system.radius * **zoom,
-                        flow_curve.start,
+                        flow_curve.start - offset.start, // Use un-offset start for direction calc
                         flow_curve.start_direction,
                     );
 
-                    flow_curve.end = end;
+                    flow_curve.end = end + offset.end; // Apply offset to result
                     flow_curve.end_direction = end_direction;
                 }
             }
@@ -452,11 +459,11 @@ pub fn update_flow_from_subsystem_without_interface(
                     let (start, start_direction) = compute_end_and_direction_from_subsystem(
                         system_pos,
                         system.radius * **zoom,
-                        flow_curve.end,
+                        flow_curve.end - offset.end, // Use un-offset end for direction calc
                         flow_curve.end_direction,
                     );
 
-                    flow_curve.start = start;
+                    flow_curve.start = start + offset.start; // Apply offset to result
                     flow_curve.start_direction = start_direction;
                 }
             }
@@ -641,6 +648,190 @@ pub fn update_interface_button_from_interaction(
                     .transform_point3(flow_curve.end.extend(0.0))
                     .truncate()
                     .extend(transform.translation.z);
+            }
+        }
+    }
+}
+
+/// Handle dragging of flow endpoint handles.
+/// Updates the FlowEndpointOffset component with the drag delta.
+pub fn drag_flow_endpoint_handle(
+    mut events: EventReader<FlowEndpointHandleDrag>,
+    handle_query: Query<&FlowEndpointHandle>,
+    mut flow_query: Query<&mut FlowEndpointOffset>,
+) {
+    for event in events.read() {
+        let Ok(handle) = handle_query.get(event.target) else {
+            continue;
+        };
+
+        let Ok(mut offset) = flow_query.get_mut(handle.flow) else {
+            continue;
+        };
+
+        // For now, interpret drag position as offset delta
+        // TODO: Track previous position and compute actual delta
+        match handle.endpoint {
+            FlowEndpoint::Start => {
+                offset.start = event.position;
+            }
+            FlowEndpoint::End => {
+                offset.end = event.position;
+            }
+        }
+    }
+}
+
+/// One-time system to detect stacking flows and add offsets.
+/// Runs after load to automatically offset flows between same subsystem pairs.
+pub fn auto_offset_stacking_flows(
+    mut commands: Commands,
+    flow_query: Query<
+        (
+            Entity,
+            &FlowCurve,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+        ),
+        (
+            Without<FlowStartInterfaceConnection>,
+            Without<FlowEndInterfaceConnection>,
+            Without<FlowEndpointOffset>, // Only process flows without offset yet
+        ),
+    >,
+    transform_query: Query<&GlobalTransform>,
+) {
+    use std::collections::HashMap;
+
+    // Group flows by (source, sink) pair
+    let mut pair_flows: HashMap<(Entity, Entity), Vec<(Entity, Vec2, Vec2)>> = HashMap::new();
+
+    for (entity, flow_curve, start_conn, end_conn) in flow_query.iter() {
+        if let (Some(start), Some(end)) = (start_conn, end_conn) {
+            // Get subsystem positions for stable axis computation
+            let start_pos = transform_query
+                .get(start.target)
+                .map(|t| t.translation().truncate())
+                .unwrap_or(flow_curve.start);
+            let end_pos = transform_query
+                .get(end.target)
+                .map(|t| t.translation().truncate())
+                .unwrap_or(flow_curve.end);
+
+            // Normalize pair ordering
+            let pair = if start.target < end.target {
+                (start.target, end.target)
+            } else {
+                (end.target, start.target)
+            };
+            pair_flows
+                .entry(pair)
+                .or_default()
+                .push((entity, start_pos, end_pos));
+        }
+    }
+
+    // Add offsets to stacking flows
+    let offset_spacing = 20.0;
+
+    for (_pair, flow_data) in pair_flows.iter() {
+        if flow_data.len() <= 1 {
+            continue; // No stacking
+        }
+
+        // Compute perpendicular direction from subsystem positions
+        let (_, first_start, first_end) = flow_data[0];
+        let flow_axis = (first_end - first_start).normalize_or(Vec2::X);
+        let perpendicular = Vec2::new(-flow_axis.y, flow_axis.x);
+
+        let count = flow_data.len() as f32;
+        for (i, (flow_entity, _, _)) in flow_data.iter().enumerate() {
+            let offset_index = i as f32 - (count - 1.0) / 2.0;
+            let offset_vec = perpendicular * offset_index * offset_spacing;
+
+            // Add offset component - same offset to both ends keeps flow parallel
+            commands
+                .entity(*flow_entity)
+                .insert(FlowEndpointOffset::with_both(offset_vec, offset_vec));
+        }
+    }
+}
+
+/// Option C Prototype: Auto-offset stacked flows between same subsystem pairs
+/// This system runs after flow positions are computed and spreads out flows
+/// that would otherwise stack on top of each other.
+///
+/// IMPORTANT: Uses SUBSYSTEM positions (not flow endpoints) to compute stable
+/// perpendicular direction, avoiding feedback loops that cause drift.
+pub fn offset_stacked_flows(
+    mut flow_query: Query<
+        (
+            Entity,
+            &mut FlowCurve,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+        ),
+        (
+            Without<FlowStartInterfaceConnection>,
+            Without<FlowEndInterfaceConnection>,
+        ),
+    >,
+    transform_query: Query<&GlobalTransform>,
+) {
+    use std::collections::HashMap;
+
+    // Group flows by (source, sink) pair - both directions count as same pair
+    // Also store subsystem positions for stable axis computation
+    let mut pair_flows: HashMap<(Entity, Entity), Vec<(Entity, Vec2, Vec2)>> = HashMap::new();
+
+    for (entity, _, start_conn, end_conn) in flow_query.iter() {
+        if let (Some(start), Some(end)) = (start_conn, end_conn) {
+            // Get subsystem positions (stable reference, not affected by our offsets)
+            let start_pos = transform_query
+                .get(start.target)
+                .map(|t| t.translation().truncate())
+                .unwrap_or(Vec2::ZERO);
+            let end_pos = transform_query
+                .get(end.target)
+                .map(|t| t.translation().truncate())
+                .unwrap_or(Vec2::ZERO);
+
+            // Normalize pair ordering so A->B and B->A group together
+            let pair = if start.target < end.target {
+                (start.target, end.target)
+            } else {
+                (end.target, start.target)
+            };
+            pair_flows
+                .entry(pair)
+                .or_default()
+                .push((entity, start_pos, end_pos));
+        }
+    }
+
+    // Apply offsets to pairs with multiple flows
+    let offset_spacing = 15.0; // Pixels between parallel flows
+
+    for (_pair, flow_data) in pair_flows.iter() {
+        if flow_data.len() <= 1 {
+            continue; // No stacking, skip
+        }
+
+        // Use first flow's subsystem positions to compute stable axis
+        let (_, first_start, first_end) = flow_data[0];
+        let flow_axis = (first_end - first_start).normalize_or(Vec2::X);
+        let perpendicular = Vec2::new(-flow_axis.y, flow_axis.x);
+
+        let count = flow_data.len() as f32;
+        for (i, (flow_entity, _, _)) in flow_data.iter().enumerate() {
+            if let Ok((_, mut flow_curve, _, _)) = flow_query.get_mut(*flow_entity) {
+                // Calculate offset index centered around 0
+                let offset_index = i as f32 - (count - 1.0) / 2.0;
+                let offset_amount = offset_index * offset_spacing;
+
+                // Apply perpendicular offset to both endpoints
+                flow_curve.start += perpendicular * offset_amount;
+                flow_curve.end += perpendicular * offset_amount;
             }
         }
     }

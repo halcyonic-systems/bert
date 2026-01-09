@@ -142,6 +142,7 @@ pub fn init_bevy_app(
     .add_event::<ExternalEntityDrag>()
     .add_event::<InterfaceDrag>()
     .add_event::<SubsystemDrag>()
+    .add_event::<FlowEndpointHandleDrag>()
     .init_resource::<PlacementMode>()
     .init_resource::<ConnectionMode>() // PHASE 1: Resource enabled
     .insert_resource(CommandHistory::new(50)) // PHASE 2: Undo/redo with 50-command history
@@ -225,7 +226,7 @@ pub fn init_bevy_app(
                 select_flow_terminal.after(update_selecting_flow_from_mouse),
             )
                 .in_set(FlowTerminalSelectingSet),
-            (drag_external_entity, drag_interface, drag_subsystem),
+            (drag_external_entity, drag_interface, drag_subsystem, drag_flow_endpoint_handle),
             // Palette placement mode systems
             (
                 handle_leptos_palette_click, // Leptos palette clicks → enter mode
@@ -381,6 +382,8 @@ pub fn init_bevy_app(
                 update_interface_subsystem_from_flows.run_if(interface_subsystem_should_update),
                 update_flow_from_subsystem_without_interface
                     .after(update_subsystem_radius_from_interface_count),
+                auto_offset_stacking_flows
+                    .after(update_flow_from_subsystem_without_interface),
                 update_interface_button_from_interaction,
                 update_text_color,
             )
