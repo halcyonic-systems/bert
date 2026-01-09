@@ -3,7 +3,9 @@ use crate::bevy_app::components::{
     Connection, CreateButton, Flow, HasFlowOtherEndButton, TargetTypeConnection,
 };
 use crate::bevy_app::constants::theme::*;
-use crate::bevy_app::constants::{HIDDING_TRANSPARENCY, SYSTEM_LINE_WIDTH, SYSTEM_SELECTED_LINE_WIDTH};
+use crate::bevy_app::constants::{
+    HIDDING_TRANSPARENCY, SYSTEM_LINE_WIDTH, SYSTEM_SELECTED_LINE_WIDTH,
+};
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::resources::{Theme, Zoom};
 use crate::bevy_app::{Hidden, Interface, NestingLevel, Subsystem};

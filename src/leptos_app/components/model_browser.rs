@@ -10,8 +10,10 @@ use leptos::prelude::*;
 // Embedded model data - These JSON files contain complete BERT model definitions
 // with boundaries, interfaces, flows, and system elements properly configured.
 const CELL_MODEL_JSON: &str = include_str!("../../../assets/models/examples/cell.json");
-const ORGANIZATION_MODEL_JSON: &str = include_str!("../../../assets/models/examples/organization.json");
-const SOLAR_PANEL_MODEL_JSON: &str = include_str!("../../../assets/models/examples/solar-panel.json");
+const ORGANIZATION_MODEL_JSON: &str =
+    include_str!("../../../assets/models/examples/organization.json");
+const SOLAR_PANEL_MODEL_JSON: &str =
+    include_str!("../../../assets/models/examples/solar-panel.json");
 const LLM_MODEL_JSON: &str = include_str!("../../../assets/models/examples/llm.json");
 const ECOSYSTEM_MODEL_JSON: &str = include_str!("../../../assets/models/examples/ecosystem.json");
 const SYSTEM_MODEL_JSON: &str = include_str!("../../../assets/models/examples/system.json");

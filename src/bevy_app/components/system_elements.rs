@@ -902,9 +902,9 @@ impl HcgsArchetype {
     pub fn stroke_color(&self) -> Color {
         match self {
             HcgsArchetype::Unspecified => Color::BLACK,
-            HcgsArchetype::Governance => Color::srgb_u8(59, 130, 246),  // Blue-500
-            HcgsArchetype::Economy => Color::srgb_u8(34, 197, 94),      // Green-500
-            HcgsArchetype::Agent => Color::srgb_u8(249, 115, 22),       // Orange-500
+            HcgsArchetype::Governance => Color::srgb_u8(59, 130, 246), // Blue-500
+            HcgsArchetype::Economy => Color::srgb_u8(34, 197, 94),     // Green-500
+            HcgsArchetype::Agent => Color::srgb_u8(249, 115, 22),      // Orange-500
         }
     }
 }
