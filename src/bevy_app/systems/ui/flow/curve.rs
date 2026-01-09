@@ -1,4 +1,4 @@
-use crate::bevy_app::components::{FlowCurve, NestingLevel};
+use crate::bevy_app::components::{FlowCurve, FlowEndpointOffset, NestingLevel};
 use crate::bevy_app::constants::{FLOW_ARROW_HEAD_LENGTH, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH};
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
 use bevy::prelude::*;
@@ -15,23 +15,35 @@ pub fn draw_flow_curve(
     mut query: Query<
         (
             &FlowCurve,
+            Option<&FlowEndpointOffset>,
             &mut Path,
             &mut SimplifiedMesh,
             &mut Aabb,
             &Children,
             &NestingLevel,
         ),
-        Changed<FlowCurve>,
+        Or<(Changed<FlowCurve>, Changed<FlowEndpointOffset>)>,
     >,
     mut transform_query: Query<&mut Transform, With<Path>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut meshes: ResMut<Assets<Mesh>>,
     zoom: Res<Zoom>,
 ) {
-    for (flow_curve, path, simplified_mesh, aabb, children, nesting_level) in &mut query {
+    for (flow_curve, offset, path, simplified_mesh, aabb, children, nesting_level) in &mut query {
+        // Apply offset to flow curve for rendering
+        let adjusted_curve = if let Some(offset) = offset {
+            FlowCurve {
+                start: flow_curve.start + offset.start,
+                end: flow_curve.end + offset.end,
+                ..*flow_curve
+            }
+        } else {
+            flow_curve.clone()
+        };
+
         update_flow_curve(
             &mut transform_query,
-            flow_curve,
+            &adjusted_curve,
             path,
             simplified_mesh,
             aabb,

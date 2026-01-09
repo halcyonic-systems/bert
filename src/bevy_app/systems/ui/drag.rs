@@ -665,6 +665,10 @@ pub fn drag_flow_endpoint_handle(
     mut flow_query: Query<(&FlowCurve, &mut FlowEndpointOffset)>,
 ) {
     for event in events.read() {
+        info!(
+            "FlowEndpointHandleDrag received: target={:?}, position={:?}",
+            event.target, event.position
+        );
         let Ok(handle) = handle_query.get(event.target) else {
             continue;
         };
@@ -673,18 +677,22 @@ pub fn drag_flow_endpoint_handle(
             continue;
         };
 
-        // Compute how far the user dragged from the current flow endpoint position
-        // and add that delta to the offset
+        // Compute how far the user dragged from the current handle position
+        // (which includes existing offset) and add that delta to the offset
         match handle.endpoint {
             FlowEndpoint::Start => {
-                let current_pos = flow_curve.start;
+                // Current position includes base + existing offset
+                let current_pos = flow_curve.start + offset.start;
                 let delta = event.position - current_pos;
                 offset.start += delta;
+                info!("Start offset updated: delta={:?}, new_offset={:?}", delta, offset.start);
             }
             FlowEndpoint::End => {
-                let current_pos = flow_curve.end;
+                // Current position includes base + existing offset
+                let current_pos = flow_curve.end + offset.end;
                 let delta = event.position - current_pos;
                 offset.end += delta;
+                info!("End offset updated: delta={:?}, new_offset={:?}", delta, offset.end);
             }
         }
     }

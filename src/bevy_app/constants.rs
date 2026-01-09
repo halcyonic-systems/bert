@@ -42,9 +42,10 @@ pub const FLOW_ARROW_HEAD_LENGTH: f32 = 20.0;
 pub const FLOW_ARROW_HEAD_WIDTH_HALF: f32 = 10.0;
 
 /// Radius of the draggable handle circles at flow endpoints.
-pub const FLOW_ENDPOINT_HANDLE_RADIUS: f32 = 8.0;
-/// Local z coordinate of flow endpoint handles (above flow).
-pub const FLOW_ENDPOINT_HANDLE_Z: f32 = FLOW_Z + 1.0;
+/// Larger radius for better visibility and clickability.
+pub const FLOW_ENDPOINT_HANDLE_RADIUS: f32 = 25.0;
+/// Local z coordinate of flow endpoint handles (above interfaces for visibility).
+pub const FLOW_ENDPOINT_HANDLE_Z: f32 = INTERFACE_Z + 10.0;
 
 /// Default number that defines the scale factor used in the (re)sizing a subsystem.
 pub const SUBSYSTEM_SCALING_FACTOR: f32 = 0.3;
