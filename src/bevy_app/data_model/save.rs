@@ -76,6 +76,19 @@ impl Context {
     ) -> Id {
         if let Some(original) = original_id {
             let id = original.0.clone();
+
+            // Check if this ID is already claimed by another entity
+            // (e.g., an interface subsystem that was processed first)
+            let id_already_used = self.entity_to_id.values().any(|existing| existing == &id);
+
+            if id_already_used {
+                info!(
+                    "🔶 SAVE: Original ID {:?} already claimed, generating new ID",
+                    id
+                );
+                return self.next_id(entity, ty, parent_idx);
+            }
+
             self.entity_to_id.insert(entity, id.clone());
 
             // Update the counter to ensure new entities don't collide with preserved IDs
@@ -314,7 +327,7 @@ pub fn serialize_world(
         Option<&FlowEndInterfaceConnection>,
         Option<&FlowEndpointOffset>,
     )>,
-    interface_query: Query<(&crate::bevy_app::components::Interface, &Transform)>,
+    interface_query: Query<(Entity, &crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: Query<(
         &crate::bevy_app::components::ExternalEntity,
         Option<&IsSameAsId>,
@@ -391,6 +404,18 @@ pub fn serialize_world(
         .get_mut(&system_entity)
         .expect("Should exist");
 
+    // Pre-register ALL interfaces (including those without flows) to entity_to_id
+    // This ensures interface subsystems can find their parent interface during save
+    register_all_system_interfaces(
+        &mut ctx,
+        system_entity,
+        system,
+        &parent_query,
+        &interface_query,
+        &name_and_description_query,
+        &original_id_query,
+    );
+
     // Add the interfaces, external interactions and entities to the root system
     build_interfaces_interaction_and_external_entities(
         &mut ctx,
@@ -436,10 +461,11 @@ pub fn serialize_world(
     for (flow_entity, _, _, _, flow_start_interface_connection, flow_end_interface_connection, _) in
         &flow_query
     {
+        // Use .get() to avoid panic if interface not in entity_to_id (can happen with nested systems)
         let source_interface =
-            flow_start_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
+            flow_start_interface_connection.and_then(|c| ctx.entity_to_id.get(&c.target).cloned());
         let sink_interface =
-            flow_end_interface_connection.map(|c| ctx.entity_to_id[&c.target].clone());
+            flow_end_interface_connection.and_then(|c| ctx.entity_to_id.get(&c.target).cloned());
 
         let interaction = ctx.interaction_mut_by_entity(flow_entity);
         interaction.source_interface = source_interface;
@@ -448,8 +474,10 @@ pub fn serialize_world(
 
     let mut hidden_entities = Vec::new();
     for hidden_entity in &hidden_query {
-        let id = ctx.entity_to_id[&hidden_entity].clone();
-        hidden_entities.push(id);
+        // Use .get() to avoid panic if hidden entity not in entity_to_id
+        if let Some(id) = ctx.entity_to_id.get(&hidden_entity).cloned() {
+            hidden_entities.push(id);
+        }
     }
 
     // Sort systems by ID for deterministic output order
@@ -502,7 +530,7 @@ fn build_subsystems(
         Option<&FlowEndInterfaceConnection>,
         Option<&FlowEndpointOffset>,
     )>,
-    interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
+    interface_query: &Query<(Entity, &crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: &Query<(
         &crate::bevy_app::components::ExternalEntity,
         Option<&IsSameAsId>,
@@ -524,13 +552,41 @@ fn build_subsystems(
                 .expect("Subsystem should have a parent")
                 .get();
 
+            let is_interface_parent = interface_query.get(parent_entity).is_ok();
+            info!(
+                "🔍 SAVE: Subsystem {:?}, bevy_parent={:?}, is_interface_parent={}",
+                subsystem_entity, parent_entity, is_interface_parent
+            );
+
             // If the subsystem in an interface subsystem (only first level, interface is the direct parent in bevy)...
-            if interface_query.get(parent_entity).is_ok() {
+            // Also check that the interface is already in entity_to_id (it may not be if it belongs to a nested system)
+            if is_interface_parent {
+                // Check if interface is already processed
+                let Some(interface_id) = ctx.entity_to_id.get(&parent_entity).cloned() else {
+                    // Interface not in entity_to_id yet (nested system case) - defer to regular processing
+                    info!(
+                        "🔶 SAVE: Interface subsystem {:?} deferred - interface {:?} not yet in entity_to_id",
+                        subsystem_entity, parent_entity
+                    );
+                    not_interface_subsystems.push((subsystem_entity, system_component, None));
+                    continue;
+                };
                 // ...make sure it has the same id indices as it's parent interface
-                // Clone interface_id immediately to release borrow on entity_to_id
-                let interface_id = ctx.entity_to_id[&parent_entity].clone();
                 let indices = interface_id.indices.clone();
                 let (last_index, parent_indices) = indices.split_last().expect("Should exist");
+
+                info!(
+                    "🔷 SAVE: Interface subsystem - interface_id={:?}, indices={:?}, reserving index {} under parent {:?}",
+                    interface_id, indices, last_index, parent_indices
+                );
+
+                let prev_count = ctx
+                    .parent_id_to_count
+                    .get(&Id {
+                        ty: IdType::Subsystem,
+                        indices: parent_indices.to_vec(),
+                    })
+                    .copied();
 
                 ctx.parent_id_to_count
                     .entry(Id {
@@ -539,6 +595,19 @@ fn build_subsystems(
                     })
                     .and_modify(|count| *count = (*count).max(last_index + 1))
                     .or_insert(last_index + 1);
+
+                let new_count = ctx
+                    .parent_id_to_count
+                    .get(&Id {
+                        ty: IdType::Subsystem,
+                        indices: parent_indices.to_vec(),
+                    })
+                    .copied();
+
+                info!(
+                    "🔷 SAVE: Reserved - count changed from {:?} to {:?}",
+                    prev_count, new_count
+                );
 
                 let system = entity_to_system
                     .get_mut(&parent_system_entity)
@@ -552,6 +621,12 @@ fn build_subsystems(
                     ty: IdType::Subsystem,
                     indices,
                 };
+
+                info!(
+                    "🔷 SAVE: Interface subsystem ID = {:?}",
+                    subsystem_id
+                );
+
                 ctx.entity_to_id
                     .insert(subsystem_entity, subsystem_id.clone());
 
@@ -575,10 +650,16 @@ fn build_subsystems(
                     parent_entity = parent.get();
 
                     if interface_query.get(parent_entity).is_ok() {
-                        parent_interface_id = Some(ctx.entity_to_id[&parent_entity].clone());
+                        // Use .get() to avoid panic if interface not yet in entity_to_id
+                        parent_interface_id = ctx.entity_to_id.get(&parent_entity).cloned();
                         break;
                     }
                 }
+
+                info!(
+                    "🔶 SAVE: Regular subsystem {:?} deferred, parent_interface_id={:?}",
+                    subsystem_entity, parent_interface_id
+                );
 
                 not_interface_subsystems.push((
                     subsystem_entity,
@@ -594,17 +675,54 @@ fn build_subsystems(
     // Sort by entity index for deterministic ID assignment across save/reload cycles.
     not_interface_subsystems.sort_by_key(|(e, _, _)| e.index());
 
-    for (subsystem_entity, system_component, parent_interface_id) in not_interface_subsystems {
+    info!(
+        "🔶 SAVE: Processing {} regular subsystems, current count state: {:?}",
+        not_interface_subsystems.len(),
+        ctx.parent_id_to_count
+    );
+
+    for (subsystem_entity, system_component, mut parent_interface_id) in not_interface_subsystems {
+        // Re-check if this is a deferred interface subsystem - now the interface should be in entity_to_id
+        if parent_interface_id.is_none() {
+            if let Ok(bevy_parent) = parent_query.get(subsystem_entity) {
+                let parent_entity = bevy_parent.get();
+                // Check if parent is an interface AND now exists in entity_to_id
+                if interface_query.get(parent_entity).is_ok() {
+                    if let Some(interface_id) = ctx.entity_to_id.get(&parent_entity).cloned() {
+                        info!(
+                            "🔶 SAVE: Deferred interface subsystem {:?} - found interface ID {:?}",
+                            subsystem_entity, interface_id
+                        );
+                        parent_interface_id = Some(interface_id);
+                    }
+                }
+            }
+        }
+
         let system = entity_to_system
             .get_mut(&parent_system_entity)
             .expect("Should exist");
 
         let original_id = original_id_query.get(subsystem_entity).ok();
+        let parent_indices = &system.info.id.indices;
+
+        info!(
+            "🔶 SAVE: Regular subsystem {:?}, original_id={:?}, parent_indices={:?}",
+            subsystem_entity,
+            original_id.map(|o| &o.0),
+            parent_indices
+        );
+
         let id = ctx.use_or_create_id(
             subsystem_entity,
             original_id,
             IdType::Subsystem,
-            &system.info.id.indices,
+            parent_indices,
+        );
+
+        info!(
+            "🔶 SAVE: Regular subsystem {:?} assigned ID = {:?}",
+            subsystem_entity, id
         );
 
         let level = system.info.level + 1;
@@ -634,6 +752,17 @@ fn build_subsystems(
         let system = entity_to_system
             .get_mut(system_entity)
             .expect("Should exist");
+
+        // Pre-register ALL interfaces (including those without flows) for this subsystem
+        register_all_system_interfaces(
+            ctx,
+            *system_entity,
+            system,
+            parent_query,
+            interface_query,
+            name_and_description_query,
+            original_id_query,
+        );
 
         build_interfaces_interaction_and_external_entities(
             ctx,
@@ -704,8 +833,13 @@ fn process_deferred_flows(
             flow_query.get(flow_entity)
         {
             // Now all subsystems are registered - get the IDs
-            let source_id = ctx.entity_to_id[&flow_start_connection.target].clone();
-            let sink_id = ctx.entity_to_id[&flow_end_connection.target].clone();
+            // Use .get() to avoid panic if source/sink not in entity_to_id (can happen with nested systems)
+            let Some(source_id) = ctx.entity_to_id.get(&flow_start_connection.target).cloned() else {
+                continue;
+            };
+            let Some(sink_id) = ctx.entity_to_id.get(&flow_end_connection.target).cloned() else {
+                continue;
+            };
 
             // Find the parent system for this interaction (the system we were processing)
             if let Some(parent_system) = entity_to_system.get(&system_entity) {
@@ -723,6 +857,74 @@ fn process_deferred_flows(
                 );
             }
         }
+    }
+}
+
+/// Pre-register ALL interfaces (including those without flows) to entity_to_id.
+/// This ensures interface subsystems can find their parent interface during save.
+/// Also builds Interface objects for interfaces that don't have flows.
+fn register_all_system_interfaces(
+    ctx: &mut Context,
+    system_entity: Entity,
+    system: &mut System,
+    parent_query: &Query<&Parent>,
+    interface_query: &Query<(Entity, &crate::bevy_app::components::Interface, &Transform)>,
+    name_and_description_query: &Query<(&Name, &ElementDescription)>,
+    original_id_query: &Query<&OriginalId>,
+) {
+    // Iterate all interfaces and find those that are direct children of this system
+    for (interface_entity, interface, interface_transform) in interface_query.iter() {
+        // Check if this interface's parent is the system we're processing
+        let Ok(parent) = parent_query.get(interface_entity) else {
+            continue;
+        };
+        if parent.get() != system_entity {
+            continue;
+        }
+
+        // Check if already registered (might have been added by a flow)
+        if ctx.entity_to_id.contains_key(&interface_entity) {
+            continue;
+        }
+
+        // Register this interface
+        let original_id = original_id_query.get(interface_entity).ok();
+        let id = ctx.use_or_create_id(
+            interface_entity,
+            original_id,
+            IdType::Interface,
+            &system.info.id.indices,
+        );
+
+        info!(
+            "🔷 SAVE: Registering interface {:?} (no flow) with id {:?}",
+            interface_entity, id
+        );
+
+        // Get name and description
+        let (name, description) = name_and_description_query
+            .get(interface_entity)
+            .map(|(n, d)| (n.as_str().to_string(), d.text.clone()))
+            .unwrap_or_default();
+
+        // Build the Interface object for serialization
+        // Note: type defaults to Import for interfaces without flows
+        system
+            .boundary
+            .interfaces
+            .push(crate::bevy_app::data_model::Interface {
+                info: Info {
+                    id,
+                    level: system.info.level + 1,
+                    name,
+                    description,
+                },
+                protocol: interface.protocol.clone(),
+                ty: crate::bevy_app::data_model::InterfaceType::Import, // Default for flowless interfaces
+                exports_to: vec![],
+                receives_from: vec![],
+                angle: Some(interface_transform.right().truncate().to_angle()),
+            });
     }
 }
 
@@ -744,7 +946,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         Option<&FlowEndInterfaceConnection>,
         Option<&FlowEndpointOffset>,
     )>,
-    interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
+    interface_query: &Query<(Entity, &crate::bevy_app::components::Interface, &Transform)>,
     external_entity_query: &Query<(
         &crate::bevy_app::components::ExternalEntity,
         Option<&IsSameAsId>,
@@ -827,7 +1029,12 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     }
                 }
                 // ... if it's a system we simply get the id because it has been built in a previous step
-                EndTargetType::System => ctx.entity_to_id[&flow_end_connection.target].clone(),
+                EndTargetType::System => {
+                    match ctx.entity_to_id.get(&flow_end_connection.target).cloned() {
+                        Some(id) => id,
+                        None => continue, // System not in entity_to_id yet (nested system case)
+                    }
+                }
             };
 
             // connect the interface to the sink, whatever it may be
@@ -894,7 +1101,12 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     }
                 }
                 // ... if it's a system we simply get the id because it has been built in a previous step
-                StartTargetType::System => ctx.entity_to_id[&flow_start_connection.target].clone(),
+                StartTargetType::System => {
+                    match ctx.entity_to_id.get(&flow_start_connection.target).cloned() {
+                        Some(id) => id,
+                        None => continue, // System not in entity_to_id yet (nested system case)
+                    }
+                }
             };
 
             // connect the interface to the source, whatever it may be
@@ -926,12 +1138,12 @@ fn build_interface<C: Connection>(
     system: &mut System,
     interface_connection: &C,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
-    interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
+    interface_query: &Query<(Entity, &crate::bevy_app::components::Interface, &Transform)>,
     original_id_query: &Query<&OriginalId>,
 ) -> usize {
     let interface_entity = interface_connection.target();
 
-    let (interface, interface_transform) =
+    let (_, interface, interface_transform) =
         interface_query.get(interface_entity).expect("Should exist");
 
     let original_id = original_id_query.get(interface_entity).ok();
