@@ -2,7 +2,7 @@ use crate::bevy_app::bundles::{
     spawn_external_entity_only, spawn_interaction_only, spawn_interface_only,
     spawn_is_same_as_id_counter, spawn_main_system, SystemBundle,
 };
-use crate::bevy_app::components::{FlowEndpointHandle, FlowEndpointOffset};
+use crate::bevy_app::components::{FlowEndpointHandle, FlowEndpointOffset, OriginalId};
 use crate::bevy_app::constants::{EXTERNAL_ENTITY_Z, INTERFACE_Z, SUBSYSTEM_Z};
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::events::SubsystemDrag;
@@ -178,6 +178,11 @@ fn spawn_interactions(
 
         ctx.id_to_entity
             .insert(interaction.info.id.clone(), interaction_entity);
+
+        // Preserve original ID for stable serialization across save/load cycles
+        commands
+            .entity(interaction_entity)
+            .insert(OriginalId(interaction.info.id.clone()));
 
         if ctx.hidden_entities.contains(&interaction.info.id) {
             commands.entity(interaction_entity).insert(Hidden);
@@ -394,6 +399,11 @@ fn spawn_external_entities<S: HasSourcesAndSinks + HasInfo>(
         ctx.id_to_entity
             .insert(ext_entity.info.id.clone(), external_entity);
 
+        // Preserve original ID for stable serialization across save/load cycles
+        commands
+            .entity(external_entity)
+            .insert(OriginalId(ext_entity.info.id.clone()));
+
         if let Some(is_same_as_id) = ext_entity.is_same_as_id {
             commands
                 .entity(external_entity)
@@ -524,6 +534,11 @@ fn spawn_loaded_interface(
         ),
     );
 
+    // Preserve original ID for stable serialization across save/load cycles
+    commands
+        .entity(interface_entity)
+        .insert(OriginalId(interface.info.id.clone()));
+
     interface_entity
 }
 
@@ -577,6 +592,9 @@ fn spawn_loaded_subsystem(
             system.archetype.unwrap_or_default(),
         ),
     ));
+
+    // Preserve original ID for stable serialization across save/load cycles
+    entity_commands.insert(OriginalId(system.info.id.clone()));
 
     entity_commands
         .observe(

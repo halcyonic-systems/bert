@@ -65,6 +65,37 @@ impl Context {
         id
     }
 
+    /// Use the original ID if available (from a loaded file), otherwise generate a new one.
+    /// This preserves ID stability across save/load cycles.
+    fn use_or_create_id(
+        &mut self,
+        entity: Entity,
+        original_id: Option<&OriginalId>,
+        ty: IdType,
+        parent_idx: &[i64],
+    ) -> Id {
+        if let Some(original) = original_id {
+            let id = original.0.clone();
+            self.entity_to_id.insert(entity, id.clone());
+
+            // Update the counter to ensure new entities don't collide with preserved IDs
+            if let Some(last_index) = id.indices.last() {
+                let counter_key = Id {
+                    ty,
+                    indices: parent_idx.to_vec(),
+                };
+                self.parent_id_to_count
+                    .entry(counter_key)
+                    .and_modify(|count| *count = (*count).max(last_index + 1))
+                    .or_insert(last_index + 1);
+            }
+
+            id
+        } else {
+            self.next_id(entity, ty, parent_idx)
+        }
+    }
+
     fn interaction_mut_by_entity(&mut self, entity: Entity) -> &mut Interaction {
         let idx = self.entity_to_interaction_idx[&entity];
         &mut self.interactions[idx]
@@ -289,6 +320,7 @@ pub fn serialize_world(
         Option<&IsSameAsId>,
     )>,
     hidden_query: Query<Entity, With<Hidden>>,
+    original_id_query: Query<&OriginalId>,
 ) -> WorldModel {
     let (system_entity, system_component, environment) = main_system_info_query
         .get_single()
@@ -346,6 +378,7 @@ pub fn serialize_world(
         &flow_query,
         &interface_query,
         &external_entity_query,
+        &original_id_query,
     );
 
     // TODO : connect interaction interface links
@@ -361,6 +394,7 @@ pub fn serialize_world(
         &flow_query,
         &interface_query,
         &external_entity_query,
+        &original_id_query,
         &mut entity_to_system,
     );
 
@@ -370,6 +404,7 @@ pub fn serialize_world(
         &entity_to_system,
         &name_and_description_query,
         &flow_query,
+        &original_id_query,
     );
 
     // Add the source and sink interface connections to all interactions after all
@@ -396,6 +431,24 @@ pub fn serialize_world(
     // Sort systems by ID for deterministic output order
     let mut systems: Vec<_> = entity_to_system.into_values().collect();
     systems.sort_by(|a, b| a.info.id.indices.cmp(&b.info.id.indices));
+
+    // Sort interfaces, sources, and sinks within each system for deterministic output
+    for system in &mut systems {
+        system
+            .boundary
+            .interfaces
+            .sort_by(|a, b| a.info.id.indices.cmp(&b.info.id.indices));
+        system
+            .sources
+            .sort_by(|a, b| a.info.id.indices.cmp(&b.info.id.indices));
+        system
+            .sinks
+            .sort_by(|a, b| a.info.id.indices.cmp(&b.info.id.indices));
+    }
+
+    // Sort interactions by ID for deterministic output order
+    ctx.interactions
+        .sort_by(|a, b| a.info.id.indices.cmp(&b.info.id.indices));
 
     WorldModel {
         version: CURRENT_FILE_VERSION,
@@ -430,6 +483,7 @@ fn build_subsystems(
         &crate::bevy_app::components::ExternalEntity,
         Option<&IsSameAsId>,
     )>,
+    original_id_query: &Query<&OriginalId>,
     mut entity_to_system: &mut HashMap<Entity, System>,
 ) {
     let mut not_interface_subsystems = vec![];
@@ -515,7 +569,13 @@ fn build_subsystems(
             .get_mut(&parent_system_entity)
             .expect("Should exist");
 
-        let id = ctx.next_id(subsystem_entity, IdType::Subsystem, &system.info.id.indices);
+        let original_id = original_id_query.get(subsystem_entity).ok();
+        let id = ctx.use_or_create_id(
+            subsystem_entity,
+            original_id,
+            IdType::Subsystem,
+            &system.info.id.indices,
+        );
 
         let level = system.info.level + 1;
         let parent_id = system.info.id.clone();
@@ -555,6 +615,7 @@ fn build_subsystems(
             flow_query,
             interface_query,
             external_entity_query,
+            original_id_query,
         );
     }
 
@@ -572,6 +633,7 @@ fn build_subsystems(
             flow_query,
             interface_query,
             external_entity_query,
+            original_id_query,
             entity_to_system,
         );
     }
@@ -592,6 +654,7 @@ fn process_deferred_flows(
         Option<&FlowEndInterfaceConnection>,
         Option<&FlowEndpointOffset>,
     )>,
+    original_id_query: &Query<&OriginalId>,
 ) {
     let deferred = std::mem::take(&mut ctx.deferred_flows);
 
@@ -626,6 +689,7 @@ fn process_deferred_flows(
                     sink_id,
                     endpoint_offset.copied(),
                     name_and_description_query,
+                    original_id_query,
                 );
             }
         }
@@ -655,6 +719,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
         &crate::bevy_app::components::ExternalEntity,
         Option<&IsSameAsId>,
     )>,
+    original_id_query: &Query<&OriginalId>,
 ) {
     // we start from the interactions
     for (
@@ -699,6 +764,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                         interface_connection,
                         name_and_description_query,
                         interface_query,
+                        original_id_query,
                     )
                 } else {
                     continue;
@@ -722,6 +788,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                             name_and_description_query,
                             transform_query,
                             external_entity_query,
+                            original_id_query,
                         );
 
                         let id = sink.info.id.clone();
@@ -749,6 +816,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     sink_id.clone(),
                     endpoint_offset.copied(),
                     name_and_description_query,
+                    original_id_query,
                 );
             }
             // if connects at the end to this system ...
@@ -763,6 +831,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     interface_connection,
                     name_and_description_query,
                     interface_query,
+                    original_id_query,
                 )
             } else {
                 continue;
@@ -786,6 +855,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                             name_and_description_query,
                             transform_query,
                             external_entity_query,
+                            original_id_query,
                         );
 
                         let id = source.info.id.clone();
@@ -813,6 +883,7 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     system.info.id.clone(),
                     endpoint_offset.copied(),
                     name_and_description_query,
+                    original_id_query,
                 );
             }
         }
@@ -826,11 +897,20 @@ fn build_interface<C: Connection>(
     interface_connection: &C,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     interface_query: &Query<(&crate::bevy_app::components::Interface, &Transform)>,
+    original_id_query: &Query<&OriginalId>,
 ) -> usize {
     let interface_entity = interface_connection.target();
 
     let (interface, interface_transform) =
         interface_query.get(interface_entity).expect("Should exist");
+
+    let original_id = original_id_query.get(interface_entity).ok();
+    let id = ctx.use_or_create_id(
+        interface_entity,
+        original_id,
+        IdType::Interface,
+        &system.info.id.indices,
+    );
 
     system
         .boundary
@@ -838,7 +918,7 @@ fn build_interface<C: Connection>(
         .push(crate::bevy_app::data_model::Interface {
             info: info_from_entity(
                 interface_entity,
-                ctx.next_id(interface_entity, IdType::Interface, &system.info.id.indices),
+                id,
                 system.info.level + 1,
                 &name_and_description_query,
             ),
@@ -861,6 +941,7 @@ fn build_interaction<P: HasInfo>(
     sink_id: Id,
     endpoint_offset: Option<FlowEndpointOffset>,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
+    original_id_query: &Query<&OriginalId>,
 ) {
     let parent_level = parent.info().level;
 
@@ -872,10 +953,18 @@ fn build_interaction<P: HasInfo>(
             end_angle: o.end_angle,
         });
 
+    let original_id = original_id_query.get(flow_entity).ok();
+    let id = ctx.use_or_create_id(
+        flow_entity,
+        original_id,
+        IdType::Flow,
+        &parent.info().id.indices,
+    );
+
     let interaction = Interaction {
         info: info_from_entity(
             flow_entity,
-            ctx.next_id(flow_entity, IdType::Flow, &parent.info().id.indices),
+            id,
             if parent_level == -1 {
                 -1
             } else {
@@ -917,8 +1006,10 @@ fn build_external_entity<P: HasInfo>(
         &crate::bevy_app::components::ExternalEntity,
         Option<&IsSameAsId>,
     )>,
+    original_id_query: &Query<&OriginalId>,
 ) -> crate::bevy_app::data_model::ExternalEntity {
-    let id = ctx.next_id(entity, id_type, &parent.info().id.indices);
+    let original_id = original_id_query.get(entity).ok();
+    let id = ctx.use_or_create_id(entity, original_id, id_type, &parent.info().id.indices);
 
     let (external_entity_component, is_same_as_id) =
         external_entity_query.get(entity).expect("Should exist");
