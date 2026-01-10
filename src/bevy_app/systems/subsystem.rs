@@ -1,6 +1,7 @@
 use crate::bevy_app::components::*;
 use crate::bevy_app::constants::{
-    SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT, SUBSYSTEM_MIN_SCALING_FACTOR, SUBSYSTEM_SCALING_FACTOR,
+    INTERFACE_SUBSYSTEM_SCALING_FACTOR, SUBSYSTEM_FULL_SIZE_INTERFACE_COUNT,
+    SUBSYSTEM_MIN_SCALING_FACTOR, SUBSYSTEM_SCALING_FACTOR,
 };
 use crate::bevy_app::events::RemoveEvent;
 use crate::bevy_app::resources::Zoom;
@@ -145,7 +146,7 @@ pub fn update_subsystem_radius_from_interface_count(
 
         let mut scaling_factor = if interface_subsystem.is_some() {
             // Interface subsystems stay small (4%) regardless of interface count
-            SUBSYSTEM_MIN_SCALING_FACTOR
+            INTERFACE_SUBSYSTEM_SCALING_FACTOR
         } else {
             // Regular subsystems scale with interface count
             SUBSYSTEM_MIN_SCALING_FACTOR

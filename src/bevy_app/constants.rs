@@ -52,6 +52,9 @@ pub const SUBSYSTEM_SCALING_FACTOR: f32 = 0.3;
 /// Default number that defines the lower bound of the scale factor used in the (re)sizing a subsystem.
 /// Set to 0.14 (14% of parent) to match size achieved with ~3 interfaces for better initial visibility.
 pub const SUBSYSTEM_MIN_SCALING_FACTOR: f32 = 0.14;
+/// Scale factor for interface subsystems - kept small (4% of parent) to be unobtrusive.
+/// Per Mobus I ⊆ C, interface subsystems are auxiliary processing nodes at the boundary.
+pub const INTERFACE_SUBSYSTEM_SCALING_FACTOR: f32 = 0.04;
 /// Local z coordinate of a subsystem.
 pub const SUBSYSTEM_Z: f32 = 10.0;
 /// Size of subsystems are scaled based on the number of interfaces it has until it reaches this limit.
