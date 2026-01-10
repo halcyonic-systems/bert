@@ -4,7 +4,7 @@
 
 **Feature Name**: Interface Subsystem Reactivation
 **Branch**: feature/interface-subsystem-reactivation
-**Status**: In Progress
+**Status**: Complete
 **Contributors**: Philip Hua, Claude
 **Date**: 2026-01-10
 
@@ -21,7 +21,7 @@ This feature reactivates the interface subsystem functionality, providing a keyb
 
 - **Keyboard shortcut**: Press 'I' when an interface is selected to create an interface subsystem
 - **Auto-detection**: Interface type (Import/Export) determined from connected flows
-- **Size control**: Interface subsystems remain small (14% of parent) via `is_child_of_interface: true`
+- **Size control**: Interface subsystems remain small (4% of parent) via `INTERFACE_SUBSYSTEM_SCALING_FACTOR`
 - **Skip protection**: Interfaces with existing subsystems are skipped (no duplicates)
 - **Visual placement**: Subsystem positioned at the interface boundary
 
@@ -35,6 +35,18 @@ This feature reactivates the interface subsystem functionality, providing a keyb
 
 - `src/bevy_app/systems/mod.rs`: Added module export
 - `src/bevy_app/mod.rs`: Registered system in Update schedule
+- `src/bevy_app/systems/palette.rs`: Auto-select interfaces after placement
+- `src/bevy_app/bundles/spawn/subsystem.rs`: Fixed z-level for interface subsystem children
+- `src/bevy_app/constants.rs`: Added `INTERFACE_SUBSYSTEM_SCALING_FACTOR` (4%)
+- `src/bevy_app/systems/subsystem.rs`: Use dedicated scaling factor for interface subsystems
+
+### Bug Fixes During Implementation
+
+1. **Newly placed interfaces not working**: Interfaces placed via palette were not auto-selected, so 'I' key didn't work. Fixed by setting `is_selected: true` in `palette.rs`.
+
+2. **Interface subsystems invisible (z=-90)**: Child z-position was calculated relative to parent interface. `SUBSYSTEM_Z - INTERFACE_Z = 10 - 100 = -90` put them behind everything. Fixed to use `z = 5.0` (small positive offset).
+
+3. **Wrong size (14% instead of 4%)**: Code comment promised 4% but used `SUBSYSTEM_MIN_SCALING_FACTOR` (14%). Created dedicated `INTERFACE_SUBSYSTEM_SCALING_FACTOR = 0.04` constant.
 
 ### Architecture Decisions
 
