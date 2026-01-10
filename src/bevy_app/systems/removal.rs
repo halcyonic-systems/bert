@@ -32,8 +32,8 @@ pub fn remove_selected_elements(
             if let Ok((
                 start_connection,
                 end_connection,
-                start_interface_connection,
-                end_interface_connection,
+                _start_interface_connection,
+                _end_interface_connection,
             )) = flow_query.get(entity_to_remove)
             {
                 if let Some(start_connection) = start_connection {
@@ -48,21 +48,10 @@ pub fn remove_selected_elements(
                     }
                 }
 
-                if let Some(start_interface_connection) = start_interface_connection {
-                    remove_entity(
-                        &mut commands,
-                        start_interface_connection.target,
-                        &parent_query,
-                    );
-                }
-
-                if let Some(end_interface_connection) = end_interface_connection {
-                    remove_entity(
-                        &mut commands,
-                        end_interface_connection.target,
-                        &parent_query,
-                    );
-                }
+                // Note: Unlike Sources/Sinks (which are created with external flows),
+                // Interfaces exist independently and should NOT be deleted when flows are removed.
+                // The FlowStartInterfaceConnection and FlowEndInterfaceConnection components
+                // are on the Flow entity itself and will be despawned with the flow.
             }
 
             if let Some(parent) = parent {
@@ -277,8 +266,10 @@ pub fn cleanup_flow_removal(
     mut commands: Commands,
     mut removed_flows: RemovedComponents<Flow>,
     button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
+    handle_query: Query<(Entity, &FlowEndpointHandle)>,
 ) {
     for removed_flow in removed_flows.read() {
+        // Clean up CreateButton entities
         for (button_entity, create_button, parent) in &button_query {
             if create_button.connection_source == removed_flow {
                 if let Some(parent) = parent {
@@ -287,6 +278,13 @@ pub fn cleanup_flow_removal(
                         .remove_children(&[button_entity]);
                 }
                 commands.entity(button_entity).despawn_recursive();
+            }
+        }
+
+        // Clean up FlowEndpointHandle entities (same pattern as load.rs orphan cleanup)
+        for (handle_entity, endpoint_handle) in &handle_query {
+            if endpoint_handle.flow == removed_flow {
+                commands.entity(handle_entity).despawn();
             }
         }
     }

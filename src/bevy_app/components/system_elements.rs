@@ -559,6 +559,17 @@ pub struct ExternalEntity {
 #[reflect(Component)]
 pub struct IsSameAsId(pub usize);
 
+/// Stores the original ID from the loaded file to preserve ID stability across save/load cycles.
+///
+/// When an entity is loaded from a file, its original ID is stored in this component.
+/// During save, entities with this component use their original ID instead of generating
+/// a new one, ensuring that IDs remain stable across sessions.
+///
+/// Entities created during runtime (not loaded from file) won't have this component,
+/// so they'll get new sequential IDs as expected.
+#[derive(Clone, Debug, Component)]
+pub struct OriginalId(pub crate::bevy_app::data_model::Id);
+
 impl From<usize> for IsSameAsId {
     fn from(value: usize) -> Self {
         Self(value)

@@ -172,13 +172,19 @@ pub fn update_subsystem_radius_from_interface_count(
                 .get_mut(subsystem_entity)
                 .expect("Subsystem should have a Transform");
 
-            if interface_query.get(parent.get()).is_ok() {
-                initial_position.x = radius * transform.translation.x.signum();
-            } else {
-                initial_position.x = (parent_radius - radius) * transform.translation.x.signum();
-            }
+            // Only recalculate position if it hasn't been loaded/set already.
+            // This preserves positions loaded from file (similar to FlowEndpointOffset fix).
+            if initial_position.length_squared() < 0.001 {
+                if interface_query.get(parent.get()).is_ok() {
+                    initial_position.x = radius * transform.translation.x.signum();
+                } else {
+                    initial_position.x =
+                        (parent_radius - radius) * transform.translation.x.signum();
+                }
 
-            transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
+                transform.translation =
+                    (**initial_position * **zoom).extend(transform.translation.z);
+            }
         }
     }
 }
