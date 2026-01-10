@@ -71,6 +71,10 @@ pub fn update_feedback_arcs(
 
     for (entity, transform, is_same_as_id, nesting_level) in external_entity_query.iter() {
         let pos = transform.translation().truncate();
+        info!(
+            "FeedbackArc: Found external entity {:?} with IsSameAsId {} at {:?}",
+            entity, **is_same_as_id, pos
+        );
         id_to_entities
             .entry(**is_same_as_id)
             .or_default()
@@ -88,8 +92,18 @@ pub fn update_feedback_arcs(
     // Track which equivalence IDs still have valid pairs
     let mut valid_ids: Vec<usize> = Vec::new();
 
+    info!(
+        "FeedbackArc: Found {} unique IsSameAsId groups",
+        id_to_entities.len()
+    );
+
     // Process each matched pair
     for (equivalence_id, entities) in id_to_entities.iter() {
+        info!(
+            "FeedbackArc: Processing group {} with {} entities",
+            equivalence_id,
+            entities.len()
+        );
         // Only process pairs (exactly 2 entities with same ID)
         if entities.len() != 2 {
             continue;
@@ -105,13 +119,19 @@ pub fn update_feedback_arcs(
         let b_is_sink = flow_end_query.iter().any(|conn| conn.target == entity_b);
 
         // Find Source and Sink positions
+        // If flows exist, use them to determine direction
+        // Otherwise, use position (leftmost = source convention for visual clarity)
         let (source_pos, sink_pos) = if a_is_source && b_is_sink {
             (pos_a, pos_b)
         } else if b_is_source && a_is_sink {
             (pos_b, pos_a)
         } else {
-            // Can't determine direction, skip this pair
-            continue;
+            // No flows yet - use position-based convention (leftmost = source)
+            if pos_a.x < pos_b.x {
+                (pos_a, pos_b)
+            } else {
+                (pos_b, pos_a)
+            }
         };
 
         valid_ids.push(*equivalence_id);
@@ -123,6 +143,7 @@ pub fn update_feedback_arcs(
 
         if let Some((arc_entity, _)) = existing_arc {
             // Update existing arc path
+            info!("FeedbackArc: Updating arc for group {}", equivalence_id);
             update_arc_path(
                 &mut commands,
                 arc_entity,
@@ -133,6 +154,10 @@ pub fn update_feedback_arcs(
             );
         } else {
             // Spawn new arc
+            info!(
+                "FeedbackArc: Spawning arc for group {} from {:?} to {:?}",
+                equivalence_id, source_pos, sink_pos
+            );
             spawn_feedback_arc(
                 &mut commands,
                 *equivalence_id,

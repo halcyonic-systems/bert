@@ -15,11 +15,16 @@ pub trait TargetTypeConnection {
 pub enum EndTargetType {
     Sink,
     System,
+    /// Environmental feedback: flow ends at a Source (completing external loop)
+    Source,
 }
 
 impl TargetTypeConnection for FlowEndConnection {
     fn target_is_external_entity(&self) -> bool {
-        matches!(self.target_type, EndTargetType::Sink)
+        matches!(
+            self.target_type,
+            EndTargetType::Sink | EndTargetType::Source
+        )
     }
 }
 
@@ -34,11 +39,16 @@ pub struct FlowStartConnection {
 pub enum StartTargetType {
     Source,
     System,
+    /// Environmental feedback: flow starts from a Sink (environmental path)
+    Sink,
 }
 
 impl TargetTypeConnection for FlowStartConnection {
     fn target_is_external_entity(&self) -> bool {
-        matches!(self.target_type, StartTargetType::Source)
+        matches!(
+            self.target_type,
+            StartTargetType::Source | StartTargetType::Sink
+        )
     }
 }
 

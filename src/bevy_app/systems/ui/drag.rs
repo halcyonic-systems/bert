@@ -109,16 +109,58 @@ pub fn update_flow_from_external_entity(
         for (mut flow_curve, flow_start_connection, flow_end_connection) in &mut flow_query {
             let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
 
+            // Check if this is an E-network flow (Sink → Source environmental feedback)
+            let is_e_network = flow_start_connection.target_type == StartTargetType::Sink
+                && flow_end_connection.target_type == EndTargetType::Source;
+
             if flow_start_connection.target == target {
                 let right = transform.right().truncate();
                 flow_curve.start =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                flow_curve.start_direction = -right;
+
+                if is_e_network {
+                    // E-network: compute direction that curves outside SOI
+                    // Get the other endpoint to compute proper curve direction
+                    let start_pos = flow_curve.start;
+                    let end_pos = flow_curve.end;
+                    let start_to_end = (end_pos - start_pos).normalize_or_zero();
+                    let perp = Vec2::new(-start_to_end.y, start_to_end.x);
+
+                    // Choose perpendicular that points away from midpoint (outward curve)
+                    let midpoint = (start_pos + end_pos) / 2.0;
+                    let outward = -midpoint.normalize_or_zero(); // Away from origin (approx SOI center)
+                    let away_from_soi = if perp.dot(outward) > 0.0 { perp } else { -perp };
+
+                    let blend_factor = 0.85;
+                    flow_curve.start_direction = (start_to_end * (1.0 - blend_factor)
+                        + away_from_soi * blend_factor)
+                        .normalize_or_zero();
+                } else {
+                    flow_curve.start_direction = -right;
+                }
             } else if flow_end_connection.target == target {
                 let right = transform.right().truncate();
                 flow_curve.end =
                     transform.translation.truncate() - right * EXTERNAL_ENTITY_WIDTH_HALF * scale;
-                flow_curve.end_direction = -right;
+
+                if is_e_network {
+                    // E-network: compute direction that curves outside SOI
+                    let start_pos = flow_curve.start;
+                    let end_pos = flow_curve.end;
+                    let end_to_start = (start_pos - end_pos).normalize_or_zero();
+                    let perp = Vec2::new(-end_to_start.y, end_to_start.x);
+
+                    let midpoint = (start_pos + end_pos) / 2.0;
+                    let outward = -midpoint.normalize_or_zero();
+                    let away_from_soi = if perp.dot(outward) > 0.0 { perp } else { -perp };
+
+                    let blend_factor = 0.85;
+                    flow_curve.end_direction = (end_to_start * (1.0 - blend_factor)
+                        + away_from_soi * blend_factor)
+                        .normalize_or_zero();
+                } else {
+                    flow_curve.end_direction = -right;
+                }
             } else {
                 continue;
             }

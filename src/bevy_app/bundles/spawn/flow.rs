@@ -376,11 +376,11 @@ pub fn auto_spawn_flow_endpoint_handles(
             &FlowCurve,
             &NestingLevel,
             Option<&FlowEndpointOffset>,
+            &FlowStartConnection,
+            &FlowEndConnection,
         ),
         (
             With<Flow>,
-            With<FlowStartConnection>,
-            With<FlowEndConnection>,
             Without<FlowStartInterfaceConnection>,
             Without<FlowEndInterfaceConnection>,
         ),
@@ -392,9 +392,25 @@ pub fn auto_spawn_flow_endpoint_handles(
     let flows_with_handles: std::collections::HashSet<Entity> =
         existing_handles.iter().map(|h| h.flow).collect();
 
-    for (flow_entity, flow_curve, nesting_level, existing_offset) in flow_query.iter() {
+    for (flow_entity, flow_curve, nesting_level, existing_offset, start_conn, end_conn) in
+        flow_query.iter()
+    {
         // Skip if handles already exist for this flow
         if flows_with_handles.contains(&flow_entity) {
+            continue;
+        }
+
+        // Skip E-network flows (Sink → Source) - these connect external entities, not subsystems
+        let is_e_network = start_conn.target_type == StartTargetType::Sink
+            && end_conn.target_type == EndTargetType::Source;
+        if is_e_network {
+            continue;
+        }
+
+        // Only spawn handles for subsystem-to-subsystem flows (N-network internal flows)
+        let is_internal_flow = start_conn.target_type == StartTargetType::System
+            && end_conn.target_type == EndTargetType::System;
+        if !is_internal_flow {
             continue;
         }
         info!(
