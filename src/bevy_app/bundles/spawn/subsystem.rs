@@ -97,6 +97,7 @@ pub fn spawn_interface_subsystem(
         parent_system,
         z,
         pos,
+        true, // is_interface_subsystem - use 4% scaling
     );
 
     let mut subsystem_commands = commands.entity(subsystem_entity);
@@ -150,6 +151,7 @@ fn spawn_subsystem_common(
     parent_system: Entity,
     z: f32,
     position: SubsystemPosition,
+    is_interface_subsystem: bool,
 ) -> (Entity, f32, u16) {
     let parent = system_query
         .get(parent_system)
@@ -157,7 +159,13 @@ fn spawn_subsystem_common(
 
     let parent_radius = parent.1.radius;
 
-    let radius = parent_radius * SUBSYSTEM_MIN_SCALING_FACTOR;
+    // Interface subsystems use smaller 4% scaling, regular subsystems use 14%
+    let scaling_factor = if is_interface_subsystem {
+        INTERFACE_SUBSYSTEM_SCALING_FACTOR
+    } else {
+        SUBSYSTEM_MIN_SCALING_FACTOR
+    };
+    let radius = parent_radius * scaling_factor;
 
     let nesting_level = NestingLevel::current(parent_system, nesting_level_query) + 1;
 
@@ -238,6 +246,7 @@ pub fn spawn_subsystem(
         parent_system,
         SUBSYSTEM_Z,
         SubsystemPosition::Position(position),
+        false, // is_interface_subsystem - regular subsystems use 14% scaling
     );
 
     let zoomed_radius = radius * zoom;
