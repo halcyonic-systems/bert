@@ -393,9 +393,13 @@ pub fn serialize_world(
         hidden_entities.push(id);
     }
 
+    // Sort systems by ID for deterministic output order
+    let mut systems: Vec<_> = entity_to_system.into_values().collect();
+    systems.sort_by(|a, b| a.info.id.indices.cmp(&b.info.id.indices));
+
     WorldModel {
         version: CURRENT_FILE_VERSION,
-        systems: entity_to_system.into_values().collect(),
+        systems,
         interactions: ctx.interactions,
         hidden_entities,
         environment,
@@ -502,7 +506,10 @@ fn build_subsystems(
     }
 
     // Now that all the ids that are used by the interface subsystems are known, we can proceed with
-    // building all the 'normal' subsystems with normal id generation
+    // building all the 'normal' subsystems with normal id generation.
+    // Sort by entity index for deterministic ID assignment across save/reload cycles.
+    not_interface_subsystems.sort_by_key(|(e, _, _)| e.index());
+
     for (subsystem_entity, system_component, parent_interface_id) in not_interface_subsystems {
         let system = entity_to_system
             .get_mut(&parent_system_entity)
