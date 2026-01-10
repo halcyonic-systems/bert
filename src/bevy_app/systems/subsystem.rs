@@ -178,10 +178,12 @@ pub fn update_subsystem_radius_from_interface_count(
                 if interface_query.get(parent.get()).is_ok() {
                     initial_position.x = radius * transform.translation.x.signum();
                 } else {
-                    initial_position.x = (parent_radius - radius) * transform.translation.x.signum();
+                    initial_position.x =
+                        (parent_radius - radius) * transform.translation.x.signum();
                 }
 
-                transform.translation = (**initial_position * **zoom).extend(transform.translation.z);
+                transform.translation =
+                    (**initial_position * **zoom).extend(transform.translation.z);
             }
         }
     }

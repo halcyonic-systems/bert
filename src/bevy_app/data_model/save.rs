@@ -328,6 +328,30 @@ pub fn serialize_world(
 
     let mut ctx = Context::new();
 
+    // Pre-scan all OriginalIds to initialize counters before any ID generation.
+    // This prevents ID collisions when new entities (without OriginalId) are
+    // processed before loaded entities (with OriginalId).
+    for original_id in original_id_query.iter() {
+        let id = &original_id.0;
+        if let Some(last_index) = id.indices.last() {
+            // Build the parent key (all indices except the last one)
+            let parent_indices: Vec<i64> = id
+                .indices
+                .iter()
+                .take(id.indices.len() - 1)
+                .copied()
+                .collect();
+            let counter_key = Id {
+                ty: id.ty,
+                indices: parent_indices,
+            };
+            ctx.parent_id_to_count
+                .entry(counter_key)
+                .and_modify(|count| *count = (*count).max(last_index + 1))
+                .or_insert(last_index + 1);
+        }
+    }
+
     // Map bevy entities to their data model systems
     let mut entity_to_system = HashMap::<Entity, crate::bevy_app::data_model::System>::new();
 
