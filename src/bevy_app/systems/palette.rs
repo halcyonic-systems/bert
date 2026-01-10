@@ -376,7 +376,7 @@ pub fn finalize_placement(
                     nesting_level,
                     **focused_system,
                     **zoom,
-                    false, // Not selected initially
+                    true, // Auto-select so user can immediately press 'I' for interface subsystem
                     "New Interface",
                     "A boundary crossing point that acts as a pass-way for inputs and outputs between the system and its environment.",
                     "default".to_string(), // Default protocol
@@ -387,7 +387,7 @@ pub fn finalize_placement(
                     &mut fixed_system_element_geometries,
                 );
                 info!(
-                    "✅ Interface placed on boundary at angle {:.2}°",
+                    "✅ Interface placed on boundary at angle {:.2}° (auto-selected)",
                     angle.to_degrees()
                 );
 

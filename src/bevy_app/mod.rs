@@ -248,6 +248,8 @@ pub fn init_bevy_app(
                 send_mode_change_events, // Bottom toolbar mode indicator
                 handle_cancel_mode_event, // ESC from JavaScript → cancel placement/connection
             ),
+            // Interface subsystem creation - I key when interface selected (I ⊆ C per Mobus)
+            create_interface_subsystem_on_keypress,
             (
                 pan_camera_with_mouse.run_if(input_pressed(MouseButton::Right)),
                 pan_camera_with_mouse_wheel.run_if(not(wheel_zoom_condition)),

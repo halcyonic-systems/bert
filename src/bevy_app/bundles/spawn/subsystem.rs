@@ -69,7 +69,9 @@ pub fn spawn_interface_subsystem(
     let parent_system = ***focused_system;
 
     let (z, pos) = if is_child_of_interface {
-        (SUBSYSTEM_Z - INTERFACE_Z, SubsystemPosition::XFromRadius)
+        // Interface subsystem is a child of the interface, so z is relative to interface's z
+        // Use a small positive offset to render slightly in front of the interface
+        (5.0, SubsystemPosition::XFromRadius)
     } else {
         (
             SUBSYSTEM_Z,

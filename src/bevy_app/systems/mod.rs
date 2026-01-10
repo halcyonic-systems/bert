@@ -111,6 +111,7 @@
 
 mod camera;
 pub mod connection_mode; // PHASE 3C: Public for mouse interaction integration
+mod interface_subsystem; // Interface subsystem creation via keyboard shortcut (I ⊆ C)
 mod palette;
 mod removal;
 mod screenshot;
@@ -124,6 +125,7 @@ mod undo_redo; // PHASE 2: Undo/Redo system with command pattern
 use bevy::ecs::system::{RunSystemOnce, SystemState};
 pub use camera::*;
 pub use connection_mode::*; // PHASE 1: Exporting ConnectionMode + enter_connection_mode only
+pub use interface_subsystem::*; // Interface subsystem keyboard shortcut
 pub use palette::*;
 pub use removal::*;
 pub use screenshot::*;
