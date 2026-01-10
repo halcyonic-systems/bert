@@ -622,10 +622,7 @@ fn build_subsystems(
                     indices,
                 };
 
-                info!(
-                    "🔷 SAVE: Interface subsystem ID = {:?}",
-                    subsystem_id
-                );
+                info!("🔷 SAVE: Interface subsystem ID = {:?}", subsystem_id);
 
                 ctx.entity_to_id
                     .insert(subsystem_entity, subsystem_id.clone());
@@ -834,7 +831,8 @@ fn process_deferred_flows(
         {
             // Now all subsystems are registered - get the IDs
             // Use .get() to avoid panic if source/sink not in entity_to_id (can happen with nested systems)
-            let Some(source_id) = ctx.entity_to_id.get(&flow_start_connection.target).cloned() else {
+            let Some(source_id) = ctx.entity_to_id.get(&flow_start_connection.target).cloned()
+            else {
                 continue;
             };
             let Some(sink_id) = ctx.entity_to_id.get(&flow_end_connection.target).cloned() else {
