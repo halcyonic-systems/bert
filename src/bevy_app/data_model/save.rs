@@ -527,7 +527,8 @@ fn build_subsystems(
             // If the subsystem in an interface subsystem (only first level, interface is the direct parent in bevy)...
             if interface_query.get(parent_entity).is_ok() {
                 // ...make sure it has the same id indices as it's parent interface
-                let interface_id = &ctx.entity_to_id[&parent_entity];
+                // Clone interface_id immediately to release borrow on entity_to_id
+                let interface_id = ctx.entity_to_id[&parent_entity].clone();
                 let indices = interface_id.indices.clone();
                 let (last_index, parent_indices) = indices.split_last().expect("Should exist");
 
@@ -546,16 +547,21 @@ fn build_subsystems(
                 let level = system.info.level + 1;
                 let parent_id = system.info.id.clone();
 
+                // Create ID for interface subsystem and register it
+                let subsystem_id = Id {
+                    ty: IdType::Subsystem,
+                    indices,
+                };
+                ctx.entity_to_id
+                    .insert(subsystem_entity, subsystem_id.clone());
+
                 build_system(
                     subsystem_entity,
                     system_component,
-                    Id {
-                        ty: IdType::Subsystem,
-                        indices,
-                    },
+                    subsystem_id,
                     level,
                     parent_id,
-                    Some(interface_id.clone()),
+                    Some(interface_id),
                     &name_and_description_query,
                     &transform_query,
                     &mut ctx,
