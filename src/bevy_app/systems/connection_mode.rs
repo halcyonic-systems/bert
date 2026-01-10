@@ -264,20 +264,35 @@ pub fn finalize_connection(
         let is_valid_g_network =
             (source_is_external && dest_is_interface) || (source_is_interface && dest_is_external);
 
-        // E-network validation: Sink → Source environmental feedback
-        // Source external entity is a "Sink" if flows end at it (FlowEndConnection.target)
-        // Dest external entity is a "Source" if flows start from it (FlowStartConnection.target)
+        // E-network validation: Environmental paths between external entities
+        // Two valid patterns:
+        //   1. Sink → Source (feedback): output feeds back as input through environment
+        //   2. Source → Sink (feed-forward): one system's input becomes another's output
+        //
+        // Check what roles each external entity plays based on existing flows
         let source_is_sink = source_is_external
             && flow_connections_query.iter().any(|(_, end_conn)| {
                 end_conn.target == source_entity && end_conn.target_type == EndTargetType::Sink
+            });
+        let source_is_source = source_is_external
+            && flow_connections_query.iter().any(|(start_conn, _)| {
+                start_conn.target == source_entity
+                    && start_conn.target_type == StartTargetType::Source
             });
         let dest_is_source = dest_is_external
             && flow_connections_query.iter().any(|(start_conn, _)| {
                 start_conn.target == destination_entity
                     && start_conn.target_type == StartTargetType::Source
             });
+        let dest_is_sink = dest_is_external
+            && flow_connections_query.iter().any(|(_, end_conn)| {
+                end_conn.target == destination_entity && end_conn.target_type == EndTargetType::Sink
+            });
 
-        let is_valid_e_network = source_is_sink && dest_is_source;
+        // Valid E-network: Sink→Source (feedback) OR Source→Sink (feed-forward)
+        let is_e_network_feedback = source_is_sink && dest_is_source;
+        let is_e_network_feedforward = source_is_source && dest_is_sink;
+        let is_valid_e_network = is_e_network_feedback || is_e_network_feedforward;
 
         if !is_valid_n_network && !is_valid_g_network && !is_valid_e_network {
             // Provide specific error messages for invalid combinations
@@ -287,14 +302,17 @@ pub fn finalize_connection(
                 warn!("❌ Cannot connect Subsystem directly to EnvironmentalObject (must connect to Interface per G network)");
             } else if source_is_external && dest_is_external {
                 // More specific message based on what's missing
-                if !source_is_sink && !dest_is_source {
-                    warn!("❌ Cannot connect EnvironmentalObjects - neither has existing flows (Sink→Source requires both to have G-network connections first)");
-                } else if !source_is_sink {
-                    warn!("❌ Source must be a Sink (must have flows ending at it) for environmental feedback");
-                } else if !dest_is_source {
-                    warn!("❌ Destination must be a Source (must have flows starting from it) for environmental feedback");
+                let source_has_flow = source_is_sink || source_is_source;
+                let dest_has_flow = dest_is_sink || dest_is_source;
+                if !source_has_flow && !dest_has_flow {
+                    warn!("❌ Cannot connect EnvironmentalObjects - neither has existing flows (E-network requires both to have G-network connections first)");
+                } else if !source_has_flow {
+                    warn!("❌ Source external entity has no existing flows - connect it to an interface first");
+                } else if !dest_has_flow {
+                    warn!("❌ Destination external entity has no existing flows - connect it to an interface first");
                 } else {
-                    warn!("❌ Invalid external-to-external connection");
+                    // Both have flows but not a valid combination
+                    warn!("❌ Invalid E-network direction: valid patterns are Sink→Source (feedback) or Source→Sink (feed-forward)");
                 }
             } else {
                 warn!("❌ Invalid connection type");
@@ -620,9 +638,12 @@ pub fn finalize_connection(
         commands.entity(flow_parent_entity).add_child(flow_entity);
 
         // Determine target types based on element types and network type
-        let start_target_type = if is_valid_e_network {
-            // E-network: flow starts from a Sink (environmental feedback)
+        let start_target_type = if is_e_network_feedback {
+            // E-network feedback: flow starts from a Sink
             StartTargetType::Sink
+        } else if is_e_network_feedforward {
+            // E-network feed-forward: flow starts from a Source
+            StartTargetType::Source
         } else if source_is_external {
             // G-network: flow starts from a Source
             StartTargetType::Source
@@ -631,9 +652,12 @@ pub fn finalize_connection(
             StartTargetType::System
         };
 
-        let end_target_type = if is_valid_e_network {
-            // E-network: flow ends at a Source (environmental feedback)
+        let end_target_type = if is_e_network_feedback {
+            // E-network feedback: flow ends at a Source
             EndTargetType::Source
+        } else if is_e_network_feedforward {
+            // E-network feed-forward: flow ends at a Sink
+            EndTargetType::Sink
         } else if dest_is_external {
             // G-network: flow ends at a Sink
             EndTargetType::Sink
@@ -694,8 +718,10 @@ pub fn finalize_connection(
         // Log network type for debugging
         let network_type = if is_valid_n_network {
             "N"
-        } else if is_valid_e_network {
-            "E"
+        } else if is_e_network_feedback {
+            "E-feedback"
+        } else if is_e_network_feedforward {
+            "E-feedforward"
         } else {
             "G"
         };

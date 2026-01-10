@@ -400,10 +400,13 @@ pub fn auto_spawn_flow_endpoint_handles(
             continue;
         }
 
-        // Skip E-network flows (Sink → Source) - these connect external entities, not subsystems
-        let is_e_network = start_conn.target_type == StartTargetType::Sink
+        // Skip E-network flows - these connect external entities, not subsystems
+        // E-network patterns: Sink→Source (feedback) or Source→Sink (feed-forward)
+        let is_e_network_feedback = start_conn.target_type == StartTargetType::Sink
             && end_conn.target_type == EndTargetType::Source;
-        if is_e_network {
+        let is_e_network_feedforward = start_conn.target_type == StartTargetType::Source
+            && end_conn.target_type == EndTargetType::Sink;
+        if is_e_network_feedback || is_e_network_feedforward {
             continue;
         }
 

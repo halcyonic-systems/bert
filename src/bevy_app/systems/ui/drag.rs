@@ -109,9 +109,13 @@ pub fn update_flow_from_external_entity(
         for (mut flow_curve, flow_start_connection, flow_end_connection) in &mut flow_query {
             let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
 
-            // Check if this is an E-network flow (Sink → Source environmental feedback)
-            let is_e_network = flow_start_connection.target_type == StartTargetType::Sink
+            // Check if this is an E-network flow (environmental path between external entities)
+            // Patterns: Sink→Source (feedback) or Source→Sink (feed-forward)
+            let is_e_network_feedback = flow_start_connection.target_type == StartTargetType::Sink
                 && flow_end_connection.target_type == EndTargetType::Source;
+            let is_e_network_feedforward = flow_start_connection.target_type == StartTargetType::Source
+                && flow_end_connection.target_type == EndTargetType::Sink;
+            let is_e_network = is_e_network_feedback || is_e_network_feedforward;
 
             if flow_start_connection.target == target {
                 let right = transform.right().truncate();
