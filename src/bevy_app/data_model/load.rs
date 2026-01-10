@@ -2,7 +2,7 @@ use crate::bevy_app::bundles::{
     spawn_external_entity_only, spawn_interaction_only, spawn_interface_only,
     spawn_is_same_as_id_counter, spawn_main_system, SystemBundle,
 };
-use crate::bevy_app::components::FlowEndpointOffset;
+use crate::bevy_app::components::{FlowEndpointHandle, FlowEndpointOffset};
 use crate::bevy_app::constants::{EXTERNAL_ENTITY_Z, INTERFACE_Z, SUBSYSTEM_Z};
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::events::SubsystemDrag;
@@ -48,6 +48,7 @@ pub fn load_world(
     mut commands: Commands,
     mut file_event_reader: EventReader<LoadFileEvent>,
     existing_elements_query: Query<Entity, With<SystemElement>>,
+    existing_handles_query: Query<Entity, With<FlowEndpointHandle>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
@@ -64,6 +65,10 @@ pub fn load_world(
         // clear the scene first
         for entity in &existing_elements_query {
             commands.entity(entity).despawn_recursive();
+        }
+        // Also despawn flow endpoint handles (they're not part of the hierarchy)
+        for entity in &existing_handles_query {
+            commands.entity(entity).despawn();
         }
 
         let world_model = load_from_bytes(event.data.as_slice());
