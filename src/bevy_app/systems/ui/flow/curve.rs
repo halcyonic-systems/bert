@@ -34,7 +34,18 @@ pub fn draw_flow_curve(
     mut meshes: ResMut<Assets<Mesh>>,
     zoom: Res<Zoom>,
 ) {
-    for (flow_curve, offset, start_conn, end_conn, path, simplified_mesh, aabb, children, nesting_level) in &mut query {
+    for (
+        flow_curve,
+        offset,
+        start_conn,
+        end_conn,
+        path,
+        simplified_mesh,
+        aabb,
+        children,
+        nesting_level,
+    ) in &mut query
+    {
         // Compute adjusted start/end positions based on angle offsets
         let adjusted_curve = compute_adjusted_curve(
             flow_curve,

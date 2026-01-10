@@ -371,7 +371,12 @@ pub fn auto_spawn_flow_endpoint_handles(
     mut meshes: ResMut<Assets<Mesh>>,
     // Query for internal flows (subsystem-to-subsystem, no interface connections)
     flow_query: Query<
-        (Entity, &FlowCurve, &NestingLevel),
+        (
+            Entity,
+            &FlowCurve,
+            &NestingLevel,
+            Option<&FlowEndpointOffset>,
+        ),
         (
             With<Flow>,
             With<FlowStartConnection>,
@@ -384,12 +389,10 @@ pub fn auto_spawn_flow_endpoint_handles(
     existing_handles: Query<&FlowEndpointHandle>,
 ) {
     // Build set of flows that already have handles
-    let flows_with_handles: std::collections::HashSet<Entity> = existing_handles
-        .iter()
-        .map(|h| h.flow)
-        .collect();
+    let flows_with_handles: std::collections::HashSet<Entity> =
+        existing_handles.iter().map(|h| h.flow).collect();
 
-    for (flow_entity, flow_curve, nesting_level) in flow_query.iter() {
+    for (flow_entity, flow_curve, nesting_level, existing_offset) in flow_query.iter() {
         // Skip if handles already exist for this flow
         if flows_with_handles.contains(&flow_entity) {
             continue;
@@ -399,10 +402,12 @@ pub fn auto_spawn_flow_endpoint_handles(
             flow_entity, flow_curve.start, flow_curve.end
         );
 
-        // Ensure offset component exists for dragging (may already exist from load)
-        commands
-            .entity(flow_entity)
-            .insert(FlowEndpointOffset::default());
+        // Only insert default offset if none exists (preserves loaded offsets)
+        if existing_offset.is_none() {
+            commands
+                .entity(flow_entity)
+                .insert(FlowEndpointOffset::default());
+        }
 
         let scale = NestingLevel::compute_scale(**nesting_level, 1.0);
         let handle_radius = FLOW_ENDPOINT_HANDLE_RADIUS * scale;

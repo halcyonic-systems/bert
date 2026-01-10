@@ -444,7 +444,8 @@ pub fn update_flow_from_subsystem_without_interface(
                     // If angle offset is set, use it; otherwise compute natural position
                     if let Some(end_angle) = offset.end_angle {
                         // Use angle-based position
-                        flow_curve.end = system_pos + Vec2::from_angle(end_angle) * system.radius * **zoom;
+                        flow_curve.end =
+                            system_pos + Vec2::from_angle(end_angle) * system.radius * **zoom;
                         flow_curve.end_direction = Vec2::from_angle(end_angle);
                     } else {
                         // Compute natural connection position
@@ -467,7 +468,8 @@ pub fn update_flow_from_subsystem_without_interface(
                     // If angle offset is set, use it; otherwise compute natural position
                     if let Some(start_angle) = offset.start_angle {
                         // Use angle-based position
-                        flow_curve.start = system_pos + Vec2::from_angle(start_angle) * system.radius * **zoom;
+                        flow_curve.start =
+                            system_pos + Vec2::from_angle(start_angle) * system.radius * **zoom;
                         flow_curve.start_direction = Vec2::from_angle(start_angle);
                     } else {
                         // Compute natural connection position
@@ -682,7 +684,7 @@ pub fn drag_flow_endpoint_handle(
     )>,
     // Query subsystem data: position and radius
     subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
-    zoom: Res<Zoom>,
+    _zoom: Res<Zoom>,
 ) {
     for event in events.read() {
         info!(
@@ -693,7 +695,7 @@ pub fn drag_flow_endpoint_handle(
             continue;
         };
 
-        let Ok((flow_curve, mut offset, start_conn, end_conn, nesting_level)) =
+        let Ok((flow_curve, mut offset, start_conn, end_conn, _nesting_level)) =
             flow_query.get_mut(handle.flow)
         else {
             continue;
@@ -706,7 +708,7 @@ pub fn drag_flow_endpoint_handle(
         };
 
         // Get subsystem position and radius
-        let Ok((subsystem_transform, subsystem_system)) = subsystem_query.get(subsystem_entity)
+        let Ok((subsystem_transform, _subsystem_system)) = subsystem_query.get(subsystem_entity)
         else {
             // Fallback: use natural curve direction if subsystem not found
             warn!("Subsystem {:?} not found for constraint", subsystem_entity);
@@ -726,12 +728,12 @@ pub fn drag_flow_endpoint_handle(
         } else {
             // Drag is at center - keep current angle or default to natural direction
             match handle.endpoint {
-                FlowEndpoint::Start => offset.start_angle.unwrap_or_else(|| {
-                    (base_pos - subsystem_center).to_angle()
-                }),
-                FlowEndpoint::End => offset.end_angle.unwrap_or_else(|| {
-                    (base_pos - subsystem_center).to_angle()
-                }),
+                FlowEndpoint::Start => offset
+                    .start_angle
+                    .unwrap_or_else(|| (base_pos - subsystem_center).to_angle()),
+                FlowEndpoint::End => offset
+                    .end_angle
+                    .unwrap_or_else(|| (base_pos - subsystem_center).to_angle()),
             }
         };
 
@@ -740,14 +742,20 @@ pub fn drag_flow_endpoint_handle(
                 offset.start_angle = Some(angle);
                 info!(
                     "Start angle set: drag={:?}, center={:?}, angle={:.3} rad ({:.1}°)",
-                    drag_pos, subsystem_center, angle, angle.to_degrees()
+                    drag_pos,
+                    subsystem_center,
+                    angle,
+                    angle.to_degrees()
                 );
             }
             FlowEndpoint::End => {
                 offset.end_angle = Some(angle);
                 info!(
                     "End angle set: drag={:?}, center={:?}, angle={:.3} rad ({:.1}°)",
-                    drag_pos, subsystem_center, angle, angle.to_degrees()
+                    drag_pos,
+                    subsystem_center,
+                    angle,
+                    angle.to_degrees()
                 );
             }
         }
@@ -757,7 +765,7 @@ pub fn drag_flow_endpoint_handle(
 /// One-time system to detect stacking flows and add offsets.
 /// Runs after load to automatically offset flows between same subsystem pairs.
 pub fn auto_offset_stacking_flows(
-    mut commands: Commands,
+    _commands: Commands,
     flow_query: Query<
         (
             Entity,
