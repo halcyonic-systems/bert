@@ -399,7 +399,15 @@ pub fn finalize_connection(
             continue;
         };
 
-        let scale = NestingLevel::compute_scale(*source_nesting_level, **zoom);
+        // For G-network flows that cross the boundary (interface ↔ external entity),
+        // use the minimum nesting level so flows render consistently regardless of
+        // which end was selected first
+        let flow_nesting_level = if is_valid_g_network {
+            (*source_nesting_level).min(*dest_nesting_level)
+        } else {
+            *source_nesting_level
+        };
+        let scale = NestingLevel::compute_scale(flow_nesting_level, **zoom);
 
         // Get GlobalTransform for world positions
         let parent_global = global_transform_query
@@ -502,7 +510,7 @@ pub fn finalize_connection(
             let perp = Vec2::new(-start_to_end.y, start_to_end.x);
 
             let preferred_direction = if is_e_network_feedback {
-                Vec2::Y  // Feedback curves UP
+                Vec2::Y // Feedback curves UP
             } else {
                 -Vec2::Y // Feed-forward curves DOWN
             };
@@ -548,9 +556,11 @@ pub fn finalize_connection(
             // Blend outward direction with direction toward the other endpoint
             // Use mostly perpendicular (outward) direction
             let blend_factor = 0.9;
-            let start_blend_unit = (start_to_end * (1.0 - blend_factor) + away_from_soi * blend_factor)
+            let start_blend_unit = (start_to_end * (1.0 - blend_factor)
+                + away_from_soi * blend_factor)
                 .normalize_or_zero();
-            let end_blend_unit = (-start_to_end * (1.0 - blend_factor) + away_from_soi * blend_factor)
+            let end_blend_unit = (-start_to_end * (1.0 - blend_factor)
+                + away_from_soi * blend_factor)
                 .normalize_or_zero();
 
             // Scale the directions so control points clear the SOI
@@ -597,7 +607,10 @@ pub fn finalize_connection(
             "🔍 DEBUG - Parent GlobalTransform: {:?}",
             parent_global.translation().truncate()
         );
-        info!("🔍 DEBUG - Zoom: {}, Scale: {}", **zoom, scale);
+        info!(
+            "🔍 DEBUG - Zoom: {}, NestingLevel: {} (src: {}, dst: {}), Scale: {}",
+            **zoom, flow_nesting_level, *source_nesting_level, *dest_nesting_level, scale
+        );
         info!(
             "🔍 Flow world positions - Start: {:?}, End: {:?}",
             start_world, end_world
@@ -634,7 +647,7 @@ pub fn finalize_connection(
             "New Flow",
             "A connection carrying a flow of real substance (matter, energy, or messages) with causal influence.",
             false, // Not selected initially
-            *source_nesting_level,
+            flow_nesting_level,
             scale,
             &mut stroke_tess,
             &mut meshes,

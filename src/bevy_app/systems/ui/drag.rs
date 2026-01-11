@@ -113,7 +113,8 @@ pub fn update_flow_from_external_entity(
             // Patterns: Sink→Source (feedback) or Source→Sink (feed-forward)
             let is_e_network_feedback = flow_start_connection.target_type == StartTargetType::Sink
                 && flow_end_connection.target_type == EndTargetType::Source;
-            let is_e_network_feedforward = flow_start_connection.target_type == StartTargetType::Source
+            let is_e_network_feedforward = flow_start_connection.target_type
+                == StartTargetType::Source
                 && flow_end_connection.target_type == EndTargetType::Sink;
             let is_e_network = is_e_network_feedback || is_e_network_feedforward;
 
@@ -131,12 +132,16 @@ pub fn update_flow_from_external_entity(
                     let perp = Vec2::new(-start_to_end.y, start_to_end.x);
 
                     let preferred_dir = if is_e_network_feedback {
-                        Vec2::Y  // Feedback curves UP
+                        Vec2::Y // Feedback curves UP
                     } else {
                         -Vec2::Y // Feed-forward curves DOWN
                     };
 
-                    let away_from_soi = if perp.dot(preferred_dir) > 0.0 { perp } else { -perp };
+                    let away_from_soi = if perp.dot(preferred_dir) > 0.0 {
+                        perp
+                    } else {
+                        -perp
+                    };
 
                     let blend_factor = 0.85;
                     flow_curve.start_direction = (start_to_end * (1.0 - blend_factor)
@@ -159,12 +164,16 @@ pub fn update_flow_from_external_entity(
                     let perp = Vec2::new(-end_to_start.y, end_to_start.x);
 
                     let preferred_dir = if is_e_network_feedback {
-                        Vec2::Y  // Feedback curves UP
+                        Vec2::Y // Feedback curves UP
                     } else {
                         -Vec2::Y // Feed-forward curves DOWN
                     };
 
-                    let away_from_soi = if perp.dot(preferred_dir) > 0.0 { perp } else { -perp };
+                    let away_from_soi = if perp.dot(preferred_dir) > 0.0 {
+                        perp
+                    } else {
+                        -perp
+                    };
 
                     let blend_factor = 0.85;
                     flow_curve.end_direction = (end_to_start * (1.0 - blend_factor)
