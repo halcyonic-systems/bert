@@ -35,7 +35,7 @@ use crate::bevy_app::components::{
 };
 use crate::bevy_app::constants::INTERFACE_WIDTH_HALF;
 use crate::bevy_app::events::DeselectAllEvent;
-use crate::bevy_app::resources::{StrokeTessellator, Zoom};
+use crate::bevy_app::resources::{FocusedSystem, StrokeTessellator, Zoom};
 use crate::bevy_app::utils::compute_end_and_direction_from_subsystem;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -211,6 +211,11 @@ pub fn finalize_connection(
     global_transform_query: Query<&GlobalTransform>,
     transform_query: Query<&Transform>,
     parent_query: Query<&Parent>, // Used for finding parent system
+    // Query flow connections to determine Source vs Sink for E-network validation
+    // Combined query to stay under Bevy's 16-parameter limit
+    flow_connections_query: Query<(&FlowStartConnection, &FlowEndConnection)>,
+    // FocusedSystem for E-network parent (external entities at SOI level)
+    focused_system: Res<FocusedSystem>,
     mut commands: Commands,
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -259,14 +264,56 @@ pub fn finalize_connection(
         let is_valid_g_network =
             (source_is_external && dest_is_interface) || (source_is_interface && dest_is_external);
 
-        if !is_valid_n_network && !is_valid_g_network {
+        // E-network validation: Environmental paths between external entities
+        // Two valid patterns:
+        //   1. Sink → Source (feedback): output feeds back as input through environment
+        //   2. Source → Sink (feed-forward): one system's input becomes another's output
+        //
+        // Check what roles each external entity plays based on existing flows
+        let source_is_sink = source_is_external
+            && flow_connections_query.iter().any(|(_, end_conn)| {
+                end_conn.target == source_entity && end_conn.target_type == EndTargetType::Sink
+            });
+        let source_is_source = source_is_external
+            && flow_connections_query.iter().any(|(start_conn, _)| {
+                start_conn.target == source_entity
+                    && start_conn.target_type == StartTargetType::Source
+            });
+        let dest_is_source = dest_is_external
+            && flow_connections_query.iter().any(|(start_conn, _)| {
+                start_conn.target == destination_entity
+                    && start_conn.target_type == StartTargetType::Source
+            });
+        let dest_is_sink = dest_is_external
+            && flow_connections_query.iter().any(|(_, end_conn)| {
+                end_conn.target == destination_entity && end_conn.target_type == EndTargetType::Sink
+            });
+
+        // Valid E-network: Sink→Source (feedback) OR Source→Sink (feed-forward)
+        let is_e_network_feedback = source_is_sink && dest_is_source;
+        let is_e_network_feedforward = source_is_source && dest_is_sink;
+        let is_valid_e_network = is_e_network_feedback || is_e_network_feedforward;
+
+        if !is_valid_n_network && !is_valid_g_network && !is_valid_e_network {
             // Provide specific error messages for invalid combinations
             if source_is_external && dest_is_subsystem {
                 warn!("❌ Cannot connect EnvironmentalObject directly to Subsystem (must connect to Interface per G network)");
             } else if source_is_subsystem && dest_is_external {
                 warn!("❌ Cannot connect Subsystem directly to EnvironmentalObject (must connect to Interface per G network)");
             } else if source_is_external && dest_is_external {
-                warn!("❌ Cannot connect EnvironmentalObject to EnvironmentalObject (no direct environment-to-environment flows)");
+                // More specific message based on what's missing
+                let source_has_flow = source_is_sink || source_is_source;
+                let dest_has_flow = dest_is_sink || dest_is_source;
+                if !source_has_flow && !dest_has_flow {
+                    warn!("❌ Cannot connect EnvironmentalObjects - neither has existing flows (E-network requires both to have G-network connections first)");
+                } else if !source_has_flow {
+                    warn!("❌ Source external entity has no existing flows - connect it to an interface first");
+                } else if !dest_has_flow {
+                    warn!("❌ Destination external entity has no existing flows - connect it to an interface first");
+                } else {
+                    // Both have flows but not a valid combination
+                    warn!("❌ Invalid E-network direction: valid patterns are Sink→Source (feedback) or Source→Sink (feed-forward)");
+                }
             } else {
                 warn!("❌ Invalid connection type");
             }
@@ -342,13 +389,25 @@ pub fn finalize_connection(
             } else {
                 interface_parent
             }
+        } else if is_valid_e_network {
+            // E-network: external entities at SOI level - use FocusedSystem as parent
+            // External entities don't have Parent components at the top level
+            **focused_system
         } else {
-            // External ↔ External (shouldn't reach here due to validation)
+            // External ↔ External without valid E-network (shouldn't reach here)
             warn!("❌ Cannot determine parent system for flow");
             continue;
         };
 
-        let scale = NestingLevel::compute_scale(*source_nesting_level, **zoom);
+        // For G-network flows that cross the boundary (interface ↔ external entity),
+        // use the minimum nesting level so flows render consistently regardless of
+        // which end was selected first
+        let flow_nesting_level = if is_valid_g_network {
+            (*source_nesting_level).min(*dest_nesting_level)
+        } else {
+            *source_nesting_level
+        };
+        let scale = NestingLevel::compute_scale(flow_nesting_level, **zoom);
 
         // Get GlobalTransform for world positions
         let parent_global = global_transform_query
@@ -411,24 +470,117 @@ pub fn finalize_connection(
         // Positions are correct (outer edges face each other for interfaces on different subsystems)
         // But default N network direction (-right = toward subsystem center) is wrong
         // We need directions pointing toward each other for proper bezier curve
-        let (start_world, start_dir, end_world, end_dir) =
-            if source_is_interface && dest_is_interface {
-                info!("🔧 Interface ↔ Interface: fixing directions to point toward each other");
+        let (start_world, start_dir, end_world, end_dir) = if source_is_interface
+            && dest_is_interface
+        {
+            info!("🔧 Interface ↔ Interface: fixing directions to point toward each other");
 
-                // Keep original positions (outer edge), just fix directions
-                let to_end = (end_world - start_world).normalize_or_zero();
-                let to_start = -to_end;
+            // Keep original positions (outer edge), just fix directions
+            let to_end = (end_world - start_world).normalize_or_zero();
+            let to_start = -to_end;
 
-                info!(
-                    "🔧 start_world: {:?}, end_world: {:?}",
-                    start_world, end_world
-                );
-                info!("🔧 to_end: {:?}, to_start: {:?}", to_end, to_start);
+            info!(
+                "🔧 start_world: {:?}, end_world: {:?}",
+                start_world, end_world
+            );
+            info!("🔧 to_end: {:?}, to_start: {:?}", to_end, to_start);
 
-                (start_world, to_end, end_world, to_start)
+            (start_world, to_end, end_world, to_start)
+        } else if is_valid_e_network {
+            // E-network: Sink → Source environmental feedback
+            // Curve should go OUTSIDE the SOI boundary
+            // Compute directions that push the bezier control point outward from SOI center
+            info!("🔧 E-network: computing directions for external curve (outside SOI)");
+
+            // Get SOI center and radius from the focused system
+            let soi_center = parent_global.translation().truncate();
+            let soi_radius = system_query
+                .get(flow_parent_entity)
+                .map(|s| s.radius * **zoom)
+                .unwrap_or(100.0);
+
+            // Midpoint between start and end
+            let midpoint = (start_world + end_world) / 2.0;
+
+            // Simple rule for curve direction based on E-network type:
+            // - Feedback (Sink→Source): curves UP (over the top of SOI)
+            // - Feed-forward (Source→Sink): curves DOWN (under the bottom of SOI)
+            // This prevents overlap when both types exist and is semantically intuitive
+            let start_to_end = (end_world - start_world).normalize_or_zero();
+            let perp = Vec2::new(-start_to_end.y, start_to_end.x);
+
+            let preferred_direction = if is_e_network_feedback {
+                Vec2::Y // Feedback curves UP
             } else {
-                (start_world, start_dir, end_world, end_dir)
+                -Vec2::Y // Feed-forward curves DOWN
             };
+
+            // Choose perpendicular that aligns with preferred direction
+            let away_from_soi = if perp.dot(preferred_direction) > 0.0 {
+                perp
+            } else {
+                -perp
+            };
+
+            // Calculate how much we need to scale the direction vectors
+            // The bezier control points are at: endpoint + direction * tangent_len
+            // where tangent_len = endpoint_distance * 0.333
+            //
+            // For a cubic bezier, the apex (at t=0.5) is approximately:
+            //   apex ≈ midpoint + 0.75 * outward_direction * tangent_len
+            // So the curve only reaches 75% of the control point offset.
+            let endpoint_distance = (end_world - start_world).length();
+            let standard_tangent_len = endpoint_distance * 0.333;
+
+            // Distance from SOI center to midpoint
+            let midpoint_dist_from_center = (midpoint - soi_center).length();
+
+            // Required apex distance from SOI center to clear the boundary
+            let clearance_margin = soi_radius * 0.35; // 35% extra clearance
+            let required_apex_dist = soi_radius + clearance_margin;
+            let required_outward_offset = (required_apex_dist - midpoint_dist_from_center).max(0.0);
+
+            // Scale factor accounting for the 0.75 bezier apex factor
+            // apex_offset = 0.75 * direction_scale * tangent_len
+            // We need: 0.75 * direction_scale * tangent_len >= required_outward_offset
+            // So: direction_scale >= required_outward_offset / (0.75 * tangent_len)
+            let bezier_apex_factor = 0.75;
+            let effective_tangent = bezier_apex_factor * standard_tangent_len;
+
+            let direction_scale = if effective_tangent > 0.01 {
+                (required_outward_offset / effective_tangent).max(1.5) // Minimum 1.5x scale
+            } else {
+                2.5 // Fallback for very close endpoints
+            };
+
+            // Blend outward direction with direction toward the other endpoint
+            // Use mostly perpendicular (outward) direction
+            let blend_factor = 0.9;
+            let start_blend_unit = (start_to_end * (1.0 - blend_factor)
+                + away_from_soi * blend_factor)
+                .normalize_or_zero();
+            let end_blend_unit = (-start_to_end * (1.0 - blend_factor)
+                + away_from_soi * blend_factor)
+                .normalize_or_zero();
+
+            // Scale the directions so control points clear the SOI
+            // Non-unit vectors will result in larger control point offsets
+            let start_blend = start_blend_unit * direction_scale;
+            let end_blend = end_blend_unit * direction_scale;
+
+            info!(
+                "🔧 E-network: soi_radius={:.1}, endpoint_dist={:.1}, tangent_len={:.1}, scale={:.2}",
+                soi_radius, endpoint_distance, standard_tangent_len, direction_scale
+            );
+            info!(
+                "🔧 E-network: midpoint_dist={:.1}, required_offset={:.1}",
+                midpoint_dist_from_center, required_outward_offset
+            );
+
+            (start_world, start_blend, end_world, end_blend)
+        } else {
+            (start_world, start_dir, end_world, end_dir)
+        };
 
         // Transform from world space to parent system's local space
         let start_local = parent_inverse
@@ -455,7 +607,10 @@ pub fn finalize_connection(
             "🔍 DEBUG - Parent GlobalTransform: {:?}",
             parent_global.translation().truncate()
         );
-        info!("🔍 DEBUG - Zoom: {}, Scale: {}", **zoom, scale);
+        info!(
+            "🔍 DEBUG - Zoom: {}, NestingLevel: {} (src: {}, dst: {}), Scale: {}",
+            **zoom, flow_nesting_level, *source_nesting_level, *dest_nesting_level, scale
+        );
         info!(
             "🔍 Flow world positions - Start: {:?}, End: {:?}",
             start_world, end_world
@@ -492,7 +647,7 @@ pub fn finalize_connection(
             "New Flow",
             "A connection carrying a flow of real substance (matter, energy, or messages) with causal influence.",
             false, // Not selected initially
-            *source_nesting_level,
+            flow_nesting_level,
             scale,
             &mut stroke_tess,
             &mut meshes,
@@ -501,16 +656,32 @@ pub fn finalize_connection(
         // Add flow as child of flow_parent (matches how spawn_interaction works)
         commands.entity(flow_parent_entity).add_child(flow_entity);
 
-        // Determine target types based on element types
-        let start_target_type = if source_is_external {
+        // Determine target types based on element types and network type
+        let start_target_type = if is_e_network_feedback {
+            // E-network feedback: flow starts from a Sink
+            StartTargetType::Sink
+        } else if is_e_network_feedforward {
+            // E-network feed-forward: flow starts from a Source
+            StartTargetType::Source
+        } else if source_is_external {
+            // G-network: flow starts from a Source
             StartTargetType::Source
         } else {
+            // N-network: flow starts from a System
             StartTargetType::System
         };
 
-        let end_target_type = if dest_is_external {
+        let end_target_type = if is_e_network_feedback {
+            // E-network feedback: flow ends at a Source
+            EndTargetType::Source
+        } else if is_e_network_feedforward {
+            // E-network feed-forward: flow ends at a Sink
+            EndTargetType::Sink
+        } else if dest_is_external {
+            // G-network: flow ends at a Sink
             EndTargetType::Sink
         } else {
+            // N-network: flow ends at a System
             EndTargetType::System
         };
 
@@ -564,7 +735,15 @@ pub fn finalize_connection(
         }
 
         // Log network type for debugging
-        let network_type = if is_valid_n_network { "N" } else { "G" };
+        let network_type = if is_valid_n_network {
+            "N"
+        } else if is_e_network_feedback {
+            "E-feedback"
+        } else if is_e_network_feedforward {
+            "E-feedforward"
+        } else {
+            "G"
+        };
         info!(
             "✅ Flow created: {:?} → {:?} ({} network, Material/Resource)",
             source_entity, destination_entity, network_type

@@ -1033,12 +1033,23 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                         None => continue, // System not in entity_to_id yet (nested system case)
                     }
                 }
+                // E-network: flow ends at a Source (environmental feedback)
+                // The Source should already exist from G-network processing
+                EndTargetType::Source => {
+                    match ctx.entity_to_id.get(&flow_end_connection.target).cloned() {
+                        Some(id) => id,
+                        None => continue, // Source not in entity_to_id yet
+                    }
+                }
             };
 
             // connect the interface to the sink, whatever it may be
-            system.boundary.interfaces[interface_index]
-                .exports_to
-                .push(sink_id.clone());
+            // (skip for E-network flows which don't connect to interfaces)
+            if flow_end_connection.target_type != EndTargetType::Source {
+                system.boundary.interfaces[interface_index]
+                    .exports_to
+                    .push(sink_id.clone());
+            }
 
             // and finally, build the interaction itself (if it doesn't exist yet).
             if !ctx.entity_to_id.contains_key(&flow_entity) {
@@ -1105,12 +1116,23 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                         None => continue, // System not in entity_to_id yet (nested system case)
                     }
                 }
+                // E-network: flow starts from a Sink (environmental feedback)
+                // The Sink should already exist from G-network processing
+                StartTargetType::Sink => {
+                    match ctx.entity_to_id.get(&flow_start_connection.target).cloned() {
+                        Some(id) => id,
+                        None => continue, // Sink not in entity_to_id yet
+                    }
+                }
             };
 
             // connect the interface to the source, whatever it may be
-            system.boundary.interfaces[interface_index]
-                .receives_from
-                .push(source_id.clone());
+            // (skip for E-network flows which don't connect to interfaces)
+            if flow_start_connection.target_type != StartTargetType::Sink {
+                system.boundary.interfaces[interface_index]
+                    .receives_from
+                    .push(source_id.clone());
+            }
 
             // and finally, build the interaction itself (if it doesn't exist yet).
             if !ctx.entity_to_id.contains_key(&flow_entity) {

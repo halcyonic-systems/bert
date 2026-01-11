@@ -394,6 +394,7 @@ pub fn init_bevy_app(
                 update_flow_endpoint_handle_positions.after(auto_offset_stacking_flows),
                 update_interface_button_from_interaction,
                 update_text_color,
+                update_feedback_arcs,
             )
                 .in_set(GeometryUpdateSet),
             apply_zoom_to_added_label.after(AutoSpawnLabelSet),
@@ -457,7 +458,8 @@ pub fn init_bevy_app(
     .register_type::<NestingLevel>()
     .register_type::<FocusedSystem>()
     .register_type::<Theme>()
-    .register_type::<Zoom>();
+    .register_type::<Zoom>()
+    .register_type::<FeedbackArc>();
 
     app.world_mut()
         .resource_mut::<Assets<ColorMaterial>>()

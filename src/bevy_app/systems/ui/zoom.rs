@@ -6,8 +6,8 @@ use crate::bevy_app::bundles::{
 };
 use crate::bevy_app::components::*;
 use crate::bevy_app::constants::{
-    BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, LABEL_SCALE_VISIBILITY_THRESHOLD,
-    SCALE_VISIBILITY_THRESHOLD,
+    BUTTON_WIDTH_HALF, EXTERNAL_ENTITY_LINE_WIDTH, FLOW_LINE_WIDTH,
+    LABEL_SCALE_VISIBILITY_THRESHOLD, SCALE_VISIBILITY_THRESHOLD,
 };
 use crate::bevy_app::plugins::label::LabelContainer;
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
@@ -392,6 +392,7 @@ fn apply_geometry(
 pub fn apply_zoom_to_strokes(
     mut highlight_query: Query<(
         &NestingLevel,
+        &SystemElement,
         &mut HighlightBundles<Stroke, Stroke>,
         &mut Visibility,
     )>,
@@ -401,9 +402,15 @@ pub fn apply_zoom_to_strokes(
     >,
     zoom: Res<Zoom>,
 ) {
-    for (nesting_level, mut highlight, mut visibility) in &mut highlight_query {
+    for (nesting_level, system_element, mut highlight, mut visibility) in &mut highlight_query {
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-        highlight.idle.options.line_width = scale * EXTERNAL_ENTITY_LINE_WIDTH;
+
+        // Use appropriate line width based on element type
+        let base_line_width = match system_element {
+            SystemElement::Interaction => FLOW_LINE_WIDTH,
+            _ => EXTERNAL_ENTITY_LINE_WIDTH,
+        };
+        highlight.idle.options.line_width = scale * base_line_width;
         // TODO : this assumes only one line width which is the case right now
         // highlight.selected.options.line_width = (scale * EXTERNAL_ENTITY_SELECTED_LINE_WIDTH);
 

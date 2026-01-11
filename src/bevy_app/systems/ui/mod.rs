@@ -1,6 +1,7 @@
 mod add_remove_buttons; // DISABLED: Button systems not used in drag-and-drop workflow (Phase 0)
 mod color;
 mod drag;
+mod feedback_arc;
 mod flow;
 mod hiding;
 mod label;
@@ -13,6 +14,7 @@ use crate::bevy_app::plugins::mouse_interaction::{do_deselect_all, PickSelection
 pub use add_remove_buttons::*;
 pub use color::*;
 pub use drag::*;
+pub use feedback_arc::*;
 pub use flow::*;
 pub use hiding::*;
 pub use label::*;
