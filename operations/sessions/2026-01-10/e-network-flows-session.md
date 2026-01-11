@@ -1,7 +1,8 @@
 # E-Network Environmental Flows Session
 
 **Date:** 2026-01-10
-**Branch:** `feature/feedback-loop-visualization`
+**Status:** Complete
+**Branch:** `feature/feedback-loop-visualization` (merged to main)
 
 ## Accomplishments
 
@@ -12,8 +13,12 @@
 
 ## Commits
 
+- `ed8256b` - feat(e-network): implement Sink→Source environmental feedback flows
+- `907b4bf` - feat(e-network): add Source→Sink feed-forward environmental flows
 - `57e921e` - fix(e-network): feedback curves UP, feed-forward curves DOWN
-- `6ff51ea` - fix(flows): consistent G-network flow thickness and reduce logging
+- `4d99f39` - fix(flows): consistent G-network flow thickness and reduce logging
+
+**Merged to main** via `git merge --no-ff`
 
 ## Technical Details
 
