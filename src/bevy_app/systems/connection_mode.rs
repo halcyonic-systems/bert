@@ -494,15 +494,21 @@ pub fn finalize_connection(
             // Midpoint between start and end
             let midpoint = (start_world + end_world) / 2.0;
 
-            // Direction from SOI center to midpoint (outward)
-            let outward_dir = (midpoint - soi_center).normalize_or_zero();
-
-            // For bezier curve to go outside SOI, both directions should point outward
+            // Simple rule for curve direction based on E-network type:
+            // - Feedback (Sink→Source): curves UP (over the top of SOI)
+            // - Feed-forward (Source→Sink): curves DOWN (under the bottom of SOI)
+            // This prevents overlap when both types exist and is semantically intuitive
             let start_to_end = (end_world - start_world).normalize_or_zero();
             let perp = Vec2::new(-start_to_end.y, start_to_end.x);
 
-            // Choose perpendicular that points away from SOI center
-            let away_from_soi = if perp.dot(outward_dir) > 0.0 {
+            let preferred_direction = if is_e_network_feedback {
+                Vec2::Y  // Feedback curves UP
+            } else {
+                -Vec2::Y // Feed-forward curves DOWN
+            };
+
+            // Choose perpendicular that aligns with preferred direction
+            let away_from_soi = if perp.dot(preferred_direction) > 0.0 {
                 perp
             } else {
                 -perp

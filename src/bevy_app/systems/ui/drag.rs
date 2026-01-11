@@ -124,16 +124,19 @@ pub fn update_flow_from_external_entity(
 
                 if is_e_network {
                     // E-network: compute direction that curves outside SOI
-                    // Get the other endpoint to compute proper curve direction
+                    // Feedback (Sink→Source) curves UP, Feed-forward (Source→Sink) curves DOWN
                     let start_pos = flow_curve.start;
                     let end_pos = flow_curve.end;
                     let start_to_end = (end_pos - start_pos).normalize_or_zero();
                     let perp = Vec2::new(-start_to_end.y, start_to_end.x);
 
-                    // Choose perpendicular that points away from midpoint (outward curve)
-                    let midpoint = (start_pos + end_pos) / 2.0;
-                    let outward = -midpoint.normalize_or_zero(); // Away from origin (approx SOI center)
-                    let away_from_soi = if perp.dot(outward) > 0.0 { perp } else { -perp };
+                    let preferred_dir = if is_e_network_feedback {
+                        Vec2::Y  // Feedback curves UP
+                    } else {
+                        -Vec2::Y // Feed-forward curves DOWN
+                    };
+
+                    let away_from_soi = if perp.dot(preferred_dir) > 0.0 { perp } else { -perp };
 
                     let blend_factor = 0.85;
                     flow_curve.start_direction = (start_to_end * (1.0 - blend_factor)
@@ -149,14 +152,19 @@ pub fn update_flow_from_external_entity(
 
                 if is_e_network {
                     // E-network: compute direction that curves outside SOI
+                    // Feedback (Sink→Source) curves UP, Feed-forward (Source→Sink) curves DOWN
                     let start_pos = flow_curve.start;
                     let end_pos = flow_curve.end;
                     let end_to_start = (start_pos - end_pos).normalize_or_zero();
                     let perp = Vec2::new(-end_to_start.y, end_to_start.x);
 
-                    let midpoint = (start_pos + end_pos) / 2.0;
-                    let outward = -midpoint.normalize_or_zero();
-                    let away_from_soi = if perp.dot(outward) > 0.0 { perp } else { -perp };
+                    let preferred_dir = if is_e_network_feedback {
+                        Vec2::Y  // Feedback curves UP
+                    } else {
+                        -Vec2::Y // Feed-forward curves DOWN
+                    };
+
+                    let away_from_soi = if perp.dot(preferred_dir) > 0.0 { perp } else { -perp };
 
                     let blend_factor = 0.85;
                     flow_curve.end_direction = (end_to_start * (1.0 - blend_factor)
