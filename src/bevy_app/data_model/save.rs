@@ -74,6 +74,13 @@ impl Context {
         ty: IdType,
         parent_idx: &[i64],
     ) -> Id {
+        // First, check if entity is already registered (avoid duplicate processing)
+        // This prevents register_all_system_interfaces() and build_interface() from
+        // creating separate IDs for the same interface entity
+        if let Some(existing_id) = self.entity_to_id.get(&entity) {
+            return existing_id.clone();
+        }
+
         if let Some(original) = original_id {
             let id = original.0.clone();
 
@@ -1173,6 +1180,19 @@ fn build_interface<C: Connection>(
         IdType::Interface,
         &system.info.id.indices,
     );
+
+    // Check if interface was already added by register_all_system_interfaces()
+    // If so, update its type and return existing index instead of creating duplicate
+    if let Some(existing_idx) = system
+        .boundary
+        .interfaces
+        .iter()
+        .position(|i| i.info.id == id)
+    {
+        // Update the type (register_all_system_interfaces defaults to Import)
+        system.boundary.interfaces[existing_idx].ty = ty;
+        return existing_idx;
+    }
 
     system
         .boundary
