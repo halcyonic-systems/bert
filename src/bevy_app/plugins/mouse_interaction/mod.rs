@@ -626,6 +626,7 @@ fn handle_mouse_down(
     interaction_query: Query<(
         Entity,
         &PickingInteraction,
+        &GlobalTransform,
         Option<&PickParent>,
         Option<&PickTarget>,
     )>,
@@ -637,21 +638,33 @@ fn handle_mouse_down(
     dragging.started = false;
     dragging.start_pos = **mouse_position;
 
-    for (entity, interaction, pick_parent, pick_target) in &interaction_query {
+    // Collect all interacting entities with their z-values
+    // Higher z = closer to camera = should be selected first
+    let mut candidates: Vec<(Entity, f32, Option<&PickParent>, Option<&PickTarget>)> = Vec::new();
+
+    for (entity, interaction, global_transform, pick_parent, pick_target) in &interaction_query {
         if !matches!(interaction, PickingInteraction::None) {
-            if pick_parent.is_some() {
-                dragging.hovered_entity = Some(
-                    parent_query
-                        .get(entity)
-                        .expect("Parent should exist for components that have PickParent")
-                        .get(),
-                );
-            } else if let Some(target) = pick_target {
-                dragging.hovered_entity = Some(target.target);
-            } else {
-                dragging.hovered_entity = Some(entity);
-            }
-            break;
+            let z = global_transform.translation().z;
+            candidates.push((entity, z, pick_parent, pick_target));
+        }
+    }
+
+    // Sort by z descending (highest z first = closest to camera)
+    candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Select the topmost entity
+    if let Some((entity, _, pick_parent, pick_target)) = candidates.first() {
+        if pick_parent.is_some() {
+            dragging.hovered_entity = Some(
+                parent_query
+                    .get(*entity)
+                    .expect("Parent should exist for components that have PickParent")
+                    .get(),
+            );
+        } else if let Some(target) = pick_target {
+            dragging.hovered_entity = Some(target.target);
+        } else {
+            dragging.hovered_entity = Some(*entity);
         }
     }
 }
