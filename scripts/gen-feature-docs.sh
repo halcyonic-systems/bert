@@ -116,11 +116,12 @@ cat > "$FILEPATH" << EOF
 
 ## Overview
 
-**Feature Name**: $FEATURE_NAME  
-**Branch**: $BRANCH  
-**Status**: In Progress  
-**Contributors**: $CONTRIBUTORS  
-**Date**: $CURRENT_DATE
+**Feature Name**: $FEATURE_NAME
+**Branch**: $BRANCH
+**Status**: In Progress
+**Date Created**: $CURRENT_DATE
+**Date Completed**: —
+**Contributors**: $CONTRIBUTORS
 
 ## Description
 
@@ -164,6 +165,18 @@ example.demonstrate();
 - [Known limitations that could be addressed]
 - [Ideas for extending the feature]
 
+## Documentation Updates Required
+
+**Before merging, ensure user-facing docs are updated:**
+
+- [ ] Update relevant \`gitbook/\` pages (see below)
+- [ ] Add to release notes if user-visible change
+- [ ] Update \`gitbook/for-researchers/\` if new systems concept
+- [ ] Add example to \`gitbook/examples/\` if applicable
+
+**Gitbook pages to update:**
+- [List specific pages, e.g., \`gitbook/for-researchers/system-archetypes.md\`]
+
 ## Related Documentation
 
 - [Links to related features or documentation]
@@ -172,7 +185,7 @@ example.demonstrate();
 
 ---
 
-_This documentation was automatically generated for the $FEATURE_NAME feature on $CURRENT_DATE._
+_Feature doc created $CURRENT_DATE. Update **Status** to "Complete" and **Date Completed** when merged._
 EOF
 
 echo -e "${GREEN}Feature documentation generated at $FILEPATH${NC}"
