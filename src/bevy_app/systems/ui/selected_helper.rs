@@ -9,7 +9,12 @@ use bevy_prototype_lyon::prelude::*;
 pub fn spawn_selected_system(
     mut commands: Commands,
     system_query: Query<
-        (Entity, &PickSelection, &crate::bevy_app::components::System),
+        (
+            Entity,
+            &PickSelection,
+            &crate::bevy_app::components::System,
+            &Name,
+        ),
         (
             Changed<PickSelection>,
             Without<SelectedHighlightHelperAdded>,
@@ -17,7 +22,7 @@ pub fn spawn_selected_system(
     >,
     zoom: Res<Zoom>,
 ) {
-    for (selected_entity, selection, system) in &system_query {
+    for (selected_entity, selection, system, name) in &system_query {
         if selection.is_selected {
             let helper_entity = commands
                 .spawn((
@@ -34,10 +39,14 @@ pub fn spawn_selected_system(
                 ))
                 .id();
 
+            // Clone name to trigger change detection for leptos_bevy_canvas reactivity
+            let name_clone = name.clone();
+
             commands
                 .entity(selected_entity)
                 .add_child(helper_entity)
-                .insert(SelectedHighlightHelperAdded { helper_entity });
+                .insert(SelectedHighlightHelperAdded { helper_entity })
+                .insert(name_clone); // Re-insert Name to trigger Changed<Name>
         }
     }
 }

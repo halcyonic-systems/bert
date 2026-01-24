@@ -309,17 +309,25 @@ pub fn init_bevy_app(
                 apply_zoom_to_spatial_regions,
             )
                 .in_set(ZoomSet),
+            // despawn_selected_helper MUST run before spawn_selected_* systems
+            // to maintain single-entity invariant for leptos_bevy_canvas::single_query_signal
             (
-                spawn_selected_system,
-                spawn_selected_flow,
-                spawn_selected_interface,
-                spawn_selected_external_entity,
-                update_selected_flow_curve,
                 despawn_selected_helper,
-                remove_selected_elements.run_if(in_state(AppState::Normal).and(
-                    input_just_pressed(KeyCode::Backspace).or(input_just_pressed(KeyCode::Delete)),
-                )),
-            ),
+                (
+                    spawn_selected_system,
+                    spawn_selected_flow,
+                    spawn_selected_interface,
+                    spawn_selected_external_entity,
+                    update_selected_flow_curve,
+                    remove_selected_elements.run_if(
+                        in_state(AppState::Normal).and(
+                            input_just_pressed(KeyCode::Backspace)
+                                .or(input_just_pressed(KeyCode::Delete)),
+                        ),
+                    ),
+                ),
+            )
+                .chain(),
             (
                 update_sub_system_parent_system,
                 update_color_from_substance_type::<FlowStartConnection>,

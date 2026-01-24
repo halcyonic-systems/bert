@@ -653,14 +653,13 @@ fn handle_mouse_down(
     candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     // Select the topmost entity
-    if let Some((entity, _, pick_parent, pick_target)) = candidates.first() {
+    if let Some((entity, _z, pick_parent, pick_target)) = candidates.first() {
         if pick_parent.is_some() {
-            dragging.hovered_entity = Some(
-                parent_query
-                    .get(*entity)
-                    .expect("Parent should exist for components that have PickParent")
-                    .get(),
-            );
+            let parent = parent_query
+                .get(*entity)
+                .expect("Parent should exist for components that have PickParent")
+                .get();
+            dragging.hovered_entity = Some(parent);
         } else if let Some(target) = pick_target {
             dragging.hovered_entity = Some(target.target);
         } else {
@@ -854,8 +853,15 @@ pub fn deselect_all(mut query: Query<&mut PickSelection>) {
 /// their `is_selected` field to `false`. This operation respects the
 /// `NoDeselect` component by only operating on the provided query.
 pub fn do_deselect_all(pick_selection_query: &mut Query<&mut PickSelection>) {
+    let mut count = 0;
     for mut pick_selection in pick_selection_query {
+        if pick_selection.is_selected {
+            count += 1;
+        }
         pick_selection.is_selected = false;
+    }
+    if count > 0 {
+        info!("🧹 do_deselect_all: deselected {} entities", count);
     }
 }
 
