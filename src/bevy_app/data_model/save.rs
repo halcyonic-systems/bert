@@ -1155,6 +1155,34 @@ fn build_interfaces_interaction_and_external_entities<P: HasInfo + HasSourcesAnd
                     original_id_query,
                 );
             }
+        // E-network: Pure external feedback flow (Sink → Source) that doesn't pass through the system
+        // These flows connect external entities directly without touching the system boundary
+        } else if matches!(flow_start_connection.target_type, StartTargetType::Sink)
+            && matches!(flow_end_connection.target_type, EndTargetType::Source)
+        {
+            // Both Sink and Source should already be registered from processing other flows
+            let Some(source_id) = ctx.entity_to_id.get(&flow_start_connection.target).cloned()
+            else {
+                continue; // Sink not registered yet
+            };
+            let Some(sink_id) = ctx.entity_to_id.get(&flow_end_connection.target).cloned() else {
+                continue; // Source not registered yet
+            };
+
+            // Build the interaction if it doesn't exist yet
+            if !ctx.entity_to_id.contains_key(&flow_entity) {
+                build_interaction(
+                    ctx,
+                    flow_entity,
+                    flow,
+                    parent,
+                    source_id,
+                    sink_id,
+                    endpoint_offset.copied(),
+                    name_and_description_query,
+                    original_id_query,
+                );
+            }
         }
     }
 }

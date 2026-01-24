@@ -61,15 +61,20 @@ pub fn drag_external_entity(
 
         for (start_connection, end_connection, flow_curve) in &flow_query {
             if start_connection.target == event.target {
-                debug_assert!(end_connection.target_type == EndTargetType::System);
-                system = end_connection.target;
+                // For E-network flows (Sink→Source or Source→Sink), the other end is an external entity, not a system
+                // Only track system if it's actually a system target
+                if end_connection.target_type == EndTargetType::System {
+                    system = end_connection.target;
+                }
                 other_end = flow_curve.end;
                 other_end_direction = flow_curve.end_direction;
                 tangent_len = flow_curve.compute_tangent_length();
                 break;
             } else if end_connection.target == event.target {
-                debug_assert!(start_connection.target_type == StartTargetType::System);
-                system = start_connection.target;
+                // For E-network flows, the other end might be an external entity
+                if start_connection.target_type == StartTargetType::System {
+                    system = start_connection.target;
+                }
                 other_end = flow_curve.start;
                 other_end_direction = flow_curve.start_direction;
                 tangent_len = flow_curve.compute_tangent_length();

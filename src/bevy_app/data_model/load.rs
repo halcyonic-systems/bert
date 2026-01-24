@@ -207,11 +207,13 @@ fn spawn_interactions(
 
         let start_target = ctx.id_to_entity[&interaction.source];
 
-        let target_type = if matches!(interaction.source.ty, IdType::Source) {
-            StartTargetType::Source
-        } else {
-            system_id = interaction.source.clone();
-            StartTargetType::System
+        let target_type = match interaction.source.ty {
+            IdType::Source => StartTargetType::Source,
+            IdType::Sink => StartTargetType::Sink, // E-network feedback: flow starts from Sink
+            _ => {
+                system_id = interaction.source.clone();
+                StartTargetType::System
+            }
         };
 
         interaction_commands.insert(FlowStartConnection {
@@ -221,11 +223,13 @@ fn spawn_interactions(
 
         let end_target = ctx.id_to_entity[&interaction.sink];
 
-        let target_type = if matches!(interaction.sink.ty, IdType::Sink) {
-            EndTargetType::Sink
-        } else {
-            system_id = interaction.sink.clone();
-            EndTargetType::System
+        let target_type = match interaction.sink.ty {
+            IdType::Sink => EndTargetType::Sink,
+            IdType::Source => EndTargetType::Source, // E-network feedback: flow ends at Source
+            _ => {
+                system_id = interaction.sink.clone();
+                EndTargetType::System
+            }
         };
 
         interaction_commands.insert(FlowEndConnection {
