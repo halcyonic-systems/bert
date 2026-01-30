@@ -235,36 +235,6 @@
                     },
                     {
                         "info": {
-                            "id": "I0.1",
-                            "level": 1,
-                            "name": "Cryptographic Wallet",
-                            "description": "Application interface that allows Cosmos users to manage ATOM, delegate to validators, participate in governance, and initiate IBC transfers.\n\nActs as the primary boundary between users and the execution subsystem, implementing Cosmos SDK transaction standards and IBC transfer protocols.\n\nKey functions:\n1. ATOM transaction creation and signing\n2. Validator delegation and staking management\n3. Governance proposal voting\n4. IBC transfer initiation\n5. Cross-chain asset management\n\nImplementations:\nKeplr, Cosmostation, Leap Wallet\nhttps://docs.keplr.app/\nhttps://docs.cosmostation.io/"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "Src-1.0"
-                        ],
-                        "angle": -3.1196945
-                    },
-                    {
-                        "info": {
-                            "id": "I0.2",
-                            "level": 1,
-                            "name": "Developer Portal",
-                            "description": "Web-based interfaces providing documentation, tutorials, and development tools for Cosmos SDK developers and IBC application builders."
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "Src-1.1"
-                        ],
-                        "angle": 1.575743
-                    },
-                    {
-                        "info": {
                             "id": "I0.3",
                             "level": 1,
                             "name": "Network Connectivity",
@@ -280,10 +250,40 @@
                     },
                     {
                         "info": {
-                            "id": "I0.4",
+                            "id": "I0.51",
+                            "level": 1,
+                            "name": "Developer Portal",
+                            "description": "Web-based interface for Cosmos SDK, CometBFT, and IBC protocol contributions"
+                        },
+                        "protocol": "",
+                        "type": "Import",
+                        "exports_to": [],
+                        "receives_from": [
+                            "Src-1.1"
+                        ],
+                        "angle": 1.575743
+                    },
+                    {
+                        "info": {
+                            "id": "I0.52",
+                            "level": 1,
+                            "name": "Cryptographic Wallet",
+                            "description": "Application interface for ATOM transactions, IBC transfers, validator delegation, and governance voting"
+                        },
+                        "protocol": "",
+                        "type": "Import",
+                        "exports_to": [],
+                        "receives_from": [
+                            "Src-1.0"
+                        ],
+                        "angle": -3.1196945
+                    },
+                    {
+                        "info": {
+                            "id": "I0.53",
                             "level": 1,
                             "name": "Hub RPC Interface",
-                            "description": "Broadcasts finalized ATOM transactions, IBC confirmations, governance results, and staking rewards to users and connected chains."
+                            "description": "RPC endpoint broadcasting ATOM confirmations, IBC transfer receipts, governance results, and staking rewards"
                         },
                         "protocol": "",
                         "type": "Export",
@@ -393,6 +393,132 @@
             "transformation": "",
             "member_autonomy": 1.0,
             "time_constant": "Second"
+        },
+        {
+            "info": {
+                "id": "C0.51",
+                "level": 1,
+                "name": "Developer Portal",
+                "description": "Mediates code contributions and governance proposals at the GitHub interface for Cosmos SDK, CometBFT, and IBC development"
+            },
+            "sources": [],
+            "sinks": [],
+            "parent": "S0",
+            "complexity": {
+                "Complex": {
+                    "adaptable": false,
+                    "evolveable": false
+                }
+            },
+            "boundary": {
+                "info": {
+                    "id": "B0.51",
+                    "level": 1,
+                    "name": "",
+                    "description": ""
+                },
+                "porosity": 0.0,
+                "perceptive_fuzziness": 0.0,
+                "interfaces": [],
+                "parent_interface": "I0.51"
+            },
+            "radius": 12.0,
+            "transform": {
+                "translation": [
+                    -1.7194062,
+                    0.0
+                ],
+                "rotation": -3.1415925
+            },
+            "equivalence": "",
+            "history": "",
+            "transformation": "",
+            "member_autonomy": 1.0,
+            "time_constant": "Second"
+        },
+        {
+            "info": {
+                "id": "C0.52",
+                "level": 1,
+                "name": "Cryptographic Wallet",
+                "description": "Mediates user transaction submissions at the wallet interface. Handles ATOM transfers, IBC operations, and governance votes via Keplr, Cosmostation, or Leap"
+            },
+            "sources": [],
+            "sinks": [],
+            "parent": "S0",
+            "complexity": {
+                "Complex": {
+                    "adaptable": false,
+                    "evolveable": false
+                }
+            },
+            "boundary": {
+                "info": {
+                    "id": "B0.52",
+                    "level": 1,
+                    "name": "",
+                    "description": ""
+                },
+                "porosity": 0.0,
+                "perceptive_fuzziness": 0.0,
+                "interfaces": [],
+                "parent_interface": "I0.52"
+            },
+            "radius": 12.0,
+            "transform": {
+                "translation": [
+                    -1.7194062,
+                    0.0
+                ],
+                "rotation": -3.1415925
+            },
+            "equivalence": "",
+            "history": "",
+            "transformation": "",
+            "member_autonomy": 1.0,
+            "time_constant": "Second"
+        },
+        {
+            "info": {
+                "id": "C0.53",
+                "level": 1,
+                "name": "Hub RPC Interface",
+                "description": "Mediates confirmation broadcasts and IBC acknowledgments to users at the Hub RPC interface"
+            },
+            "sources": [],
+            "sinks": [],
+            "parent": "S0",
+            "complexity": {
+                "Complex": {
+                    "adaptable": false,
+                    "evolveable": false
+                }
+            },
+            "boundary": {
+                "info": {
+                    "id": "B0.53",
+                    "level": 1,
+                    "name": "",
+                    "description": ""
+                },
+                "porosity": 0.0,
+                "perceptive_fuzziness": 0.0,
+                "interfaces": [],
+                "parent_interface": "I0.53"
+            },
+            "radius": 12.0,
+            "transform": {
+                "translation": [
+                    -1.7194062,
+                    0.0
+                ],
+                "rotation": 0.0
+            },
+            "equivalence": "",
+            "history": "",
+            "transformation": "",
+            "member_autonomy": 1.0,
+            "time_constant": "Second"
         }
     ],
     "interactions": [
@@ -449,7 +575,7 @@
             "source": "Src-1.0",
             "source_interface": null,
             "sink": "S0",
-            "sink_interface": "I0.1",
+            "sink_interface": "I0.52",
             "amount": "1",
             "unit": "Transaction",
             "parameters": [
@@ -496,7 +622,7 @@
             "source": "Src-1.1",
             "source_interface": null,
             "sink": "S0",
-            "sink_interface": "I0.2",
+            "sink_interface": "I0.51",
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -588,7 +714,7 @@
             "type": "Flow",
             "usability": "Product",
             "source": "S0",
-            "source_interface": "I0.4",
+            "source_interface": "I0.53",
             "sink": "Snk-1.1",
             "sink_interface": null,
             "amount": "1",
@@ -874,6 +1000,81 @@
             "endpoint_offset": {
                 "start_angle": -0.029942956,
                 "end_angle": 1.5668627
+            }
+        },
+        {
+            "info": {
+                "id": "F0.5",
+                "level": 1,
+                "name": "Code Contributions",
+                "description": "SDK modules, CometBFT updates, and IBC improvements entering the development process"
+            },
+            "substance": {
+                "sub_type": "",
+                "type": "Message"
+            },
+            "type": "Flow",
+            "usability": "Resource",
+            "source": "C0.51",
+            "source_interface": null,
+            "sink": "C0.2",
+            "sink_interface": null,
+            "amount": "1",
+            "unit": "",
+            "parameters": [],
+            "endpoint_offset": {
+                "start_angle": null,
+                "end_angle": 1.57
+            }
+        },
+        {
+            "info": {
+                "id": "F0.6",
+                "level": 1,
+                "name": "User Transaction Submissions",
+                "description": "Signed ATOM transactions, IBC transfers, and governance votes from wallet to execution layer"
+            },
+            "substance": {
+                "sub_type": "",
+                "type": "Message"
+            },
+            "type": "Flow",
+            "usability": "Resource",
+            "source": "C0.52",
+            "source_interface": null,
+            "sink": "C0.1",
+            "sink_interface": null,
+            "amount": "1",
+            "unit": "",
+            "parameters": [],
+            "endpoint_offset": {
+                "start_angle": 0.0,
+                "end_angle": 3.14
+            }
+        },
+        {
+            "info": {
+                "id": "F0.7",
+                "level": 1,
+                "name": "Confirmation Broadcast",
+                "description": "Confirmed ATOM transactions, IBC receipts, and governance results sent to users via RPC"
+            },
+            "substance": {
+                "sub_type": "",
+                "type": "Message"
+            },
+            "type": "Flow",
+            "usability": "Product",
+            "source": "C0.1",
+            "source_interface": null,
+            "sink": "C0.53",
+            "sink_interface": null,
+            "amount": "1",
+            "unit": "",
+            "parameters": [],
+            "endpoint_offset": {
+                "start_angle": -1.0,
+                "end_angle": 3.14
             }
         }
     ],

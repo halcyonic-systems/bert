@@ -235,36 +235,6 @@
                     },
                     {
                         "info": {
-                            "id": "I0.1",
-                            "level": 1,
-                            "name": "Cryptographic Wallet",
-                            "description": "Application interface that allows Solana users to create and sign transactions, deploy and interact with programs, and manage SOL and SPL tokens.\n\nActs as the primary boundary between users and the execution subsystem, implementing Solana transaction formats and program invocation standards.\n\nKey functions:\n1. Transaction creation and signing with recent blockhash\n2. Program deployment and Cross Program Invocation (CPI)\n3. SOL and SPL token management\n4. Validator delegation and staking operations\n5. Real-time RPC communication for high-speed interactions\n\nImplementations:\nPhantom, Solflare, Ledger Live\nhttps://docs.solana.com/developing/clients/javascript-api\nhttps://docs.solana.com/wallet-guide"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "Src-1.0"
-                        ],
-                        "angle": -3.1196945
-                    },
-                    {
-                        "info": {
-                            "id": "I0.2",
-                            "level": 1,
-                            "name": "Developer Portal",
-                            "description": "Web-based interfaces providing documentation, tutorials, and development tools for Solana program developers and ecosystem builders."
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "Src-1.1"
-                        ],
-                        "angle": 1.575743
-                    },
-                    {
-                        "info": {
                             "id": "I0.3",
                             "level": 1,
                             "name": "Network Connectivity",
@@ -280,10 +250,40 @@
                     },
                     {
                         "info": {
-                            "id": "I0.4",
+                            "id": "I0.51",
+                            "level": 1,
+                            "name": "Developer Portal",
+                            "description": "Web-based interface for Solana core client, Anchor framework, and SPL program contributions"
+                        },
+                        "protocol": "",
+                        "type": "Import",
+                        "exports_to": [],
+                        "receives_from": [
+                            "Src-1.1"
+                        ],
+                        "angle": 1.575743
+                    },
+                    {
+                        "info": {
+                            "id": "I0.52",
+                            "level": 1,
+                            "name": "Cryptographic Wallet",
+                            "description": "Application interface for SOL transactions, SPL token operations, program invocations, and validator delegation"
+                        },
+                        "protocol": "",
+                        "type": "Import",
+                        "exports_to": [],
+                        "receives_from": [
+                            "Src-1.0"
+                        ],
+                        "angle": -3.1196945
+                    },
+                    {
+                        "info": {
+                            "id": "I0.53",
                             "level": 1,
                             "name": "RPC Interface",
-                            "description": "Broadcasts finalized SOL transactions, program execution results, and real-time blockchain state to users and applications through high-performance JSON-RPC endpoints."
+                            "description": "High-performance JSON-RPC endpoint broadcasting transaction confirmations, program execution results, and real-time blockchain state"
                         },
                         "protocol": "",
                         "type": "Export",
@@ -393,6 +393,132 @@
             "transformation": "",
             "member_autonomy": 1.0,
             "time_constant": "Second"
+        },
+        {
+            "info": {
+                "id": "C0.51",
+                "level": 1,
+                "name": "Developer Portal",
+                "description": "Mediates code contributions and feature gate proposals at the GitHub interface for Solana core, Anchor, and SPL development"
+            },
+            "sources": [],
+            "sinks": [],
+            "parent": "S0",
+            "complexity": {
+                "Complex": {
+                    "adaptable": false,
+                    "evolveable": false
+                }
+            },
+            "boundary": {
+                "info": {
+                    "id": "B0.51",
+                    "level": 1,
+                    "name": "",
+                    "description": ""
+                },
+                "porosity": 0.0,
+                "perceptive_fuzziness": 0.0,
+                "interfaces": [],
+                "parent_interface": "I0.51"
+            },
+            "radius": 12.0,
+            "transform": {
+                "translation": [
+                    -1.7194062,
+                    0.0
+                ],
+                "rotation": -3.1415925
+            },
+            "equivalence": "",
+            "history": "",
+            "transformation": "",
+            "member_autonomy": 1.0,
+            "time_constant": "Second"
+        },
+        {
+            "info": {
+                "id": "C0.52",
+                "level": 1,
+                "name": "Cryptographic Wallet",
+                "description": "Mediates user transaction submissions at the wallet interface. Handles SOL transfers, program invocations, and staking operations via Phantom, Solflare, or Ledger"
+            },
+            "sources": [],
+            "sinks": [],
+            "parent": "S0",
+            "complexity": {
+                "Complex": {
+                    "adaptable": false,
+                    "evolveable": false
+                }
+            },
+            "boundary": {
+                "info": {
+                    "id": "B0.52",
+                    "level": 1,
+                    "name": "",
+                    "description": ""
+                },
+                "porosity": 0.0,
+                "perceptive_fuzziness": 0.0,
+                "interfaces": [],
+                "parent_interface": "I0.52"
+            },
+            "radius": 12.0,
+            "transform": {
+                "translation": [
+                    -1.7194062,
+                    0.0
+                ],
+                "rotation": -3.1415925
+            },
+            "equivalence": "",
+            "history": "",
+            "transformation": "",
+            "member_autonomy": 1.0,
+            "time_constant": "Second"
+        },
+        {
+            "info": {
+                "id": "C0.53",
+                "level": 1,
+                "name": "RPC Interface",
+                "description": "Mediates confirmation broadcasts and program execution results to users at the high-performance RPC interface"
+            },
+            "sources": [],
+            "sinks": [],
+            "parent": "S0",
+            "complexity": {
+                "Complex": {
+                    "adaptable": false,
+                    "evolveable": false
+                }
+            },
+            "boundary": {
+                "info": {
+                    "id": "B0.53",
+                    "level": 1,
+                    "name": "",
+                    "description": ""
+                },
+                "porosity": 0.0,
+                "perceptive_fuzziness": 0.0,
+                "interfaces": [],
+                "parent_interface": "I0.53"
+            },
+            "radius": 12.0,
+            "transform": {
+                "translation": [
+                    -1.7194062,
+                    0.0
+                ],
+                "rotation": 0.0
+            },
+            "equivalence": "",
+            "history": "",
+            "transformation": "",
+            "member_autonomy": 1.0,
+            "time_constant": "Second"
         }
     ],
     "interactions": [
@@ -449,7 +575,7 @@
             "source": "Src-1.0",
             "source_interface": null,
             "sink": "S0",
-            "sink_interface": "I0.1",
+            "sink_interface": "I0.52",
             "amount": "1",
             "unit": "Transaction",
             "parameters": [
@@ -496,7 +622,7 @@
             "source": "Src-1.1",
             "source_interface": null,
             "sink": "S0",
-            "sink_interface": "I0.2",
+            "sink_interface": "I0.51",
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -588,7 +714,7 @@
             "type": "Flow",
             "usability": "Product",
             "source": "S0",
-            "source_interface": "I0.4",
+            "source_interface": "I0.53",
             "sink": "Snk-1.1",
             "sink_interface": null,
             "amount": "1",
@@ -874,6 +1000,81 @@
             "endpoint_offset": {
                 "start_angle": -0.029942956,
                 "end_angle": 1.5668627
+            }
+        },
+        {
+            "info": {
+                "id": "F0.5",
+                "level": 1,
+                "name": "Code Contributions",
+                "description": "Runtime optimizations, Anchor updates, and SPL standards entering the development process"
+            },
+            "substance": {
+                "sub_type": "",
+                "type": "Message"
+            },
+            "type": "Flow",
+            "usability": "Resource",
+            "source": "C0.51",
+            "source_interface": null,
+            "sink": "C0.2",
+            "sink_interface": null,
+            "amount": "1",
+            "unit": "",
+            "parameters": [],
+            "endpoint_offset": {
+                "start_angle": null,
+                "end_angle": 1.57
+            }
+        },
+        {
+            "info": {
+                "id": "F0.6",
+                "level": 1,
+                "name": "User Transaction Submissions",
+                "description": "Signed SOL transactions and program invocations from wallet to execution layer"
+            },
+            "substance": {
+                "sub_type": "",
+                "type": "Message"
+            },
+            "type": "Flow",
+            "usability": "Resource",
+            "source": "C0.52",
+            "source_interface": null,
+            "sink": "C0.1",
+            "sink_interface": null,
+            "amount": "1",
+            "unit": "",
+            "parameters": [],
+            "endpoint_offset": {
+                "start_angle": 0.0,
+                "end_angle": 3.14
+            }
+        },
+        {
+            "info": {
+                "id": "F0.7",
+                "level": 1,
+                "name": "Confirmation Broadcast",
+                "description": "Confirmed SOL transactions and program execution results sent to users via JSON-RPC"
+            },
+            "substance": {
+                "sub_type": "",
+                "type": "Message"
+            },
+            "type": "Flow",
+            "usability": "Product",
+            "source": "C0.1",
+            "source_interface": null,
+            "sink": "C0.53",
+            "sink_interface": null,
+            "amount": "1",
+            "unit": "",
+            "parameters": [],
+            "endpoint_offset": {
+                "start_angle": -1.0,
+                "end_angle": 3.14
             }
         }
     ],
