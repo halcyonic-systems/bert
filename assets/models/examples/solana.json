@@ -133,30 +133,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.2.0",
-                            "level": 2,
-                            "name": "Protocol Enhancement Release",
-                            "description": "Issues new Solana client versions, runtime optimizations, and feature activations that improve network performance and capabilities.\n\nKey functions:\n1. Core client software releases and performance improvements\n2. Feature gate activation for new capabilities\n3. Sealevel runtime optimizations and parallel execution enhancements\n4. Developer tool updates and SDK improvements\n5. Network upgrade coordination and compatibility testing\n\nSource repositories:\nhttps://github.com/solana-labs/solana/releases\nhttps://docs.solana.com/developing/programming-model/overview\nhttps://docs.solana.com/developing/clients"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.5"
-                        ],
-                        "receives_from": [],
-                        "angle": -0.029942956
-                    }
-                ],
-                "parent_interface": "I0.2"
+                "interfaces": [],
+                "parent_interface": null
             },
-            "radius": 56.25,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -56.250004,
-                    0.0
+                    -20.0,
+                    200.0
                 ],
                 "rotation": -3.1415925
             },
@@ -191,45 +175,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.1.0",
-                            "level": 2,
-                            "name": "Block & State Reception",
-                            "description": "Receives and processes new blocks with executed transactions and program state updates from the consensus layer.\n\nKey functions:\n1. Block payload reception with PoH sequence verification\n2. Parallel transaction execution via Sealevel runtime\n3. Account state synchronization and updates\n4. Program execution result validation\n5. Cross Program Invocation (CPI) processing\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/runtime\nhttps://github.com/solana-labs/solana/tree/master/core/src"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.5"
-                        ],
-                        "angle": 0.88838017
-                    },
-                    {
-                        "info": {
-                            "id": "I0.1.1",
-                            "level": 2,
-                            "name": "Transaction Propagation",
-                            "description": "Broadcasts validated transactions and program invocations to the network for inclusion in blocks.\n\nKey functions:\n1. Transaction signature verification and validation\n2. Priority fee assessment and transaction ordering\n3. Account access pattern analysis for parallel execution\n4. Program instruction preparation and CPI validation\n5. Real-time transaction streaming to validators\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/banking_stage.rs\nhttps://github.com/solana-labs/solana/tree/master/gossip"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.4"
-                        ],
-                        "receives_from": [],
-                        "angle": -0.45951575
-                    }
-                ],
-                "parent_interface": "I0.1"
+                "interfaces": [],
+                "parent_interface": null
             },
-            "radius": 61.875004,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -61.875004,
-                    0.0
+                    150.0,
+                    -120.0
                 ],
                 "rotation": -3.1415925
             },
@@ -338,7 +291,7 @@
                             "Snk-1.1"
                         ],
                         "receives_from": [],
-                        "angle": -0.000039628354
+                        "angle": -3.9628354e-05
                     }
                 ],
                 "parent_interface": null
@@ -382,75 +335,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.5.0",
-                            "level": 2,
-                            "name": "Protocol Version Management",
-                            "description": "Receives and processes protocol upgrades and feature activations from the Development subsystem. Manages network-wide feature rollouts.\n\nKey functions:\n1. Feature gate activation and rollout coordination\n2. Client version compatibility checking\n3. Network upgrade orchestration\n4. Performance optimization deployment\n5. Runtime feature management\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/sdk/feature-set\nhttps://github.com/solana-labs/solana/tree/master/core/src"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.2"
-                        ],
-                        "angle": 1.5668627
-                    },
-                    {
-                        "info": {
-                            "id": "I0.5.1",
-                            "level": 2,
-                            "name": "Consensus Rules & Rewards",
-                            "description": "Defines and enforces the consensus rules for block production, validator voting, and SOL staking rewards through Tower BFT.\n\nKey functions:\n1. Validator reward calculation and distribution\n2. Tower BFT voting rules and timeout management\n3. Stake delegation and validator selection\n4. Slashing condition enforcement\n5. Proof of History timing validation\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/consensus\nhttps://github.com/solana-labs/solana/tree/master/stake-program"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.4"
-                        ],
-                        "receives_from": [],
-                        "angle": 0.764552
-                    },
-                    {
-                        "info": {
-                            "id": "I0.5.2",
-                            "level": 2,
-                            "name": "Block & State Distribution",
-                            "description": "Manages the distribution of finalized blocks and network state across the validator network with PoH sequence verification.\n\nKey functions:\n1. Block gossip propagation with PoH timestamps\n2. State synchronization across validators\n3. Vote aggregation and consensus formation\n4. Network partition recovery\n5. Real-time performance monitoring\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/gossip\nhttps://github.com/solana-labs/solana/tree/master/core/src/cluster_info.rs"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.1"
-                        ],
-                        "receives_from": [],
-                        "angle": 2.6680434
-                    },
-                    {
-                        "info": {
-                            "id": "I0.5.3",
-                            "level": 2,
-                            "name": "Block Validation/Finalization",
-                            "description": "Validates proposed blocks and manages their finalization through Tower BFT consensus with PoH verification.\n\nKey functions:\n1. Block proposal validation with PoH sequence checking\n2. Transaction execution result verification\n3. Vote processing and consensus determination\n4. Fork choice rule implementation\n5. Network timing synchronization\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/consensus\nhttps://github.com/solana-labs/solana/tree/master/core/src/replay_stage.rs"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.4"
-                        ],
-                        "angle": -0.18468088
-                    }
-                ],
+                "interfaces": [],
                 "parent_interface": null
             },
-            "radius": 67.5,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -2.044513,
-                    33.663166
+                    19.0,
+                    46.0
                 ],
                 "rotation": 0.0
             },
@@ -485,60 +377,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.4.0",
-                            "level": 2,
-                            "name": "Consensus Rule Reception",
-                            "description": "Receives and implements consensus rules, validator duties, and reward parameters from the Protocol subsystem.\n\nKey functions:\n1. Tower BFT voting rules and timeout parameters\n2. PoH sequence generation requirements\n3. Validator reward rate calculations\n4. Stake delegation and selection criteria\n5. Network performance targets and monitoring\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/consensus\nhttps://github.com/solana-labs/solana/tree/master/validator"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.5"
-                        ],
-                        "angle": 2.0922894
-                    },
-                    {
-                        "info": {
-                            "id": "I0.4.1",
-                            "level": 2,
-                            "name": "Transaction Pool Access",
-                            "description": "Accesses pending transactions from the banking stage for inclusion in produced blocks.\n\nKey functions:\n1. Transaction selection by priority fee\n2. Parallel execution planning via account access analysis\n3. Block packing optimization for maximum throughput\n4. Cross Program Invocation (CPI) dependency resolution\n5. Real-time transaction processing and confirmation\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/banking_stage.rs\nhttps://github.com/solana-labs/solana/tree/master/runtime"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.1"
-                        ],
-                        "angle": -2.7008166
-                    },
-                    {
-                        "info": {
-                            "id": "I0.4.2",
-                            "level": 2,
-                            "name": "Block Proposal",
-                            "description": "Proposes new blocks with PoH timestamps and executed transactions when selected as leader.\n\nKey functions:\n1. PoH sequence generation and timestamping\n2. Block construction with parallel transaction execution\n3. Tower BFT vote casting and aggregation\n4. Leader schedule coordination\n5. Network performance optimization\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/leader_schedule.rs\nhttps://github.com/solana-labs/solana/tree/master/poh"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.5"
-                        ],
-                        "receives_from": [],
-                        "angle": 2.9994483
-                    }
-                ],
-                "parent_interface": "I0.4"
+                "interfaces": [],
+                "parent_interface": null
             },
-            "radius": 67.5,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -67.5,
-                    0.0
+                    -125.0,
+                    -120.0
                 ],
                 "rotation": 0.0
             },
@@ -794,9 +640,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.5",
-            "source_interface": "I0.5.1",
+            "source_interface": null,
             "sink": "C0.4",
-            "sink_interface": "I0.4.0",
+            "sink_interface": null,
             "amount": "1",
             "unit": "parameters",
             "parameters": [
@@ -830,7 +676,11 @@
                     "value": "ticks/second",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": 0.764552,
+                "end_angle": 2.0922894
+            }
         },
         {
             "info": {
@@ -846,9 +696,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.1",
-            "source_interface": "I0.1.1",
+            "source_interface": null,
             "sink": "C0.4",
-            "sink_interface": "I0.4.1",
+            "sink_interface": null,
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -872,7 +722,11 @@
                     "value": "percentage",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": -0.45951575,
+                "end_angle": -2.7008166
+            }
         },
         {
             "info": {
@@ -888,9 +742,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.4",
-            "source_interface": "I0.4.2",
+            "source_interface": null,
             "sink": "C0.5",
-            "sink_interface": "I0.5.3",
+            "sink_interface": null,
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -919,7 +773,11 @@
                     "value": "CU",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": 2.9994483,
+                "end_angle": -0.18468088
+            }
         },
         {
             "info": {
@@ -935,9 +793,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.5",
-            "source_interface": "I0.5.2",
+            "source_interface": null,
             "sink": "C0.1",
-            "sink_interface": "I0.1.0",
+            "sink_interface": null,
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -966,7 +824,11 @@
                     "value": "percentage",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": 2.6680434,
+                "end_angle": 0.88838017
+            }
         },
         {
             "info": {
@@ -982,9 +844,9 @@
             "type": "Flow",
             "usability": "Resource",
             "source": "C0.2",
-            "source_interface": "I0.2.0",
+            "source_interface": null,
             "sink": "C0.5",
-            "sink_interface": "I0.5.0",
+            "sink_interface": null,
             "amount": "1",
             "unit": "version",
             "parameters": [
@@ -1008,7 +870,11 @@
                     "value": "efficiency gain",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": -0.029942956,
+                "end_angle": 1.5668627
+            }
         }
     ],
     "hidden_entities": []

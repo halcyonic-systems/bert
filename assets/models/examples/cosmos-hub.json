@@ -133,30 +133,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.2.0",
-                            "level": 2,
-                            "name": "Protocol Enhancement Release",
-                            "description": "Issues new SDK versions, CometBFT updates, and IBC protocol improvements that have achieved community consensus through governance proposals.\n\nKey functions:\n1. Cosmos SDK module updates and new features\n2. CometBFT consensus improvements\n3. IBC protocol version upgrades\n4. Governance-approved network parameter changes\n5. Cross-chain compatibility enhancements\n\nSource repositories:\nhttps://github.com/cosmos/cosmos-sdk/releases\nhttps://github.com/cometbft/cometbft/releases\nhttps://github.com/cosmos/ibc-go/releases"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.5"
-                        ],
-                        "receives_from": [],
-                        "angle": -0.029942956
-                    }
-                ],
-                "parent_interface": "I0.2"
+                "interfaces": [],
+                "parent_interface": null
             },
-            "radius": 56.25,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -56.250004,
-                    0.0
+                    -20.0,
+                    200.0
                 ],
                 "rotation": -3.1415925
             },
@@ -191,45 +175,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.1.0",
-                            "level": 2,
-                            "name": "Block & State Reception",
-                            "description": "Receives and processes new blocks with executed transactions and IBC packets from the consensus layer.\n\nKey functions:\n1. Block payload reception and validation\n2. State transition execution\n3. IBC packet processing and routing\n4. Governance proposal execution\n5. Staking reward calculations\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/baseapp\nhttps://github.com/cosmos/gaia"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.5"
-                        ],
-                        "angle": 0.88838017
-                    },
-                    {
-                        "info": {
-                            "id": "I0.1.1",
-                            "level": 2,
-                            "name": "Transaction Propagation",
-                            "description": "Broadcasts validated ATOM transactions and IBC packets to the network for inclusion in blocks.\n\nKey functions:\n1. Transaction signature verification\n2. IBC packet validation and routing\n3. Fee deduction and gas metering\n4. Mempool organization by fee priority\n5. Cross-chain message preparation\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/types/mempool\nhttps://github.com/cosmos/ibc-go/tree/main/modules/core"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.4"
-                        ],
-                        "receives_from": [],
-                        "angle": -0.45951575
-                    }
-                ],
-                "parent_interface": "I0.1"
+                "interfaces": [],
+                "parent_interface": null
             },
-            "radius": 61.875004,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -61.875004,
-                    0.0
+                    150.0,
+                    -120.0
                 ],
                 "rotation": -3.1415925
             },
@@ -338,7 +291,7 @@
                             "Snk-1.1"
                         ],
                         "receives_from": [],
-                        "angle": -0.000039628354
+                        "angle": -3.9628354e-05
                     }
                 ],
                 "parent_interface": null
@@ -382,75 +335,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.5.0",
-                            "level": 2,
-                            "name": "Protocol Version Management",
-                            "description": "Receives and processes protocol upgrades and governance-approved changes from the Development subsystem. Manages network-wide consensus changes through coordinated upgrades.\n\nKey functions:\n1. Governance proposal integration\n2. Network upgrade coordination\n3. IBC protocol version management\n4. Validator software compatibility checking\n5. Cross-chain protocol synchronization\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/upgrade\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/gov"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.2"
-                        ],
-                        "angle": 1.5668627
-                    },
-                    {
-                        "info": {
-                            "id": "I0.5.1",
-                            "level": 2,
-                            "name": "Consensus Rules & Rewards",
-                            "description": "Defines and enforces the consensus rules for block production, ATOM staking rewards, and validator operations.\n\nKey functions:\n1. Validator reward calculation and distribution\n2. Slashing condition enforcement\n3. Delegation and unbonding rules\n4. Block proposal and voting power calculation\n5. IBC timeout and acknowledgment rules\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/staking\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/distribution\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/slashing"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.4"
-                        ],
-                        "receives_from": [],
-                        "angle": 0.764552
-                    },
-                    {
-                        "info": {
-                            "id": "I0.5.2",
-                            "level": 2,
-                            "name": "Block & State Distribution",
-                            "description": "Manages the distribution of finalized blocks and Hub state across the validator network and connected IBC chains.\n\nKey functions:\n1. Block gossip propagation\n2. State synchronization across validators\n3. IBC packet commitment and acknowledgment distribution\n4. Light client update generation\n5. Cross-chain state proof distribution\n\nSource files:\nhttps://github.com/cometbft/cometbft/tree/main/p2p\nhttps://github.com/cosmos/ibc-go/tree/main/modules/light-clients"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.1"
-                        ],
-                        "receives_from": [],
-                        "angle": 2.6680434
-                    },
-                    {
-                        "info": {
-                            "id": "I0.5.3",
-                            "level": 2,
-                            "name": "Block Validation/Finalization",
-                            "description": "Validates proposed blocks and manages their finalization through CometBFT consensus mechanism.\n\nKey functions:\n1. Block proposal validation\n2. Validator signature verification\n3. Byzantine fault tolerance and finality determination\n4. IBC packet validation and commitment\n5. Governance proposal execution validation\n\nSource files:\nhttps://github.com/cometbft/cometbft/tree/main/consensus\nhttps://github.com/cosmos/cosmos-sdk/tree/main/baseapp"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.4"
-                        ],
-                        "angle": -0.18468088
-                    }
-                ],
+                "interfaces": [],
                 "parent_interface": null
             },
-            "radius": 67.5,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -2.044513,
-                    33.663166
+                    19.0,
+                    46.0
                 ],
                 "rotation": 0.0
             },
@@ -485,60 +377,14 @@
                 },
                 "porosity": 0.0,
                 "perceptive_fuzziness": 0.0,
-                "interfaces": [
-                    {
-                        "info": {
-                            "id": "I0.4.0",
-                            "level": 2,
-                            "name": "Consensus Rule Reception",
-                            "description": "Receives and implements consensus rules, validator duties, and reward parameters from the Protocol subsystem.\n\nKey functions:\n1. Validator set updates and voting power changes\n2. Staking reward rate calculations\n3. Slashing parameter enforcement\n4. Governance proposal coordination\n5. IBC timeout and packet handling rules\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/staking\nhttps://github.com/cometbft/cometbft/tree/main/types"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.5"
-                        ],
-                        "angle": 2.0922894
-                    },
-                    {
-                        "info": {
-                            "id": "I0.4.1",
-                            "level": 2,
-                            "name": "Transaction Pool Access",
-                            "description": "Accesses pending ATOM transactions and IBC packets from the mempool for inclusion in proposed blocks.\n\nKey functions:\n1. Transaction selection by fee priority\n2. IBC packet ordering and timeout management\n3. Block space optimization\n4. Cross-chain message preparation\n5. Governance proposal inclusion\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/types/mempool\nhttps://github.com/cosmos/ibc-go/tree/main/modules/core/04-channel"
-                        },
-                        "protocol": "",
-                        "type": "Import",
-                        "exports_to": [],
-                        "receives_from": [
-                            "C0.1"
-                        ],
-                        "angle": -2.7008166
-                    },
-                    {
-                        "info": {
-                            "id": "I0.4.2",
-                            "level": 2,
-                            "name": "Block Proposal",
-                            "description": "Proposes new blocks containing executed transactions and IBC packets when selected as block proposer.\n\nKey functions:\n1. Block construction with transaction inclusion\n2. IBC packet commitment and acknowledgment\n3. Validator signature generation\n4. Cross-chain state proof creation\n5. Governance proposal execution\n\nSource files:\nhttps://github.com/cometbft/cometbft/tree/main/consensus\nhttps://github.com/cosmos/cosmos-sdk/tree/main/baseapp"
-                        },
-                        "protocol": "",
-                        "type": "Export",
-                        "exports_to": [
-                            "C0.5"
-                        ],
-                        "receives_from": [],
-                        "angle": 2.9994483
-                    }
-                ],
-                "parent_interface": "I0.4"
+                "interfaces": [],
+                "parent_interface": null
             },
-            "radius": 67.5,
+            "radius": 42.0,
             "transform": {
                 "translation": [
-                    -67.5,
-                    0.0
+                    -125.0,
+                    -120.0
                 ],
                 "rotation": 0.0
             },
@@ -794,9 +640,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.5",
-            "source_interface": "I0.5.1",
+            "source_interface": null,
             "sink": "C0.4",
-            "sink_interface": "I0.4.0",
+            "sink_interface": null,
             "amount": "1",
             "unit": "parameters",
             "parameters": [
@@ -830,7 +676,11 @@
                     "value": "blocks",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": 0.764552,
+                "end_angle": 2.0922894
+            }
         },
         {
             "info": {
@@ -846,9 +696,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.1",
-            "source_interface": "I0.1.1",
+            "source_interface": null,
             "sink": "C0.4",
-            "sink_interface": "I0.4.1",
+            "sink_interface": null,
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -872,7 +722,11 @@
                     "value": "count",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": -0.45951575,
+                "end_angle": -2.7008166
+            }
         },
         {
             "info": {
@@ -888,9 +742,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.4",
-            "source_interface": "I0.4.2",
+            "source_interface": null,
             "sink": "C0.5",
-            "sink_interface": "I0.5.3",
+            "sink_interface": null,
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -919,7 +773,11 @@
                     "value": "ATOM",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": 2.9994483,
+                "end_angle": -0.18468088
+            }
         },
         {
             "info": {
@@ -935,9 +793,9 @@
             "type": "Flow",
             "usability": "Product",
             "source": "C0.5",
-            "source_interface": "I0.5.2",
+            "source_interface": null,
             "sink": "C0.1",
-            "sink_interface": "I0.1.0",
+            "sink_interface": null,
             "amount": "1",
             "unit": "",
             "parameters": [
@@ -966,7 +824,11 @@
                     "value": "packets",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": 2.6680434,
+                "end_angle": 0.88838017
+            }
         },
         {
             "info": {
@@ -982,9 +844,9 @@
             "type": "Flow",
             "usability": "Resource",
             "source": "C0.2",
-            "source_interface": "I0.2.0",
+            "source_interface": null,
             "sink": "C0.5",
-            "sink_interface": "I0.5.0",
+            "sink_interface": null,
             "amount": "1",
             "unit": "version",
             "parameters": [
@@ -1008,7 +870,11 @@
                     "value": "version",
                     "unit": ""
                 }
-            ]
+            ],
+            "endpoint_offset": {
+                "start_angle": -0.029942956,
+                "end_angle": 1.5668627
+            }
         }
     ],
     "hidden_entities": []
