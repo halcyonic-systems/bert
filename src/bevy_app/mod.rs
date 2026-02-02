@@ -436,7 +436,10 @@ pub fn init_bevy_app(
                 .after(TransformPropagate)
                 .after(GeometryUpdateSet)
                 .run_if(in_state(AppState::Normal)),
-            AutoSpawnLabelSet.after(copy_positions_changed),
+            AutoSpawnLabelSet
+                .after(copy_positions_changed)
+                .after(TransformPropagate),
+            GeometryUpdateSet.after(TransformPropagate),
             // AllSet.run_if(in_state(FileState::Inactive)),
         ),
     )

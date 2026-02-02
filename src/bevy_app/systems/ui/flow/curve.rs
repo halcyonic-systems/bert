@@ -16,6 +16,7 @@ use bevy_prototype_lyon::prelude::*;
 pub fn draw_flow_curve(
     mut query: Query<
         (
+            Entity,
             &FlowCurve,
             Option<&FlowEndpointOffset>,
             Option<&FlowStartConnection>,
@@ -29,12 +30,15 @@ pub fn draw_flow_curve(
         Or<(Changed<FlowCurve>, Changed<FlowEndpointOffset>)>,
     >,
     subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
+    parent_query: Query<&Parent>,
+    global_transform_query: Query<&GlobalTransform>,
     mut transform_query: Query<&mut Transform, With<Path>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut meshes: ResMut<Assets<Mesh>>,
     zoom: Res<Zoom>,
 ) {
     for (
+        entity,
         flow_curve,
         offset,
         start_conn,
@@ -47,7 +51,7 @@ pub fn draw_flow_curve(
     ) in &mut query
     {
         // Compute adjusted start/end positions based on angle offsets
-        let adjusted_curve = compute_adjusted_curve(
+        let mut adjusted_curve = compute_adjusted_curve(
             flow_curve,
             offset,
             start_conn,
@@ -55,6 +59,27 @@ pub fn draw_flow_curve(
             &subsystem_query,
             **zoom,
         );
+
+        // compute_adjusted_curve produces world-space positions when angles are set.
+        // The flow path renders in parent-local space, so convert back.
+        // Same pattern as connection_mode.rs:585-591.
+        if let Some(offset) = offset {
+            if let Ok(parent) = parent_query.get(entity) {
+                if let Ok(parent_gt) = global_transform_query.get(parent.get()) {
+                    let parent_inv = parent_gt.affine().inverse();
+                    if offset.start_angle.is_some() {
+                        adjusted_curve.start = parent_inv
+                            .transform_point3(adjusted_curve.start.extend(0.0))
+                            .truncate();
+                    }
+                    if offset.end_angle.is_some() {
+                        adjusted_curve.end = parent_inv
+                            .transform_point3(adjusted_curve.end.extend(0.0))
+                            .truncate();
+                    }
+                }
+            }
+        }
 
         update_flow_curve(
             &mut transform_query,

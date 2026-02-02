@@ -387,6 +387,10 @@ pub fn auto_spawn_flow_endpoint_handles(
     >,
     // Query existing handles to check which flows already have them
     existing_handles: Query<&FlowEndpointHandle>,
+    // Queries for computing initial angles (parent-local → world conversion)
+    parent_query: Query<&Parent>,
+    global_transform_query: Query<&GlobalTransform>,
+    subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
 ) {
     // Build set of flows that already have handles
     let flows_with_handles: std::collections::HashSet<Entity> =
@@ -421,11 +425,51 @@ pub fn auto_spawn_flow_endpoint_handles(
             flow_entity, flow_curve.start, flow_curve.end
         );
 
-        // Only insert default offset if none exists (preserves loaded offsets)
+        // Compute initial angles so the update system uses the world-space-correct
+        // angle path instead of falling back to flow_curve.start/end (parent-local).
+        // This fixes level-2+ flows rendering at wrong positions on spawn.
         if existing_offset.is_none() {
-            commands
-                .entity(flow_entity)
-                .insert(FlowEndpointOffset::default());
+            let mut initial_offset = FlowEndpointOffset::default();
+
+            // flow_curve positions are parent-local (see connection_mode.rs:585-628).
+            // Convert to world space via the flow's parent GlobalTransform.
+            let (flow_world_start, flow_world_end) =
+                if let Ok(parent) = parent_query.get(flow_entity) {
+                    if let Ok(parent_gt) = global_transform_query.get(parent.get()) {
+                        (
+                            parent_gt
+                                .transform_point(flow_curve.start.extend(0.0))
+                                .truncate(),
+                            parent_gt
+                                .transform_point(flow_curve.end.extend(0.0))
+                                .truncate(),
+                        )
+                    } else {
+                        (flow_curve.start, flow_curve.end)
+                    }
+                } else {
+                    (flow_curve.start, flow_curve.end)
+                };
+
+            // Compute start angle: subsystem world center → flow start world position
+            if let Ok((subsys_gt, _)) = subsystem_query.get(start_conn.target) {
+                let center = subsys_gt.translation().truncate();
+                let to_start = flow_world_start - center;
+                if to_start.length() > 0.001 {
+                    initial_offset.start_angle = Some(to_start.to_angle());
+                }
+            }
+
+            // Compute end angle: subsystem world center → flow end world position
+            if let Ok((subsys_gt, _)) = subsystem_query.get(end_conn.target) {
+                let center = subsys_gt.translation().truncate();
+                let to_end = flow_world_end - center;
+                if to_end.length() > 0.001 {
+                    initial_offset.end_angle = Some(to_end.to_angle());
+                }
+            }
+
+            commands.entity(flow_entity).insert(initial_offset);
         }
 
         let scale = NestingLevel::compute_scale(**nesting_level, 1.0);
