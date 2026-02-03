@@ -15,6 +15,7 @@ bevy-inspector-egui = "0.35.0"
 bevy_prototype_lyon = "0.15.0"
 console_error_panic_hook = "0.1.7"
 enum-iterator = "2.1.0"
+getrandom = { version = "0.3", features = ["wasm_js"] }
 gloo-file = "0.3"
 image = "0.25"
 js-sys = "0.3"

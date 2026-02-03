@@ -634,6 +634,7 @@ dependencies = [
  "bevy_prototype_lyon",
  "console_error_panic_hook",
  "enum-iterator",
+ "getrandom 0.3.1",
  "gloo-file",
  "image",
  "js-sys",
