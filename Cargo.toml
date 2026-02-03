@@ -6,23 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.15", features = [
+bevy = { version = "0.17", features = [
     "bevy_picking",
     "bevy_mesh_picking_backend",
 ] } #, features = ["dynamic_linking"] }
-bevy_file_dialog = { git = "https://github.com/richardhozak/bevy_file_dialog.git" }
-bevy-inspector-egui = "0.29.0"
-bevy_picking = { version = "0.15", features = ["bevy_mesh_picking_backend"] }
-bevy_prototype_lyon = "0.13.0"
+bevy_file_dialog = "0.9.0"
+bevy-inspector-egui = "0.35.0"
+bevy_prototype_lyon = "0.15.0"
 console_error_panic_hook = "0.1.7"
 enum-iterator = "2.1.0"
 gloo-file = "0.3"
 image = "0.25"
 js-sys = "0.3"
-leptos = { version = "0.7", features = ["csr"] }
-leptos-bevy-canvas = { git = "https://github.com/Synphonyte/leptos-bevy-canvas.git" }
-leptos_meta = { version = "0.7", default-features = true }
-leptos-use = "0.15"
+leptos = { version = "0.8", features = ["csr"] }
+leptos-bevy-canvas = "0.4.0"
+leptos_meta = { version = "0.8", default-features = true }
+leptos-use = "0.16"
 lyon_algorithms = "1"
 num-traits = "0.2.18"
 regex = "1.10.4"

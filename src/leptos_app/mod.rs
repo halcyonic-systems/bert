@@ -17,7 +17,7 @@ use crate::{ParentState, Subsystem};
 use bevy::prelude::{Name, With};
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::{
-    event_b2l, event_l2b, signal_synced, single_query_signal, BevyCanvas,
+    message_b2l, message_l2b, signal_synced, single_query_signal, BevyCanvas,
 };
 use leptos_meta::*;
 use use_file_dialog::use_file_dialog_with_options;
@@ -45,22 +45,23 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     // Unified LoadFileEvent system for both Ctrl+L file dialog and Model Browser
-    let (load_file_writer, load_file_event_receiver) = event_l2b::<LoadFileEvent>();
+    let (load_file_writer, load_file_event_receiver) = message_l2b::<LoadFileEvent>();
 
     // Zoom event system for JavaScript to Bevy communication
-    let (zoom_event_writer, zoom_event_receiver) = event_l2b::<ZoomEvent>();
+    let (zoom_event_writer, zoom_event_receiver) = message_l2b::<ZoomEvent>();
 
     // Deselect event system for close button functionality
-    let (deselect_event_writer, deselect_event_receiver) = event_l2b::<DeselectAllEvent>();
+    let (deselect_event_writer, deselect_event_receiver) = message_l2b::<DeselectAllEvent>();
 
     // Palette click event system for Leptos palette panel
-    let (palette_click_writer, palette_click_receiver) = event_l2b::<PaletteClickEvent>();
+    let (palette_click_writer, palette_click_receiver) = message_l2b::<PaletteClickEvent>();
 
     // Cancel mode event system for ESC key bypass
-    let (cancel_mode_writer, cancel_mode_receiver) = event_l2b::<CancelModeEvent>();
+    let (cancel_mode_writer, cancel_mode_receiver) = message_l2b::<CancelModeEvent>();
 
     // Save success event system for user feedback
-    let (_save_success_event_writer, save_success_event_receiver) = event_l2b::<SaveSuccessEvent>();
+    let (_save_success_event_writer, save_success_event_receiver) =
+        message_l2b::<SaveSuccessEvent>();
 
     // Toast notification state
     let (toast_visible, set_toast_visible) = signal(false);
@@ -166,12 +167,12 @@ pub fn App() -> impl IntoView {
     let (spatial_mode, spatial_mode_duplex) =
         signal_synced(crate::bevy_app::components::SpatialDetailPanelMode::default());
 
-    let (detach_event_sender, detach_event_receiver) = event_l2b::<DetachMarkerLabelEvent>();
+    let (detach_event_sender, detach_event_receiver) = message_l2b::<DetachMarkerLabelEvent>();
 
-    let (tree_event_receiver, tree_event_sender) = event_b2l::<TreeEvent>();
-    let (save_success_receiver, save_success_bevy_sender) = event_b2l::<SaveSuccessEvent>();
-    let (mode_change_receiver, mode_change_sender) = event_b2l::<ModeChangeEvent>();
-    let (trigger_event_sender, trigger_event_receiver) = event_l2b::<TriggerEvent>();
+    let (tree_event_receiver, tree_event_sender) = message_b2l::<TreeEvent>();
+    let (save_success_receiver, save_success_bevy_sender) = message_b2l::<SaveSuccessEvent>();
+    let (mode_change_receiver, mode_change_sender) = message_b2l::<ModeChangeEvent>();
+    let (trigger_event_sender, trigger_event_receiver) = message_l2b::<TriggerEvent>();
 
     // Mode indicator signal for bottom toolbar
     let (mode_text, set_mode_text) = signal(String::new());

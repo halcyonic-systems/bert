@@ -17,9 +17,9 @@ use crate::plugins::label::{
     add_marker_with_text, AutoContrastTextColor, CopyPositions, HorizontalAttachmentAnchor,
     MarkerLabel, VerticalAttachmentAnchor,
 };
+use bevy::camera::primitives::Aabb;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn spawn_external_entity(
@@ -124,16 +124,17 @@ pub fn spawn_external_entity_only(
             },
             transform,
             HighlightBundles {
-                idle: Stroke::new(color, EXTERNAL_ENTITY_LINE_WIDTH * scale),
-                selected: Stroke {
+                idle_stroke: Some(Stroke::new(color, EXTERNAL_ENTITY_LINE_WIDTH * scale)),
+                selected_stroke: Some(Stroke {
                     color,
                     options: StrokeOptions::default()
                         .with_line_width(EXTERNAL_ENTITY_SELECTED_LINE_WIDTH)
                         .with_line_cap(LineCap::Round),
-                },
+                }),
+                idle_fill: None,
+                selected_fill: None,
             },
-            PickingBehavior::default(),
-            RayCastPickable::default(),
+            Pickable::default(),
             PickSelection { is_selected },
             SystemElement::ExternalEntity,
             Name::new(name.to_string()),
@@ -145,8 +146,8 @@ pub fn spawn_external_entity_only(
             NestingLevel::new(nesting_level),
         ))
         .observe(
-            |trigger: Trigger<DragPosition>, mut writer: EventWriter<ExternalEntityDrag>| {
-                writer.send(trigger.into());
+            |on: On<DragPosition>, mut writer: MessageWriter<ExternalEntityDrag>| {
+                writer.write(ExternalEntityDrag::from_on(&on));
             },
         )
         .id()

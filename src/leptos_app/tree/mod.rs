@@ -16,7 +16,7 @@ use std::rc::Rc;
 #[component]
 pub fn Tree(
     #[prop(into)] visible: Signal<bool>,
-    event_receiver: LeptosEventReceiver<TreeEvent>,
+    event_receiver: LeptosMessageReceiver<TreeEvent>,
 ) -> impl IntoView {
     let tree_ref = NodeRef::<Div>::new();
     let UseElementSizeReturn { width, height } = use_element_size(tree_ref);
@@ -37,7 +37,7 @@ pub fn Tree(
 }
 
 fn layout_tree(
-    event_receiver: LeptosEventReceiver<TreeEvent>,
+    event_receiver: LeptosMessageReceiver<TreeEvent>,
     width: f64,
     height: f64,
 ) -> impl IntoView {

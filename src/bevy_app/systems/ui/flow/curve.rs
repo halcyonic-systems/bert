@@ -3,11 +3,11 @@ use crate::bevy_app::components::{
 };
 use crate::bevy_app::constants::{FLOW_ARROW_HEAD_LENGTH, FLOW_CLICK_TOLERANCE, FLOW_CLICK_WIDTH};
 use crate::bevy_app::resources::{StrokeTessellator, Zoom};
+use bevy::asset::RenderAssetUsages;
+use bevy::camera::primitives::Aabb;
+use bevy::mesh::{Indices, PrimitiveTopology};
+use bevy::picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy::prelude::*;
-use bevy::render::mesh::{Indices, PrimitiveTopology};
-use bevy::render::primitives::Aabb;
-use bevy::render::render_asset::RenderAssetUsages;
-use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::tess::{
     BuffersBuilder, StrokeVertex, StrokeVertexConstructor, VertexBuffers,
 };
@@ -21,7 +21,7 @@ pub fn draw_flow_curve(
             Option<&FlowEndpointOffset>,
             Option<&FlowStartConnection>,
             Option<&FlowEndConnection>,
-            &mut Path,
+            &mut Shape,
             &mut SimplifiedMesh,
             &mut Aabb,
             &Children,
@@ -30,9 +30,9 @@ pub fn draw_flow_curve(
         Or<(Changed<FlowCurve>, Changed<FlowEndpointOffset>)>,
     >,
     subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     global_transform_query: Query<&GlobalTransform>,
-    mut transform_query: Query<&mut Transform, With<Path>>,
+    mut transform_query: Query<&mut Transform, With<Shape>>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut meshes: ResMut<Assets<Mesh>>,
     zoom: Res<Zoom>,
@@ -43,7 +43,7 @@ pub fn draw_flow_curve(
         offset,
         start_conn,
         end_conn,
-        path,
+        shape,
         simplified_mesh,
         aabb,
         children,
@@ -65,7 +65,7 @@ pub fn draw_flow_curve(
         // Same pattern as connection_mode.rs:585-591.
         if let Some(offset) = offset {
             if let Ok(parent) = parent_query.get(entity) {
-                if let Ok(parent_gt) = global_transform_query.get(parent.get()) {
+                if let Ok(parent_gt) = global_transform_query.get(parent.parent()) {
                     let parent_inv = parent_gt.affine().inverse();
                     if offset.start_angle.is_some() {
                         adjusted_curve.start = parent_inv
@@ -84,7 +84,7 @@ pub fn draw_flow_curve(
         update_flow_curve(
             &mut transform_query,
             &adjusted_curve,
-            path,
+            shape,
             simplified_mesh,
             aabb,
             children,
@@ -142,9 +142,9 @@ fn compute_adjusted_curve(
 }
 
 pub fn update_flow_curve(
-    transform_query: &mut Query<&mut Transform, With<Path>>,
+    transform_query: &mut Query<&mut Transform, With<Shape>>,
     flow_curve: &FlowCurve,
-    mut path: Mut<Path>,
+    mut shape: Mut<Shape>,
     mut simplified_mesh: Mut<SimplifiedMesh>,
     mut aabb: Mut<Aabb>,
     children: &Children,
@@ -155,18 +155,19 @@ pub fn update_flow_curve(
 ) {
     let scale = NestingLevel::compute_scale(nesting_level, zoom);
 
-    let curve_path = create_path_from_flow_curve(flow_curve, scale);
+    let curve_shape = create_flow_curve_shape(flow_curve, scale);
 
     let simplified_curve = flow_curve.skip_start();
-    let simplified_curve_path = create_path_from_flow_curve(&simplified_curve, scale);
+    let simplified_curve_shape = create_flow_curve_shape(&simplified_curve, scale);
 
-    simplified_mesh.0 = tessellate_simplified_mesh(&simplified_curve_path, meshes, stroke_tess);
+    simplified_mesh.0 = tessellate_simplified_mesh(&simplified_curve_shape, meshes, stroke_tess);
     *aabb = create_aabb_from_flow_curve(&simplified_curve);
 
-    *path = curve_path;
+    // Update the shape's path while preserving fill/stroke settings
+    shape.path = curve_shape.path;
 
     if let Some(child) = children.iter().next() {
-        if let Ok(mut transform) = transform_query.get_mut(*child) {
+        if let Ok(mut transform) = transform_query.get_mut(child) {
             transform.rotation = flow_curve.head_rotation();
             transform.translation = flow_curve.end.extend(transform.translation.z);
         }
@@ -189,14 +190,14 @@ impl StrokeVertexConstructor<Vertex> for VertexConstructor {
 }
 
 pub fn tessellate_simplified_mesh(
-    curve_path: &Path,
+    curve_shape: &Shape,
     meshes: &mut ResMut<Assets<Mesh>>,
     stroke_tess: &mut ResMut<StrokeTessellator>,
 ) -> Handle<Mesh> {
     let mut buffers = VertexBuffers::new();
 
     if let Err(err) = stroke_tess.tessellate_path(
-        &curve_path.0,
+        &curve_shape.path,
         &StrokeOptions::default()
             .with_line_width(FLOW_CLICK_WIDTH)
             .with_tolerance(FLOW_CLICK_TOLERANCE),
@@ -222,26 +223,24 @@ pub fn tessellate_simplified_mesh(
     meshes.add(mesh)
 }
 
-pub fn create_path_from_flow_curve(flow_curve: &FlowCurve, scale: f32) -> Path {
-    let mut curve_path_builder = PathBuilder::new();
-
+/// Create a Shape from a flow curve for visual rendering.
+/// The Shape contains the path geometry; fill/stroke are set separately.
+pub fn create_flow_curve_shape(flow_curve: &FlowCurve, scale: f32) -> Shape {
     let start = flow_curve.start;
     let end = flow_curve.end;
-
-    curve_path_builder.move_to(start);
 
     let end_direction = flow_curve.end_direction;
     let end = end + end_direction * (FLOW_ARROW_HEAD_LENGTH - 2.0) * scale;
 
     let tangent_len = flow_curve.compute_tangent_length();
 
-    curve_path_builder.cubic_bezier_to(
+    let path = ShapePath::new().move_to(start).cubic_bezier_to(
         start + flow_curve.start_direction * tangent_len,
         end + flow_curve.end_direction * tangent_len,
         end,
     );
 
-    curve_path_builder.build()
+    ShapeBuilder::with(&path).stroke((Color::NONE, 1.0)).build()
 }
 
 pub fn create_aabb_from_flow_curve(flow_curve: &FlowCurve) -> Aabb {

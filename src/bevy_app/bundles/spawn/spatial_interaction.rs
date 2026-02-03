@@ -112,20 +112,18 @@ pub fn spawn_boundary_ring(
 ) -> Entity {
     // Create a filled circle positioned around the system boundary
     // This overlaps the system but picking priority is managed by z-order
-    let ring_path = GeometryBuilder::build_as(&shapes::Circle {
+    let ring_shape = ShapeBuilder::with(&shapes::Circle {
         radius: radius + 8.0, // Extend beyond system for easier clicking
         ..default()
-    });
+    })
+    .fill(Color::srgba(0.0, 0.0, 0.0, 0.0)) // Invisible but clickable
+    .build();
 
     let boundary_entity = commands
         .spawn((
             Name::new("Boundary Ring"),
-            ShapeBundle {
-                path: ring_path,
-                transform: Transform::from_translation(position.extend(z_order)),
-                ..default()
-            },
-            Fill::color(Color::srgba(0.0, 0.0, 0.0, 0.0)), // Invisible but clickable
+            ring_shape,
+            Transform::from_translation(position.extend(z_order)),
             PickSelection::default(),
             PickTarget {
                 target: system_entity,
@@ -225,20 +223,18 @@ pub fn spawn_environment_region(
     position: Vec2,
     z_order: f32,
 ) -> Entity {
-    let environment_path = GeometryBuilder::build_as(&shapes::Circle {
+    let environment_shape = ShapeBuilder::with(&shapes::Circle {
         radius: environment_radius,
         ..default()
-    });
+    })
+    .fill(Color::srgba(0.0, 0.0, 0.0, 0.0)) // Invisible but clickable fill
+    .build();
 
     let environment_entity = commands
         .spawn((
             Name::new("Environment Region"),
-            ShapeBundle {
-                path: environment_path,
-                transform: Transform::from_translation(position.extend(z_order)),
-                ..default()
-            },
-            Fill::color(Color::srgba(0.0, 0.0, 0.0, 0.0)), // Invisible but clickable fill
+            environment_shape,
+            Transform::from_translation(position.extend(z_order)),
             PickSelection::default(),
             PickTarget {
                 target: system_entity,

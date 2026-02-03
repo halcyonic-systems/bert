@@ -1,7 +1,7 @@
 use super::PickSelection;
 use crate::bevy_app::components::{BoundaryRegion, EnvironmentRegion};
+use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
-use bevy_picking::events::{Click, Pointer};
 
 #[derive(Resource, Clone, Deref, DerefMut, PartialEq, Eq, Reflect, Debug, Default)]
 #[reflect(Resource)]
@@ -32,24 +32,24 @@ pub fn debug_selection(
 /// Enable by adding this system to the debug schedule and watching console output
 /// when clicking on boundary rings or environment areas around systems.
 pub fn debug_spatial_clicks(
-    mut click_events: EventReader<Pointer<Click>>,
+    mut click_events: MessageReader<Pointer<Click>>,
     boundary_query: Query<&BoundaryRegion>,
     environment_query: Query<&EnvironmentRegion>,
 ) {
     for event in click_events.read() {
-        if let Ok(boundary) = boundary_query.get(event.target) {
+        if let Ok(boundary) = boundary_query.get(event.entity) {
             info!(
                 "🎯 BOUNDARY CLICKED for system {:?}",
                 boundary.system_entity
             );
-        } else if let Ok(environment) = environment_query.get(event.target) {
+        } else if let Ok(environment) = environment_query.get(event.entity) {
             info!(
                 "🌍 ENVIRONMENT CLICKED for system {:?}",
                 environment.system_entity
             );
         } else {
             // Log regular system clicks too for comparison
-            debug!("Regular entity clicked: {:?}", event.target);
+            debug!("Regular entity clicked: {:?}", event.entity);
         }
     }
 }

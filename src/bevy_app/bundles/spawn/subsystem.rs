@@ -203,8 +203,8 @@ fn spawn_subsystem_common(
                 ),
             ))
             .observe(
-                |trigger: Trigger<DragPosition>, mut writer: EventWriter<SubsystemDrag>| {
-                    writer.send(trigger.into());
+                |on: On<DragPosition>, mut writer: MessageWriter<SubsystemDrag>| {
+                    writer.write(SubsystemDrag::from_on(&on));
                 },
             )
             .id(),

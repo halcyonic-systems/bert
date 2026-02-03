@@ -1,7 +1,6 @@
 //! Constants referenced across modules.
-use bevy::asset::Handle;
-use bevy::prelude::{Color, ColorMaterial, KeyCode};
-use bevy::sprite::MeshMaterial2d;
+use bevy::asset::uuid_handle;
+use bevy::prelude::{Color, ColorMaterial, KeyCode, MeshMaterial2d};
 
 /// Minimum scale of a system element before the visibility is switched to hidden.
 pub const SCALE_VISIBILITY_THRESHOLD: f32 = 0.2;
@@ -98,7 +97,7 @@ pub const EXTERNAL_ENTITY_Z: f32 = 1.0;
 
 /// The initial handle for the default color material on some meshes.
 pub const WHITE_COLOR_MATERIAL_HANDLE: MeshMaterial2d<ColorMaterial> =
-    MeshMaterial2d(Handle::weak_from_u128(0xE4E775785EA288EEA9FB9EC95377D078));
+    MeshMaterial2d(uuid_handle!("e4e77578-5ea2-88ee-a9fb-9ec95377d078"));
 
 /// The default background color of the canvas. It's also used as the background color for flow labels in the environment.
 pub const CLEAR_COLOR: Color = Color::srgb(0.98, 0.92, 0.84);

@@ -9,7 +9,7 @@ use bevy::prelude::*;
 
 pub fn remove_selected_elements(
     mut commands: Commands,
-    selected_query: Query<(Entity, &PickSelection, Option<&Parent>)>,
+    selected_query: Query<(Entity, &PickSelection, Option<&ChildOf>)>,
     flow_query: Query<
         (
             Option<&FlowStartConnection>,
@@ -19,9 +19,9 @@ pub fn remove_selected_elements(
         ),
         With<Flow>,
     >,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     root_system_query: Query<&crate::bevy_app::components::System, Without<Subsystem>>,
-    mut remove_event_writer: EventWriter<RemoveEvent>,
+    mut remove_event_writer: MessageWriter<RemoveEvent>,
 ) {
     for (entity_to_remove, selection, parent) in &selected_query {
         if selection.is_selected {
@@ -56,12 +56,12 @@ pub fn remove_selected_elements(
 
             if let Some(parent) = parent {
                 commands
-                    .entity(parent.get())
+                    .entity(parent.parent())
                     .remove_children(&[entity_to_remove]);
             }
-            commands.entity(entity_to_remove).despawn_recursive();
+            commands.entity(entity_to_remove).despawn();
 
-            remove_event_writer.send(RemoveEvent);
+            remove_event_writer.write(RemoveEvent);
         }
     }
 }
@@ -79,19 +79,23 @@ pub fn cleanup_focused_system(
 ) {
     for removed_system in removed_systems.read() {
         if removed_system == **focused_system {
-            **focused_system = root_system_query.single();
+            **focused_system = root_system_query.single().unwrap();
         }
     }
 }
 
-fn remove_entity(commands: &mut Commands, entity_to_remove: Entity, parent_query: &Query<&Parent>) {
+fn remove_entity(
+    commands: &mut Commands,
+    entity_to_remove: Entity,
+    parent_query: &Query<&ChildOf>,
+) {
     if let Ok(parent) = parent_query.get(entity_to_remove) {
         commands
-            .entity(parent.get())
+            .entity(parent.parent())
             .remove_children(&[entity_to_remove]);
     }
 
-    commands.entity(entity_to_remove).despawn_recursive();
+    commands.entity(entity_to_remove).despawn();
 }
 
 pub fn cleanup_external_entity_removal(
@@ -115,18 +119,18 @@ pub fn cleanup_labelled_removal<T: Component>(
     mut commands: Commands,
     mut removed: RemovedComponents<T>,
     copy_positions: Query<&CopyPositions>,
-    label_query: Query<(Entity, &PickTarget, Option<&Parent>)>,
+    label_query: Query<(Entity, &PickTarget, Option<&ChildOf>)>,
 ) {
     for removed in removed.read() {
         for (label_entity, pick_target, parent) in &label_query {
             let mut despawn = || {
                 if let Some(parent) = parent {
                     commands
-                        .entity(parent.get())
+                        .entity(parent.parent())
                         .remove_children(&[label_entity]);
                 }
 
-                commands.entity(label_entity).despawn_recursive();
+                commands.entity(label_entity).despawn();
             };
 
             if pick_target.target == removed {
@@ -149,19 +153,19 @@ pub fn cleanup_labelled_removal<T: Component>(
 
 pub fn listen_to_remove_marker_label_event(
     mut commands: Commands,
-    mut detach_marker_label_event: EventReader<DetachMarkerLabelEvent>,
+    mut detach_marker_label_event: MessageReader<DetachMarkerLabelEvent>,
     mut selected_query: Query<
         (Entity, &mut CopyPositions, &MarkerLabel),
         With<SelectedHighlightHelperAdded>,
     >,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
 ) {
     for _event in detach_marker_label_event.read() {
         for (entity, mut copy_positions, marker_label) in selected_query.iter_mut() {
             if let Ok(parent) = parent_query.get(marker_label.label) {
                 copy_positions
                     .0
-                    .retain(|copy_position| copy_position.target != parent.get());
+                    .retain(|copy_position| copy_position.target != parent.parent());
             }
             commands
                 .entity(entity)
@@ -232,8 +236,8 @@ pub fn cleanup_subsystem_removal(
 
                 if let Some(connection) = flow_end_connection {
                     if matches!(connection.target_type, EndTargetType::Sink) {
-                        commands.entity(connection.target).despawn_recursive();
-                        commands.entity(flow_entity).despawn_recursive();
+                        commands.entity(connection.target).despawn();
+                        commands.entity(flow_entity).despawn();
                     }
                 }
             }
@@ -245,8 +249,8 @@ pub fn cleanup_subsystem_removal(
 
                 if let Some(connection) = flow_start_connection {
                     if matches!(connection.target_type, StartTargetType::Source) {
-                        commands.entity(connection.target).despawn_recursive();
-                        commands.entity(flow_entity).despawn_recursive();
+                        commands.entity(connection.target).despawn();
+                        commands.entity(flow_entity).despawn();
                     }
                 }
             }
@@ -265,7 +269,7 @@ pub fn cleanup_subsystem_removal(
 pub fn cleanup_flow_removal(
     mut commands: Commands,
     mut removed_flows: RemovedComponents<Flow>,
-    button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
+    button_query: Query<(Entity, &CreateButton, Option<&ChildOf>)>,
     handle_query: Query<(Entity, &FlowEndpointHandle)>,
 ) {
     for removed_flow in removed_flows.read() {
@@ -274,10 +278,10 @@ pub fn cleanup_flow_removal(
             if create_button.connection_source == removed_flow {
                 if let Some(parent) = parent {
                     commands
-                        .entity(parent.get())
+                        .entity(parent.parent())
                         .remove_children(&[button_entity]);
                 }
-                commands.entity(button_entity).despawn_recursive();
+                commands.entity(button_entity).despawn();
             }
         }
 

@@ -68,7 +68,7 @@ pub fn remove_unfocused_system_buttons(
     mut commands: Commands,
     focused_system: Res<FocusedSystem>,
     mut previous_focused_system: Local<Option<Entity>>,
-    button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
+    button_query: Query<(Entity, &CreateButton, Option<&ChildOf>)>,
 ) {
     if !focused_system.is_changed() || Some(**focused_system) == *previous_focused_system {
         return;
@@ -85,11 +85,11 @@ pub fn remove_unfocused_system_buttons(
 }
 
 pub fn on_subsystem_button_click(
-    mut trigger: Trigger<Pointer<Click>>,
+    mut on: On<Pointer<Click>>,
     mut commands: Commands,
     transform_query: Query<&Transform>,
-    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
-    external_entity_query: Query<(Entity, &PickSelection, &Parent), With<ExternalEntity>>,
+    only_button_query: Query<(&CreateButton, Option<&ChildOf>)>,
+    external_entity_query: Query<(Entity, &PickSelection, &ChildOf), With<ExternalEntity>>,
     flow_connection_query: Query<(Entity, &FlowStartConnection, &FlowEndConnection)>,
     flow_query: Query<(&FlowCurve, &Flow)>,
     system_query: Query<(
@@ -104,7 +104,7 @@ pub fn on_subsystem_button_click(
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
-    trigger.propagate(false);
+    on.propagate(false);
 
     let mut inflows = vec![];
     let mut outflows = vec![];
@@ -113,7 +113,7 @@ pub fn on_subsystem_button_click(
 
     for (external_entity, selection, parent) in &external_entity_query {
         if selection.is_selected {
-            parent_system = parent.get();
+            parent_system = parent.parent();
 
             for (flow_entity, start_connection, end_connection) in &flow_connection_query {
                 if start_connection.target == external_entity {
@@ -123,7 +123,7 @@ pub fn on_subsystem_button_click(
                 }
             }
 
-            commands.entity(external_entity).despawn_recursive();
+            commands.entity(external_entity).despawn();
             commands
                 .entity(parent_system)
                 .remove_children(&[external_entity]);
@@ -131,7 +131,7 @@ pub fn on_subsystem_button_click(
     }
 
     let transform = transform_query
-        .get(trigger.target)
+        .get(on.event().entity)
         .expect("After on click this has to exist");
 
     spawn_subsystem(
@@ -151,22 +151,22 @@ pub fn on_subsystem_button_click(
         transform.translation.truncate(),
     );
 
-    despawn_create_button(&mut commands, trigger.target, &only_button_query);
+    despawn_create_button(&mut commands, on.event().entity, &only_button_query);
 }
 
 pub fn on_flow_terminal_button_click(
-    mut trigger: Trigger<Pointer<Click>>,
+    mut on: On<Pointer<Click>>,
     mut commands: Commands,
-    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
+    only_button_query: Query<(&CreateButton, Option<&ChildOf>)>,
     mut pick_selection_query: Query<&mut PickSelection>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    trigger.propagate(false);
+    on.propagate(false);
 
     do_deselect_all(&mut pick_selection_query);
 
     let (button, _) = only_button_query
-        .get(trigger.target)
+        .get(on.event().entity)
         .expect("After on click this has to exist");
 
     match button.ty {
@@ -185,14 +185,14 @@ pub fn on_flow_terminal_button_click(
         _ => unreachable!("The other types are handled in other event listeners"),
     }
 
-    despawn_create_button(&mut commands, trigger.target, &only_button_query);
+    despawn_create_button(&mut commands, on.event().entity, &only_button_query);
 }
 
 pub fn on_external_entity_create_button_click(
-    mut trigger: Trigger<Pointer<Click>>,
+    mut on: On<Pointer<Click>>,
     mut commands: Commands,
     button_query: Query<(&CreateButton, &Transform)>,
-    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
+    only_button_query: Query<(&CreateButton, Option<&ChildOf>)>,
     mut pick_selection_query: Query<&mut PickSelection>,
     subsystem_query: Query<&Subsystem>,
     nesting_query: Query<&NestingLevel>,
@@ -202,12 +202,12 @@ pub fn on_external_entity_create_button_click(
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
-    trigger.propagate(false);
+    on.propagate(false);
 
     do_deselect_all(&mut pick_selection_query);
 
     let (button, transform) = button_query
-        .get(trigger.target)
+        .get(on.event().entity)
         .expect("After on click this has to exist");
 
     match button.ty {
@@ -254,14 +254,14 @@ pub fn on_external_entity_create_button_click(
         _ => unreachable!("The other types are handled in other event listeners"),
     };
 
-    despawn_create_button(&mut commands, trigger.target, &only_button_query);
+    despawn_create_button(&mut commands, on.event().entity, &only_button_query);
 }
 
 pub fn on_create_button_click(
-    mut trigger: Trigger<Pointer<Click>>,
+    mut on: On<Pointer<Click>>,
     mut commands: Commands,
     button_query: Query<(&CreateButton, &Transform)>,
-    only_button_query: Query<(&CreateButton, Option<&Parent>)>,
+    only_button_query: Query<(&CreateButton, Option<&ChildOf>)>,
     flow_interface_query: Query<(
         Entity,
         &Flow,
@@ -275,7 +275,7 @@ pub fn on_create_button_click(
         &ElementDescription,
     )>,
     transform_query: Query<&Transform>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     subsystem_query: Query<&Subsystem>,
     nesting_query: Query<&NestingLevel>,
     mut pick_selection_query: Query<&mut PickSelection>,
@@ -285,12 +285,12 @@ pub fn on_create_button_click(
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     zoom: Res<Zoom>,
 ) {
-    trigger.propagate(false);
+    on.propagate(false);
 
     do_deselect_all(&mut pick_selection_query);
 
     let (button, transform) = button_query
-        .get(trigger.target)
+        .get(on.event().entity)
         .expect("After on click this has to exist");
 
     let nesting_level = NestingLevel::current(**focused_system, &nesting_query);
@@ -339,7 +339,7 @@ pub fn on_create_button_click(
             &system_query,
             button.connection_source,
             &combined_transform_of_entity_until_ancestor(
-                trigger.target,
+                on.event().entity,
                 subsystem_query
                     .get(button.connection_source)
                     .ok()
@@ -365,7 +365,7 @@ pub fn on_create_button_click(
             &system_query,
             button.connection_source,
             &combined_transform_of_entity_until_ancestor(
-                trigger.target,
+                on.event().entity,
                 subsystem_query
                     .get(button.connection_source)
                     .ok()
@@ -405,5 +405,5 @@ pub fn on_create_button_click(
         _ => unreachable!("The other types are handled in other event listeners"),
     };
 
-    despawn_create_button(&mut commands, trigger.target, &only_button_query);
+    despawn_create_button(&mut commands, on.event().entity, &only_button_query);
 }

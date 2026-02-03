@@ -31,26 +31,26 @@ pub fn update_label_offset_from_interface(
 
 pub fn update_label_from_interaction(
     interaction_query: Query<
-        (&Path, &NameLabel, &GlobalTransform),
+        (&Shape, &NameLabel, &GlobalTransform),
         (
             With<Flow>,
-            Or<(Changed<Path>, Changed<GlobalTransform>, Added<NameLabel>)>,
+            Or<(Changed<Shape>, Changed<GlobalTransform>, Added<NameLabel>)>,
         ),
     >,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     mut transform_query: Query<&mut Transform>,
 ) {
-    for (path, name_label, global_transform) in &interaction_query {
+    for (shape, name_label, global_transform) in &interaction_query {
         let sprite_entity = parent_query
             .get(name_label.label)
             .expect("Label should have a Parent")
-            .get();
+            .parent();
 
         let mut transform = transform_query
             .get_mut(sprite_entity)
             .expect("Label should have a Transform");
 
-        let path_len = approximate_length(&path.0, 0.1);
+        let path_len = approximate_length(&shape.path, 0.1);
 
         let mut pattern = RegularPattern {
             callback: &mut |event: WalkerEvent| {
@@ -74,7 +74,7 @@ pub fn update_label_from_interaction(
             interval: 1.0,
         };
 
-        walk_along_path(&path.0, path_len * 0.5, 0.1, &mut pattern);
+        walk_along_path(&shape.path, path_len * 0.5, 0.1, &mut pattern);
     }
 }
 
@@ -83,7 +83,7 @@ pub fn update_text_color(
     mut target_query: Query<(Entity, &mut TextColor), With<Text2d>>,
     mut removed_hidden: RemovedComponents<Hidden>,
     name_label_query: Query<&NameLabel>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
 ) {
     for label in &source_query {
         if let Ok((entity, mut color)) = target_query.get_mut(label.label) {

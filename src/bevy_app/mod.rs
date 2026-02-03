@@ -18,7 +18,7 @@ use bevy::asset::AssetMetaCheck;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
 use bevy::prelude::*;
-use bevy::transform::TransformSystem::TransformPropagate;
+use bevy::transform::plugins::TransformSystems;
 use bevy_file_dialog::FileDialogPlugin;
 // use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
@@ -89,18 +89,18 @@ pub fn init_bevy_app(
         (SelectionFilter, crate::SubSystemFilter),
     >,
     is_same_as_id_query: BevyQueryDuplex<IsSameAsIdQuery, (ExternalEntityFilter, SelectionFilter)>,
-    spatial_mode_duplex: BevyEventDuplex<SpatialDetailPanelMode>,
-    detach_event_receiver: BevyEventReceiver<DetachMarkerLabelEvent>,
-    load_file_event_sender: BevyEventReceiver<LoadFileEvent>,
-    tree_event_sender: BevyEventSender<TreeEvent>,
-    zoom_event_receiver: BevyEventReceiver<ZoomEvent>,
-    deselect_event_receiver: BevyEventReceiver<DeselectAllEvent>,
-    trigger_event_receiver: BevyEventReceiver<TriggerEvent>,
-    palette_click_receiver: BevyEventReceiver<PaletteClickEvent>,
-    save_success_event_receiver: BevyEventReceiver<SaveSuccessEvent>,
-    save_success_bevy_sender: BevyEventSender<SaveSuccessEvent>,
-    mode_change_sender: BevyEventSender<ModeChangeEvent>,
-    cancel_mode_receiver: BevyEventReceiver<CancelModeEvent>,
+    spatial_mode_duplex: BevyMessageDuplex<SpatialDetailPanelMode>,
+    detach_event_receiver: BevyMessageReceiver<DetachMarkerLabelEvent>,
+    load_file_event_sender: BevyMessageReceiver<LoadFileEvent>,
+    tree_event_sender: BevyMessageSender<TreeEvent>,
+    zoom_event_receiver: BevyMessageReceiver<ZoomEvent>,
+    deselect_event_receiver: BevyMessageReceiver<DeselectAllEvent>,
+    trigger_event_receiver: BevyMessageReceiver<TriggerEvent>,
+    palette_click_receiver: BevyMessageReceiver<PaletteClickEvent>,
+    save_success_event_receiver: BevyMessageReceiver<SaveSuccessEvent>,
+    save_success_bevy_sender: BevyMessageSender<SaveSuccessEvent>,
+    mode_change_sender: BevyMessageSender<ModeChangeEvent>,
+    cancel_mode_receiver: BevyMessageReceiver<CancelModeEvent>,
 ) -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -139,26 +139,26 @@ pub fn init_bevy_app(
     // .add_systems(Startup, |mut commands: Commands| {
     //     init_save_notification_channel(&mut commands);
     // })
-    .add_event::<ExternalEntityDrag>()
-    .add_event::<InterfaceDrag>()
-    .add_event::<SubsystemDrag>()
-    .add_event::<FlowEndpointHandleDrag>()
+    .add_message::<ExternalEntityDrag>()
+    .add_message::<InterfaceDrag>()
+    .add_message::<SubsystemDrag>()
+    .add_message::<FlowEndpointHandleDrag>()
     .init_resource::<PlacementMode>()
     .init_resource::<ConnectionMode>() // PHASE 1: Resource enabled
     .insert_resource(CommandHistory::new(50)) // PHASE 2: Undo/redo with 50-command history
     .init_resource::<UndoEventReader>() // PHASE 2: Persistent event readers for undo/redo
     .init_resource::<RedoEventReader>()
-    .add_event::<RemoveEvent>()
-    .add_event::<DetachMarkerLabelEvent>()
-    .add_event::<LoadFileEvent>()
-    .add_event::<ZoomEvent>()
-    .add_event::<DeselectAllEvent>()
-    .add_event::<PaletteClickEvent>()
-    .add_event::<SaveSuccessEvent>()
-    .add_event::<UndoEvent>() // PHASE 2: Undo/redo events
-    .add_event::<RedoEvent>()
-    .add_event::<ModeChangeEvent>() // Bottom toolbar mode indicator
-    .add_event::<CancelModeEvent>() // ESC cancel from JavaScript
+    .add_message::<RemoveEvent>()
+    .add_message::<DetachMarkerLabelEvent>()
+    .add_message::<LoadFileEvent>()
+    .add_message::<ZoomEvent>()
+    .add_message::<DeselectAllEvent>()
+    .add_message::<PaletteClickEvent>()
+    .add_message::<SaveSuccessEvent>()
+    .add_message::<UndoEvent>() // PHASE 2: Undo/redo events
+    .add_message::<RedoEvent>()
+    .add_message::<ModeChangeEvent>() // Bottom toolbar mode indicator
+    .add_message::<CancelModeEvent>() // ESC cancel from JavaScript
     .init_state::<AppState>()
     .sync_leptos_signal_with_query(selected_details_query)
     .sync_leptos_signal_with_query(interface_details_query)
@@ -168,17 +168,17 @@ pub fn init_bevy_app(
     .sync_leptos_signal_with_query(sub_system_details_query)
     .sync_leptos_signal_with_query(is_same_as_id_query)
     .sync_leptos_signal_with_resource(spatial_mode_duplex)
-    .import_event_from_leptos(detach_event_receiver)
-    .import_event_from_leptos(load_file_event_sender)
-    .import_event_from_leptos(zoom_event_receiver)
-    .import_event_from_leptos(deselect_event_receiver)
-    .import_event_from_leptos(trigger_event_receiver)
-    .import_event_from_leptos(palette_click_receiver)
-    .import_event_from_leptos(save_success_event_receiver)
-    .import_event_from_leptos(cancel_mode_receiver)
-    .export_event_to_leptos(tree_event_sender)
-    .export_event_to_leptos(save_success_bevy_sender)
-    .export_event_to_leptos(mode_change_sender)
+    .import_message_from_leptos(detach_event_receiver)
+    .import_message_from_leptos(load_file_event_sender)
+    .import_message_from_leptos(zoom_event_receiver)
+    .import_message_from_leptos(deselect_event_receiver)
+    .import_message_from_leptos(trigger_event_receiver)
+    .import_message_from_leptos(palette_click_receiver)
+    .import_message_from_leptos(save_success_event_receiver)
+    .import_message_from_leptos(cancel_mode_receiver)
+    .export_message_to_leptos(tree_event_sender)
+    .export_message_to_leptos(save_success_bevy_sender)
+    .export_message_to_leptos(mode_change_sender)
     .add_systems(Startup, (window_setup, setup));
     #[cfg(feature = "init_complete_system")]
     app.add_systems(Startup, init_complete_system.after(setup));
@@ -433,13 +433,13 @@ pub fn init_bevy_app(
         PostUpdate,
         (
             CreateButtonSet
-                .after(TransformPropagate)
+                .after(TransformSystems::Propagate)
                 .after(GeometryUpdateSet)
                 .run_if(in_state(AppState::Normal)),
             AutoSpawnLabelSet
                 .after(copy_positions_changed)
-                .after(TransformPropagate),
-            GeometryUpdateSet.after(TransformPropagate),
+                .after(TransformSystems::Propagate),
+            GeometryUpdateSet.after(TransformSystems::Propagate),
             // AllSet.run_if(in_state(FileState::Inactive)),
         ),
     )
@@ -472,7 +472,8 @@ pub fn init_bevy_app(
     .register_type::<Zoom>()
     .register_type::<FeedbackArc>();
 
-    app.world_mut()
+    let _ = app
+        .world_mut()
         .resource_mut::<Assets<ColorMaterial>>()
         .insert(
             &WHITE_COLOR_MATERIAL_HANDLE,
@@ -493,7 +494,7 @@ pub fn init_bevy_app(
 /// Also handles theme toggle events from the UI.
 pub fn toggle_theme_system(
     input: Res<ButtonInput<KeyCode>>,
-    mut trigger_events: EventReader<TriggerEvent>,
+    mut trigger_events: MessageReader<TriggerEvent>,
     mut theme: ResMut<Theme>,
 ) {
     let mut should_toggle = false;
@@ -527,6 +528,6 @@ pub fn toggle_theme_system(
 
 /// Run condition that returns false when there are active LoadFileEvents in the current frame.
 /// This prevents spatial sync from running during model loading to avoid race conditions.
-fn no_load_events_this_frame(mut events: EventReader<LoadFileEvent>) -> bool {
+fn no_load_events_this_frame(mut events: MessageReader<LoadFileEvent>) -> bool {
     events.read().count() == 0
 }

@@ -164,7 +164,7 @@ where
     }
 }
 
-pub fn generate_file_loader() -> BevyEventReceiver<LoadFileEvent> {
+pub fn generate_file_loader() -> BevyMessageReceiver<LoadFileEvent> {
     let file = RwSignal::new(None::<UseFile>);
 
     let check_if_tauri_available = move || {
@@ -200,7 +200,7 @@ pub fn generate_file_loader() -> BevyEventReceiver<LoadFileEvent> {
         additional_behavior: check_if_tauri_available,
     });
 
-    let (load_file_event_sender, load_file_event_receiver) = event_l2b::<LoadFileEvent>();
+    let (load_file_event_sender, load_file_event_receiver) = message_l2b::<LoadFileEvent>();
 
     Effect::new(move |_| {
         if let Some(UseFile { path, data }) = file.get() {

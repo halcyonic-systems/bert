@@ -12,16 +12,16 @@ use crate::bevy_app::constants::{
 use crate::bevy_app::plugins::label::LabelContainer;
 use crate::bevy_app::plugins::lyon_selection::HighlightBundles;
 use crate::bevy_app::resources::{
-    build_external_entity_aabb_half_extents, build_external_entity_path,
-    build_interface_aabb_half_extends, build_interface_path, build_interface_simplified_mesh,
+    build_external_entity_aabb_half_extents, build_external_entity_shape,
+    build_interface_aabb_half_extends, build_interface_shape, build_interface_simplified_mesh,
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Zoom, ZoomTarget,
 };
 use crate::bevy_app::systems::tessellate_simplified_mesh;
+use bevy::camera::primitives::Aabb;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::math::vec3;
+use bevy::picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
-use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 
 /// Applies the current zoom value to the x and y translations of all non-camera entities.
@@ -72,12 +72,12 @@ pub fn apply_zoom_to_system_radii(
     changed_query: Query<(), Changed<crate::bevy_app::components::System>>,
     mut query: Query<(
         &mut SimplifiedMesh,
-        &mut Path,
+        &mut Shape,
         &mut Aabb,
         &crate::bevy_app::components::System,
         Option<&SelectedHighlightHelperAdded>,
     )>,
-    mut child_query: Query<&mut Path, Without<crate::bevy_app::components::System>>,
+    mut child_query: Query<&mut Shape, Without<crate::bevy_app::components::System>>,
     zoom: Res<Zoom>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
@@ -85,21 +85,21 @@ pub fn apply_zoom_to_system_radii(
         return;
     }
 
-    for (mut simplified_mesh, mut path, mut aabb, system, helper) in &mut query {
+    for (mut simplified_mesh, mut shape, mut aabb, system, helper) in &mut query {
         let zoomed_radius = system.radius * **zoom;
 
-        let (mesh, p) = get_system_geometry_from_radius(zoomed_radius);
+        let (mesh, new_shape) = get_system_geometry_from_radius(zoomed_radius);
 
         simplified_mesh.0 = meshes.add(mesh);
-        *path = Path(p.0.clone());
+        shape.path = new_shape.path.clone();
 
         *aabb = aabb_from_radius(zoomed_radius);
 
         if let Some(helper) = helper {
-            let mut child_path = child_query
+            let mut child_shape = child_query
                 .get_mut(helper.helper_entity)
                 .expect("Helper entity should exist");
-            *child_path = p;
+            child_shape.path = new_shape.path;
         }
     }
 }
@@ -114,7 +114,7 @@ pub fn apply_zoom_to_camera_position(
     zoom: Res<Zoom>,
     mut prev_zoom: Local<Zoom>,
 ) {
-    query.single_mut().translation *= **zoom / **prev_zoom;
+    query.single_mut().unwrap().translation *= **zoom / **prev_zoom;
 
     **prev_zoom = **zoom;
 }
@@ -132,7 +132,7 @@ pub fn apply_zoom_to_palette_compensation(
     camera_query: Query<&Transform, (With<Camera>, Without<PaletteElement>)>,
     mut prev_camera_pos: Local<Vec2>,
 ) {
-    let Ok(camera_transform) = camera_query.get_single() else {
+    let Ok(camera_transform) = camera_query.single() else {
         return;
     };
 
@@ -250,7 +250,7 @@ pub fn control_zoom_from_keyboard(
 
 /// Handles zoom events sent from JavaScript/Leptos
 pub fn handle_zoom_events(
-    mut zoom_events: EventReader<crate::bevy_app::events::ZoomEvent>,
+    mut zoom_events: MessageReader<crate::bevy_app::events::ZoomEvent>,
     mut zoom: ResMut<Zoom>,
 ) {
     for event in zoom_events.read() {
@@ -279,7 +279,7 @@ pub fn handle_zoom_events(
 
 /// Handles deselect events sent from Leptos (e.g., close button clicks)
 pub fn handle_deselect_events(
-    mut deselect_events: EventReader<crate::bevy_app::events::DeselectAllEvent>,
+    mut deselect_events: MessageReader<crate::bevy_app::events::DeselectAllEvent>,
     mut pick_selection_query: Query<
         &mut crate::bevy_app::plugins::mouse_interaction::PickSelection,
     >,
@@ -292,7 +292,7 @@ pub fn handle_deselect_events(
 
 /// Controls zoom using the mouse wheel.
 pub fn control_zoom_from_mouse_wheel(
-    mut scroll_events: EventReader<MouseWheel>,
+    mut scroll_events: MessageReader<MouseWheel>,
     mut zoom: ResMut<Zoom>,
 ) {
     for event in scroll_events.read() {
@@ -319,7 +319,7 @@ pub fn apply_zoom_to_system_geometries(
         (Entity, &NestingLevel, Option<&SelectedHighlightHelperAdded>),
         (With<Interface>, Without<ExternalEntity>),
     >,
-    mut geometry_query: Query<(&mut Path, &mut SimplifiedMesh, &mut Aabb)>,
+    mut geometry_query: Query<(&mut Shape, &mut SimplifiedMesh, &mut Aabb)>,
     zoom: Res<Zoom>,
     mut fixed_system_element_geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -330,15 +330,15 @@ pub fn apply_zoom_to_system_geometries(
     for (nesting_level, geometries) in &mut **fixed_system_element_geometries {
         let scale = NestingLevel::compute_scale(*nesting_level, zoom);
 
-        let external_entity_path = build_external_entity_path(scale);
+        let external_entity_shape = build_external_entity_shape(scale);
         geometries.external_entity.simplified.0 =
-            tessellate_simplified_mesh(&external_entity_path, &mut meshes, &mut tess);
-        geometries.external_entity.path = external_entity_path;
+            tessellate_simplified_mesh(&external_entity_shape, &mut meshes, &mut tess);
+        geometries.external_entity.shape = external_entity_shape;
         geometries.external_entity.aabb.half_extents =
             build_external_entity_aabb_half_extents(scale);
 
         geometries.interface.simplified.0 = build_interface_simplified_mesh(&mut meshes, scale);
-        geometries.interface.path = build_interface_path(scale);
+        geometries.interface.shape = build_interface_shape(scale);
         geometries.interface.aabb.half_extents = build_interface_aabb_half_extends(scale);
     }
 
@@ -370,20 +370,20 @@ pub fn apply_zoom_to_system_geometries(
 
 /// Applies the given geometry to the specified entity.
 ///
-/// This function updates the `Path`, `SimplifiedMesh`, and `Aabb` components of the specified
+/// This function updates the `Shape`, `SimplifiedMesh`, and `Aabb` components of the specified
 /// entity with the values from the provided `FixedSystemElementGeometry`.
 fn apply_geometry(
     entity: Entity,
     geometry: &FixedSystemElementGeometry,
-    geometry_query: &mut Query<(&mut Path, &mut SimplifiedMesh, &mut Aabb)>,
+    geometry_query: &mut Query<(&mut Shape, &mut SimplifiedMesh, &mut Aabb)>,
 ) {
-    let (mut path, mut simplified_mesh, mut aabb) = geometry_query
+    let (mut shape, mut simplified_mesh, mut aabb) = geometry_query
         .get_mut(entity)
         .expect("Entity should have geometry");
 
     let geometry = geometry.clone();
 
-    *path = geometry.path;
+    shape.path = geometry.shape.path;
     simplified_mesh.0 = geometry.simplified.0;
     aabb.half_extents = geometry.aabb.half_extents;
 }
@@ -393,13 +393,10 @@ pub fn apply_zoom_to_strokes(
     mut highlight_query: Query<(
         &NestingLevel,
         &SystemElement,
-        &mut HighlightBundles<Stroke, Stroke>,
+        &mut HighlightBundles,
         &mut Visibility,
     )>,
-    mut stroke_query: Query<
-        (&NestingLevel, &mut Stroke, &mut Visibility),
-        Without<HighlightBundles<Stroke, Stroke>>,
-    >,
+    mut shape_query: Query<(&NestingLevel, &mut Shape, &mut Visibility), Without<HighlightBundles>>,
     zoom: Res<Zoom>,
 ) {
     for (nesting_level, system_element, mut highlight, mut visibility) in &mut highlight_query {
@@ -410,17 +407,23 @@ pub fn apply_zoom_to_strokes(
             SystemElement::Interaction => FLOW_LINE_WIDTH,
             _ => EXTERNAL_ENTITY_LINE_WIDTH,
         };
-        highlight.idle.options.line_width = scale * base_line_width;
+        if let Some(ref mut idle_stroke) = highlight.idle_stroke {
+            idle_stroke.options.line_width = scale * base_line_width;
+        }
         // TODO : this assumes only one line width which is the case right now
-        // highlight.selected.options.line_width = (scale * EXTERNAL_ENTITY_SELECTED_LINE_WIDTH);
+        // if let Some(ref mut selected_stroke) = highlight.selected_stroke {
+        //     selected_stroke.options.line_width = scale * EXTERNAL_ENTITY_SELECTED_LINE_WIDTH;
+        // }
 
         apply_visibility(&mut visibility, scale, SCALE_VISIBILITY_THRESHOLD);
     }
 
-    for (nesting_level, mut stroke, mut visibility) in &mut stroke_query {
+    for (nesting_level, mut shape, mut visibility) in &mut shape_query {
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
         let line_width = scale * EXTERNAL_ENTITY_LINE_WIDTH;
-        stroke.options.line_width = line_width;
+        if let Some(ref mut stroke) = shape.stroke {
+            stroke.options.line_width = line_width;
+        }
 
         apply_visibility(&mut visibility, scale, SCALE_VISIBILITY_THRESHOLD);
     }
@@ -591,7 +594,7 @@ pub fn animate_zoom_to_target(
     **zoom = new_zoom;
 
     // Lerp camera pan
-    if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+    if let Ok(mut camera_transform) = camera_query.single_mut() {
         let start_pan = camera_transform.translation.truncate();
         let new_pan = start_pan + (zoom_target.target_pan - start_pan) * ease_t;
         camera_transform.translation = new_pan.extend(camera_transform.translation.z);

@@ -147,8 +147,8 @@ pub fn Details(
     sub_system_details: RwSignalSynced<Option<SubSystemQuery>>,
     is_same_as_id: RwSignalSynced<Option<IsSameAsIdQuery>>,
     spatial_mode: RwSignalSynced<SpatialDetailPanelMode>,
-    detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
-    deselect_event_sender: LeptosEventSender<DeselectAllEvent>,
+    detach_event_sender: LeptosMessageSender<DetachMarkerLabelEvent>,
+    deselect_event_sender: LeptosMessageSender<DeselectAllEvent>,
 ) -> impl IntoView {
     // Panel mode signal for simplified system details
     let _panel_mode = RwSignal::new(DetailsPanelMode::System);
@@ -1071,7 +1071,7 @@ pub fn InteractionDetails(
 pub fn ExternalEntityDetails(
     external_entity_query: RwSignalSynced<Option<ExternalEntityQuery>>,
     is_same_as_id_query: RwSignalSynced<Option<IsSameAsIdQuery>>,
-    detach_event_sender: LeptosEventSender<DetachMarkerLabelEvent>,
+    detach_event_sender: LeptosMessageSender<DetachMarkerLabelEvent>,
 ) -> impl IntoView {
     let name = Signal::derive(move || {
         external_entity_query

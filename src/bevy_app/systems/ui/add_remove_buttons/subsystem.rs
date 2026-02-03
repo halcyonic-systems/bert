@@ -7,7 +7,7 @@ use crate::bevy_app::events::RemoveEvent;
 use crate::bevy_app::plugins::mouse_interaction::PickSelection;
 use crate::bevy_app::resources::{FocusedSystem, Zoom};
 use bevy::prelude::*;
-use bevy::utils::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 struct FlowUsabilities {
@@ -29,7 +29,7 @@ pub fn interface_subsystem_create_button_needs_update(
         )>,
     >,
     focused_system: Res<FocusedSystem>,
-    mut remove_event_reader: EventReader<RemoveEvent>,
+    mut remove_event_reader: MessageReader<RemoveEvent>,
 ) -> bool {
     let should_run =
         !changed_query.is_empty() || focused_system.is_changed() || !remove_event_reader.is_empty();
@@ -57,7 +57,7 @@ pub fn add_interface_subsystem_create_buttons(
     )>,
     interface_button_query: Query<&HasInterfaceSubsystemButton>,
     interface_subsystem_query: Query<&InterfaceSubsystemConnection>,
-    button_query: Query<(&CreateButton, Option<&Parent>)>,
+    button_query: Query<(&CreateButton, Option<&ChildOf>)>,
     subsystem_query: Query<(Entity, &Subsystem, Option<&InterfaceSubsystem>)>,
     system_query: Query<&crate::bevy_app::components::System>,
     focused_system: Res<FocusedSystem>,
@@ -288,9 +288,9 @@ pub fn add_interface_subsystem_create_buttons(
 
 pub fn add_subsystem_from_external_entities_create_button(
     mut commands: Commands,
-    external_entity_query: Query<(&PickSelection, &Transform, &Parent), With<ExternalEntity>>,
+    external_entity_query: Query<(&PickSelection, &Transform, &ChildOf), With<ExternalEntity>>,
     selection_changed_query: Query<(), (With<ExternalEntity>, Changed<PickSelection>)>,
-    button_query: Query<(Entity, &CreateButton, &Parent)>,
+    button_query: Query<(Entity, &CreateButton, &ChildOf)>,
     zoom: Res<Zoom>,
     asset_server: Res<AssetServer>,
 ) {
@@ -312,13 +312,13 @@ pub fn add_subsystem_from_external_entities_create_button(
     for (pick_selection, transform, parent) in &external_entity_query {
         if pick_selection.is_selected {
             if let Some(current_parent) = current_parent {
-                if parent.get() != current_parent {
+                if parent.parent() != current_parent {
                     return;
                 }
             }
             selected_count += 1;
             center += transform.translation;
-            current_parent = Some(parent.get());
+            current_parent = Some(parent.parent());
         }
     }
 

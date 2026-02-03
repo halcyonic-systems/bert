@@ -62,7 +62,7 @@ pub fn spawn_create_button(
             .with_rotation(Quat::from_rotation_z(angle)),
         InitialPosition::new(position),
         Name::new(name),
-        PickingBehavior::default(),
+        Pickable::default(),
     ));
 
     spawn_image = match create_button.ty {
@@ -106,7 +106,7 @@ pub fn spawn_create_button(
 pub fn despawn_create_button(
     commands: &mut Commands,
     entity: Entity,
-    query: &Query<(&CreateButton, Option<&Parent>)>,
+    query: &Query<(&CreateButton, Option<&ChildOf>)>,
 ) {
     let (create_button, parent) = query
         .get(entity)
@@ -119,7 +119,7 @@ pub fn despawn_create_button_with_component(
     commands: &mut Commands,
     entity: Entity,
     create_button: &CreateButton,
-    parent: Option<&Parent>,
+    parent: Option<&ChildOf>,
 ) {
     let mut entity_commands = commands.entity(create_button.connection_source);
 
@@ -142,7 +142,7 @@ pub fn despawn_create_button_with_component(
     }
 
     if let Some(parent) = parent {
-        commands.entity(parent.get()).remove_children(&[entity]);
+        commands.entity(parent.parent()).remove_children(&[entity]);
     }
 
     commands.entity(entity).despawn();

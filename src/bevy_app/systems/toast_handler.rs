@@ -3,10 +3,10 @@ use crate::events::SaveSuccessEvent;
 use bevy::prelude::*;
 
 /// System that handles save success events from both sync and async contexts
-/// Events are automatically forwarded to Leptos via the export_event_to_leptos setup
+/// Events are automatically forwarded to Leptos via the export_message_to_leptos setup
 pub fn handle_save_success_events(
-    mut events: EventReader<SaveSuccessEvent>,
-    mut save_events: EventWriter<SaveSuccessEvent>,
+    mut events: MessageReader<SaveSuccessEvent>,
+    mut save_events: MessageWriter<SaveSuccessEvent>,
     save_channel: Option<Res<SaveNotificationChannel>>,
 ) {
     // Handle events from sync contexts (like web saves)
@@ -17,7 +17,7 @@ pub fn handle_save_success_events(
         } else {
             info!("File downloaded successfully");
         }
-        // Event forwarding to Leptos happens automatically via export_event_to_leptos
+        // Event forwarding to Leptos happens automatically via export_message_to_leptos
     }
 
     // Handle events from async contexts (like desktop saves)
@@ -32,7 +32,7 @@ pub fn handle_save_success_events(
                 }
 
                 // Re-emit the event so it gets forwarded to Leptos
-                save_events.send(event);
+                save_events.write(event);
             }
         }
     }

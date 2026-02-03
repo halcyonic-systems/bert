@@ -91,15 +91,15 @@ fn icon_path_for(element_type: PaletteElementType) -> &'static str {
 //                 InitialPosition::new(position),
 //                 Name::new(format!("Palette: {:?}", element_type)),
 //                 // Enable picking and dragging
-//                 PickingBehavior {
+//                 Pickable {
 //                     should_block_lower: true, // Block clicks from passing through
 //                     is_hoverable: true,
 //                 },
 //                 PickSelection::default(), // Required for mouse interaction system
 //                 NoDeselect,               // Don't participate in selection system
 //             ))
-//             .observe(|trigger: Trigger<DragPosition>, mut commands: Commands| {
-//                 commands.trigger(PaletteDrag::from(trigger));
+//             .observe(|on: On<DragPosition>, mut commands: Commands| {
+//                 commands.write(PaletteDrag::from_on(&on));
 //             });
 //     }
 // }
@@ -112,7 +112,7 @@ fn icon_path_for(element_type: PaletteElementType) -> &'static str {
 // /// 2. Spawns a semi-transparent ghost sprite
 // /// 3. Ghost will follow cursor (handled by update_placement_ghost)
 // pub fn enter_placement_mode(
-//     mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
+//     mut click_events: MessageReader<bevy::picking::events::Pointer<bevy::picking::events::Click>>,
 //     palette_query: Query<&PaletteElement>,
 //     mut placement_mode: ResMut<PlacementMode>,
 //     mut commands: Commands,
@@ -154,7 +154,7 @@ fn icon_path_for(element_type: PaletteElementType) -> &'static str {
 
 /// Handle palette clicks from Leptos UI panel
 pub fn handle_leptos_palette_click(
-    mut palette_events: EventReader<crate::events::PaletteClickEvent>,
+    mut palette_events: MessageReader<crate::events::PaletteClickEvent>,
     mut placement_mode: ResMut<PlacementMode>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -227,8 +227,8 @@ pub fn update_placement_ghost(
     };
 
     // Get cursor world position
-    let (camera, camera_transform) = camera_query.single();
-    let window = window_query.single();
+    let (camera, camera_transform) = camera_query.single().unwrap();
+    let window = window_query.single().unwrap();
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Ok(cursor_world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
@@ -445,7 +445,7 @@ pub fn finalize_placement(
 /// Cancels placement mode and connection mode when ESC is pressed, regardless
 /// of keyboard focus state. This works around Bevy keyboard focus issues in web.
 pub fn handle_cancel_mode_event(
-    mut cancel_events: EventReader<crate::bevy_app::events::CancelModeEvent>,
+    mut cancel_events: MessageReader<crate::bevy_app::events::CancelModeEvent>,
     mut placement_mode: ResMut<PlacementMode>,
     mut connection_mode: ResMut<super::connection_mode::ConnectionMode>,
     mut commands: Commands,

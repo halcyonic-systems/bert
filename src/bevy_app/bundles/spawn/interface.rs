@@ -99,16 +99,16 @@ pub fn spawn_interface_only(
                 protocol,
             },
             transform,
-            Fill::color(substance_type.interface_color_default()),
-            PickingBehavior {
+            Pickable {
                 should_block_lower: true, // PHASE 3D FIX: Block clicks from passing through to parent system
                 is_hoverable: true,
             },
-            RayCastPickable::default(),
             PickSelection { is_selected },
             HighlightBundles {
-                idle: Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH * scale),
-                selected: Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH),
+                idle_stroke: Some(Stroke::new(Color::BLACK, INTERFACE_LINE_WIDTH * scale)),
+                selected_stroke: Some(Stroke::new(Color::BLACK, INTERFACE_SELECTED_LINE_WIDTH)),
+                idle_fill: Some(Fill::color(substance_type.interface_color_default())),
+                selected_fill: Some(Fill::color(substance_type.interface_color_default())),
             },
             SystemElement::Interface,
             Name::new(name.to_string()),
@@ -121,8 +121,8 @@ pub fn spawn_interface_only(
             NestingLevel::new(nesting_level),
         ))
         .observe(
-            |on_drag: Trigger<DragPosition>, mut writer: EventWriter<InterfaceDrag>| {
-                writer.send(on_drag.into());
+            |on: On<DragPosition>, mut writer: MessageWriter<InterfaceDrag>| {
+                writer.write(InterfaceDrag::from_on(&on));
             },
         )
         .id();

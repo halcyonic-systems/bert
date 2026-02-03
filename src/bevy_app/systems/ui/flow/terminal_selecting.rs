@@ -7,8 +7,8 @@ use crate::bevy_app::resources::{
 use crate::bevy_app::states::AppState;
 use crate::bevy_app::systems::compute_smooth_flow_terminal_direction;
 use crate::bevy_app::utils::transform_from_point2d_and_direction;
+use bevy::picking::hover::PickingInteraction;
 use bevy::prelude::*;
-use bevy_picking::focus::PickingInteraction;
 use std::ops::DerefMut;
 
 pub fn update_selecting_flow_from_mouse(
@@ -78,7 +78,8 @@ pub fn select_flow_terminal(
     mut meshes: ResMut<Assets<Mesh>>,
     mut tess: ResMut<StrokeTessellator>,
 ) {
-    let (flow_entity, flow, flow_curve, selecting, flow_nesting_level) = flow_query.single();
+    let (flow_entity, flow, flow_curve, selecting, flow_nesting_level) =
+        flow_query.single().unwrap();
     let flow_nesting_level = **flow_nesting_level;
 
     let mut target_entity = Entity::PLACEHOLDER;

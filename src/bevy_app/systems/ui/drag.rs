@@ -10,7 +10,7 @@ use crate::bevy_app::utils::{
 use bevy::prelude::*;
 
 pub fn drag_subsystem(
-    mut events: EventReader<SubsystemDrag>,
+    mut events: MessageReader<SubsystemDrag>,
     mut subsystem_query: Query<(&mut Transform, &Subsystem, Option<&InterfaceSubsystem>)>,
     system_query: Query<&crate::bevy_app::components::System>,
     zoom: Res<Zoom>,
@@ -40,7 +40,7 @@ pub fn drag_subsystem(
 }
 
 pub fn drag_external_entity(
-    mut events: EventReader<ExternalEntityDrag>,
+    mut events: MessageReader<ExternalEntityDrag>,
     mut transform_query: Query<&mut Transform>,
     flow_query: Query<(&FlowStartConnection, &FlowEndConnection, &FlowCurve), With<FlowCurve>>,
     subsystem_query: Query<&Subsystem>,
@@ -204,10 +204,10 @@ pub fn update_flow_from_interface(
     interface_query: Query<(Entity, &NestingLevel), (With<Interface>, Changed<GlobalTransform>)>,
     all_interface_query: Query<(Entity, &NestingLevel), With<Interface>>,
     transform_query: Query<&Transform>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     mut flow_query: Query<(
         &mut FlowCurve,
-        Option<&Parent>,
+        Option<&ChildOf>,
         Option<&FlowStartInterfaceConnection>,
         Option<&FlowEndInterfaceConnection>,
         Option<&FlowStartConnection>,
@@ -227,7 +227,7 @@ pub fn update_flow_from_interface(
             flow_end_conn,
         ) in &mut flow_query
         {
-            let flow_parent = flow_parent.map(|p| p.get());
+            let flow_parent = flow_parent.map(|p| p.parent());
 
             // Check if this is Interface ↔ Interface connection
             let is_interface_to_interface =
@@ -333,11 +333,11 @@ pub fn update_flow_from_interface(
 pub fn initialize_flow_curves_on_load(
     interface_query: Query<(Entity, &NestingLevel), With<Interface>>,
     transform_query: Query<&Transform>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     mut flow_query: Query<
         (
             &mut FlowCurve,
-            Option<&Parent>,
+            Option<&ChildOf>,
             Option<&FlowStartInterfaceConnection>,
             Option<&FlowEndInterfaceConnection>,
             Option<&FlowStartConnection>,
@@ -359,7 +359,7 @@ pub fn initialize_flow_curves_on_load(
         flow_end_conn,
     ) in &mut flow_query
     {
-        let flow_parent = flow_parent.map(|p| p.get());
+        let flow_parent = flow_parent.map(|p| p.parent());
 
         // Check if this is Interface ↔ Interface connection
         let is_interface_to_interface =
@@ -557,9 +557,9 @@ pub fn update_flow_from_subsystem_without_interface(
 }
 
 pub fn drag_interface(
-    mut events: EventReader<InterfaceDrag>,
+    mut events: MessageReader<InterfaceDrag>,
     mut transform_query: Query<&mut Transform, Without<crate::bevy_app::components::System>>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     system_query: Query<&crate::bevy_app::components::System>,
     flow_query: Query<(
         &FlowCurve,
@@ -580,7 +580,7 @@ pub fn drag_interface(
         let parent_system_entity = parent_query
             .get(event.target)
             .expect("Parent should exist")
-            .get();
+            .parent();
 
         let system = system_query
             .get(parent_system_entity)
@@ -688,7 +688,7 @@ pub fn update_interface_button_from_interaction(
     >,
     global_transform_query: Query<&GlobalTransform>,
     mut transform_query: Query<&mut Transform>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
 ) {
     for (
         flow_curve,
@@ -701,7 +701,7 @@ pub fn update_interface_button_from_interaction(
         let parent_system_entity = parent_query
             .get(has_interface_button.button_entity)
             .expect("Parent should exist")
-            .get();
+            .parent();
 
         let system_transform = global_transform_query
             .get(parent_system_entity)
@@ -741,7 +741,7 @@ pub fn update_interface_button_from_interaction(
 /// Handle dragging of flow endpoint handles.
 /// Updates the FlowEndpointOffset component, constraining to subsystem boundaries.
 pub fn drag_flow_endpoint_handle(
-    mut events: EventReader<FlowEndpointHandleDrag>,
+    mut events: MessageReader<FlowEndpointHandleDrag>,
     handle_query: Query<&FlowEndpointHandle>,
     mut flow_query: Query<(
         &FlowCurve,

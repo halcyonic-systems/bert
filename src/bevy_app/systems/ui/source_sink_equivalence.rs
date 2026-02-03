@@ -1,4 +1,5 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
+use std::collections::HashMap;
 
 use crate::{
     bevy_app::resources::IsSameAsIdCounter,
@@ -79,7 +80,7 @@ pub fn update_and_cleanup_source_sink_equivalence(
     mut commands: Commands,
     removed_is_same_as_id: RemovedComponents<IsSameAsId>,
     mut copy_positions: Query<(&MarkerLabel, &mut CopyPositions)>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     mut current_ids_query: Query<(Entity, &mut IsSameAsId)>,
     mut equivalence_counter: ResMut<IsSameAsIdCounter>,
 ) {
@@ -100,7 +101,7 @@ pub fn update_and_cleanup_source_sink_equivalence(
                         if let Ok(parent) = parent_query.get(marker_label.label) {
                             copy_positions
                                 .0
-                                .retain(|copy_position| copy_position.target != parent.get());
+                                .retain(|copy_position| copy_position.target != parent.parent());
                         }
                     }
                     id_to_entities.remove(&id);

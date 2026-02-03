@@ -3,11 +3,10 @@ use crate::bevy_app::data_model::Interaction;
 use crate::bevy_app::data_model::*;
 use crate::bevy_app::resources::CurrentFile;
 use crate::events::SaveSuccessEvent;
-use bevy::core::Name;
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
-use bevy::utils::HashMap;
 use js_sys::{Array, Uint8Array};
+use std::collections::HashMap;
 use tauri_sys::core::invoke;
 use wasm_bindgen::JsCast;
 use web_sys::{Blob, HtmlAnchorElement, Url};
@@ -125,7 +124,7 @@ impl Context {
 pub fn save_world(
     In(world_model): In<WorldModel>,
     current_file: Res<CurrentFile>,
-    mut save_success_events: EventWriter<crate::events::SaveSuccessEvent>,
+    mut save_success_events: MessageWriter<crate::events::SaveSuccessEvent>,
 ) {
     #[derive(serde::Serialize)]
     struct Args {
@@ -248,7 +247,7 @@ pub fn save_world(
         Url::revoke_object_url(&url).unwrap();
 
         // Send save success event after download completes
-        save_success_events.send(SaveSuccessEvent {
+        save_success_events.write(SaveSuccessEvent {
             file_path: None, // Web downloads don't have a specific file path
             message: format!("File downloaded: {}", download_name),
         });
@@ -259,7 +258,7 @@ pub fn save_world(
 pub fn save_world_as(
     In(world_model): In<WorldModel>,
     current_file: Res<CurrentFile>,
-    save_success_events: EventWriter<SaveSuccessEvent>,
+    save_success_events: MessageWriter<SaveSuccessEvent>,
 ) {
     #[derive(serde::Serialize)]
     struct Args {
@@ -315,7 +314,7 @@ pub fn save_world_as(
 pub fn serialize_world(
     name_and_description_query: Query<(&Name, &ElementDescription)>,
     transform_query: Query<(&Transform, &InitialPosition)>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     main_system_info_query: Query<
         (
             Entity,
@@ -343,7 +342,7 @@ pub fn serialize_world(
     original_id_query: Query<&OriginalId>,
 ) -> WorldModel {
     let (system_entity, system_component, environment) = main_system_info_query
-        .get_single()
+        .single()
         .expect("System of interest should exist");
 
     let mut ctx = Context::new();
@@ -526,7 +525,7 @@ fn build_subsystems(
     parent_system_entity: Entity,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
-    parent_query: &Query<&Parent>,
+    parent_query: &Query<&ChildOf>,
     subsystem_query: &Query<(Entity, &crate::bevy_app::components::System, &Subsystem)>,
     flow_query: &Query<(
         Entity,
@@ -557,7 +556,7 @@ fn build_subsystems(
             let mut parent_entity = parent_query
                 .get(subsystem_entity)
                 .expect("Subsystem should have a parent")
-                .get();
+                .parent();
 
             let is_interface_parent = interface_query.get(parent_entity).is_ok();
             info!(
@@ -651,7 +650,7 @@ fn build_subsystems(
                 let mut parent_interface_id = None;
 
                 while let Ok(parent) = parent_query.get(parent_entity) {
-                    parent_entity = parent.get();
+                    parent_entity = parent.parent();
 
                     if interface_query.get(parent_entity).is_ok() {
                         // Use .get() to avoid panic if interface not yet in entity_to_id
@@ -689,7 +688,7 @@ fn build_subsystems(
         // Re-check if this is a deferred interface subsystem - now the interface should be in entity_to_id
         if parent_interface_id.is_none() {
             if let Ok(bevy_parent) = parent_query.get(subsystem_entity) {
-                let parent_entity = bevy_parent.get();
+                let parent_entity = bevy_parent.parent();
                 // Check if parent is an interface AND now exists in entity_to_id
                 if interface_query.get(parent_entity).is_ok() {
                     if let Some(interface_id) = ctx.entity_to_id.get(&parent_entity).cloned() {
@@ -872,7 +871,7 @@ fn register_all_system_interfaces(
     ctx: &mut Context,
     system_entity: Entity,
     system: &mut System,
-    parent_query: &Query<&Parent>,
+    parent_query: &Query<&ChildOf>,
     interface_query: &Query<(Entity, &crate::bevy_app::components::Interface, &Transform)>,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     original_id_query: &Query<&OriginalId>,
@@ -883,7 +882,7 @@ fn register_all_system_interfaces(
         let Ok(parent) = parent_query.get(interface_entity) else {
             continue;
         };
-        if parent.get() != system_entity {
+        if parent.parent() != system_entity {
             continue;
         }
 

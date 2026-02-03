@@ -1,6 +1,6 @@
+use bevy::camera::primitives::Aabb;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
 use bevy::sprite::Anchor;
 
 #[derive(Copy, Clone, Debug, Component, Reflect, PartialEq)]
@@ -223,7 +223,7 @@ pub fn text_alignment(
                 }
             };
 
-            *anchor = Anchor::Custom(vec2(x, y));
+            *anchor = Anchor(vec2(x, y));
 
             break;
         }

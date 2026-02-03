@@ -34,7 +34,7 @@ pub fn ui_transform_from_button(
 pub fn compute_end_and_direction_from_system_child(
     system_child: Entity,
     transform_query: &Query<&Transform>,
-    parent_query: &Query<&Parent>,
+    parent_query: &Query<&ChildOf>,
     flow_parent: Option<Entity>,
     scale: f32,
     invert_direction: bool,
@@ -85,7 +85,7 @@ pub fn combined_transform_of_entity_until_ancestor(
     entity: Entity,
     ancestor: Option<Entity>,
     transform_query: &Query<&Transform>,
-    parent_query: &Query<&Parent>,
+    parent_query: &Query<&ChildOf>,
 ) -> Transform {
     let mut combined_transform = *transform_query
         .get(entity)
@@ -93,7 +93,7 @@ pub fn combined_transform_of_entity_until_ancestor(
     let mut parent_entity = parent_query
         .get(entity)
         .expect("Entity should have a Parent")
-        .get();
+        .parent();
 
     loop {
         let parent_transform = transform_query
@@ -103,7 +103,7 @@ pub fn combined_transform_of_entity_until_ancestor(
         combined_transform = parent_transform.mul_transform(combined_transform);
 
         if let Ok(parent) = parent_query.get(parent_entity) {
-            parent_entity = parent.get();
+            parent_entity = parent.parent();
         } else {
             break;
         }

@@ -9,7 +9,7 @@ use bevy::window::PrimaryWindow;
 /// Configures the primary window settings
 pub fn window_setup(mut primary_window_query: Query<&mut Window, With<PrimaryWindow>>) {
     let mut w = primary_window_query
-        .get_single_mut()
+        .single_mut()
         .expect("Should only be one primary window.");
 
     w.title = "Deep System Analysis".to_string();

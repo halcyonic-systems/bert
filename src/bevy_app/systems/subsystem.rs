@@ -101,7 +101,7 @@ pub fn update_sub_system_parent_system(
     >,
 ) {
     for (subsystem, mut parent_state) in &mut subsystem_query {
-        if let Ok((system_entity, name, element_description)) = system_query.get_single() {
+        if let Ok((system_entity, name, element_description)) = system_query.single() {
             if subsystem.parent_system == system_entity {
                 parent_state.name = name.as_str().to_owned();
                 parent_state.description = element_description.text.clone();
@@ -117,13 +117,13 @@ pub fn update_subsystem_radius_from_interface_count(
         &Subsystem,
         Option<&Children>,
         Option<&InterfaceSubsystem>,
-        &Parent,
+        &ChildOf,
     )>,
     interface_query: Query<&Interface>,
     mut system_query: Query<&mut crate::bevy_app::components::System>,
     mut transform_query: Query<(&mut Transform, &mut InitialPosition)>,
     zoom: Res<Zoom>,
-    mut remove_event_reader: EventReader<RemoveEvent>,
+    mut remove_event_reader: MessageReader<RemoveEvent>,
 ) {
     if changed_query.is_empty() && remove_event_reader.is_empty() {
         return;
@@ -176,7 +176,7 @@ pub fn update_subsystem_radius_from_interface_count(
             // Only recalculate position if it hasn't been loaded/set already.
             // This preserves positions loaded from file (similar to FlowEndpointOffset fix).
             if initial_position.length_squared() < 0.001 {
-                if interface_query.get(parent.get()).is_ok() {
+                if interface_query.get(parent.parent()).is_ok() {
                     initial_position.x = radius * transform.translation.x.signum();
                 } else {
                     initial_position.x =

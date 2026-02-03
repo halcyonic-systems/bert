@@ -64,7 +64,7 @@ pub struct ConnectionMode {
 pub fn enter_connection_mode(
     keys: Res<ButtonInput<KeyCode>>,
     mut connection_mode: ResMut<ConnectionMode>,
-    mut deselect_events: EventWriter<DeselectAllEvent>,
+    mut deselect_events: MessageWriter<DeselectAllEvent>,
 ) {
     if keys.just_pressed(KeyCode::KeyF) {
         if connection_mode.active {
@@ -76,7 +76,7 @@ pub fn enter_connection_mode(
 
         // Clear any selected elements to avoid "cannot connect element to itself" errors
         // User can now press F and immediately click the same element that was selected
-        deselect_events.send(DeselectAllEvent);
+        deselect_events.write(DeselectAllEvent);
 
         info!("🔗 Connection mode ACTIVE - Click first subsystem");
     }
@@ -93,7 +93,7 @@ pub fn enter_connection_mode(
 /// Accepts Subsystem, Interface, or ExternalEntity as source.
 /// Valid connections determined in finalize_connection validation.
 pub fn select_connection_source(
-    mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
+    mut click_events: MessageReader<bevy::picking::events::Pointer<bevy::picking::events::Click>>,
     mut connection_mode: ResMut<ConnectionMode>,
     subsystem_query: Query<&Subsystem>,
     interface_query: Query<&Interface>,
@@ -109,7 +109,7 @@ pub fn select_connection_source(
     }
 
     for click_event in click_events.read() {
-        let target = click_event.target;
+        let target = click_event.entity;
 
         // Check if clicked entity is a valid connection source
         let is_valid = subsystem_query.get(target).is_ok()
@@ -151,10 +151,10 @@ pub fn update_connection_ghost(
     };
 
     // Get cursor world position
-    let Ok((camera, camera_transform)) = camera_query.get_single() else {
+    let Ok((camera, camera_transform)) = camera_query.single() else {
         return; // Camera not ready yet
     };
-    let Ok(window) = window_query.get_single() else {
+    let Ok(window) = window_query.single() else {
         return; // Window not ready yet
     };
 
@@ -196,7 +196,7 @@ pub fn update_connection_ghost(
 /// - Amount: Default from spawn_flow
 #[allow(clippy::too_many_arguments)]
 pub fn finalize_connection(
-    mut click_events: EventReader<bevy_picking::events::Pointer<bevy_picking::events::Click>>,
+    mut click_events: MessageReader<bevy::picking::events::Pointer<bevy::picking::events::Click>>,
     mut connection_mode: ResMut<ConnectionMode>,
     // Query subsystems with their parent system reference
     subsystem_query: Query<(&Subsystem, &NestingLevel)>,
@@ -210,7 +210,7 @@ pub fn finalize_connection(
     // Query GlobalTransform for world positions and Transform for rotations
     global_transform_query: Query<&GlobalTransform>,
     transform_query: Query<&Transform>,
-    parent_query: Query<&Parent>, // Used for finding parent system
+    parent_query: Query<&ChildOf>, // Used for finding parent system
     // Query flow connections to determine Source vs Sink for E-network validation
     // Combined query to stay under Bevy's 16-parameter limit
     flow_connections_query: Query<(&FlowStartConnection, &FlowEndConnection)>,
@@ -230,7 +230,7 @@ pub fn finalize_connection(
     };
 
     for click_event in click_events.read() {
-        let destination_entity = click_event.target;
+        let destination_entity = click_event.entity;
 
         // Validate: Don't connect to self
         if source_entity == destination_entity {
@@ -371,7 +371,7 @@ pub fn finalize_connection(
             // Interface's parent might be a subsystem - check and get grandparent
             let interface_parent = parent_query
                 .get(source_entity)
-                .map(|p| p.get())
+                .map(|p| p.parent())
                 .expect("Interface should have parent");
             if let Ok((subsystem, _)) = subsystem_query.get(interface_parent) {
                 subsystem.parent_system
@@ -382,7 +382,7 @@ pub fn finalize_connection(
         } else if dest_is_interface {
             let interface_parent = parent_query
                 .get(destination_entity)
-                .map(|p| p.get())
+                .map(|p| p.parent())
                 .expect("Interface should have parent");
             if let Ok((subsystem, _)) = subsystem_query.get(interface_parent) {
                 subsystem.parent_system
@@ -692,7 +692,7 @@ pub fn finalize_connection(
             // Get the interface's parent (the system it's attached to)
             parent_query
                 .get(source_entity)
-                .map(|p| p.get())
+                .map(|p| p.parent())
                 .expect("Interface should have parent")
         } else {
             source_entity
@@ -701,7 +701,7 @@ pub fn finalize_connection(
         let end_target = if dest_is_interface {
             parent_query
                 .get(destination_entity)
-                .map(|p| p.get())
+                .map(|p| p.parent())
                 .expect("Interface should have parent")
         } else {
             destination_entity
@@ -842,7 +842,7 @@ pub fn clear_connection_exit_flag(mut connection_mode: ResMut<ConnectionMode>) {
 pub fn send_mode_change_events(
     connection_mode: Res<ConnectionMode>,
     placement_mode: Res<super::palette::PlacementMode>,
-    mut mode_event_writer: EventWriter<crate::bevy_app::events::ModeChangeEvent>,
+    mut mode_event_writer: MessageWriter<crate::bevy_app::events::ModeChangeEvent>,
     mut last_mode_text: Local<String>,
 ) {
     // Determine current mode text
@@ -860,7 +860,7 @@ pub fn send_mode_change_events(
 
     // Only send event if mode changed
     if current_mode_text != *last_mode_text {
-        mode_event_writer.send(crate::bevy_app::events::ModeChangeEvent {
+        mode_event_writer.write(crate::bevy_app::events::ModeChangeEvent {
             mode_text: current_mode_text.clone(),
         });
         *last_mode_text = current_mode_text;

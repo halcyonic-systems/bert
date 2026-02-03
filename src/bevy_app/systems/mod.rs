@@ -196,7 +196,7 @@ use bevy::prelude::*;
 /// - [`TriggerEvent`]: Event types that can trigger this processing
 pub fn react_to_trigger_event(
     world: &mut World,
-    params: &mut SystemState<EventReader<TriggerEvent>>,
+    params: &mut SystemState<MessageReader<TriggerEvent>>,
 ) {
     let mut got_event = false;
     for event in params.get_mut(world).read() {
@@ -266,6 +266,6 @@ pub fn react_to_trigger_event(
 /// - [`react_to_trigger_event`]: Upstream function that initiates this pipeline
 /// - [`WorldModel`]: The data structure being transmitted
 /// - [`TreeEvent`]: Event type used for UI communication
-pub fn send_world_to_leptos(In(world_model): In<WorldModel>, mut writer: EventWriter<TreeEvent>) {
-    writer.send(TreeEvent { world_model });
+pub fn send_world_to_leptos(In(world_model): In<WorldModel>, mut writer: MessageWriter<TreeEvent>) {
+    writer.write(TreeEvent { world_model });
 }

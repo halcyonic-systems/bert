@@ -16,10 +16,10 @@ pub fn outflow_create_button_needs_update(
         )>,
     >,
     focused_system: Res<FocusedSystem>,
-    mut remove_event_reader: EventReader<RemoveEvent>,
+    mut remove_event_reader: MessageReader<RemoveEvent>,
 ) -> bool {
     let needs_update = if !focused_system.is_changed()
-        && flow_finished_query.get_single().is_err()
+        && flow_finished_query.single().is_err()
         && remove_event_reader.is_empty()
     {
         false
@@ -33,7 +33,7 @@ pub fn outflow_create_button_needs_update(
 
 pub fn add_outflow_create_button(
     mut commands: Commands,
-    button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
+    button_query: Query<(Entity, &CreateButton, Option<&ChildOf>)>,
     incomplete_outflow_query: Query<
         &FlowStartConnection,
         Or<(
@@ -111,7 +111,7 @@ pub fn despawn_existing_buttons_due_to_incomplete_flow(
     mut commands: &mut Commands,
     focused_system: Entity,
     button_type: CreateButtonType,
-    button_query: &Query<(Entity, &CreateButton, Option<&Parent>)>,
+    button_query: &Query<(Entity, &CreateButton, Option<&ChildOf>)>,
     incomplete_inflow_connections: &[&FlowEndConnection],
     incomplete_outflow_connections: &[&FlowStartConnection],
 ) -> bool {

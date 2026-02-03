@@ -60,32 +60,34 @@ pub fn copy_name_to_label(
 }
 
 pub fn apply_text_color_contrast(
-    source_query: Query<(&NameLabel, &Fill), Or<(Changed<Fill>, Added<NameLabel>)>>,
+    source_query: Query<(&NameLabel, &Shape), Or<(Changed<Shape>, Added<NameLabel>)>>,
     mut target_query: Query<(&mut TextColor, &AutoContrastTextColor), With<Text2d>>,
 ) {
-    for (label, fill) in &source_query {
-        if let Ok((mut color, text_color)) = target_query.get_mut(label.label) {
-            if fill.color.alpha() < 1.0 {
-                continue;
-            }
-            let target_color =
-                if Lcha::from(fill.color).luminance() < text_color.lightness_threshold {
-                    text_color.light_color
-                } else {
-                    text_color.dark_color
-                };
+    for (label, shape) in &source_query {
+        if let Some(ref fill) = shape.fill {
+            if let Ok((mut color, text_color)) = target_query.get_mut(label.label) {
+                if fill.color.alpha() < 1.0 {
+                    continue;
+                }
+                let target_color =
+                    if Lcha::from(fill.color).luminance() < text_color.lightness_threshold {
+                        text_color.light_color
+                    } else {
+                        text_color.dark_color
+                    };
 
-            color.0 = target_color;
+                color.0 = target_color;
+            }
         }
     }
 }
 
 pub fn update_background_size_from_label(
-    text_query: Query<(&TextLayoutInfo, &Parent, &Background), Changed<TextLayoutInfo>>,
+    text_query: Query<(&TextLayoutInfo, &ChildOf, &Background), Changed<TextLayoutInfo>>,
     mut sprite_query: Query<&mut Sprite>,
 ) {
     for (text_layout, parent, background) in &text_query {
-        if let Ok(mut sprite) = sprite_query.get_mut(parent.get()) {
+        if let Ok(mut sprite) = sprite_query.get_mut(parent.parent()) {
             sprite.custom_size = Some(
                 text_layout.size
                     + vec2(background.padding_horizontal, background.padding_vertical) * 2.0,

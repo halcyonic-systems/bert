@@ -16,33 +16,31 @@ use bevy_prototype_lyon::prelude::*;
 /// Uses original BERT colors regardless of background theme.
 pub fn update_color_from_substance_type<C>(
     mut query: Query<
-        (
-            &Flow,
-            &mut HighlightBundles<Stroke, Stroke>,
-            &Children,
-            Option<&C>,
-        ),
+        (&Flow, &mut HighlightBundles, &Children, Option<&C>),
         Or<(Added<Flow>, Changed<Flow>)>,
     >,
-    mut external_entity_query: Query<
-        (&mut HighlightBundles<Stroke, Stroke>, Option<&Hidden>),
-        Without<Flow>,
-    >,
-    mut arrow_query: Query<(&mut Fill, Option<&Hidden>)>,
+    mut external_entity_query: Query<(&mut HighlightBundles, Option<&Hidden>), Without<Flow>>,
+    mut arrow_query: Query<(&mut Shape, Option<&Hidden>)>,
 ) where
     C: Connection + TargetTypeConnection + Component,
 {
     for (flow, mut highlight, children, external_entity_connection) in &mut query {
         // Use original BERT colors - no theme dependency
         let color = flow.substance_type.flow_color_default();
-        highlight.idle.color = color;
-        highlight.selected.color = color;
+        if let Some(ref mut stroke) = highlight.idle_stroke {
+            stroke.color = color;
+        }
+        if let Some(ref mut stroke) = highlight.selected_stroke {
+            stroke.color = color;
+        }
 
         for child in children.iter() {
-            if let Ok((mut fill, hidden)) = arrow_query.get_mut(*child) {
-                fill.color = color;
-                if hidden.is_some() {
-                    fill.color.set_alpha(HIDDING_TRANSPARENCY);
+            if let Ok((mut shape, hidden)) = arrow_query.get_mut(child) {
+                if let Some(ref mut fill) = shape.fill {
+                    fill.color = color;
+                    if hidden.is_some() {
+                        fill.color.set_alpha(HIDDING_TRANSPARENCY);
+                    }
                 }
             }
         }
@@ -53,18 +51,20 @@ pub fn update_color_from_substance_type<C>(
                     .get_mut(external_entity_connection.target())
                     .expect("External entity should exist");
 
-                external_entity_highlight.idle.color = color;
-                external_entity_highlight.selected.color = color;
+                if let Some(ref mut stroke) = external_entity_highlight.idle_stroke {
+                    stroke.color = color;
+                }
+                if let Some(ref mut stroke) = external_entity_highlight.selected_stroke {
+                    stroke.color = color;
+                }
 
                 if hidden.is_some() {
-                    external_entity_highlight
-                        .idle
-                        .color
-                        .set_alpha(HIDDING_TRANSPARENCY);
-                    external_entity_highlight
-                        .selected
-                        .color
-                        .set_alpha(HIDDING_TRANSPARENCY);
+                    if let Some(ref mut stroke) = external_entity_highlight.idle_stroke {
+                        stroke.color.set_alpha(HIDDING_TRANSPARENCY);
+                    }
+                    if let Some(ref mut stroke) = external_entity_highlight.selected_stroke {
+                        stroke.color.set_alpha(HIDDING_TRANSPARENCY);
+                    }
                 }
             }
         }
@@ -88,18 +88,19 @@ pub fn update_button_substance_type_from_flow(
 /// Uses original BERT colors regardless of background theme.
 pub fn update_interface_color_from_flow<C>(
     mut query: Query<(&Flow, &C), Or<(Added<Flow>, Changed<Flow>)>>,
-    mut interface_query: Query<(&mut Fill, Option<&Hidden>), (Without<Flow>, With<Interface>)>,
+    mut interface_query: Query<(&mut Shape, Option<&Hidden>), (Without<Flow>, With<Interface>)>,
 ) where
     C: Connection + Component,
 {
     for (flow, interface_connection) in &mut query {
-        if let Ok((mut interface_fill, hidden)) =
-            interface_query.get_mut(interface_connection.target())
-        {
+        if let Ok((mut shape, hidden)) = interface_query.get_mut(interface_connection.target()) {
             // Use original BERT colors - no theme dependency
-            interface_fill.color = flow.substance_type.interface_color_default();
-            if hidden.is_some() {
-                interface_fill.color.set_alpha(HIDDING_TRANSPARENCY);
+            let color = flow.substance_type.interface_color_default();
+            if let Some(ref mut fill) = shape.fill {
+                fill.color = color;
+                if hidden.is_some() {
+                    fill.color.set_alpha(HIDDING_TRANSPARENCY);
+                }
             }
         }
     }
@@ -109,18 +110,19 @@ pub fn update_interface_color_from_flow<C>(
 /// Uses original BERT colors regardless of background theme.
 pub fn update_system_color_from_subsystem(
     subsystem_query: Query<&Subsystem, Added<Subsystem>>,
-    mut fill_query: Query<(&mut Fill, Option<&Hidden>)>,
+    mut shape_query: Query<(&mut Shape, Option<&Hidden>)>,
 ) {
     for subsystem in &subsystem_query {
-        let (mut system_fill, hidden) = fill_query
+        let (mut shape, hidden) = shape_query
             .get_mut(subsystem.parent_system)
             .expect("System should exist");
 
         // Use original BERT system color - no theme dependency
-        system_fill.color = Color::srgb(0.92, 0.91, 0.91);
-
-        if hidden.is_some() {
-            system_fill.color.set_alpha(HIDDING_TRANSPARENCY);
+        if let Some(ref mut fill) = shape.fill {
+            fill.color = Color::srgb(0.92, 0.91, 0.91);
+            if hidden.is_some() {
+                fill.color.set_alpha(HIDDING_TRANSPARENCY);
+            }
         }
     }
 }
@@ -151,12 +153,12 @@ pub fn update_subsystem_stroke_from_archetype(
         (
             &NestingLevel,
             &crate::bevy_app::components::System,
-            &mut HighlightBundles<Stroke, Stroke>,
+            &mut HighlightBundles,
         ),
         Or<(
             Added<crate::bevy_app::components::System>,
             Changed<crate::bevy_app::components::System>,
-            Added<HighlightBundles<Stroke, Stroke>>,
+            Added<HighlightBundles>,
         )>,
     >,
 ) {
@@ -164,7 +166,7 @@ pub fn update_subsystem_stroke_from_archetype(
         let color = system.archetype.stroke_color();
 
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-        highlight.idle = Stroke::new(color, SYSTEM_LINE_WIDTH * scale);
-        highlight.selected = Stroke::new(color, SYSTEM_SELECTED_LINE_WIDTH);
+        highlight.idle_stroke = Some(Stroke::new(color, SYSTEM_LINE_WIDTH * scale));
+        highlight.selected_stroke = Some(Stroke::new(color, SYSTEM_SELECTED_LINE_WIDTH));
     }
 }

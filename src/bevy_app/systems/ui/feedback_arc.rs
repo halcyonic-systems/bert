@@ -22,8 +22,8 @@
 //! Source and Sink are matched by having the same `IsSameAsId` component value.
 
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use bevy_prototype_lyon::prelude::*;
+use std::collections::HashMap;
 
 use crate::bevy_app::components::{
     FlowEndConnection, FlowStartConnection, IsSameAsId, NestingLevel,
@@ -153,7 +153,7 @@ pub fn update_feedback_arcs(
     // Remove arcs for pairs that no longer exist
     for (arc_entity, arc) in existing_arcs.iter() {
         if !valid_ids.contains(&arc.equivalence_id) {
-            commands.entity(arc_entity).despawn_recursive();
+            commands.entity(arc_entity).despawn();
         }
     }
 }
@@ -167,25 +167,12 @@ fn spawn_feedback_arc(
     soi_center: Vec2,
     soi_radius: f32,
 ) {
-    let path = create_arc_path(source_pos, sink_pos, soi_center, soi_radius);
-
-    // Dashed stroke with gray color
-    let stroke = Stroke {
-        color: Color::srgba(0.5, 0.5, 0.5, 0.7),
-        options: StrokeOptions::default()
-            .with_line_width(FEEDBACK_ARC_LINE_WIDTH)
-            .with_line_cap(LineCap::Round)
-            .with_line_join(LineJoin::Round),
-    };
+    let shape = create_arc_shape(source_pos, sink_pos, soi_center, soi_radius);
 
     commands.spawn((
         FeedbackArc { equivalence_id },
-        ShapeBundle {
-            path,
-            transform: Transform::from_xyz(0.0, 0.0, FEEDBACK_ARC_Z),
-            ..default()
-        },
-        stroke,
+        shape,
+        Transform::from_xyz(0.0, 0.0, FEEDBACK_ARC_Z),
     ));
 }
 
@@ -198,22 +185,18 @@ fn update_arc_path(
     soi_center: Vec2,
     soi_radius: f32,
 ) {
-    let path = create_arc_path(source_pos, sink_pos, soi_center, soi_radius);
-    commands.entity(arc_entity).insert(path);
+    let shape = create_arc_shape(source_pos, sink_pos, soi_center, soi_radius);
+    commands.entity(arc_entity).insert(shape);
 }
 
 /// Create the bezier path for a feedback arc.
 ///
 /// The arc curves OUTSIDE the SOI boundary, connecting Sink → Source
 /// to complete the external feedback loop visualization.
-fn create_arc_path(source_pos: Vec2, sink_pos: Vec2, soi_center: Vec2, soi_radius: f32) -> Path {
-    let mut path_builder = PathBuilder::new();
-
+fn create_arc_shape(source_pos: Vec2, sink_pos: Vec2, soi_center: Vec2, soi_radius: f32) -> Shape {
     // Arc goes from Sink to Source (completing the external loop)
     let start = sink_pos;
     let end = source_pos;
-
-    path_builder.move_to(start);
 
     // Calculate midpoint between Source and Sink
     let midpoint = (start + end) / 2.0;
@@ -246,8 +229,19 @@ fn create_arc_path(source_pos: Vec2, sink_pos: Vec2, soi_center: Vec2, soi_radiu
 
     let control_point = soi_center + control_offset;
 
-    // Use quadratic bezier for smooth arc
-    path_builder.quadratic_bezier_to(control_point, end);
+    // Build the path geometry using ShapePath (consumes self on each method call)
+    let arc_path = ShapePath::new()
+        .move_to(start)
+        .quadratic_bezier_to(control_point, end);
 
-    path_builder.build()
+    // Dashed stroke with gray color
+    let stroke = Stroke {
+        color: Color::srgba(0.5, 0.5, 0.5, 0.7),
+        options: StrokeOptions::default()
+            .with_line_width(FEEDBACK_ARC_LINE_WIDTH)
+            .with_line_cap(LineCap::Round)
+            .with_line_join(LineJoin::Round),
+    };
+
+    ShapeBuilder::with(&arc_path).stroke(stroke).build()
 }

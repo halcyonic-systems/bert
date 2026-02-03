@@ -4,7 +4,7 @@ use crate::bevy_app::events::RemoveEvent;
 use crate::bevy_app::resources::{FocusedSystem, Zoom};
 use crate::bevy_app::systems::{has_incomplete_interactions, next_inflow_button_transform};
 use bevy::prelude::*;
-use bevy::utils::HashSet;
+use std::collections::HashSet;
 
 pub fn inflow_create_button_needs_update(
     focused_system: Res<FocusedSystem>,
@@ -19,7 +19,7 @@ pub fn inflow_create_button_needs_update(
         )>,
     >,
     interface_subsystem_changed_query: Query<(), Changed<InterfaceSubsystem>>,
-    mut remove_event_reader: EventReader<RemoveEvent>,
+    mut remove_event_reader: MessageReader<RemoveEvent>,
 ) -> bool {
     let needs_update = !flow_changed_query.is_empty()
         || focused_system.is_changed()
@@ -48,7 +48,7 @@ pub fn add_inflow_create_button(
             Without<FlowEndInterfaceConnection>,
         )>,
     >,
-    button_query: Query<(Entity, &CreateButton, Option<&Parent>)>,
+    button_query: Query<(Entity, &CreateButton, Option<&ChildOf>)>,
     flow_interface_query: Query<(&FlowEndConnection, &FlowEndInterfaceConnection)>,
     transform_query: Query<&Transform>,
     system_query: Query<&crate::bevy_app::components::System>,

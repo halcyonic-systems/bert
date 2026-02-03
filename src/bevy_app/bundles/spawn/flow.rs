@@ -10,15 +10,15 @@ use crate::bevy_app::resources::{
     FixedSystemElementGeometriesByNestingLevel, FocusedSystem, StrokeTessellator, Theme,
 };
 use crate::bevy_app::systems::{
-    create_aabb_from_flow_curve, create_path_from_flow_curve, tessellate_simplified_mesh,
+    create_aabb_from_flow_curve, create_flow_curve_shape, tessellate_simplified_mesh,
 };
 use crate::bevy_app::utils::ui_transform_from_button;
+use bevy::asset::RenderAssetUsages;
+use bevy::camera::primitives::Aabb;
 use bevy::math::{vec2, vec3, Vec3A};
+use bevy::mesh::{Indices, PrimitiveTopology};
+use bevy::picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy::prelude::*;
-use bevy::render::mesh::{Indices, PrimitiveTopology};
-use bevy::render::primitives::Aabb;
-use bevy::render::render_asset::RenderAssetUsages;
-use bevy_picking::mesh_picking::ray_cast::SimplifiedMesh;
 use bevy_prototype_lyon::prelude::*;
 use rust_decimal::Decimal;
 
@@ -155,15 +155,13 @@ pub fn spawn_interaction_only(
     stroke_tess: &mut ResMut<StrokeTessellator>,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) -> Entity {
-    let curve_path = create_path_from_flow_curve(&flow_curve, scale);
+    let curve_shape = create_flow_curve_shape(&flow_curve, scale);
 
-    let mut head_path_builder = PathBuilder::new();
-
-    head_path_builder.move_to(Vec2::ZERO);
-    head_path_builder.line_to(vec2(FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF));
-    head_path_builder.line_to(vec2(FLOW_ARROW_HEAD_LENGTH, -FLOW_ARROW_HEAD_WIDTH_HALF));
-    head_path_builder.close();
-    let head_path = head_path_builder.build();
+    let head_path = ShapePath::new()
+        .move_to(Vec2::ZERO)
+        .line_to(vec2(FLOW_ARROW_HEAD_LENGTH, FLOW_ARROW_HEAD_WIDTH_HALF))
+        .line_to(vec2(FLOW_ARROW_HEAD_LENGTH, -FLOW_ARROW_HEAD_WIDTH_HALF))
+        .close();
 
     let aabb = create_aabb_from_flow_curve(&flow_curve);
 
@@ -173,19 +171,21 @@ pub fn spawn_interaction_only(
         .spawn((
             flow,
             flow_curve,
-            SimplifiedMesh(tessellate_simplified_mesh(&curve_path, meshes, stroke_tess)),
+            SimplifiedMesh(tessellate_simplified_mesh(
+                &curve_shape,
+                meshes,
+                stroke_tess,
+            )),
             aabb,
-            ShapeBundle {
-                path: curve_path,
-                transform: Transform::from_xyz(0.0, 0.0, FLOW_Z),
-                ..default()
-            },
-            PickingBehavior::default(),
-            RayCastPickable::default(),
+            curve_shape,
+            Transform::from_xyz(0.0, 0.0, FLOW_Z),
+            Pickable::default(),
             PickSelection { is_selected },
             HighlightBundles {
-                idle: Stroke::new(color, FLOW_LINE_WIDTH * scale),
-                selected: Stroke::new(color, FLOW_SELECTED_LINE_WIDTH),
+                idle_stroke: Some(Stroke::new(color, FLOW_LINE_WIDTH * scale)),
+                selected_stroke: Some(Stroke::new(color, FLOW_SELECTED_LINE_WIDTH)),
+                idle_fill: None,
+                selected_fill: None,
             },
             SystemElement::Interaction,
             Name::new(name.to_string()),
@@ -193,15 +193,13 @@ pub fn spawn_interaction_only(
             NestingLevel::new(nesting_level),
         ))
         .with_children(|parent| {
+            let head_shape = ShapeBuilder::with(&head_path).fill(color).build();
+
             parent.spawn((
-                ShapeBundle {
-                    path: head_path,
-                    transform: Transform::from_translation(flow_curve.end.extend(2.0))
-                        .with_scale(vec3(scale, scale, 1.0))
-                        .with_rotation(flow_curve.head_rotation()),
-                    ..default()
-                },
-                Fill::color(color),
+                head_shape,
+                Transform::from_translation(flow_curve.end.extend(2.0))
+                    .with_scale(vec3(scale, scale, 1.0))
+                    .with_rotation(flow_curve.head_rotation()),
                 ApplyZoomToScale,
                 NestingLevel::new(nesting_level),
             ));
@@ -335,17 +333,13 @@ pub fn auto_spawn_flow_label(
     for (flow_entity, nesting_level) in flow_query.iter() {
         let color = match *theme {
             Theme::Normal => {
-                // Original behavior - beige for level 0, white for others
                 if **nesting_level == 0 {
                     CLEAR_COLOR
                 } else {
                     Color::WHITE
                 }
             }
-            Theme::White => {
-                // White background theme - use light gray for all labels
-                Color::srgb(0.95, 0.95, 0.95)
-            }
+            Theme::White => Color::srgb(0.95, 0.95, 0.95),
         };
 
         add_name_label(
@@ -369,7 +363,6 @@ pub fn auto_spawn_flow_label(
 pub fn auto_spawn_flow_endpoint_handles(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    // Query for internal flows (subsystem-to-subsystem, no interface connections)
     flow_query: Query<
         (
             Entity,
@@ -385,27 +378,21 @@ pub fn auto_spawn_flow_endpoint_handles(
             Without<FlowEndInterfaceConnection>,
         ),
     >,
-    // Query existing handles to check which flows already have them
     existing_handles: Query<&FlowEndpointHandle>,
-    // Queries for computing initial angles (parent-local → world conversion)
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     global_transform_query: Query<&GlobalTransform>,
     subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
 ) {
-    // Build set of flows that already have handles
     let flows_with_handles: std::collections::HashSet<Entity> =
         existing_handles.iter().map(|h| h.flow).collect();
 
     for (flow_entity, flow_curve, nesting_level, existing_offset, start_conn, end_conn) in
         flow_query.iter()
     {
-        // Skip if handles already exist for this flow
         if flows_with_handles.contains(&flow_entity) {
             continue;
         }
 
-        // Skip E-network flows - these connect external entities, not subsystems
-        // E-network patterns: Sink→Source (feedback) or Source→Sink (feed-forward)
         let is_e_network_feedback = start_conn.target_type == StartTargetType::Sink
             && end_conn.target_type == EndTargetType::Source;
         let is_e_network_feedforward = start_conn.target_type == StartTargetType::Source
@@ -414,7 +401,6 @@ pub fn auto_spawn_flow_endpoint_handles(
             continue;
         }
 
-        // Only spawn handles for subsystem-to-subsystem flows (N-network internal flows)
         let is_internal_flow = start_conn.target_type == StartTargetType::System
             && end_conn.target_type == EndTargetType::System;
         if !is_internal_flow {
@@ -425,17 +411,12 @@ pub fn auto_spawn_flow_endpoint_handles(
             flow_entity, flow_curve.start, flow_curve.end
         );
 
-        // Compute initial angles so the update system uses the world-space-correct
-        // angle path instead of falling back to flow_curve.start/end (parent-local).
-        // This fixes level-2+ flows rendering at wrong positions on spawn.
         if existing_offset.is_none() {
             let mut initial_offset = FlowEndpointOffset::default();
 
-            // flow_curve positions are parent-local (see connection_mode.rs:585-628).
-            // Convert to world space via the flow's parent GlobalTransform.
             let (flow_world_start, flow_world_end) =
                 if let Ok(parent) = parent_query.get(flow_entity) {
-                    if let Ok(parent_gt) = global_transform_query.get(parent.get()) {
+                    if let Ok(parent_gt) = global_transform_query.get(parent.parent()) {
                         (
                             parent_gt
                                 .transform_point(flow_curve.start.extend(0.0))
@@ -451,7 +432,6 @@ pub fn auto_spawn_flow_endpoint_handles(
                     (flow_curve.start, flow_curve.end)
                 };
 
-            // Compute start angle: subsystem world center → flow start world position
             if let Ok((subsys_gt, _)) = subsystem_query.get(start_conn.target) {
                 let center = subsys_gt.translation().truncate();
                 let to_start = flow_world_start - center;
@@ -460,7 +440,6 @@ pub fn auto_spawn_flow_endpoint_handles(
                 }
             }
 
-            // Compute end angle: subsystem world center → flow end world position
             if let Ok((subsys_gt, _)) = subsystem_query.get(end_conn.target) {
                 let center = subsys_gt.translation().truncate();
                 let to_end = flow_world_end - center;
@@ -475,124 +454,97 @@ pub fn auto_spawn_flow_endpoint_handles(
         let scale = NestingLevel::compute_scale(**nesting_level, 1.0);
         let handle_radius = FLOW_ENDPOINT_HANDLE_RADIUS * scale;
 
-        // Create Lyon circle path for visual rendering
         let circle_shape = shapes::Circle {
             radius: handle_radius,
-            center: Vec2::ZERO, // Centered at origin, transform handles position
+            center: Vec2::ZERO,
         };
-        let circle_path = GeometryBuilder::build_as(&circle_shape);
+        let circle_lyon_shape = ShapeBuilder::with(&circle_shape)
+            .fill(Color::srgb(1.0, 0.0, 0.0))
+            .build();
 
-        // Create SimplifiedMesh by tessellating a filled circle for raycast picking
         let simplified_mesh = SimplifiedMesh(build_circle_picking_mesh(&mut meshes, handle_radius));
 
-        // Create Aabb for hit detection bounding box
         let handle_aabb = Aabb {
+            center: Vec3A::ZERO,
             half_extents: Vec3A::new(handle_radius, handle_radius, 0.0),
-            ..default()
         };
 
-        // Spawn start handle using Lyon ShapeBundle (same pattern as other clickable elements)
         commands
             .spawn((
                 FlowEndpointHandle {
                     flow: flow_entity,
                     endpoint: FlowEndpoint::Start,
                 },
-                ShapeBundle {
-                    path: circle_path.clone(),
-                    transform: Transform::from_translation(
-                        flow_curve.start.extend(FLOW_ENDPOINT_HANDLE_Z),
-                    ),
-                    ..default()
-                },
-                Fill::color(Color::srgb(1.0, 0.0, 0.0)), // Bright red for visibility
-                PickingBehavior {
+                circle_lyon_shape.clone(),
+                Transform::from_translation(flow_curve.start.extend(FLOW_ENDPOINT_HANDLE_Z)),
+                Pickable {
                     should_block_lower: true,
                     is_hoverable: true,
                 },
-                RayCastPickable::default(),
-                PickSelection::default(), // Required for drag handling
+                PickSelection::default(),
                 simplified_mesh.clone(),
                 handle_aabb,
                 ApplyZoomToScale,
                 NestingLevel::new(**nesting_level),
             ))
             .observe(
-                |on_drag: Trigger<DragPosition>,
-                 mut writer: EventWriter<FlowEndpointHandleDrag>| {
+                |on: On<DragPosition>, mut writer: MessageWriter<FlowEndpointHandleDrag>| {
                     info!(
                         "START handle received DragPosition: entity={:?}, pos={:?}",
-                        on_drag.entity(),
-                        on_drag.world_position
+                        on.event().target,
+                        on.world_position
                     );
-                    writer.send(on_drag.into());
+                    writer.write(FlowEndpointHandleDrag::from_on(&on));
                 },
             );
 
-        // Spawn end handle
         commands
             .spawn((
                 FlowEndpointHandle {
                     flow: flow_entity,
                     endpoint: FlowEndpoint::End,
                 },
-                ShapeBundle {
-                    path: circle_path,
-                    transform: Transform::from_translation(
-                        flow_curve.end.extend(FLOW_ENDPOINT_HANDLE_Z),
-                    ),
-                    ..default()
-                },
-                Fill::color(Color::srgb(1.0, 0.0, 0.0)), // Bright red for visibility
-                PickingBehavior {
+                circle_lyon_shape,
+                Transform::from_translation(flow_curve.end.extend(FLOW_ENDPOINT_HANDLE_Z)),
+                Pickable {
                     should_block_lower: true,
                     is_hoverable: true,
                 },
-                RayCastPickable::default(),
-                PickSelection::default(), // Required for drag handling
+                PickSelection::default(),
                 simplified_mesh,
                 handle_aabb,
                 ApplyZoomToScale,
                 NestingLevel::new(**nesting_level),
             ))
             .observe(
-                |on_drag: Trigger<DragPosition>,
-                 mut writer: EventWriter<FlowEndpointHandleDrag>| {
+                |on: On<DragPosition>, mut writer: MessageWriter<FlowEndpointHandleDrag>| {
                     info!(
                         "END handle received DragPosition: entity={:?}, pos={:?}",
-                        on_drag.entity(),
-                        on_drag.world_position
+                        on.event().target,
+                        on.world_position
                     );
-                    writer.send(on_drag.into());
+                    writer.write(FlowEndpointHandleDrag::from_on(&on));
                 },
             );
-
-        // Note: Handles are NOT children of flows - they exist in world space
-        // and track flow positions via update_flow_endpoint_handle_positions system
     }
 }
 
 /// Build a tessellated circle mesh for raycast picking.
-/// Creates a filled disc mesh that bevy_picking can raycast against.
 fn build_circle_picking_mesh(meshes: &mut ResMut<Assets<Mesh>>, radius: f32) -> Handle<Mesh> {
-    // Create a simple filled circle mesh using triangle fan
     const SEGMENTS: usize = 32;
 
     let mut positions: Vec<[f32; 3]> = Vec::with_capacity(SEGMENTS + 2);
     let mut indices: Vec<u32> = Vec::with_capacity(SEGMENTS * 3);
 
-    // Center vertex
     positions.push([0.0, 0.0, 0.0]);
 
-    // Perimeter vertices
     for i in 0..=SEGMENTS {
         let angle = (i as f32 / SEGMENTS as f32) * std::f32::consts::TAU;
         positions.push([radius * angle.cos(), radius * angle.sin(), 0.0]);
     }
 
-    // Triangle fan indices
     for i in 0..SEGMENTS {
-        indices.push(0); // Center
+        indices.push(0);
         indices.push((i + 1) as u32);
         indices.push((i + 2) as u32);
     }
@@ -608,7 +560,6 @@ fn build_circle_picking_mesh(meshes: &mut ResMut<Assets<Mesh>>, radius: f32) -> 
 }
 
 /// Update handle positions to follow flow curve endpoints.
-/// Uses angle-based offsets for zoom-independent positioning.
 pub fn update_flow_endpoint_handle_positions(
     flow_query: Query<(
         &FlowCurve,
@@ -625,11 +576,9 @@ pub fn update_flow_endpoint_handle_positions(
             continue;
         };
 
-        // Compute position based on angle offset if set, otherwise use natural curve position
         let target_pos = match handle.endpoint {
             FlowEndpoint::Start => {
                 if let Some(Some(angle)) = offset.map(|o| o.start_angle) {
-                    // Use angle-based position
                     if let Some(conn) = start_conn {
                         if let Ok((subsys_transform, system)) = subsystem_query.get(conn.target) {
                             let center = subsys_transform.translation().truncate();
@@ -647,7 +596,6 @@ pub fn update_flow_endpoint_handle_positions(
             }
             FlowEndpoint::End => {
                 if let Some(Some(angle)) = offset.map(|o| o.end_angle) {
-                    // Use angle-based position
                     if let Some(conn) = end_conn {
                         if let Ok((subsys_transform, system)) = subsystem_query.get(conn.target) {
                             let center = subsys_transform.translation().truncate();

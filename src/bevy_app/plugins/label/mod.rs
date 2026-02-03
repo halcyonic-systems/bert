@@ -121,9 +121,9 @@
 //! - [`crate::bevy_app::plugins::mouse_interaction`]: Mouse interaction integration
 
 use crate::bevy_app::plugins::mouse_interaction::PickTarget;
+use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
-use bevy::text::{update_text2d_layout, TextBounds};
+use bevy::text::TextBounds;
 
 mod copy_position;
 mod text;
@@ -221,7 +221,7 @@ impl Plugin for LabelPlugin {
                 compute_text_alignments,
                 copy_name_to_label,
                 apply_text_color_contrast,
-                update_background_size_from_label.after(update_text2d_layout),
+                update_background_size_from_label,
                 update_label_background_on_theme_change,
             ),
         )
@@ -414,7 +414,7 @@ pub fn add_name_label<B: Bundle>(
         },
         TextColor::BLACK,
         TextLayout {
-            justify: JustifyText::Left,
+            justify: Justify::Left,
             linebreak: LineBreak::WordBoundary,
         },
         TextBounds::from(text_bounds_size),
@@ -509,7 +509,7 @@ pub fn add_marker_with_text<B: Bundle>(
         },
         TextColor::BLACK,
         TextLayout {
-            justify: JustifyText::Center,
+            justify: Justify::Center,
             linebreak: LineBreak::WordBoundary,
         },
         Transform::from_xyz(0.0, 0.0, 1.0),
@@ -525,7 +525,7 @@ pub fn add_marker_with_text<B: Bundle>(
     let sprite_entity = commands
         .spawn((
             Sprite {
-                image: asset_server.load(asset_path),
+                image: asset_server.load(asset_path.to_string()),
                 custom_size: Some(sprite_size),
                 ..default()
             },

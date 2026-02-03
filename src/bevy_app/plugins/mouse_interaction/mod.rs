@@ -76,11 +76,11 @@ pub mod debug;
 use crate::bevy_app::components::{BoundaryRegion, EnvironmentRegion, SpatialDetailPanelMode};
 use crate::bevy_app::systems::connection_mode::ConnectionMode;
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
+use bevy::picking::events::{Click, Pointer};
+use bevy::picking::hover::PickingInteraction;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
 use bevy::window::PrimaryWindow;
-use bevy_picking::events::{Click, Pointer};
-use bevy_picking::focus::PickingInteraction;
+use std::collections::HashSet;
 
 /// Handles spatial interaction panel switching based on which region was clicked.
 ///
@@ -95,7 +95,7 @@ use bevy_picking::focus::PickingInteraction;
 ///
 /// Suppressed during connection mode to avoid panel switching during flow creation.
 fn handle_spatial_panel_switching(
-    mut click_events: EventReader<Pointer<Click>>,
+    mut click_events: MessageReader<Pointer<Click>>,
     mut panel_mode: ResMut<SpatialDetailPanelMode>,
     connection_mode: Res<ConnectionMode>,
     boundary_query: Query<&BoundaryRegion>,
@@ -111,13 +111,13 @@ fn handle_spatial_panel_switching(
 
     for event in click_events.read() {
         // Check what type of entity was clicked and update panel mode accordingly
-        if boundary_query.get(event.target).is_ok() {
+        if boundary_query.get(event.entity).is_ok() {
             *panel_mode = SpatialDetailPanelMode::Boundary;
             info!("🎯 Switched to BOUNDARY panel mode");
-        } else if environment_query.get(event.target).is_ok() {
+        } else if environment_query.get(event.entity).is_ok() {
             *panel_mode = SpatialDetailPanelMode::Environment;
             info!("🌍 Switched to ENVIRONMENT panel mode");
-        } else if system_query.get(event.target).is_ok() {
+        } else if system_query.get(event.entity).is_ok() {
             *panel_mode = SpatialDetailPanelMode::System;
             info!("⚙️ Switched to SYSTEM panel mode");
         }
@@ -213,7 +213,6 @@ impl Plugin for MouseInteractionPlugin {
             .init_resource::<MouseWorldPosition>()
             .init_resource::<SelectionEnabled>()
             .init_resource::<SpatialDetailPanelMode>()
-            .add_event::<DragPosition>()
             .register_type::<PickSelection>()
             .register_type::<SpatialDetailPanelMode>()
             .add_systems(PreUpdate, mouse_screen_to_world_position)
@@ -316,11 +315,11 @@ impl Default for SelectionEnabled {
 /// use bert::mouse_interaction::DragPosition;
 ///
 /// fn handle_drag(
-///     mut drag_events: EventReader<DragPosition>,
+///     mut drag_events: MessageReader<DragPosition>,
 ///     mut transforms: Query<&mut Transform>,
 /// ) {
 ///     for event in drag_events.read() {
-///         if let Ok(mut transform) = transforms.get_mut(event.target) {
+///         if let Ok(mut transform) = transforms.get_mut(event.entity) {
 ///             transform.translation = event.world_position.extend(transform.translation.z);
 ///         }
 ///     }
@@ -332,10 +331,11 @@ impl Default for SelectionEnabled {
 /// The event provides coordinates in two systems:
 /// - **Local**: Relative to parent transform (for hierarchical positioning)
 /// - **World**: Absolute world coordinates (for direct positioning)
-#[derive(Clone, Event)]
+#[derive(Clone, EntityEvent)]
 #[allow(dead_code)]
 pub struct DragPosition {
     /// The entity being dragged.
+    #[event_target]
     pub target: Entity,
 
     /// Position relative to the entity's parent transform.
@@ -630,7 +630,7 @@ fn handle_mouse_down(
         Option<&PickParent>,
         Option<&PickTarget>,
     )>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
     mouse_position: Res<MouseWorldPosition>,
     mut dragging: ResMut<Dragging>,
 ) {
@@ -658,7 +658,7 @@ fn handle_mouse_down(
             let parent = parent_query
                 .get(*entity)
                 .expect("Parent should exist for components that have PickParent")
-                .get();
+                .parent();
             dragging.hovered_entity = Some(parent);
         } else if let Some(target) = pick_target {
             dragging.hovered_entity = Some(target.target);
@@ -731,7 +731,7 @@ fn handle_mouse_drag(
     mut commands: Commands,
     mut dragging: ResMut<Dragging>,
     transform_query: Query<&GlobalTransform>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<&ChildOf>,
 ) {
     let mouse_position = **mouse_position;
 
@@ -745,7 +745,7 @@ fn handle_mouse_drag(
         if let Some(entity) = dragging.hovered_entity {
             let position = if let Ok(parent) = parent_query.get(entity) {
                 let parent_transform = transform_query
-                    .get(parent.get())
+                    .get(parent.parent())
                     .expect("Parent should have a Transform");
                 parent_transform
                     .affine()
@@ -756,14 +756,11 @@ fn handle_mouse_drag(
                 mouse_position
             };
 
-            commands.trigger_targets(
-                DragPosition {
-                    target: entity,
-                    local_position: position,
-                    world_position: mouse_position,
-                },
-                entity,
-            );
+            commands.trigger(DragPosition {
+                target: entity,
+                local_position: position,
+                world_position: mouse_position,
+            });
         }
     }
 }
@@ -773,8 +770,8 @@ fn mouse_screen_to_world_position(
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut mouse_world_position: ResMut<MouseWorldPosition>,
 ) {
-    let (camera, camera_transform) = camera_query.single();
-    let window = window_query.single();
+    let (camera, camera_transform) = camera_query.single().unwrap();
+    let window = window_query.single().unwrap();
 
     if let Some(world_position) = window.cursor_position().and_then(|window_position| {
         camera

@@ -17,9 +17,9 @@
 //! compatibility across all deployment contexts.
 
 use bevy::{
+    asset::RenderAssetUsages,
     prelude::*,
     render::{
-        render_asset::RenderAssetUsages,
         render_resource::Extent3d,
         view::screenshot::{Screenshot, ScreenshotCaptured},
     },
@@ -71,11 +71,11 @@ pub fn take_screenshot(mut commands: Commands) {
 /// 2. Converts it to PNG format using the `image` crate
 /// 3. Triggers a browser download via Blob and anchor element
 fn screenshot_download_handler(
-    trigger: Trigger<ScreenshotCaptured>,
+    on: On<ScreenshotCaptured>,
     filename_query: Query<&ScreenshotFilename>,
-    mut save_events: EventWriter<SaveSuccessEvent>,
+    mut save_events: MessageWriter<SaveSuccessEvent>,
 ) {
-    let entity = trigger.entity();
+    let entity = on.event().entity;
 
     let Ok(screenshot_filename) = filename_query.get(entity) else {
         error!("Screenshot entity missing ScreenshotFilename component");
@@ -83,7 +83,7 @@ fn screenshot_download_handler(
     };
 
     let filename = &screenshot_filename.0;
-    let screenshot_data = &trigger.event().0;
+    let screenshot_data = on.event();
 
     // Create Bevy Image from raw screenshot data
     let image = Image::new(
@@ -93,7 +93,10 @@ fn screenshot_download_handler(
             depth_or_array_layers: 1,
         },
         bevy::render::render_resource::TextureDimension::D2,
-        screenshot_data.data.clone(),
+        screenshot_data
+            .data
+            .clone()
+            .expect("Screenshot data should be present"),
         screenshot_data.texture_descriptor.format,
         RenderAssetUsages::default(),
     );
@@ -125,7 +128,7 @@ fn screenshot_download_handler(
 
     info!("Screenshot saved to Downloads: {}", filename);
 
-    save_events.send(SaveSuccessEvent {
+    save_events.write(SaveSuccessEvent {
         file_path: Some(filename.clone()),
         message: format!("Screenshot saved to Downloads: {}", filename),
     });

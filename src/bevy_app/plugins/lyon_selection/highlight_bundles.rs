@@ -1,31 +1,47 @@
 use crate::bevy_app::plugins::mouse_interaction::PickSelection;
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::{Fill, Shape, Stroke};
 
-#[derive(Component, Default)]
-pub struct HighlightBundles<IdleB = (), SelB = ()> {
-    pub idle: IdleB,
-    pub selected: SelB,
+/// Stores idle and selected visual states for lyon Shape entities.
+///
+/// In bevy_prototype_lyon 0.15, Fill and Stroke are no longer Components.
+/// Instead, they are fields on the Shape component. This struct stores
+/// the highlight values and the system applies them to Shape directly.
+#[derive(Component, Clone, Default)]
+pub struct HighlightBundles {
+    pub idle_stroke: Option<Stroke>,
+    pub selected_stroke: Option<Stroke>,
+    pub idle_fill: Option<Fill>,
+    pub selected_fill: Option<Fill>,
 }
 
-pub fn apply_highlight_bundles<IdleB, SelB>(
-    mut commands: Commands,
-    query: Query<
-        (Entity, &HighlightBundles<IdleB, SelB>, &PickSelection),
+/// Applies the correct highlight (idle or selected) to the entity's Shape component
+/// based on the current PickSelection state.
+pub fn apply_highlight_bundles(
+    mut query: Query<
+        (&HighlightBundles, &PickSelection, &mut Shape),
         Or<(
-            Changed<HighlightBundles<IdleB, SelB>>,
-            Added<HighlightBundles<IdleB, SelB>>,
+            Changed<HighlightBundles>,
+            Added<HighlightBundles>,
             Changed<PickSelection>,
         )>,
     >,
-) where
-    IdleB: Bundle + Clone,
-    SelB: Bundle + Clone,
-{
-    for (entity, bundles, selection) in &query {
+) {
+    for (bundles, selection, mut shape) in &mut query {
         if selection.is_selected {
-            commands.entity(entity).try_insert(bundles.selected.clone());
+            if let Some(stroke) = &bundles.selected_stroke {
+                shape.stroke = Some(*stroke);
+            }
+            if let Some(fill) = &bundles.selected_fill {
+                shape.fill = Some(*fill);
+            }
         } else {
-            commands.entity(entity).try_insert(bundles.idle.clone());
+            if let Some(stroke) = &bundles.idle_stroke {
+                shape.stroke = Some(*stroke);
+            }
+            if let Some(fill) = &bundles.idle_fill {
+                shape.fill = Some(*fill);
+            }
         }
     }
 }

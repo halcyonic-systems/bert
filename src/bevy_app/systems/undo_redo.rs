@@ -26,24 +26,24 @@
 //! ```
 
 use crate::bevy_app::components::PaletteElementType;
-use bevy::ecs::event::EventCursor;
+use bevy::ecs::message::MessageCursor;
 use bevy::prelude::*;
 
-/// Event requesting an undo operation.
-#[derive(Event)]
+/// Message requesting an undo operation.
+#[derive(Message)]
 pub struct UndoEvent;
 
-/// Event requesting a redo operation.
-#[derive(Event)]
+/// Message requesting a redo operation.
+#[derive(Message)]
 pub struct RedoEvent;
 
-/// Local resource to track undo event reader state between frames.
+/// Local resource to track undo message reader state between frames.
 #[derive(Resource, Default)]
-pub struct UndoEventReader(EventCursor<UndoEvent>);
+pub struct UndoEventReader(MessageCursor<UndoEvent>);
 
-/// Local resource to track redo event reader state between frames.
+/// Local resource to track redo message reader state between frames.
 #[derive(Resource, Default)]
-pub struct RedoEventReader(EventCursor<RedoEvent>);
+pub struct RedoEventReader(MessageCursor<RedoEvent>);
 
 /// Trait for reversible commands that can be undone and redone.
 ///
@@ -180,7 +180,7 @@ impl UndoCommand for PlaceElementCommand {
     fn undo(&mut self, world: &mut World) {
         // Remove the entity that was placed
         if let Ok(entity) = world.get_entity_mut(self.entity) {
-            entity.despawn_recursive();
+            entity.despawn();
             info!("Removed {:?} at {:?}", self.element_type, self.position);
         } else {
             warn!("Entity {:?} already despawned or not found", self.entity);
@@ -215,8 +215,8 @@ impl UndoCommand for PlaceElementCommand {
 pub fn handle_undo_redo_shortcuts(
     keyboard: Res<ButtonInput<KeyCode>>,
     command_history: Res<CommandHistory>,
-    mut undo_events: EventWriter<UndoEvent>,
-    mut redo_events: EventWriter<RedoEvent>,
+    mut undo_events: MessageWriter<UndoEvent>,
+    mut redo_events: MessageWriter<RedoEvent>,
 ) {
     let ctrl = keyboard.pressed(KeyCode::ControlLeft) || keyboard.pressed(KeyCode::ControlRight);
     let shift = keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight);
@@ -225,7 +225,7 @@ pub fn handle_undo_redo_shortcuts(
         // Ctrl+Shift+Z: Redo
         if command_history.can_redo() {
             info!("⏩ Sending redo event (Ctrl+Shift+Z)");
-            redo_events.send(RedoEvent);
+            redo_events.write(RedoEvent);
         } else {
             warn!("⚠️ Nothing to redo");
         }
@@ -233,7 +233,7 @@ pub fn handle_undo_redo_shortcuts(
         // Ctrl+Z: Undo
         if command_history.can_undo() {
             info!("⏪ Sending undo event (Ctrl+Z)");
-            undo_events.send(UndoEvent);
+            undo_events.write(UndoEvent);
         } else {
             warn!("⚠️ Nothing to undo");
         }
@@ -247,7 +247,7 @@ pub fn handle_undo_redo_shortcuts(
 /// Uses a persistent ManualEventReader to avoid re-processing events.
 pub fn execute_undo(world: &mut World) {
     world.resource_scope(|world, mut event_reader: Mut<UndoEventReader>| {
-        let events = world.resource::<Events<UndoEvent>>();
+        let events = world.resource::<Messages<UndoEvent>>();
 
         // Read only the NEXT event (not all events)
         if let Some(_event) = event_reader.0.read(&events).next() {
@@ -266,7 +266,7 @@ pub fn execute_undo(world: &mut World) {
 /// Uses a persistent ManualEventReader to avoid re-processing events.
 pub fn execute_redo(world: &mut World) {
     world.resource_scope(|world, mut event_reader: Mut<RedoEventReader>| {
-        let events = world.resource::<Events<RedoEvent>>();
+        let events = world.resource::<Messages<RedoEvent>>();
 
         // Read only the NEXT event (not all events)
         if let Some(_event) = event_reader.0.read(&events).next() {

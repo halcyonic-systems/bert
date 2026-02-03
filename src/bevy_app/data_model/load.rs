@@ -10,8 +10,8 @@ use crate::bevy_app::plugins::mouse_interaction::DragPosition;
 use crate::bevy_app::resources::*;
 use crate::LoadFileEvent;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use rust_decimal_macros::dec;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 fn load_from_bytes(bytes: &[u8]) -> WorldModel {
@@ -46,7 +46,7 @@ impl Context {
 
 pub fn load_world(
     mut commands: Commands,
-    mut file_event_reader: EventReader<LoadFileEvent>,
+    mut file_event_reader: MessageReader<LoadFileEvent>,
     existing_elements_query: Query<Entity, With<SystemElement>>,
     existing_handles_query: Query<Entity, With<FlowEndpointHandle>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -64,7 +64,7 @@ pub fn load_world(
 
         // clear the scene first
         for entity in &existing_elements_query {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
         // Also despawn flow endpoint handles (they're not part of the hierarchy)
         for entity in &existing_handles_query {
@@ -602,8 +602,8 @@ fn spawn_loaded_subsystem(
 
     entity_commands
         .observe(
-            |trigger: Trigger<DragPosition>, mut writer: EventWriter<SubsystemDrag>| {
-                writer.send(trigger.into());
+            |on: On<DragPosition>, mut writer: MessageWriter<SubsystemDrag>| {
+                writer.write(SubsystemDrag::from_on(&on));
             },
         )
         .id()
