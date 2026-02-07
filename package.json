@@ -1,6 +1,6 @@
 {
   "name": "bert",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "private": true,
   "dependencies": {
     "@tailwindcss/forms": "^0.5.7",

@@ -52,6 +52,6 @@
 * [Overview](releases/README.md)
 * [v0.1.0 - Foundation](releases/v0.1.0.md)
 * [v0.2.0 - Model Browser](releases/v0.2.0.md)
-* [v0.3.0 - Agent Archetype](releases/v0.3.0.md)
+* [v0.3.0 - Flows & Foundations](releases/v0.3.0.md)
 * [v0.4.0 - Simulation Bridge](releases/v0.4.0.md)
 * [v1.0 - Production Ready](releases/v1.0.md)

@@ -1,6 +1,6 @@
 [package]
 name = "bert-tauri"
-version = "0.2.5"
+version = "0.3.0"
 description = "Tool for deep systems analysis"
 authors = ["Joseph Ensminger <?>", "Shingai Thornton", "Marc-Stefan Cassola <maccesch@synphonyte.com>", "Joel Beicher <joel@synphonyte.com>"]
 edition = "2021"

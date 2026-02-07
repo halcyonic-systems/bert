@@ -5,6 +5,47 @@ All notable changes to BERT will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-07
+
+### Added
+- **E-Network Environmental Flows** - Full environmental feedback/feed-forward flow system
+  - Sink→Source feedback flows (curves upward) for environmental feedback loops
+  - Source→Sink feed-forward flows (curves downward) for environmental inputs
+  - Dashed arc visualization for Source/Sink feedback loops
+  - Save/load/drag support for all E-network flow types
+
+- **Draggable Flow Endpoint Handles** - Precise control over flow connection points
+  - Drag handles on internal flows to adjust where they connect to subsystem boundaries
+  - Angle-based offsets for zoom-independent positioning
+  - Boundary constraints prevent handles from leaving parent subsystem
+  - Auto-offset for stacking multiple internal flows
+  - Full save/load persistence for endpoint positions
+
+- **Interface Subsystem Keyboard Shortcut** - Quick creation of interface subsystems
+
+- **Blockchain Example Models** - Enhanced ethereum.json and bitcoin.json with interface processors and Valid Proof flows
+
+### Changed
+- **Bevy 0.15 → 0.17.3** - Major framework upgrade across the entire codebase
+  - Leptos 0.7 → 0.8, lyon 0.13 → 0.15, bevy_prototype_lyon 0.15
+  - leptos-bevy-canvas 0.4, bevy-inspector-egui 0.35
+  - getrandom WASM backend configured for web builds
+- **Model Browser** - Reduced to 5 curated example models for quality over quantity
+
+### Fixed
+- **Persistence Hardening** - Major reliability improvements to save/load
+  - Pre-scan OriginalIds to prevent entity ID collisions on load
+  - Preserve entity IDs across save/load cycles (no more position drift)
+  - Register all interfaces including those without flows
+  - Register interface subsystem IDs to prevent collision
+  - Prevent duplicate interfaces on save/reload
+  - Prevent duplicate flows and NaN crash on internal flow save/reload
+  - Despawn orphaned flow endpoint handles on model reload
+- **Flow Rendering** - Resolved endpoint handle and curve rendering at wrong positions for nested flows
+- **Selection** - Z-order respected when selecting overlapping entities; subsystem clicking correctly switches panel focus
+- **Interface Subsystem Sizing** - Correct 4% scaling factor applied from creation
+- **G-Network Flows** - Consistent flow thickness
+
 ## [0.2.5] - 2026-01-05
 
 ### Added
