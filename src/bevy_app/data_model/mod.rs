@@ -66,6 +66,7 @@ use bevy::prelude::*;
 use rust_decimal::Decimal;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::collections::HashMap;
 use std::fmt;
 
 /// Current version of the data format schema.
@@ -529,6 +530,94 @@ pub struct System {
     /// None = Unspecified (backward compatible with older models).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub archetype: Option<HcgsArchetype>,
+    /// Agent configuration — only present when archetype == Agent.
+    /// Contains behavioral parameters for ABM export and agency properties.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent: Option<AgentModel>,
+}
+
+/// Agent behavioral model for ABM export and agency properties.
+/// Only populated when archetype == Agent.
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Reflect)]
+pub struct AgentModel {
+    /// Mobus agent hierarchy classification (Reactive/Anticipatory/Intentional)
+    pub kind: AgentKind,
+
+    /// Degree of autonomous decision-making capability (0.0 to 1.0)
+    /// 0.0 = fully reactive/directed, 0.5 = semi-autonomous, 1.0 = fully autonomous
+    #[serde(default = "default_agency_capacity")]
+    pub agency_capacity: f32,
+
+    /// Atomic work processes this agent can perform (Mobus primitives)
+    #[serde(default)]
+    pub primitives: Vec<ProcessPrimitive>,
+
+    /// Domain-agnostic cognitive parameters (e.g., "fee_threshold": 50.0)
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub cognitive_params: HashMap<String, f64>,
+
+    /// Process behavior configurations with flexible parameters
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub process_configs: Vec<ProcessAssignment>,
+
+    /// Initial state for agent instantiation as arbitrary JSON values
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    #[reflect(ignore)]
+    pub initial_state: HashMap<String, serde_json::Value>,
+
+    /// Optional network behavior configuration for multi-agent interactions
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub network_config: Option<NetworkConfig>,
+}
+
+fn default_agency_capacity() -> f32 {
+    0.5
+}
+
+/// Mobus agent hierarchy classification.
+#[derive(Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Reflect)]
+#[serde(rename_all = "PascalCase")]
+pub enum AgentKind {
+    #[default]
+    Reactive,
+    Anticipatory,
+    Intentional,
+}
+
+/// Mobus atomic work process primitives.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[serde(rename_all = "PascalCase")]
+pub enum ProcessPrimitive {
+    Combining,
+    Splitting,
+    Buffering,
+    Impeding,
+    Propelling,
+    Copying,
+    Sensing,
+    Modulating,
+    Inverting,
+}
+
+/// Process behavior configuration with flexible parameters.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Reflect)]
+pub struct ProcessAssignment {
+    pub name: String,
+    #[serde(default)]
+    #[reflect(ignore)]
+    pub params: HashMap<String, serde_json::Value>,
+}
+
+/// Network behavior configuration for multi-agent interactions.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Reflect)]
+pub struct NetworkConfig {
+    pub topology: String,
+    #[serde(default)]
+    #[reflect(ignore)]
+    pub connection_params: HashMap<String, serde_json::Value>,
+    #[serde(default)]
+    #[reflect(ignore)]
+    pub interaction_rules: HashMap<String, serde_json::Value>,
 }
 
 /// Boundary of a system.

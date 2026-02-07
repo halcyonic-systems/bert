@@ -44,6 +44,7 @@ pub fn spawn_main_system(
                 equivalence,
                 time_unit,
                 HcgsArchetype::default(),
+                None,
             ),
             SystemEnvironment {
                 name: environment_name.to_string(),

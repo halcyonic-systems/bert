@@ -200,6 +200,7 @@ fn spawn_subsystem_common(
                     "",
                     "Second",
                     HcgsArchetype::default(),
+                    None, // agent: new subsystems from UI have no agent config
                 ),
             ))
             .observe(

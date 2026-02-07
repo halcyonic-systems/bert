@@ -595,6 +595,7 @@ fn spawn_loaded_subsystem(
             &system.time_constant,
             // Convert Option<HcgsArchetype> to HcgsArchetype (None = Unspecified)
             system.archetype.unwrap_or_default(),
+            system.agent.clone(),
         ),
     ));
 

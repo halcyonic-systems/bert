@@ -1422,6 +1422,7 @@ fn build_system(
         member_autonomy: 1.0,
         time_constant: system.time_unit.clone(),
         archetype,
+        agent: system.agent.clone(),
     };
 
     ctx.entity_to_id
