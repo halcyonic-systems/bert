@@ -1633,6 +1633,15 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .map(|(_, _, system, _)| system.archetype)
     });
 
+    let agency_capacity = Signal::derive(move || {
+        sub_system_query
+            .read()
+            .as_ref()
+            .and_then(|(_, _, system, _)| system.agent.as_ref())
+            .map(|agent| agent.agency_capacity as f64)
+            .unwrap_or(0.5)
+    });
+
     let _membership = Signal::derive(move || {
         sub_system_query
             .read()
@@ -1793,6 +1802,32 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             }
             tooltip="HCGS archetype classification (Mobus 2022): Governance (coordination/control), Economy (production/exchange), Agent (autonomous actors)"
         />
+
+        <Show when=move || {
+            sub_system_query
+                .read()
+                .as_ref()
+                .map(|(_, _, system, _)| system.archetype == HcgsArchetype::Agent)
+                .unwrap_or_default()
+        }>
+            <Slider
+                id="agent-agency-capacity"
+                label="Agency Capacity"
+                tooltip="Degree of autonomous decision-making capability (0.0 = fully reactive/directed, 0.5 = semi-autonomous, 1.0 = fully autonomous)"
+                value=agency_capacity
+                step=0.01
+                on_input=move |value: f64| {
+                    sub_system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| {
+                            if let Some(agent) = system.agent.as_mut() {
+                                agent.agency_capacity = value as f32;
+                            }
+                        });
+                }
+            />
+        </Show>
 
         // HIDDEN for v0.2.0 - Multiset/Atomic complexity types deferred
         // <Show when=move || {
