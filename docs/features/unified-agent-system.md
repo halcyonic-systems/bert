@@ -449,21 +449,39 @@ BERT is a **modeling tool**, not a simulation runtime. The JSON schema defines w
 
 All 99 lines of data model code passing tests.
 
-### Phase 2: Agency Capacity UI
+### Phase 2: Agency Capacity UI — COMPLETE (`d8ccf83`–`0144e37`)
 
-- Add Agency Capacity slider to Leptos details panel (Leptos 0.8 signals)
-  - Follow porosity/fuzziness slider pattern in `details.rs`
-  - Slider range 0.0–1.0, step 0.01, default 0.5
-  - Semantic labels: "Reactive" (low), "Semi-autonomous" (mid), "Fully autonomous" (high)
-- Show slider only when `archetype == HcgsArchetype::Agent`
-- Wire slider to `system.agent.agency_capacity` (create default AgentModel if needed)
-- Add stroke intensity modulation based on agency_capacity
-  - Formula: `base_alpha = 0.5 + agency_capacity` (range 0.5–1.5)
-  - Builds on existing Agent orange (#F97316) stroke color
-- Handle archetype change lifecycle:
-  - Agent → other: clear `agent` field (set to `None`)
-  - other → Agent: create default `AgentModel`
-- Auto-attach/detach lifecycle for ECS component
+- ~~Add Agency Capacity slider to Leptos details panel (Leptos 0.8 signals)~~
+  - ~~Slider range 0.0–1.0, step 0.01, default 0.5~~
+- ~~Show slider only when `archetype == HcgsArchetype::Agent`~~
+- ~~Wire slider to `system.agent.agency_capacity` (create default AgentModel if needed)~~
+- ~~Add stroke intensity modulation by agency_capacity (stroke width: 0.5×–1.5× base)~~
+- ~~Handle archetype change lifecycle (Agent→other clears agent, other→Agent creates default)~~
+- ~~Serialization round-trip tests (4 tests, all passing)~~
+
+**Known limitation — Slider filler on model load (deferred to Phase 3)**
+
+The slider's red filler gradient (`style:background`) is driven by `internal_value`
+(a local `RwSignal<f64>` set synchronously on every `on_input` event) rather than
+the external `value: Signal<f64>` that tracks `sub_system_query → agency_capacity`.
+
+**Why**: `value.get()` inside a `style:background` closure on a Slider mounted inside
+`<Show>` failed to reactively update on `sub_system_query` writes during dragging —
+root cause unresolved after multiple attempts (Effect sync, Memo::new, Show condition
+refactor). `internal_value` is the source that provably works (same as `prop:value` on
+the number input).
+
+**Effect**: If a model is loaded from file while the Agent details panel is already
+open, the filler position won't update to reflect the loaded `agency_capacity`. The
+knob (`prop:value=value`) and number input will correctly show the loaded value; only
+the filler gradient lags until the user next interacts with the slider.
+
+**Fix path**: Investigate whether `RwSignalSynced::write()` propagates reactivity
+synchronously or requires a separate read to trigger re-evaluation. Compare B2L update
+path for `porosity` (which works) vs `agency_capacity` (which doesn't) — specifically
+whether the difference is the `<Show>` boundary or the nested `system.agent.?` access.
+An `Effect::new(move |_| { internal_value.set(value.get()); })` would fix the sync
+but previously caused interactivity regressions — needs further isolation.
 
 ### Phase 3: Full Agent Configuration Panel
 
