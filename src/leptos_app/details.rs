@@ -1,5 +1,5 @@
 use crate::bevy_app::components::{HcgsArchetype, SpatialDetailPanelMode};
-use crate::bevy_app::data_model::Complexity;
+use crate::bevy_app::data_model::{AgentModel, Complexity};
 use crate::bevy_app::smart_parameters::{ParameterValue, SmartParameter};
 use crate::leptos_app::components::{
     Button, Divider, InputGroup, RadioGroup, SelectGroup, Slider, TextArea,
@@ -1633,7 +1633,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .map(|(_, _, system, _)| system.archetype)
     });
 
-    let agency_capacity = Signal::derive(move || {
+    let agency_capacity = Memo::new(move |_| {
         sub_system_query
             .read()
             .as_ref()
@@ -1798,7 +1798,18 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
                 sub_system_query
                     .write()
                     .as_mut()
-                    .map(|(_, _, system, _)| system.archetype = archetype);
+                    .map(|(_, _, system, _)| {
+                        system.archetype = archetype;
+                        match archetype {
+                            HcgsArchetype::Agent if system.agent.is_none() => {
+                                system.agent = Some(AgentModel::default());
+                            }
+                            HcgsArchetype::Agent => {}
+                            _ => {
+                                system.agent = None;
+                            }
+                        }
+                    });
             }
             tooltip="HCGS archetype classification (Mobus 2022): Governance (coordination/control), Economy (production/exchange), Agent (autonomous actors)"
         />

@@ -166,7 +166,11 @@ pub fn update_subsystem_stroke_from_archetype(
         let color = system.archetype.stroke_color();
 
         let scale = NestingLevel::compute_scale(**nesting_level, **zoom);
-        highlight.idle_stroke = Some(Stroke::new(color, SYSTEM_LINE_WIDTH * scale));
+        let agency_scale = match &system.agent {
+            Some(agent) => 0.5 + agent.agency_capacity,
+            None => 1.0,
+        };
+        highlight.idle_stroke = Some(Stroke::new(color, SYSTEM_LINE_WIDTH * scale * agency_scale));
         highlight.selected_stroke = Some(Stroke::new(color, SYSTEM_SELECTED_LINE_WIDTH));
     }
 }
