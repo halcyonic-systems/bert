@@ -43,7 +43,7 @@ pub fn Slider(
                     on:input=on_input.clone()
                     class="w-full rounded-2xl appearance-none cursor-pointer outline-none h-[15px] [&::-webkit-slider-runnable-track]:h-[16px] [&::-webkit-slider-runnable-track]:rounded-2xl [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:bg-gray-200 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-cyan-600 [&::-webkit-slider-thumb]:border-2 [&::-moz-range-track]:h-[15px] [&::-moz-range-track]:rounded-2xl [&::-moz-range-thumb]:h-[15px] [&::-moz-range-thumb]:w-[15px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-cyan-600 [&::-moz-range-thumb]:bg-gray-200"
                     style:background=move || {
-                        let percent = (value.get() / (max.get() - min.get())) * 100f64;
+                        let percent = (internal_value.get() / (max.get() - min.get())) * 100f64;
                         format!(
                             "linear-gradient(to right, #e11d48 0%, #e11d48 {percent}%, #d1d5db {percent}%, #d1d5db 100%)",
                         )
