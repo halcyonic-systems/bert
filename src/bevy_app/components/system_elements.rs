@@ -219,6 +219,10 @@ pub struct System {
     /// Governance System framework: Governance (coordination/control),
     /// Economy (production/exchange), or Agent (autonomous actors).
     pub archetype: HcgsArchetype,
+
+    /// Optional agent configuration for agent-based modeling.
+    /// Only populated when archetype == Agent.
+    pub agent: Option<crate::bevy_app::data_model::AgentModel>,
 }
 
 /// Defines the boundary properties of a system, controlling interaction capabilities.

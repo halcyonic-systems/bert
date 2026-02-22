@@ -61,6 +61,7 @@ impl SystemBundle {
         equivalence: &str,
         time_unit: &str,
         archetype: HcgsArchetype,
+        agent: Option<crate::bevy_app::data_model::AgentModel>,
     ) -> Self {
         let zoomed_radius = radius * zoom;
 
@@ -82,6 +83,7 @@ impl SystemBundle {
                 boundary,
                 time_unit: time_unit.to_string(),
                 archetype,
+                agent,
             },
             name: Name::new(name.to_string()),
             description: ElementDescription::new(description),
