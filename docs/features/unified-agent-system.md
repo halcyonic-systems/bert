@@ -4,7 +4,7 @@
 
 **Feature Name**: Agent System (unified from agent-params-v2 + agent-properties)
 **Target Branch**: `feature/unified-agent-system`
-**Status**: Phase 1 Complete (data model), Phase 2 pending (UI)
+**Status**: Phases 1–3 Complete (data model + agency capacity UI + AgentKind), merged to main
 **Phase 1 Commit**: `ddec8b2`
 **Source Branches** (archived — see `docs/features/archive/`):
 - `feature/agent-params-v2` — Backend data model (implemented, Bevy 0.15 / Leptos 0.7)
@@ -483,9 +483,27 @@ whether the difference is the `<Show>` boundary or the nested `system.agent.?` a
 An `Effect::new(move |_| { internal_value.set(value.get()); })` would fix the sync
 but previously caused interactivity regressions — needs further isolation.
 
-### Phase 3: Full Agent Configuration Panel
+### Phase 3: AgentKind Classification — COMPLETE (`64f07f8`)
 
-- `AgentKind` selector dropdown (Reactive / Anticipatory / Intentional)
+- ~~`AgentKind` RadioGroup (Reactive / Anticipatory / Intentional)~~
+- ~~Soft-resets `agency_capacity` to kind default on selection (0.25 / 0.50 / 0.75)~~
+- ~~Per-option tooltips referencing Mobus decision agent hierarchy levels~~
+
+**Design decision**: AgentKind and agency_capacity are complementary, not redundant.
+Kind = decision architecture tier (structural); capacity = degree of autonomy exercised
+(continuous). Selecting a kind soft-defaults the slider but both remain independently editable.
+
+**Deferred to Phase 4:**
+- Visual differentiation by AgentKind (color/shape) — deferred pending real-model usage feedback
+- Full `cognitive_params` key-value editor
+- Process primitive checkboxes (9 Mobus primitives)
+- Process configs structured editor
+- Self-actualization score (computed from agent configuration completeness)
+- Feedback loop visualization (agency → system behavior → agency feedback)
+
+### Phase 4: Full Agent Configuration Panel + Simulation Prep (future)
+
+- AgentKind visual encoding (color modulation within Agent orange, or shape — shape deferred, complex)
 - Full `cognitive_params` key-value editor (add/remove/edit f64 parameters)
 - Process primitive checkboxes (select from 9 Mobus primitives)
 - Process configs structured editor (name + JSON params)
@@ -493,7 +511,7 @@ but previously caused interactivity regressions — needs further isolation.
 - Self-actualization score (computed metric from agent configuration completeness)
 - Feedback loop visualization (agency → system behavior → agency feedback)
 
-### Phase 4: Integrated Simulation Execution (future)
+### Phase 5: Integrated Simulation Execution (future)
 
 - Draw from `feature/agent-dynamics` branch vision (5600+ lines)
 - Substance buffer processing within Bevy ECS
