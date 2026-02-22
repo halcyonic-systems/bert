@@ -1633,7 +1633,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .map(|(_, _, system, _)| system.archetype)
     });
 
-    let agency_capacity = Memo::new(move |_| {
+    let agency_capacity = Signal::derive(move || {
         sub_system_query
             .read()
             .as_ref()
