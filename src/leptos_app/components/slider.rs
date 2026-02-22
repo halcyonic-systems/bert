@@ -38,9 +38,11 @@ pub fn Slider(
     // });
 
     let on_input = move |ev: Event| {
-        let value = event_target_value(&ev).parse::<f64>().unwrap();
-        internal_value.set(value);
-        on_input(value);
+        let Ok(v) = event_target_value(&ev).parse::<f64>() else {
+            return; // empty field while user is mid-edit — skip
+        };
+        internal_value.set(v);
+        on_input(v);
     };
 
     // let internal_value = move || {
