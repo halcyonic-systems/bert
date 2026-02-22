@@ -1626,14 +1626,14 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .map(|(_, _, system, _)| ComplexityLevel::from(&system.complexity))
     });
 
-    let subsystem_archetype = Signal::derive(move || {
+    let subsystem_archetype = Memo::new(move |_| {
         sub_system_query
             .read()
             .as_ref()
             .map(|(_, _, system, _)| system.archetype)
     });
 
-    let agency_capacity = Signal::derive(move || {
+    let agency_capacity = Memo::new(move |_| {
         sub_system_query
             .read()
             .as_ref()
@@ -1814,13 +1814,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             tooltip="HCGS archetype classification (Mobus 2022): Governance (coordination/control), Economy (production/exchange), Agent (autonomous actors)"
         />
 
-        <Show when=move || {
-            sub_system_query
-                .read()
-                .as_ref()
-                .map(|(_, _, system, _)| system.archetype == HcgsArchetype::Agent)
-                .unwrap_or_default()
-        }>
+        <Show when=move || subsystem_archetype.get() == Some(HcgsArchetype::Agent)>
             <Slider
                 id="agent-agency-capacity"
                 label="Agency Capacity"
