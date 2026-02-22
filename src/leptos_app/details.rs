@@ -1,5 +1,5 @@
 use crate::bevy_app::components::{HcgsArchetype, SpatialDetailPanelMode};
-use crate::bevy_app::data_model::{AgentModel, Complexity};
+use crate::bevy_app::data_model::{AgentKind, AgentModel, Complexity};
 use crate::bevy_app::smart_parameters::{ParameterValue, SmartParameter};
 use crate::leptos_app::components::{
     Button, Divider, InputGroup, RadioGroup, SelectGroup, Slider, TextArea,
@@ -43,6 +43,16 @@ impl std::fmt::Display for ComplexityLevel {
             ComplexityLevel::Simple => write!(f, "Simple"),
             ComplexityLevel::Adaptable => write!(f, "Adaptable"),
             ComplexityLevel::Evolveable => write!(f, "Evolveable"),
+        }
+    }
+}
+
+impl std::fmt::Display for AgentKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AgentKind::Reactive => write!(f, "Reactive"),
+            AgentKind::Anticipatory => write!(f, "Anticipatory"),
+            AgentKind::Intentional => write!(f, "Intentional"),
         }
     }
 }
@@ -1642,6 +1652,14 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or(0.5)
     });
 
+    let agent_kind = Memo::new(move |_| {
+        sub_system_query
+            .read()
+            .as_ref()
+            .and_then(|(_, _, system, _)| system.agent.as_ref())
+            .map(|agent| agent.kind)
+    });
+
     let _membership = Signal::derive(move || {
         sub_system_query
             .read()
@@ -1815,6 +1833,33 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
         />
 
         <Show when=move || subsystem_archetype.get() == Some(HcgsArchetype::Agent)>
+            <RadioGroup
+                id="agent-kind"
+                label="Agent Kind"
+                options=vec![AgentKind::Reactive, AgentKind::Anticipatory, AgentKind::Intentional]
+                selected=agent_kind
+                option_descriptions=vec![
+                    "Stimulus-response only, no internal model (Mobus Level 1)",
+                    "Maintains internal model, can predict future states (Mobus Level 2)",
+                    "Sets own goals, plans multi-step actions (Mobus Level 3)",
+                ]
+                on_change=move |kind: AgentKind| {
+                    sub_system_query
+                        .write()
+                        .as_mut()
+                        .map(|(_, _, system, _)| {
+                            if let Some(agent) = system.agent.as_mut() {
+                                agent.kind = kind;
+                                agent.agency_capacity = match kind {
+                                    AgentKind::Reactive => 0.25,
+                                    AgentKind::Anticipatory => 0.5,
+                                    AgentKind::Intentional => 0.75,
+                                };
+                            }
+                        });
+                }
+                tooltip="Mobus decision agent hierarchy: structural capability tier of this agent subsystem"
+            />
             <Slider
                 id="agent-agency-capacity"
                 label="Agency Capacity"
