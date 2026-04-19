@@ -10,11 +10,14 @@ use crate::bevy_app::{
     components::System, DetachMarkerLabelEvent, ElementDescription, ExternalEntity, Flow,
     Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
 };
+use crate::bevy_app::{
+    ExternalEntityFilter, ExternalEntityQuery, InteractionQuery, InterfaceQuery, IsSameAsIdQuery,
+    SelectionFilter, SubSystemFilter, SubSystemQuery, SystemQuery,
+};
 use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast};
 use crate::leptos_app::details::Details;
-use crate::LoadFileEvent;
-use crate::{ParentState, Subsystem};
-use bevy::prelude::{Name, With};
+use crate::{LoadFileEvent, ParentState, Subsystem};
+use bevy::prelude::With;
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::{
     message_b2l, message_l2b, signal_synced, single_query_signal, BevyCanvas,
@@ -22,17 +25,6 @@ use leptos_bevy_canvas::prelude::{
 use leptos_meta::*;
 use use_file_dialog::use_file_dialog_with_options;
 
-pub type InterfaceQuery = (Name, ElementDescription, Interface);
-pub type InteractionQuery = (Name, ElementDescription, Flow);
-pub type ExternalEntityQuery = (Name, ElementDescription, ExternalEntity);
-pub type SystemQuery = (Name, ElementDescription, System, SystemEnvironment);
-pub type SubSystemQuery = (Name, ElementDescription, System, ParentState);
-
-pub type IsSameAsIdQuery = (IsSameAsId,);
-
-pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
-pub type SubSystemFilter = With<Subsystem>;
-pub type ExternalEntityFilter = With<ExternalEntity>;
 use crate::events::{
     CancelModeEvent, DeselectAllEvent, ModeChangeEvent, PaletteClickEvent, SaveSuccessEvent,
     TreeEvent, TriggerEvent, ZoomEvent,
