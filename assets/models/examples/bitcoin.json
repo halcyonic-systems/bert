@@ -1301,7 +1301,7 @@
         "sub_type": "Consensus-Rules",
         "type": "Message"
       },
-      "type": "Flow",
+      "type": "Force",
       "usability": "Product",
       "source": "C0.5",
       "source_interface": null,
