@@ -530,7 +530,7 @@
         "description": "https://www.mintscan.io/cosmos\n\nhttps://cosmos.bigdipper.live/\n\nhttps://mapofzones.com/"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Thermal",
         "type": "Energy"
       },
       "type": "Flow",
@@ -567,7 +567,7 @@
         "description": "ATOM transactions, IBC transfers, and governance votes submitted by users to the Cosmos Hub. Each transaction specifies state changes, includes fees for execution, and may involve staking operations, cross-chain transfers, or governance participation. Transactions enter the mempool where they compete for inclusion based on fee priority."
       },
       "substance": {
-        "sub_type": "Pending transaction",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -614,7 +614,7 @@
         "description": "Cosmos ecosystem contributors include core developers, IBC implementers, and community members who contribute to Cosmos SDK, CometBFT, and IBC protocols. Contributions flow through GitHub repositories, governance proposals, and community forums with coordination across multiple organizations.\n\n\n"
       },
       "substance": {
-        "sub_type": "Code contribution",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -708,7 +708,7 @@
         "description": "Finalized ATOM transactions, successful IBC transfers, executed governance proposals, and distributed staking rewards recorded in blocks and added to the Cosmos Hub blockchain.\n\nTransaction types: ATOM transfers, validator delegations, governance votes, IBC transfers, cross-chain asset management"
       },
       "substance": {
-        "sub_type": "Blockchain Data",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -760,7 +760,7 @@
         "description": "Consensus rules and validator duty assignments transmitted from Protocol to Validating subsystem. Defines block production schedule, staking parameters, and IBC handling rules.\n\nKey parameters:\n1. Validator set and voting power distribution\n2. Current staking parameters and reward rates\n3. Slashing conditions and penalties\n4. IBC timeout and acknowledgment rules\n5. Governance proposal thresholds\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/staking\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/gov"
       },
       "substance": {
-        "sub_type": "Consensus Rules",
+        "sub_type": "Consensus-Rules",
         "type": "Message"
       },
       "type": "Flow",
@@ -816,7 +816,7 @@
         "description": "Validated pending ATOM transactions and IBC packets passed from Executing to Validating subsystem for block inclusion.\n\nKey parameters:\n1. Transaction count and fee distribution\n2. IBC packet queue length\n3. Governance proposal status\n4. Staking operation types\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/types/mempool\nhttps://github.com/cosmos/ibc-go"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -862,7 +862,7 @@
         "description": "Newly proposed blocks transmitted from Validating to Protocol subsystem for consensus and finalization. Contains executed transactions and IBC packet commitments.\n\nKey parameters:\n1. Block proposer validator\n2. Transaction execution results\n3. IBC packet commitments\n4. Governance proposal executions\n\nSource files:\nhttps://github.com/cometbft/cometbft/tree/main/consensus\nhttps://github.com/cosmos/cosmos-sdk/tree/main/baseapp"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -913,7 +913,7 @@
         "description": "Finalized blocks and Hub state updates distributed from Protocol to Executing subsystem. Enables network-wide state synchronization and IBC light client updates.\n\nKey parameters:\n1. Finalized block hash and height\n2. State root and validator set changes\n3. IBC commitment updates\n4. Governance execution results\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/baseapp\nhttps://github.com/cosmos/ibc-go/tree/main/modules/light-clients"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -964,7 +964,7 @@
         "description": "Protocol upgrades and governance-approved changes transmitted from Development to Protocol subsystem. Includes Cosmos SDK updates, IBC protocol improvements, and parameter changes.\n\nKey parameters:\n1. Upgrade proposal details\n2. SDK version updates\n3. IBC protocol versions\n4. Network parameter changes\n\nSource files:\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/upgrade\nhttps://github.com/cosmos/cosmos-sdk/tree/main/x/gov"
       },
       "substance": {
-        "sub_type": "Code implementation",
+        "sub_type": "Code",
         "type": "Message"
       },
       "type": "Flow",
@@ -1010,7 +1010,7 @@
         "description": "SDK modules, CometBFT updates, and IBC improvements entering the development process"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -1035,7 +1035,7 @@
         "description": "Signed ATOM transactions, IBC transfers, and governance votes from wallet to execution layer"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -1060,7 +1060,7 @@
         "description": "Confirmed ATOM transactions, IBC receipts, and governance results sent to users via RPC"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Signal",
         "type": "Message"
       },
       "type": "Flow",
