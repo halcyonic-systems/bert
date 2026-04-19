@@ -6,12 +6,14 @@
 //! See `docs/bert-typedb-schema.md` in the BERT repo for the schema design
 //! this transpiler targets.
 
+pub mod driver;
 pub mod error;
 pub mod escape;
 pub mod insert;
 pub mod schema;
 pub mod validate;
 
+pub use driver::{SyncSummary, Transpiler};
 pub use error::TranspilerError;
 pub use escape::escape_typeql_string;
 pub use insert::model_to_typeql;

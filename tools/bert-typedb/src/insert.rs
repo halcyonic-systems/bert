@@ -320,7 +320,12 @@ fn emit_participates_in(
 ) -> String {
     let entity_type = concrete_type_for_id(endpoint_id);
     format!(
-        r#"match $e isa {etype}, has bert_id "{eid}"; $f isa interaction, has bert_id "{fid}"; insert (entity: $e, interaction: $f) isa participates_in, has role "{role}";"#,
+        // NOTE: reserved-word collisions in TypeQL 3.x surfaced when loading
+        // the schema against a live server:
+        //   - attribute `role` → `participation_role` (`role` is reserved)
+        //   - role `entity` → `participant` (`entity` is the built-in
+        //     meta-type for all entity types)
+        r#"match $e isa {etype}, has bert_id "{eid}"; $f isa interaction, has bert_id "{fid}"; insert (participant: $e, interaction: $f) isa participates_in, has participation_role "{role}";"#,
         etype = entity_type,
         eid = namespaced_id(model_name, endpoint_id),
         fid = namespaced_id(model_name, &ix.info.id),
@@ -836,8 +841,10 @@ mod tests {
         let stmts = model_to_typeql(&model, "bitcoin").unwrap();
 
         for stmt in stmts.iter().filter(|s| s.contains("isa participates_in")) {
-            let role_marker = r#"has role ""#;
-            let pos = stmt.find(role_marker).expect("participates_in missing role");
+            let role_marker = r#"has participation_role ""#;
+            let pos = stmt
+                .find(role_marker)
+                .expect("participates_in missing participation_role");
             let rest = &stmt[pos + role_marker.len()..];
             let end = rest.find('"').unwrap_or(rest.len());
             let role = &rest[..end];

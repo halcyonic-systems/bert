@@ -5,67 +5,67 @@ define
 # =============================================================================
 
 # Identification
-attribute bert_id, value string;
-attribute model_name, value string;
-attribute system_level, value integer;
+attribute bert_id value string;
+attribute model_name value string;
+attribute system_level value integer;
 
 # Metadata
-attribute display_name, value string;
-attribute description, value string;
+attribute display_name value string;
+attribute description value string;
 
 # System properties
-attribute radius, value double;
-attribute equivalence_class, value string;
-attribute history_note, value string;
-attribute transformation_note, value string;
-attribute member_autonomy, value double;
-attribute time_constant, value string,
+attribute radius value double;
+attribute equivalence_class value string;
+attribute history_note value string;
+attribute transformation_note value string;
+attribute member_autonomy value double;
+attribute time_constant value string
     @values("Millisecond", "Second", "Minute", "Hour", "Day", "Week", "Month", "Year", "Decade", "Century", "Epoch");
-attribute archetype, value string,
+attribute archetype value string
     @values("Unspecified", "Governance", "Economy", "Agent");
 
 # Complexity (flattened from enum)
-attribute complexity_kind, value string,
+attribute complexity_kind value string
     @values("Atomic", "Complex", "Multiset");
-attribute complex_adaptable, value boolean;
-attribute complex_evolveable, value boolean;
-attribute multiset_count, value integer;
+attribute complex_adaptable value boolean;
+attribute complex_evolveable value boolean;
+attribute multiset_count value integer;
 
 # Boundary
-attribute porosity, value double;
-attribute perceptive_fuzziness, value double;
+attribute porosity value double;
+attribute perceptive_fuzziness value double;
 
 # Interface
-attribute protocol, value string;
-attribute interface_type, value string,
+attribute protocol value string;
+attribute interface_type value string
     @values("Import", "Export", "Hybrid");
-attribute interface_angle, value double;
+attribute interface_angle value double;
 
 # Interaction
-attribute substance_type, value string,
+attribute substance_type value string
     @values("Energy", "Material", "Message");
-attribute substance_sub_type, value string;
-attribute interaction_type, value string,
+attribute substance_sub_type value string;
+attribute interaction_type value string
     @values("Flow", "Force");
-attribute usability, value string,
+attribute usability value string
     @values("Resource", "Disruption", "Product", "Waste");
-attribute amount, value string;
-attribute unit, value string;
+attribute amount value string;
+attribute unit value string;
 
 # Agent
-attribute agent_kind, value string,
+attribute agent_kind value string
     @values("Reactive", "Anticipatory", "Intentional");
-attribute agency_capacity, value double;
-attribute process_primitive, value string,
+attribute agency_capacity value double;
+attribute process_primitive value string
     @values("Combining", "Splitting", "Buffering", "Impeding", "Propelling",
             "Copying", "Sensing", "Modulating", "Inverting");
-attribute cognitive_param_name, value string;
-attribute cognitive_param_value, value double;
+attribute cognitive_param_name value string;
+attribute cognitive_param_value value double;
 
 # Provenance
-attribute role, value string,
+attribute participation_role value string
     @values("source", "sink");
-attribute endpoint, value string,
+attribute endpoint value string
     @values("start", "end");
 
 # =============================================================================
@@ -97,7 +97,7 @@ entity system,
     plays composition:part,
     plays in_environment:contained_system,
     plays has_boundary:enclosed,
-    plays participates_in:entity,
+    plays participates_in:participant,
     plays has_agent_config:system;
 
 entity external_entity,
@@ -106,7 +106,7 @@ entity external_entity,
     owns description,
     owns equivalence_class,
     plays in_environment:contained_system,
-    plays participates_in:entity,
+    plays participates_in:participant,
     plays is_equivalent_to:primary,
     plays is_equivalent_to:equivalent;
 
@@ -184,8 +184,8 @@ relation has_interface,
 
 # entity → interaction (replaces source/sink fields, with role)
 relation participates_in,
-    owns role,
-    relates entity,
+    owns participation_role,
+    relates participant,
     relates interaction;
 
 # interaction → interface (optional explicit routing, with endpoint)
