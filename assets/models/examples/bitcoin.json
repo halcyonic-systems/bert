@@ -956,7 +956,7 @@
         "description": "https://ccaf.io/cbeci/index\n\nhttps://digiconomist.net/bitcoin-energy-consumption\n\nhttps://www.eia.gov/\nhttps://www.eia.gov/todayinenergy/detail.php?id=61364"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Thermal",
         "type": "Energy"
       },
       "type": "Flow",
@@ -977,7 +977,7 @@
         "description": "Confirmed transactions are secure value transfers recorded in blocks and added to the blockchain.\n\nTransaction types: "
       },
       "substance": {
-        "sub_type": "Blockchain Data",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -1029,7 +1029,7 @@
         "description": "Unconfirmed transactions broadcast by network participants to be processed by the Bitcoin network. Each transaction request specifies value transfers between addresses, includes fees to incentivize mining, and must meet network consensus rules to be considered valid. The aggregate flow of these requests forms the transaction mempool from which miners select entries for inclusion in blocks."
       },
       "substance": {
-        "sub_type": "Unconfirmed transaction",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -1113,7 +1113,7 @@
         "description": "Bitcoin network contributors are a diverse set of developers, researchers, and community members who contribute code, documentation, and ideas to improve Bitcoin's protocol and software implementations. Measurable contributions flow through standardized processes including: GitHub pull requests, Bitcoin Improvement Proposals (BIPs), testing feedback, and documentation updates. Each contribution type has distinct verification and acceptance protocols.\n\n\n"
       },
       "substance": {
-        "sub_type": "Code contribution",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -1160,7 +1160,7 @@
         "description": "Protocol upgrades and security patches transmitted from Development to Protocol subsystem. Includes consensus changes, network upgrades, and critical fixes.\n\nKey parameters:\n1. Protocol version number\n2. BIP implementation status\n3. Activation height\n4. Backward compatibility requirements\n\nSource files:\nsrc/consensus/params.h\nsrc/validation.cpp\n\nhttps://github.com/bitcoin/bitcoin/tree/master/src/consensus\nhttps://github.com/bitcoin/bips"
       },
       "substance": {
-        "sub_type": "Code implementation",
+        "sub_type": "Code",
         "type": "Message"
       },
       "type": "Flow",
@@ -1206,7 +1206,7 @@
         "description": "Validated but unconfirmed transactions passed from Validating to Mining subsystem for potential block inclusion. Represents the current pool of pending transactions.\n\nKey parameters:\n1. Transaction count\n2. Total mempool size\n3. Fee rates distribution\n4. Age distribution\n\nSource files:\nsrc/txmempool.cpp\nsrc/policy/fees.cpp\n\nhttps://github.com/bitcoin/bitcoin/tree/master/src/txmempool"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -1247,7 +1247,7 @@
         "description": "Newly created blocks transmitted from Mining to Protocol subsystem for validation and network distribution. Represents the core proof-of-work output.\n\nKey parameters:\n1. Block hash\n2. Block height\n3. Transaction count\n4. Block reward amount\n\nSource files:\nsrc/validation.cpp\nsrc/miner.cpp\n\nhttps://github.com/bitcoin/bitcoin/tree/master/src/validation\nhttps://github.com/bitcoin/bitcoin/tree/master/src/miner"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -1298,7 +1298,7 @@
         "description": "Consensus rules and chain state parameters transmitted from Protocol to Mining subsystem. Guides valid block creation and reward calculation.\n\nKey parameters:\n1. Current block subsidy\n2. Network difficulty\n3. Chain height\n4. Block template rules\n\nSource files:\nsrc/consensus/params.h\nsrc/validation.cpp\n\nhttps://github.com/bitcoin/bitcoin/tree/master/src/consensus\nhttps://github.com/bitcoin/bitcoin/tree/master/src/validation"
       },
       "substance": {
-        "sub_type": "Consensus Rules",
+        "sub_type": "Consensus-Rules",
         "type": "Message"
       },
       "type": "Flow",
@@ -1359,7 +1359,7 @@
         "description": "Network state information and new block announcements distributed from Protocol to Validating subsystem. Enables network-wide consensus maintenance.\n\nKey parameters:\n1. Block height/hash\n2. Network difficulty\n3. UTXO set hash\n4. Node version info\n\nSource files:\nsrc/net_processing.cpp\nsrc/validation.cpp\n\nhttps://github.com/bitcoin/bitcoin/tree/master/src/net\nhttps://github.com/bitcoin/bitcoin/tree/master/src/validation"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -1430,7 +1430,7 @@
         "description": "BIPs and pull requests entering the development process from GitHub"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -1455,7 +1455,7 @@
         "description": "Signed transactions from wallet to validation layer for mempool inclusion"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -1480,7 +1480,7 @@
         "description": "Confirmed transactions and block data sent to user wallets via JSON-RPC"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Signal",
         "type": "Message"
       },
       "type": "Flow",
@@ -1505,7 +1505,7 @@
         "description": "Successfully computed hash meeting the current difficulty target, returned from  mining hardware to pool/node software for block finalization and network broadcast.  Includes the winning nonce, block header         hash, and associated metadata. Low frequency relative to hash attempts -- only produced  when a valid proof-of-work solution is found."
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Signal",
         "type": "Message"
       },
       "type": "Flow",
