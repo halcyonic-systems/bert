@@ -51,7 +51,7 @@ web-sys = { version = "0.3", features = [
 uuid = { version = "1.12.1", features = ["v4"] }
 
 [workspace]
-members = ["src-tauri"]
+members = ["src-tauri", "tools/bert-typedb"]
 
 
 [profile.dev]

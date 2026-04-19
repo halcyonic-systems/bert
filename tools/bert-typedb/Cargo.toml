@@ -1,0 +1,17 @@
+[package]
+name = "bert-typedb"
+version = "0.1.0"
+edition = "2021"
+description = "Transpiler from BERT JSON models to TypeDB 3.x typed graph"
+license = "MIT"
+
+[dependencies]
+bert = { path = "../.." }
+typedb-driver = "3.8"
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+clap = { version = "4", features = ["derive"] }
+thiserror = "1"
+
+[features]
+integration = []
