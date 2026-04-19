@@ -5,13 +5,10 @@ mod tree;
 mod use_file_dialog;
 
 use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
-use crate::bevy_app::init_bevy_app;
 use crate::bevy_app::{
-    DetachMarkerLabelEvent, SelectedHighlightHelperAdded, SystemElement,
-};
-use crate::bevy_app::{
-    ExternalEntityFilter, ExternalEntityQuery, InteractionQuery, InterfaceQuery, IsSameAsIdQuery,
-    SelectionFilter, SubSystemFilter, SubSystemQuery, SystemQuery,
+    init_bevy_app, DetachMarkerLabelEvent, ExternalEntityFilter, ExternalEntityQuery,
+    InteractionQuery, InterfaceQuery, IsSameAsIdQuery, SelectedHighlightHelperAdded,
+    SelectionFilter, SubSystemFilter, SubSystemQuery, SystemElement, SystemQuery,
 };
 use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast};
 use crate::leptos_app::details::Details;

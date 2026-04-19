@@ -1,8 +1,8 @@
 #![feature(string_remove_matches)]
-#![allow(clippy::all)]
+#![allow(clippy::type_complexity)]
 #![allow(dead_code)]
 
-use bert::App;
+use bert::leptos_app::App;
 use leptos::mount;
 
 fn main() {

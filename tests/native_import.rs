@@ -15,7 +15,10 @@ use bert::bevy_app::data_model::WorldModel;
 
 #[test]
 fn bitcoin_json_deserializes_as_worldmodel() {
-    let path = "assets/models/examples/bitcoin.json";
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets/models/examples/bitcoin.json"
+    );
     let bytes = std::fs::read(path).expect("bitcoin.json should exist");
     let model: WorldModel =
         serde_json::from_slice(&bytes).expect("bitcoin.json should deserialize");

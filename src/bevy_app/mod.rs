@@ -27,11 +27,7 @@ use data_model::save::{save_world, save_world_as, serialize_world};
 pub use events::*;
 use leptos_bevy_canvas::prelude::*;
 
-/// Bevy ECS query and filter type aliases used by UI bridge code (Leptos-side)
-/// and by internal Bevy systems. Defined here because they compose types from
-/// this module (`components::*`) and standard Bevy primitives — no dependency
-/// on Leptos. Moved from `leptos_app/mod.rs` where they were defined next to
-/// their first consumer but couldn't cleanly separate from bevy_app.
+// ECS query/filter aliases; moved from leptos_app — no Leptos dependency.
 pub type InterfaceQuery = (Name, ElementDescription, Interface);
 pub type InteractionQuery = (Name, ElementDescription, Flow);
 pub type ExternalEntityQuery = (Name, ElementDescription, ExternalEntity);
