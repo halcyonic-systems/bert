@@ -8,10 +8,12 @@
 
 pub mod error;
 pub mod escape;
+pub mod insert;
 pub mod schema;
 pub mod validate;
 
 pub use error::TranspilerError;
 pub use escape::escape_typeql_string;
+pub use insert::model_to_typeql;
 pub use schema::SCHEMA_TQL;
 pub use validate::{validate, Severity, ValidationIssue};
