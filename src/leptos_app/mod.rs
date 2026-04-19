@@ -7,8 +7,7 @@ mod use_file_dialog;
 use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
 use crate::bevy_app::init_bevy_app;
 use crate::bevy_app::{
-    components::System, DetachMarkerLabelEvent, ElementDescription, ExternalEntity, Flow,
-    Interface, IsSameAsId, SelectedHighlightHelperAdded, SystemElement, SystemEnvironment,
+    DetachMarkerLabelEvent, SelectedHighlightHelperAdded, SystemElement,
 };
 use crate::bevy_app::{
     ExternalEntityFilter, ExternalEntityQuery, InteractionQuery, InterfaceQuery, IsSameAsIdQuery,
@@ -16,7 +15,7 @@ use crate::bevy_app::{
 };
 use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast};
 use crate::leptos_app::details::Details;
-use crate::{LoadFileEvent, ParentState, Subsystem};
+use crate::LoadFileEvent;
 use bevy::prelude::With;
 use leptos::prelude::*;
 use leptos_bevy_canvas::prelude::{
