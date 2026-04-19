@@ -1,0 +1,231 @@
+define
+
+# =============================================================================
+# ATTRIBUTES
+# =============================================================================
+
+# Identification
+attribute bert_id, value string;
+attribute model_name, value string;
+attribute system_level, value integer;
+
+# Metadata
+attribute display_name, value string;
+attribute description, value string;
+
+# System properties
+attribute radius, value double;
+attribute equivalence_class, value string;
+attribute history_note, value string;
+attribute transformation_note, value string;
+attribute member_autonomy, value double;
+attribute time_constant, value string,
+    @values("Millisecond", "Second", "Minute", "Hour", "Day", "Week", "Month", "Year", "Decade", "Century", "Epoch");
+attribute archetype, value string,
+    @values("Unspecified", "Governance", "Economy", "Agent");
+
+# Complexity (flattened from enum)
+attribute complexity_kind, value string,
+    @values("Atomic", "Complex", "Multiset");
+attribute complex_adaptable, value boolean;
+attribute complex_evolveable, value boolean;
+attribute multiset_count, value integer;
+
+# Boundary
+attribute porosity, value double;
+attribute perceptive_fuzziness, value double;
+
+# Interface
+attribute protocol, value string;
+attribute interface_type, value string,
+    @values("Import", "Export", "Hybrid");
+attribute interface_angle, value double;
+
+# Interaction
+attribute substance_type, value string,
+    @values("Energy", "Material", "Message");
+attribute substance_sub_type, value string;
+attribute interaction_type, value string,
+    @values("Flow", "Force");
+attribute usability, value string,
+    @values("Resource", "Disruption", "Product", "Waste");
+attribute amount, value string;
+attribute unit, value string;
+
+# Agent
+attribute agent_kind, value string,
+    @values("Reactive", "Anticipatory", "Intentional");
+attribute agency_capacity, value double;
+attribute process_primitive, value string,
+    @values("Combining", "Splitting", "Buffering", "Impeding", "Propelling",
+            "Copying", "Sensing", "Modulating", "Inverting");
+attribute cognitive_param_name, value string;
+attribute cognitive_param_value, value double;
+
+# Provenance
+attribute role, value string,
+    @values("source", "sink");
+attribute endpoint, value string,
+    @values("start", "end");
+
+# =============================================================================
+# ENTITIES
+# =============================================================================
+
+entity bert_model,
+    owns model_name @key,
+    owns description,
+    plays in_environment:environment;
+
+entity system,
+    owns bert_id @key,
+    owns display_name,
+    owns description,
+    owns system_level,
+    owns radius,
+    owns equivalence_class,
+    owns history_note,
+    owns transformation_note,
+    owns member_autonomy,
+    owns time_constant,
+    owns archetype,
+    owns complexity_kind,
+    owns complex_adaptable,
+    owns complex_evolveable,
+    owns multiset_count,
+    plays composition:whole,
+    plays composition:part,
+    plays in_environment:contained_system,
+    plays has_boundary:enclosed,
+    plays participates_in:entity,
+    plays has_agent_config:system;
+
+entity external_entity,
+    owns bert_id @key,
+    owns display_name,
+    owns description,
+    owns equivalence_class,
+    plays in_environment:contained_system,
+    plays participates_in:entity,
+    plays is_equivalent_to:primary,
+    plays is_equivalent_to:equivalent;
+
+entity boundary,
+    owns bert_id @key,
+    owns display_name,
+    owns description,
+    owns porosity,
+    owns perceptive_fuzziness,
+    plays has_boundary:enclosure,
+    plays has_interface:boundary;
+
+entity interface,
+    owns bert_id @key,
+    owns display_name,
+    owns description,
+    owns protocol,
+    owns interface_type,
+    owns interface_angle,
+    plays has_interface:interface,
+    plays routes_through:interface;
+
+entity interaction,
+    owns bert_id @key,
+    owns display_name,
+    owns description,
+    owns substance_type,
+    owns substance_sub_type,
+    owns interaction_type,
+    owns usability,
+    owns amount,
+    owns unit,
+    plays participates_in:interaction,
+    plays routes_through:interaction;
+
+entity agent_model,
+    owns agent_kind,
+    owns agency_capacity,
+    plays has_agent_config:config,
+    plays has_primitive:agent,
+    plays has_cognitive_param:agent;
+
+entity primitive_assignment,
+    owns process_primitive,
+    plays has_primitive:primitive;
+
+entity cognitive_parameter,
+    owns cognitive_param_name,
+    owns cognitive_param_value,
+    plays has_cognitive_param:param;
+
+# =============================================================================
+# RELATIONS
+# =============================================================================
+
+# Mobus C: system → subsystem
+relation composition,
+    relates whole,
+    relates part;
+
+# Mobus E: environment → system
+relation in_environment,
+    relates environment,
+    relates contained_system;
+
+# system → boundary (one-to-one)
+relation has_boundary,
+    relates enclosed,
+    relates enclosure;
+
+# boundary → interface (one-to-many)
+relation has_interface,
+    relates boundary,
+    relates interface;
+
+# entity → interaction (replaces source/sink fields, with role)
+relation participates_in,
+    owns role,
+    relates entity,
+    relates interaction;
+
+# interaction → interface (optional explicit routing, with endpoint)
+relation routes_through,
+    owns endpoint,
+    relates interaction,
+    relates interface;
+
+# external_entity ↔ external_entity (replaces is_same_as_id)
+relation is_equivalent_to,
+    relates primary,
+    relates equivalent;
+
+# system → agent_model (Agent archetype only)
+relation has_agent_config,
+    relates system,
+    relates config;
+
+# agent_model → primitive_assignment (normalized Vec<ProcessPrimitive>)
+relation has_primitive,
+    relates agent,
+    relates primitive;
+
+# agent_model → cognitive_parameter (normalized HashMap<String, f64>)
+relation has_cognitive_param,
+    relates agent,
+    relates param;
+
+# =============================================================================
+# INFERENCE FUNCTIONS (starter set — full catalog deferred)
+# =============================================================================
+
+# Identifies cross-model structural equivalents: external entities in
+# different BERT models that have been declared equivalent. Useful for
+# categorical cryptoeconomics queries ("all chains where Users is the
+# same real-world entity").
+fun cross_model_equivalents() -> { external_entity, external_entity }:
+    match
+        $a isa external_entity, has bert_id $aid;
+        $b isa external_entity, has bert_id $bid;
+        (primary: $a, equivalent: $b) isa is_equivalent_to;
+        $aid != $bid;
+    return { $a, $b };

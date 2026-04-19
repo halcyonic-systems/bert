@@ -7,5 +7,7 @@
 //! this transpiler targets.
 
 pub mod error;
+pub mod schema;
 
 pub use error::TranspilerError;
+pub use schema::SCHEMA_TQL;
