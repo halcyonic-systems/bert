@@ -148,7 +148,8 @@
       "history": "",
       "transformation": "",
       "member_autonomy": 1.0,
-      "time_constant": "Second"
+      "time_constant": "Second",
+      "archetype": "Agent"
     },
     {
       "info": {
@@ -190,7 +191,8 @@
       "history": "",
       "transformation": "",
       "member_autonomy": 1.0,
-      "time_constant": "Second"
+      "time_constant": "Second",
+      "archetype": "Governance"
     },
     {
       "info": {
@@ -350,7 +352,8 @@
       "history": "",
       "transformation": "",
       "member_autonomy": 1.0,
-      "time_constant": "Second"
+      "time_constant": "Second",
+      "archetype": "Governance"
     },
     {
       "info": {
@@ -392,7 +395,8 @@
       "history": "",
       "transformation": "",
       "member_autonomy": 1.0,
-      "time_constant": "Second"
+      "time_constant": "Second",
+      "archetype": "Economy"
     },
     {
       "info": {
