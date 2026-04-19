@@ -534,7 +534,7 @@
         "description": "https://etherscan.io/gastracker\n\nhttps://ultrasound.money/\n\nhttps://dune.com/hildobby/eth2-staking"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Thermal",
         "type": "Energy"
       },
       "type": "Flow",
@@ -571,7 +571,7 @@
         "description": "Finalized transactions and smart contract executions recorded in blocks and added to the Ethereum blockchain.\n\nTransaction types: Simple transfers, DeFi interactions, NFT mints/transfers, DAO governance, L2 bridging"
       },
       "substance": {
-        "sub_type": "Blockchain Data",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -623,7 +623,7 @@
         "description": "Transactions and smart contract interactions submitted by users to the Ethereum network. Each transaction specifies state changes, includes gas fees for execution, and may involve ETH transfers, token operations, or complex smart contract calls. Transactions enter the mempool where they compete for inclusion based on priority fees and MEV opportunities."
       },
       "substance": {
-        "sub_type": "Pending transaction",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -727,7 +727,7 @@
         "description": "Ethereum ecosystem contributors include core developers, researchers, and community members who contribute code, EIPs, and improvements. Contributions flow through GitHub repositories, Ethereum Magicians forum, research forums, and All Core Devs calls. Multiple client teams ensure decentralization.\n\n\n"
       },
       "substance": {
-        "sub_type": "Code contribution",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -774,7 +774,7 @@
         "description": "Protocol upgrades and EIP implementations transmitted from Development to Protocol subsystem. Includes consensus changes, EVM improvements, and network upgrades.\n\nKey parameters:\n1. Upgrade name (Shanghai, Cancun, etc.)\n2. EIP list\n3. Activation epoch\n4. Client readiness\n\nSource files:\nhttps://github.com/ethereum/pm\nhttps://github.com/ethereum/EIPs"
       },
       "substance": {
-        "sub_type": "Code implementation",
+        "sub_type": "Code",
         "type": "Message"
       },
       "type": "Flow",
@@ -820,7 +820,7 @@
         "description": "Validated pending transactions passed from Executing to Validating subsystem for block inclusion. Includes MEV bundles and priority transactions.\n\nKey parameters:\n1. Transaction count\n2. Gas price distribution\n3. MEV bundle value\n4. Contract interaction types\n\nSource files:\nhttps://github.com/ethereum/go-ethereum/tree/master/core/txpool\nhttps://github.com/flashbots/mev-boost"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -866,7 +866,7 @@
         "description": "Finalized blocks and beacon state updates distributed from Protocol to Executing subsystem. Enables network-wide state synchronization.\n\nKey parameters:\n1. Finalized block hash\n2. State root\n3. Receipts root\n4. Justified checkpoints\n\nSource files:\nhttps://github.com/ethereum/go-ethereum/tree/master/eth/catalyst\nhttps://github.com/ethereum/execution-apis/tree/main/src/engine"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -922,7 +922,7 @@
         "description": "Consensus rules and validator duty assignments transmitted from Protocol to Validating subsystem. Defines block production schedule and reward calculations.\n\nKey parameters:\n1. Validator set and balances\n2. Current epoch and slot\n3. Proposer and committee assignments\n4. Reward and penalty rates\n5. Finality checkpoints\n\nSource files:\nhttps://github.com/ethereum/consensus-specs\nhttps://github.com/prysmaticlabs/prysm/tree/develop/beacon-chain"
       },
       "substance": {
-        "sub_type": "Consensus Rules",
+        "sub_type": "Consensus-Rules",
         "type": "Message"
       },
       "type": "Flow",
@@ -983,7 +983,7 @@
         "description": "Newly proposed blocks transmitted from Validating to Protocol subsystem for consensus and finalization. Contains execution payload with transactions.\n\nKey parameters:\n1. Block proposer index\n2. Execution payload\n3. Attestations included\n4. Randao reveal\n\nSource files:\nhttps://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md\nhttps://github.com/prysmaticlabs/prysm/tree/develop/beacon-chain/core/blocks"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -1034,7 +1034,7 @@
         "description": "Consensus behavior and network signals informing development priorities"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Signal",
         "type": "Message"
       },
       "type": "Flow",
@@ -1059,7 +1059,7 @@
         "description": "New block propagation from validators to execution clients"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -1084,7 +1084,7 @@
         "description": "Transaction execution outcomes and state changes reported to protocol"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -1109,7 +1109,7 @@
         "description": "EIPs and patches entering development process"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -1134,7 +1134,7 @@
         "description": "Signed transactions from wallet to execution layer"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -1159,7 +1159,7 @@
         "description": "Confirmed transactions sent to user wallets via RPC"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Signal",
         "type": "Message"
       },
       "type": "Flow",
