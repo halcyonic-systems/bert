@@ -141,7 +141,7 @@
               "name": "Network Load Distribution",
               "description": "Distributed computational load and bandwidth consumption across global infrastructure providers and cloud services."
             },
-            "protocol": "",
+            "protocol": "Thermal-radiation",
             "type": "Export",
             "exports_to": [
               "Snk-1.0"
@@ -156,7 +156,7 @@
               "name": "Network Connectivity",
               "description": "Internet infrastructure and cloud services that provide network connectivity for Ethereum validators, nodes, and RPC providers."
             },
-            "protocol": "",
+            "protocol": "TCP-IP",
             "type": "Import",
             "exports_to": [],
             "receives_from": [
@@ -171,7 +171,7 @@
               "name": "Developer Portal",
               "description": "GitHub interface for code contributions"
             },
-            "protocol": "",
+            "protocol": "Git-PR",
             "type": "Import",
             "exports_to": [],
             "receives_from": [
@@ -186,7 +186,7 @@
               "name": "Cryptographic Wallet",
               "description": "Wallet interface for user transactions"
             },
-            "protocol": "",
+            "protocol": "JSON-RPC",
             "type": "Import",
             "exports_to": [],
             "receives_from": [
@@ -201,7 +201,7 @@
               "name": "Execution Client RPC",
               "description": "RPC interface for user confirmations"
             },
-            "protocol": "",
+            "protocol": "JSON-RPC",
             "type": "Export",
             "exports_to": [
               "Snk-1.1"
