@@ -225,7 +225,7 @@
               "name": "Network Load Distribution",
               "description": "Distributed computational load and bandwidth consumption across validator infrastructure and RPC node operations for high-throughput processing."
             },
-            "protocol": "",
+            "protocol": "Thermal-radiation",
             "type": "Export",
             "exports_to": [
               "Snk-1.0"
@@ -240,7 +240,7 @@
               "name": "Network Connectivity",
               "description": "High-bandwidth internet infrastructure and cloud services enabling Solana's high-throughput transaction processing and validator operations."
             },
-            "protocol": "",
+            "protocol": "TCP-IP",
             "type": "Import",
             "exports_to": [],
             "receives_from": [
@@ -255,7 +255,7 @@
               "name": "Developer Portal",
               "description": "Web-based interface for Solana core client, Anchor framework, and SPL program contributions"
             },
-            "protocol": "",
+            "protocol": "Git-PR",
             "type": "Import",
             "exports_to": [],
             "receives_from": [
@@ -270,7 +270,7 @@
               "name": "Cryptographic Wallet",
               "description": "Application interface for SOL transactions, SPL token operations, program invocations, and validator delegation"
             },
-            "protocol": "",
+            "protocol": "JSON-RPC",
             "type": "Import",
             "exports_to": [],
             "receives_from": [
@@ -285,7 +285,7 @@
               "name": "RPC Interface",
               "description": "High-performance JSON-RPC endpoint broadcasting transaction confirmations, program execution results, and real-time blockchain state"
             },
-            "protocol": "",
+            "protocol": "JSON-RPC",
             "type": "Export",
             "exports_to": [
               "Snk-1.1"
