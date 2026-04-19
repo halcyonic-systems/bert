@@ -44,8 +44,8 @@ use bert::bevy_app::components::{
     HcgsArchetype, InteractionType, InteractionUsability, SubstanceType,
 };
 use bert::bevy_app::data_model::{
-    Boundary, Complexity, ExternalEntity, Id, Interaction, Interface, InterfaceType, System,
-    WorldModel,
+    AgentKind, AgentModel, Boundary, Complexity, ExternalEntity, Id, Interaction, Interface,
+    InterfaceType, ProcessPrimitive, System, WorldModel,
 };
 
 /// Produce every TypeQL `insert` statement needed to materialize `model` in
@@ -79,7 +79,43 @@ pub fn model_to_typeql(model: &WorldModel, model_name: &str) -> TranspilerResult
         out.push(emit_interaction(ix, model_name));
     }
 
-    // Phase 2: relations — emitted in the next commit.
+    // Phase 2: relations (match-then-insert)
+    for system in &model.systems {
+        out.push(emit_has_boundary(system, model_name));
+        for iface in &system.boundary.interfaces {
+            out.push(emit_has_interface(&system.boundary, iface, model_name));
+        }
+        // Parent relationship: root system plays in_environment with the bert_model;
+        // subsystems play composition with their parent system.
+        if is_environment_id(&system.parent) {
+            out.push(emit_in_environment_for_system(system, model_name));
+        } else {
+            out.push(emit_composition(system, model_name));
+        }
+        // Agent bundle: only when archetype == Agent AND agent field populated.
+        if let Some(agent) = &system.agent {
+            out.push(emit_agent_bundle(agent, system, model_name));
+        }
+    }
+    for ee in model
+        .environment
+        .sources
+        .iter()
+        .chain(model.environment.sinks.iter())
+    {
+        out.push(emit_in_environment_for_external(ee, model_name));
+    }
+    for ix in &model.interactions {
+        out.push(emit_participates_in(ix, model_name, "source", &ix.source));
+        out.push(emit_participates_in(ix, model_name, "sink", &ix.sink));
+        if let Some(iface_id) = &ix.source_interface {
+            out.push(emit_routes_through(ix, iface_id, model_name, "start"));
+        }
+        if let Some(iface_id) = &ix.sink_interface {
+            out.push(emit_routes_through(ix, iface_id, model_name, "end"));
+        }
+    }
+    out.extend(emit_equivalence_pairs(&model.environment, model_name));
 
     Ok(out)
 }
@@ -226,8 +262,222 @@ fn emit_interaction(ix: &Interaction, model_name: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// Relation emitters
+// ---------------------------------------------------------------------------
+
+fn emit_has_boundary(system: &System, model_name: &str) -> String {
+    format!(
+        r#"match $s isa system, has bert_id "{sys}"; $b isa boundary, has bert_id "{bnd}"; insert (enclosed: $s, enclosure: $b) isa has_boundary;"#,
+        sys = namespaced_id(model_name, &system.info.id),
+        bnd = namespaced_id(model_name, &system.boundary.info.id),
+    )
+}
+
+fn emit_has_interface(boundary: &Boundary, iface: &Interface, model_name: &str) -> String {
+    format!(
+        r#"match $b isa boundary, has bert_id "{bnd}"; $i isa interface, has bert_id "{ifc}"; insert (boundary: $b, interface: $i) isa has_interface;"#,
+        bnd = namespaced_id(model_name, &boundary.info.id),
+        ifc = namespaced_id(model_name, &iface.info.id),
+    )
+}
+
+fn emit_composition(child_system: &System, model_name: &str) -> String {
+    format!(
+        r#"match $parent isa system, has bert_id "{parent}"; $child isa system, has bert_id "{child}"; insert (whole: $parent, part: $child) isa composition;"#,
+        parent = namespaced_id(model_name, &child_system.parent),
+        child = namespaced_id(model_name, &child_system.info.id),
+    )
+}
+
+fn emit_in_environment_for_system(system: &System, model_name: &str) -> String {
+    format!(
+        r#"match $m isa bert_model, has model_name "{mname}"; $s isa system, has bert_id "{sys}"; insert (environment: $m, contained_system: $s) isa in_environment;"#,
+        mname = escape_typeql_string(model_name),
+        sys = namespaced_id(model_name, &system.info.id),
+    )
+}
+
+fn emit_in_environment_for_external(ee: &ExternalEntity, model_name: &str) -> String {
+    format!(
+        r#"match $m isa bert_model, has model_name "{mname}"; $e isa external_entity, has bert_id "{ee}"; insert (environment: $m, contained_system: $e) isa in_environment;"#,
+        mname = escape_typeql_string(model_name),
+        ee = namespaced_id(model_name, &ee.info.id),
+    )
+}
+
+/// Emit one `participates_in(entity, interaction, role)` relation.
+///
+/// The `entity` endpoint can be either a `system` or an `external_entity` —
+/// TypeDB's match can resolve across both because `bert_id` is a @key
+/// shared by any entity that plays `participates_in:entity`. We use
+/// `isa $_` style by declaring the concrete type inferred from the Id's
+/// type prefix rather than relying on meta-type `entity` matching.
+fn emit_participates_in(
+    ix: &Interaction,
+    model_name: &str,
+    role: &str,
+    endpoint_id: &Id,
+) -> String {
+    let entity_type = concrete_type_for_id(endpoint_id);
+    format!(
+        r#"match $e isa {etype}, has bert_id "{eid}"; $f isa interaction, has bert_id "{fid}"; insert (entity: $e, interaction: $f) isa participates_in, has role "{role}";"#,
+        etype = entity_type,
+        eid = namespaced_id(model_name, endpoint_id),
+        fid = namespaced_id(model_name, &ix.info.id),
+        role = role,
+    )
+}
+
+fn emit_routes_through(
+    ix: &Interaction,
+    iface_id: &Id,
+    model_name: &str,
+    endpoint: &str,
+) -> String {
+    format!(
+        r#"match $f isa interaction, has bert_id "{fid}"; $i isa interface, has bert_id "{iid}"; insert (interaction: $f, interface: $i) isa routes_through, has endpoint "{ep}";"#,
+        fid = namespaced_id(model_name, &ix.info.id),
+        iid = namespaced_id(model_name, iface_id),
+        ep = endpoint,
+    )
+}
+
+/// Emit one combined match+insert statement per agent-archetype system that
+/// materializes the `agent_model` entity AND all its primitive + cognitive
+/// param entities AND all the linking relations in a single query.
+///
+/// Why bundled: `agent_model`, `primitive_assignment`, and `cognitive_parameter`
+/// are schema entities without a `@key` — they can't be matched later by a
+/// stable ID. Creating them in the same statement keeps variable bindings
+/// (`$a`, `$p1`, etc.) alive so the relations wire up correctly.
+fn emit_agent_bundle(agent: &AgentModel, system: &System, model_name: &str) -> String {
+    let sys_id = namespaced_id(model_name, &system.info.id);
+    let mut inserts: Vec<String> = Vec::new();
+
+    inserts.push(format!(
+        r#"$a isa agent_model, has agent_kind "{kind}", has agency_capacity {cap}"#,
+        kind = agent_kind_str(agent.kind),
+        cap = agent.agency_capacity,
+    ));
+    inserts.push("(system: $s, config: $a) isa has_agent_config".to_string());
+
+    for (i, prim) in agent.primitives.iter().enumerate() {
+        inserts.push(format!(
+            r#"$p{idx} isa primitive_assignment, has process_primitive "{val}""#,
+            idx = i,
+            val = process_primitive_str(*prim),
+        ));
+        inserts.push(format!(
+            "(agent: $a, primitive: $p{idx}) isa has_primitive",
+            idx = i
+        ));
+    }
+
+    for (i, (k, v)) in agent.cognitive_params.iter().enumerate() {
+        inserts.push(format!(
+            r#"$cp{idx} isa cognitive_parameter, has cognitive_param_name "{key}", has cognitive_param_value {val}"#,
+            idx = i,
+            key = escape_typeql_string(k),
+            val = v,
+        ));
+        inserts.push(format!(
+            "(agent: $a, param: $cp{idx}) isa has_cognitive_param",
+            idx = i
+        ));
+    }
+
+    format!(
+        r#"match $s isa system, has bert_id "{sys}"; insert {body};"#,
+        sys = sys_id,
+        body = inserts.join("; "),
+    )
+}
+
+/// Produce one `is_equivalent_to` per pair of external entities that share
+/// an `is_same_as_id` value. Design decision: pairwise (complete graph).
+/// Rationale: within a single BERT model, groups are almost always pairs
+/// (one source-role + one sink-role representing the same real-world
+/// entity, linked by is_same_as_id). For the common N=2 case, pairwise =
+/// chain in output. If cross-model linking scales N, revisit with a
+/// TypeDB inference rule for transitive closure.
+///
+/// Canonical ordering: within a group, relations are emitted for all
+/// index pairs (i, j) where i < j (so deterministic across runs). The
+/// earlier-listed entity plays the `primary` role, the later plays
+/// `equivalent`. This assignment is arbitrary for symmetric equivalence
+/// — downstream queries should match both `(primary, equivalent)` and
+/// `(equivalent, primary)` orderings, or define a symmetric-closure
+/// inference rule when needed.
+fn emit_equivalence_pairs(
+    env: &bert::bevy_app::data_model::Environment,
+    model_name: &str,
+) -> Vec<String> {
+    use std::collections::HashMap;
+    let mut groups: HashMap<usize, Vec<&ExternalEntity>> = HashMap::new();
+    for ee in env.sources.iter().chain(env.sinks.iter()) {
+        if let Some(key) = ee.is_same_as_id {
+            groups.entry(key).or_default().push(ee);
+        }
+    }
+
+    let mut out = Vec::new();
+    for members in groups.values() {
+        for i in 0..members.len() {
+            for j in (i + 1)..members.len() {
+                out.push(format!(
+                    r#"match $a isa external_entity, has bert_id "{a}"; $b isa external_entity, has bert_id "{b}"; insert (primary: $a, equivalent: $b) isa is_equivalent_to;"#,
+                    a = namespaced_id(model_name, &members[i].info.id),
+                    b = namespaced_id(model_name, &members[j].info.id),
+                ));
+            }
+        }
+    }
+    out
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// The environment sentinel ID `E-1`. Used as the `parent` of the root
+/// system — distinguishing it from subsystems whose parent is another system.
+fn is_environment_id(id: &Id) -> bool {
+    serialize_id(id) == "E-1"
+}
+
+/// Determine the TypeDB entity type name from an Id's type prefix.
+/// Needed for `participates_in` match queries where the entity endpoint
+/// may be either a `system` or an `external_entity`.
+fn concrete_type_for_id(id: &Id) -> &'static str {
+    let s = serialize_id(id);
+    if s.starts_with("Src") || s.starts_with("Snk") {
+        "external_entity"
+    } else {
+        "system"
+    }
+}
+
+fn agent_kind_str(k: AgentKind) -> &'static str {
+    match k {
+        AgentKind::Reactive => "Reactive",
+        AgentKind::Anticipatory => "Anticipatory",
+        AgentKind::Intentional => "Intentional",
+    }
+}
+
+fn process_primitive_str(p: ProcessPrimitive) -> &'static str {
+    match p {
+        ProcessPrimitive::Combining => "Combining",
+        ProcessPrimitive::Splitting => "Splitting",
+        ProcessPrimitive::Buffering => "Buffering",
+        ProcessPrimitive::Impeding => "Impeding",
+        ProcessPrimitive::Propelling => "Propelling",
+        ProcessPrimitive::Copying => "Copying",
+        ProcessPrimitive::Sensing => "Sensing",
+        ProcessPrimitive::Modulating => "Modulating",
+        ProcessPrimitive::Inverting => "Inverting",
+    }
+}
 
 /// Build the namespaced `bert_id` attribute value: `{model_name}:{local_id}`.
 pub(crate) fn namespaced_id(model_name: &str, id: &Id) -> String {
@@ -314,46 +564,56 @@ mod tests {
         let model = load_bitcoin();
         let stmts = model_to_typeql(&model, "bitcoin").unwrap();
 
-        // Exactly one `isa bert_model` line for this model.
-        let bert_models = stmts.iter().filter(|s| s.contains("isa bert_model")).count();
-        assert_eq!(bert_models, 1, "expected one bert_model insert");
+        // Entity inserts start with `insert `; relation statements start
+        // with `match ` and also contain `isa X` substrings in their match
+        // clauses. Filter to insert-only to count entity creations.
+        let is_entity_insert = |s: &&String, type_name: &str| -> bool {
+            s.starts_with("insert ") && s.contains(&format!("isa {type_name},"))
+        };
 
-        // One external_entity per source + sink in the environment.
+        assert_eq!(
+            stmts.iter().filter(|s| is_entity_insert(s, "bert_model")).count(),
+            1,
+            "expected one bert_model insert"
+        );
+
         let ee_count = stmts
             .iter()
-            .filter(|s| s.contains("isa external_entity"))
+            .filter(|s| is_entity_insert(s, "external_entity"))
             .count();
-        let expected_ee =
-            model.environment.sources.len() + model.environment.sinks.len();
-        assert_eq!(ee_count, expected_ee, "external_entity count mismatch");
+        assert_eq!(
+            ee_count,
+            model.environment.sources.len() + model.environment.sinks.len()
+        );
 
-        // One system per system in the model.
-        let sys_count = stmts.iter().filter(|s| s.contains("isa system")).count();
-        assert_eq!(sys_count, model.systems.len(), "system count mismatch");
+        let sys_count = stmts
+            .iter()
+            .filter(|s| is_entity_insert(s, "system"))
+            .count();
+        assert_eq!(sys_count, model.systems.len());
 
-        // One boundary per system (every system has a boundary).
-        let b_count = stmts.iter().filter(|s| s.contains("isa boundary")).count();
-        assert_eq!(b_count, model.systems.len(), "boundary count mismatch");
+        let b_count = stmts
+            .iter()
+            .filter(|s| is_entity_insert(s, "boundary"))
+            .count();
+        assert_eq!(b_count, model.systems.len());
 
-        // Interfaces: sum across all system boundaries.
-        let i_count = stmts.iter().filter(|s| s.contains("isa interface")).count();
+        let i_count = stmts
+            .iter()
+            .filter(|s| is_entity_insert(s, "interface"))
+            .count();
         let expected_i: usize = model
             .systems
             .iter()
             .map(|s| s.boundary.interfaces.len())
             .sum();
-        assert_eq!(i_count, expected_i, "interface count mismatch");
+        assert_eq!(i_count, expected_i);
 
-        // One interaction per interaction.
         let f_count = stmts
             .iter()
-            .filter(|s| s.contains("isa interaction"))
+            .filter(|s| is_entity_insert(s, "interaction"))
             .count();
-        assert_eq!(
-            f_count,
-            model.interactions.len(),
-            "interaction count mismatch"
-        );
+        assert_eq!(f_count, model.interactions.len());
     }
 
     #[test]
@@ -500,11 +760,170 @@ mod tests {
 
         let f03_insert = stmts
             .iter()
-            .find(|s| s.contains(r#"has bert_id "bitcoin:F0.3""#))
+            .find(|s| s.contains(r#"has bert_id "bitcoin:F0.3""#) && s.starts_with("insert "))
             .expect("F0.3 interaction should be emitted");
         assert!(
             f03_insert.contains(r#"has interaction_type "Force""#),
             "F0.3 lost its Force type during transpilation: {f03_insert}"
+        );
+    }
+
+    // -------------------------------------------------------------------
+    // Phase 2 relation tests
+    // -------------------------------------------------------------------
+
+    #[test]
+    fn bitcoin_produces_expected_relation_counts() {
+        let model = load_bitcoin();
+        let stmts = model_to_typeql(&model, "bitcoin").unwrap();
+
+        // has_boundary: one per system
+        let has_boundary = stmts
+            .iter()
+            .filter(|s| s.contains("isa has_boundary"))
+            .count();
+        assert_eq!(has_boundary, model.systems.len());
+
+        // has_interface: one per interface
+        let has_interface = stmts
+            .iter()
+            .filter(|s| s.contains("isa has_interface"))
+            .count();
+        let expected_interfaces: usize = model
+            .systems
+            .iter()
+            .map(|s| s.boundary.interfaces.len())
+            .sum();
+        assert_eq!(has_interface, expected_interfaces);
+
+        // composition: one per system whose parent isn't E-1
+        let composition = stmts
+            .iter()
+            .filter(|s| s.contains("isa composition"))
+            .count();
+        let expected_comp = model
+            .systems
+            .iter()
+            .filter(|s| !is_environment_id(&s.parent))
+            .count();
+        assert_eq!(composition, expected_comp);
+
+        // in_environment: one per root system + one per external entity
+        let in_env = stmts
+            .iter()
+            .filter(|s| s.contains("isa in_environment"))
+            .count();
+        let expected_in_env = model
+            .systems
+            .iter()
+            .filter(|s| is_environment_id(&s.parent))
+            .count()
+            + model.environment.sources.len()
+            + model.environment.sinks.len();
+        assert_eq!(in_env, expected_in_env);
+
+        // participates_in: two per interaction (source + sink)
+        let participates = stmts
+            .iter()
+            .filter(|s| s.contains("isa participates_in"))
+            .count();
+        assert_eq!(participates, model.interactions.len() * 2);
+    }
+
+    #[test]
+    fn participates_in_roles_are_source_or_sink_only() {
+        let model = load_bitcoin();
+        let stmts = model_to_typeql(&model, "bitcoin").unwrap();
+
+        for stmt in stmts.iter().filter(|s| s.contains("isa participates_in")) {
+            let role_marker = r#"has role ""#;
+            let pos = stmt.find(role_marker).expect("participates_in missing role");
+            let rest = &stmt[pos + role_marker.len()..];
+            let end = rest.find('"').unwrap_or(rest.len());
+            let role = &rest[..end];
+            assert!(
+                role == "source" || role == "sink",
+                "participates_in role out of vocab: '{role}' in {stmt}"
+            );
+        }
+    }
+
+    #[test]
+    fn routes_through_endpoints_are_start_or_end_only() {
+        let model = load_bitcoin();
+        let stmts = model_to_typeql(&model, "bitcoin").unwrap();
+
+        for stmt in stmts.iter().filter(|s| s.contains("isa routes_through")) {
+            let marker = r#"has endpoint ""#;
+            let pos = stmt.find(marker).expect("routes_through missing endpoint");
+            let rest = &stmt[pos + marker.len()..];
+            let end = rest.find('"').unwrap_or(rest.len());
+            let val = &rest[..end];
+            assert!(
+                val == "start" || val == "end",
+                "routes_through endpoint out of vocab: '{val}' in {stmt}"
+            );
+        }
+    }
+
+    #[test]
+    fn bitcoin_users_pair_produces_one_is_equivalent_to() {
+        // Per #14: Src-1.0 and Snk-1.1 ("Users") share is_same_as_id=0.
+        // Pairwise emission for N=2 should yield exactly 1 relation.
+        let model = load_bitcoin();
+        let stmts = model_to_typeql(&model, "bitcoin").unwrap();
+        let eq_count = stmts
+            .iter()
+            .filter(|s| s.contains("isa is_equivalent_to"))
+            .count();
+        assert_eq!(
+            eq_count, 1,
+            "expected 1 is_equivalent_to for the Users pair, got {eq_count}"
+        );
+
+        let eq_stmt = stmts
+            .iter()
+            .find(|s| s.contains("isa is_equivalent_to"))
+            .unwrap();
+        assert!(
+            eq_stmt.contains(r#"bitcoin:Src-1.0"#)
+                && eq_stmt.contains(r#"bitcoin:Snk-1.1"#),
+            "is_equivalent_to does not link Src-1.0 ↔ Snk-1.1: {eq_stmt}"
+        );
+    }
+
+    #[test]
+    fn routes_through_emitted_only_when_interface_set() {
+        // F0.3 Protocol → Mining is an internal flow — its source_interface
+        // and sink_interface are both null, so it should produce zero
+        // routes_through statements. F-1.2 Users → S0 (via I0.52) should
+        // produce exactly one routes_through (endpoint=end).
+        let model = load_bitcoin();
+        let stmts = model_to_typeql(&model, "bitcoin").unwrap();
+
+        let f03_routes = stmts
+            .iter()
+            .filter(|s| s.contains("isa routes_through") && s.contains("bitcoin:F0.3"))
+            .count();
+        assert_eq!(f03_routes, 0, "F0.3 is internal flow — no interface routing");
+
+        // Count routes_through in total — should equal the sum of non-null
+        // source_interface and sink_interface across all interactions.
+        let expected_routes: usize = model
+            .interactions
+            .iter()
+            .map(|ix| {
+                usize::from(ix.source_interface.is_some())
+                    + usize::from(ix.sink_interface.is_some())
+            })
+            .sum();
+        let actual_routes = stmts
+            .iter()
+            .filter(|s| s.contains("isa routes_through"))
+            .count();
+        assert_eq!(
+            actual_routes, expected_routes,
+            "routes_through count diverges from source/sink_interface presence"
         );
     }
 }
