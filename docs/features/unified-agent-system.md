@@ -505,7 +505,7 @@ Kind = decision architecture tier (structural); capacity = degree of autonomy ex
 
 - AgentKind visual encoding (color modulation within Agent orange, or shape — shape deferred, complex)
 - Full `cognitive_params` key-value editor (add/remove/edit f64 parameters)
-- Process primitive checkboxes (select from 9 Mobus primitives)
+- **Process primitive visualization** — see [`process-primitive-visualization.md`](process-primitive-visualization.md) (replaces earlier "checkboxes" concept with flow-inferred primitives + visual badges)
 - Process configs structured editor (name + JSON params)
 - Network config editor (topology, connection_params, interaction_rules)
 - Self-actualization score (computed metric from agent configuration completeness)
