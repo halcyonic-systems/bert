@@ -10,10 +10,6 @@ mod states;
 mod systems;
 mod utils;
 
-use crate::{
-    ExternalEntityFilter, ExternalEntityQuery, InteractionQuery, InterfaceQuery, IsSameAsIdQuery,
-    SelectionFilter, SubSystemQuery, SystemQuery,
-};
 use bevy::asset::AssetMetaCheck;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::input::common_conditions::input_pressed;
@@ -30,6 +26,22 @@ use data_model::load::load_world;
 use data_model::save::{save_world, save_world_as, serialize_world};
 pub use events::*;
 use leptos_bevy_canvas::prelude::*;
+
+/// Bevy ECS query and filter type aliases used by UI bridge code (Leptos-side)
+/// and by internal Bevy systems. Defined here because they compose types from
+/// this module (`components::*`) and standard Bevy primitives — no dependency
+/// on Leptos. Moved from `leptos_app/mod.rs` where they were defined next to
+/// their first consumer but couldn't cleanly separate from bevy_app.
+pub type InterfaceQuery = (Name, ElementDescription, Interface);
+pub type InteractionQuery = (Name, ElementDescription, Flow);
+pub type ExternalEntityQuery = (Name, ElementDescription, ExternalEntity);
+// `components::System` disambiguates from `bevy::prelude::System` (the trait).
+pub type SystemQuery = (Name, ElementDescription, components::System, SystemEnvironment);
+pub type SubSystemQuery = (Name, ElementDescription, components::System, ParentState);
+pub type IsSameAsIdQuery = (IsSameAsId,);
+pub type SelectionFilter = With<SelectedHighlightHelperAdded>;
+pub type SubSystemFilter = With<Subsystem>;
+pub type ExternalEntityFilter = With<ExternalEntity>;
 use plugins::label::{
     copy_position, copy_positions, copy_positions_changed, LabelPlugin, MarkerLabel, NameLabel,
 };
