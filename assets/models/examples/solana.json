@@ -530,7 +530,7 @@
         "description": "https://solanabeach.io/\n\nhttps://www.validators.app/\n\nhttps://solscan.io/"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Thermal",
         "type": "Energy"
       },
       "type": "Flow",
@@ -567,7 +567,7 @@
         "description": "High-frequency SOL transactions, program invocations, and Cross Program Invocation (CPI) calls submitted by users to the Solana network. Each transaction includes priority fees for rapid processing and may involve complex program interactions. Transactions enter the banking stage where they compete for inclusion based on fee priority and parallel execution optimization."
       },
       "substance": {
-        "sub_type": "Pending transaction",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -614,7 +614,7 @@
         "description": "Solana ecosystem contributors include Rust developers, Anchor framework contributors, SPL protocol developers, and performance optimization specialists. Contributions flow through GitHub repositories, community forums, and hackathons with emphasis on performance and developer experience.\n\n\n"
       },
       "substance": {
-        "sub_type": "Code contribution",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -708,7 +708,7 @@
         "description": "Finalized SOL transactions, executed program invocations, and distributed staking rewards recorded in blocks with Proof of History timestamps.\n\nTransaction types: SOL transfers, SPL token operations, program deployments, CPI calls, validator voting, staking operations"
       },
       "substance": {
-        "sub_type": "Blockchain Data",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -760,7 +760,7 @@
         "description": "Consensus rules and validator duty assignments transmitted from Protocol to Validating subsystem. Defines PoH generation, Tower BFT voting, and reward distribution.\n\nKey parameters:\n1. Validator set and stake distribution\n2. Tower BFT voting timeouts and rules\n3. PoH sequence generation requirements\n4. Staking reward rates and distribution\n5. Leader schedule and slot assignments\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/consensus\nhttps://github.com/solana-labs/solana/tree/master/stake-program"
       },
       "substance": {
-        "sub_type": "Consensus Rules",
+        "sub_type": "Consensus-Rules",
         "type": "Message"
       },
       "type": "Flow",
@@ -816,7 +816,7 @@
         "description": "High-throughput validated transaction stream passed from Executing to Validating subsystem for block inclusion and PoH timestamping.\n\nKey parameters:\n1. Transaction volume and priority distribution\n2. Program execution complexity and CPI chains\n3. Parallel execution optimization data\n4. Fee market dynamics and MEV opportunities\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/banking_stage.rs\nhttps://github.com/solana-labs/solana/tree/master/runtime"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -862,7 +862,7 @@
         "description": "Newly produced blocks with PoH timestamps transmitted from Validating to Protocol subsystem for consensus and finalization.\n\nKey parameters:\n1. Block leader and slot assignment\n2. PoH sequence and timestamp verification\n3. Transaction execution results and state changes\n4. Tower BFT votes and consensus participation\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/core/src/consensus\nhttps://github.com/solana-labs/solana/tree/master/poh"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -913,7 +913,7 @@
         "description": "Finalized blocks and network state updates distributed from Protocol to Executing subsystem with PoH sequence verification.\n\nKey parameters:\n1. Finalized block with PoH timestamps\n2. Network state root and account updates\n3. Validator vote aggregation results\n4. Performance metrics and network health\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/gossip\nhttps://github.com/solana-labs/solana/tree/master/core/src"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Data",
         "type": "Message"
       },
       "type": "Flow",
@@ -964,7 +964,7 @@
         "description": "Protocol upgrades and feature activations transmitted from Development to Protocol subsystem. Includes runtime optimizations, feature gates, and performance improvements.\n\nKey parameters:\n1. Feature gate activations\n2. Runtime optimization releases\n3. Client version updates\n4. Performance target adjustments\n\nSource files:\nhttps://github.com/solana-labs/solana/tree/master/sdk/feature-set\nhttps://github.com/solana-labs/solana/releases"
       },
       "substance": {
-        "sub_type": "Code implementation",
+        "sub_type": "Code",
         "type": "Message"
       },
       "type": "Flow",
@@ -1010,7 +1010,7 @@
         "description": "Runtime optimizations, Anchor updates, and SPL standards entering the development process"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Contribution",
         "type": "Message"
       },
       "type": "Flow",
@@ -1035,7 +1035,7 @@
         "description": "Signed SOL transactions and program invocations from wallet to execution layer"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Transaction",
         "type": "Message"
       },
       "type": "Flow",
@@ -1060,7 +1060,7 @@
         "description": "Confirmed SOL transactions and program execution results sent to users via JSON-RPC"
       },
       "substance": {
-        "sub_type": "",
+        "sub_type": "Signal",
         "type": "Message"
       },
       "type": "Flow",
