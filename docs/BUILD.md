@@ -22,6 +22,12 @@ cargo tauri --version   # tauri-cli 2.6.2+
 trunk --version         # trunk for frontend builds
 ```
 
+### First-Time Setup
+Enable the repo's pre-commit hook (enforces pretty-printed JSON on committed models):
+```bash
+git config core.hooksPath .githooks
+```
+
 ---
 
 ## Build Architecture

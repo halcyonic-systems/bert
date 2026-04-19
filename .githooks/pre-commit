@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Pre-commit hook: enforce pretty-printed JSON in assets/models/**
+#
+# Minified JSON (single-line) makes git diffs unreadable for model edits.
+# The BERT save path uses serde_json::to_string_pretty — all committed
+# models should be pretty-printed.
+#
+# Enable this hook per-clone with:
+#   git config core.hooksPath .githooks
+
+set -euo pipefail
+
+# Find staged .json files under assets/models/
+staged_models=$(git diff --cached --name-only --diff-filter=ACM | grep '^assets/models/.*\.json$' || true)
+
+if [[ -z "$staged_models" ]]; then
+  exit 0
+fi
+
+violations=()
+while IFS= read -r file; do
+  # Skip if file doesn't exist (deleted)
+  [[ -f "$file" ]] || continue
+
+  # Count newlines. Pretty-printed JSON has one field per line;
+  # minified has effectively 0 or 1 line. Threshold: models under
+  # 10 lines are considered minified.
+  lines=$(wc -l < "$file" | tr -d ' ')
+  if [[ "$lines" -lt 10 ]]; then
+    violations+=("$file (${lines} lines)")
+  fi
+done <<< "$staged_models"
+
+if [[ ${#violations[@]} -gt 0 ]]; then
+  echo "❌ Pre-commit: minified JSON detected in assets/models/"
+  echo ""
+  echo "BERT model files should be pretty-printed for readable git diffs."
+  echo "Offending files:"
+  for v in "${violations[@]}"; do
+    echo "  - $v"
+  done
+  echo ""
+  echo "Fix with:"
+  echo "  for f in <file.json>; do"
+  echo "    python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); json.dump(d, open(sys.argv[1],'w'), indent=2)\" \"\$f\""
+  echo "  done"
+  echo ""
+  echo "Or open each file in VS Code and run 'Format Document' (⇧⌥F)."
+  exit 1
+fi

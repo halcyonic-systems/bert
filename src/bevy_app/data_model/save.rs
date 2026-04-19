@@ -178,7 +178,7 @@ pub fn save_world(
                     invoke::<()>(
                         "save_with_dialog",
                         &Args {
-                            data: serde_json::to_string(&model).expect("This shouldn't fail"),
+                            data: serde_json::to_string_pretty(&model).expect("This shouldn't fail"),
                             path: suggested_name,
                         },
                     )
@@ -192,7 +192,7 @@ pub fn save_world(
                     invoke::<()>(
                         "save_to_file",
                         &Args {
-                            data: serde_json::to_string(&model).expect("This shouldn't fail"),
+                            data: serde_json::to_string_pretty(&model).expect("This shouldn't fail"),
                             path: file_path.clone(),
                         },
                     )
@@ -220,7 +220,7 @@ pub fn save_world(
 
         let array = Array::new();
         let uint8_array = Uint8Array::from(
-            serde_json::to_string(&world_model)
+            serde_json::to_string_pretty(&world_model)
                 .expect("This shouldn't fail")
                 .as_bytes(),
         );
@@ -295,7 +295,7 @@ pub fn save_world_as(
                 invoke::<()>(
                     "save_with_dialog",
                     &Args {
-                        data: serde_json::to_string(&model).expect("This shouldn't fail"),
+                        data: serde_json::to_string_pretty(&model).expect("This shouldn't fail"),
                         path: suggested_name,
                     },
                 )
