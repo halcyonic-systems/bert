@@ -437,6 +437,48 @@
       "member_autonomy": 0.0,
       "time_constant": "Second",
       "archetype": "Agent"
+    },
+    {
+      "info": {
+        "id": "C0.6",
+        "level": 1,
+        "name": "Trained Weights",
+        "description": "The frozen parameter tensors that resulted from training. Architecturally, this is the model's knowledgebase \u2014 the encoded embodiment of the loss function applied to the training corpus. Mobus parallel: as DNA is the knowledgebase that constrains a cell's protein production, the trained weights are the knowledgebase that constrains the Transformer Stack's hidden-state production. The weights are read every forward pass but do not change during inference. Source of the Training Objective Constraint Force on C0.3."
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0.6",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          0.0,
+          130.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "frozen parameters \u2014 read-only at inference; updated only during training",
+      "member_autonomy": 0.0,
+      "time_constant": "Epoch"
     }
   ],
   "interactions": [
@@ -655,7 +697,7 @@
         "id": "F0.5",
         "level": 1,
         "name": "Training Objective Constraint",
-        "description": "The loss function (typically cross-entropy over next-token prediction) that shaped the Transformer Stack's parameters during training. Per SL \u00a71.7, this is a Force: it constrains the Stack's behavior (every output reflects the objective the model was trained to minimize) without transferring substance during inference. The objective does not flow live; it is baked into the weights and persistently shapes the Stack's transformation. Structurally analogous to consensus rules in distributed-protocol systems \u2014 both are baked-in constraints that govern a computational subsystem's behavior without material exchange."
+        "description": "The loss function (typically cross-entropy over next-token prediction) shaped the Trained Weights (C0.6) during training. Now, every inference, the weights persistently constrain the Transformer Stack's behavior \u2014 every output reflects the objective the model was trained to minimize. Per SL \u00a71.7, this is a Force: influence without substance transfer. C0.6 holds the encoded constraint; C0.3 is the active computation that is constrained by it. Structurally analogous to bitcoin/ethereum/cosmos/solana's Protocol \u2192 Validating Force (Protocol subsystem holds consensus rules; Validating subsystem is constrained by them). Same SL pattern, different domain: a knowledgebase subsystem constraining a computational subsystem without material exchange."
       },
       "substance": {
         "sub_type": "Training-Objective",
@@ -663,7 +705,7 @@
       },
       "type": "Force",
       "usability": "Product",
-      "source": "Src-1.1",
+      "source": "C0.6",
       "source_interface": null,
       "sink": "C0.3",
       "sink_interface": null,
