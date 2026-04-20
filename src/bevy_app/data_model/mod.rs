@@ -60,6 +60,7 @@
 pub mod complexity_calculator;
 pub mod load;
 pub mod save;
+pub mod validate;
 
 use crate::bevy_app::components::*;
 use bevy::prelude::*;

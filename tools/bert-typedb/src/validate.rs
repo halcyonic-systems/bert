@@ -229,10 +229,7 @@ mod tests {
         // after the #14/#41 compliance work. (As of now: only bitcoin.json
         // is fully spec-compliant; others pass serde but may have issues
         // flagged here. Keep this test to surface drift.)
-        let model_dir = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../assets/models/examples"
-        );
+        let model_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/models/examples");
         for entry in std::fs::read_dir(model_dir).unwrap() {
             let path = entry.unwrap().path();
             if path.extension().and_then(|s| s.to_str()) != Some("json") {

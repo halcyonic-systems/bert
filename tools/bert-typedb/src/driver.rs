@@ -20,9 +20,7 @@
 use crate::error::TranspilerError;
 use crate::schema::SCHEMA_TQL;
 use std::time::{Duration, Instant};
-use typedb_driver::{
-    Credentials, DriverOptions, TransactionType, TypeDBDriver,
-};
+use typedb_driver::{Credentials, DriverOptions, TransactionType, TypeDBDriver};
 
 /// Default local TypeDB server address.
 pub const DEFAULT_ADDRESS: &str = "localhost:1729";

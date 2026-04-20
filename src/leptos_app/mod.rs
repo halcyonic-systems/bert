@@ -5,12 +5,13 @@ mod tree;
 mod use_file_dialog;
 
 use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
+use crate::bevy_app::data_model::validate::{validate, Severity, ValidationIssue};
 use crate::bevy_app::{
     init_bevy_app, DetachMarkerLabelEvent, ExternalEntityFilter, ExternalEntityQuery,
     InteractionQuery, InterfaceQuery, IsSameAsIdQuery, SelectedHighlightHelperAdded,
     SelectionFilter, SubSystemFilter, SubSystemQuery, SystemElement, SystemQuery,
 };
-use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast};
+use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast, ValidationPanel};
 use crate::leptos_app::details::Details;
 use crate::LoadFileEvent;
 use bevy::prelude::With;
@@ -58,6 +59,10 @@ pub fn App() -> impl IntoView {
     // Complexity counter - tracks system complexity when models are loaded
     let (complexity, set_complexity) = signal(0.0f64);
 
+    // Pre-load validation state
+    let (validation_issues, set_validation_issues) = signal(None::<Vec<ValidationIssue>>);
+    let (pending_load, set_pending_load) = signal(None::<LoadFileEvent>);
+
     // Set up file dialog with the shared event writer
     let file_dialog_signal = RwSignal::new(None::<crate::leptos_app::use_file_dialog::UseFile>);
     let _ =
@@ -104,7 +109,7 @@ pub fn App() -> impl IntoView {
             },
         });
 
-    // Connect file dialog signal to LoadFileEvent stream with complexity calculation
+    // Connect file dialog signal to LoadFileEvent stream with validation
     Effect::new({
         let load_file_writer = load_file_writer.clone();
         let set_complexity_inner = set_complexity;
@@ -112,20 +117,37 @@ pub fn App() -> impl IntoView {
             if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) =
                 file_dialog_signal.get()
             {
-                // Calculate complexity when loading a file
-                if let Ok(world_model) =
-                    serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&data)
-                {
-                    let complexity_result = calculate_simonian_complexity(&world_model);
-                    set_complexity_inner.set(complexity_result.total_complexity);
-                }
+                match serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&data) {
+                    Ok(world_model) => {
+                        let complexity_result = calculate_simonian_complexity(&world_model);
+                        set_complexity_inner.set(complexity_result.total_complexity);
 
-                load_file_writer
-                    .send(LoadFileEvent {
-                        file_path: path,
-                        data,
-                    })
-                    .ok();
+                        let result = validate(&world_model);
+                        if result.is_clean() {
+                            load_file_writer
+                                .send(LoadFileEvent {
+                                    file_path: path,
+                                    data,
+                                })
+                                .ok();
+                        } else {
+                            set_pending_load.set(Some(LoadFileEvent {
+                                file_path: path,
+                                data,
+                            }));
+                            set_validation_issues.set(Some(result.issues));
+                        }
+                    }
+                    Err(e) => {
+                        set_pending_load.set(None);
+                        set_validation_issues.set(Some(vec![ValidationIssue {
+                            severity: Severity::Error,
+                            location: "root".to_string(),
+                            message: format!("JSON parse error: {e}"),
+                            suggestion: Some("Check that the file is valid BERT JSON.".to_string()),
+                        }]));
+                    }
+                }
             }
         }
     });
@@ -304,17 +326,48 @@ pub fn App() -> impl IntoView {
                 let load_file_writer = load_file_writer.clone();
                 let set_complexity = set_complexity;
                 move |event: LoadFileEvent| {
-                    // Calculate complexity when loading from Model Browser
-                    if let Ok(world_model) = serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&event.data) {
-                        let complexity_result = calculate_simonian_complexity(&world_model);
-                        set_complexity.set(complexity_result.total_complexity);
-                    }
+                    match serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&event.data) {
+                        Ok(world_model) => {
+                            let complexity_result = calculate_simonian_complexity(&world_model);
+                            set_complexity.set(complexity_result.total_complexity);
 
-                    // Send the load file event to Bevy
-                    leptos::logging::log!("Sending LoadFileEvent: {} with {} bytes", event.file_path, event.data.len());
-                    load_file_writer.send(event).ok();
+                            let result = validate(&world_model);
+                            if result.is_clean() {
+                                load_file_writer.send(event).ok();
+                            } else {
+                                set_pending_load.set(Some(event));
+                                set_validation_issues.set(Some(result.issues));
+                            }
+                        }
+                        Err(e) => {
+                            set_pending_load.set(None);
+                            set_validation_issues.set(Some(vec![ValidationIssue {
+                                severity: Severity::Error,
+                                location: "root".to_string(),
+                                message: format!("JSON parse error: {e}"),
+                                suggestion: Some("Check that the file is valid BERT JSON.".to_string()),
+                            }]));
+                        }
+                    }
                     set_model_browser_visible.set(false);
                 }
+            })
+        />
+        <ValidationPanel
+            issues=Signal::derive(move || validation_issues.get())
+            on_continue=Callback::new({
+                let load_file_writer = load_file_writer.clone();
+                move |_| {
+                    if let Some(event) = pending_load.get() {
+                        load_file_writer.send(event).ok();
+                    }
+                    set_validation_issues.set(None);
+                    set_pending_load.set(None);
+                }
+            })
+            on_dismiss=Callback::new(move |_| {
+                set_validation_issues.set(None);
+                set_pending_load.set(None);
             })
         />
         <div class="h-screen"

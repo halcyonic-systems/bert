@@ -54,10 +54,7 @@ mod tests {
 
     #[test]
     fn plain_ascii_passes_through() {
-        assert_eq!(
-            escape_typeql_string("Bitcoin network"),
-            "Bitcoin network"
-        );
+        assert_eq!(escape_typeql_string("Bitcoin network"), "Bitcoin network");
     }
 
     #[test]
@@ -119,8 +116,11 @@ mod tests {
         // every `"` in the output is preceded by `\`.
         for (i, ch) in escaped.char_indices() {
             if ch == '"' {
-                let prev_is_backslash =
-                    escaped[..i].chars().last().map(|c| c == '\\').unwrap_or(false);
+                let prev_is_backslash = escaped[..i]
+                    .chars()
+                    .last()
+                    .map(|c| c == '\\')
+                    .unwrap_or(false);
                 assert!(prev_is_backslash, "unescaped quote at {i} in {escaped:?}");
             }
         }

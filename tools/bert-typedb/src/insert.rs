@@ -59,7 +59,10 @@ pub fn model_to_typeql(model: &WorldModel, model_name: &str) -> TranspilerResult
     let mut out = Vec::new();
 
     // Phase 1: entities
-    out.push(emit_bert_model(model_name, &model.environment.info.description));
+    out.push(emit_bert_model(
+        model_name,
+        &model.environment.info.description,
+    ));
     for ee in model
         .environment
         .sources
@@ -144,7 +147,10 @@ fn emit_external_entity(ee: &ExternalEntity, model_name: &str) -> String {
 
 fn emit_system(system: &System, model_name: &str) -> String {
     let mut attrs = vec![
-        format!(r#"has bert_id "{}""#, namespaced_id(model_name, &system.info.id)),
+        format!(
+            r#"has bert_id "{}""#,
+            namespaced_id(model_name, &system.info.id)
+        ),
         format!(
             r#"has display_name "{}""#,
             escape_typeql_string(&system.info.name)
@@ -234,10 +240,7 @@ fn emit_interface(iface: &Interface, model_name: &str) -> String {
             r#"has protocol "{}""#,
             escape_typeql_string(&iface.protocol)
         ),
-        format!(
-            r#"has interface_type "{}""#,
-            interface_type_str(iface.ty)
-        ),
+        format!(r#"has interface_type "{}""#, interface_type_str(iface.ty)),
     ];
     if let Some(angle) = iface.angle {
         attrs.push(format!("has interface_angle {}", angle));
@@ -577,7 +580,10 @@ mod tests {
         };
 
         assert_eq!(
-            stmts.iter().filter(|s| is_entity_insert(s, "bert_model")).count(),
+            stmts
+                .iter()
+                .filter(|s| is_entity_insert(s, "bert_model"))
+                .count(),
             1,
             "expected one bert_model insert"
         );
@@ -723,8 +729,7 @@ mod tests {
             }
             if let Some(v) = extract(stmt, "usability") {
                 assert!(
-                    ["Resource", "Disruption", "Product", "Waste"]
-                        .contains(&v.as_str()),
+                    ["Resource", "Disruption", "Product", "Waste"].contains(&v.as_str()),
                     "usability out of vocab: {v}"
                 );
             }
@@ -893,8 +898,7 @@ mod tests {
             .find(|s| s.contains("isa is_equivalent_to"))
             .unwrap();
         assert!(
-            eq_stmt.contains(r#"bitcoin:Src-1.0"#)
-                && eq_stmt.contains(r#"bitcoin:Snk-1.1"#),
+            eq_stmt.contains(r#"bitcoin:Src-1.0"#) && eq_stmt.contains(r#"bitcoin:Snk-1.1"#),
             "is_equivalent_to does not link Src-1.0 ↔ Snk-1.1: {eq_stmt}"
         );
     }
@@ -912,7 +916,10 @@ mod tests {
             .iter()
             .filter(|s| s.contains("isa routes_through") && s.contains("bitcoin:F0.3"))
             .count();
-        assert_eq!(f03_routes, 0, "F0.3 is internal flow — no interface routing");
+        assert_eq!(
+            f03_routes, 0,
+            "F0.3 is internal flow — no interface routing"
+        );
 
         // Count routes_through in total — should equal the sum of non-null
         // source_interface and sink_interface across all interactions.

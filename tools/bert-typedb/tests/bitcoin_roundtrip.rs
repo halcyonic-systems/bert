@@ -42,9 +42,7 @@ async fn bitcoin_full_transpile_roundtrip() {
     let t = Transpiler::connect("localhost:1729", &db_name)
         .await
         .expect("connect to TypeDB");
-    t.ensure_database()
-        .await
-        .expect("create test database");
+    t.ensure_database().await.expect("create test database");
     t.load_schema().await.expect("load schema");
 
     let summary = transpile_and_push(&model, "bitcoin", &t)

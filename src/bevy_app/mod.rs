@@ -32,7 +32,12 @@ pub type InterfaceQuery = (Name, ElementDescription, Interface);
 pub type InteractionQuery = (Name, ElementDescription, Flow);
 pub type ExternalEntityQuery = (Name, ElementDescription, ExternalEntity);
 // `components::System` disambiguates from `bevy::prelude::System` (the trait).
-pub type SystemQuery = (Name, ElementDescription, components::System, SystemEnvironment);
+pub type SystemQuery = (
+    Name,
+    ElementDescription,
+    components::System,
+    SystemEnvironment,
+);
 pub type SubSystemQuery = (Name, ElementDescription, components::System, ParentState);
 pub type IsSameAsIdQuery = (IsSameAsId,);
 pub type SelectionFilter = With<SelectedHighlightHelperAdded>;

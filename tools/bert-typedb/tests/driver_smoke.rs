@@ -31,9 +31,7 @@ async fn connect_and_roundtrip_schema() {
         .await
         .expect("connect to local TypeDB");
 
-    t.ensure_database()
-        .await
-        .expect("create test database");
+    t.ensure_database().await.expect("create test database");
 
     t.load_schema().await.expect("load BERT schema");
 

@@ -15,8 +15,8 @@ use rust_decimal_macros::dec;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-fn load_from_bytes(bytes: &[u8]) -> WorldModel {
-    serde_json::from_slice(bytes).expect("This shouldn't fail")
+fn load_from_bytes(bytes: &[u8]) -> Result<WorldModel, serde_json::Error> {
+    serde_json::from_slice(bytes)
 }
 
 /// Context for bookkeeping while we traverse the data model and spawn the entities and components.
@@ -72,7 +72,13 @@ pub fn load_world(
             commands.entity(entity).despawn();
         }
 
-        let world_model = load_from_bytes(event.data.as_slice());
+        let world_model = match load_from_bytes(event.data.as_slice()) {
+            Ok(m) => m,
+            Err(e) => {
+                error!("load_world: Failed to deserialize model: {e}");
+                continue;
+            }
+        };
         info!(
             "load_world: Parsed model with {} systems",
             world_model.systems.len()

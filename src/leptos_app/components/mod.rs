@@ -10,6 +10,7 @@ mod select_group;
 mod slider;
 mod text_area;
 mod toast;
+mod validation_panel;
 
 pub use button::*;
 // pub use checkbox::*; // Replaced by RadioGroup for Complexity
@@ -23,3 +24,4 @@ pub use select_group::*;
 pub use slider::*;
 pub use text_area::*;
 pub use toast::*;
+pub use validation_panel::*;
