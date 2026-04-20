@@ -479,6 +479,132 @@
       "transformation": "frozen parameters \u2014 read-only at inference; updated only during training",
       "member_autonomy": 0.0,
       "time_constant": "Epoch"
+    },
+    {
+      "info": {
+        "id": "C0.7",
+        "level": 1,
+        "name": "Prompt Receiver",
+        "description": "Interface processor at I0.0 Prompt Intake. Receives raw natural-language prompts from the boundary and hands them to the Tokenizer for segmentation. Does not process semantics \u2014 just marshals the text from the outside world into the internal pipeline."
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0.7",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": "I0.0"
+      },
+      "radius": 12.0,
+      "transform": {
+        "translation": [
+          -240.0,
+          -80.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 0.0,
+      "time_constant": "Second"
+    },
+    {
+      "info": {
+        "id": "C0.8",
+        "level": 1,
+        "name": "Output Marshaller",
+        "description": "Interface processor at I0.1 Generated Text Output. Takes detokenized text from the Tokenizer and emits it to the boundary for delivery to the user. Does not generate content \u2014 just marshals it across the boundary."
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0.8",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": "I0.1"
+      },
+      "radius": 12.0,
+      "transform": {
+        "translation": [
+          240.0,
+          80.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 0.0,
+      "time_constant": "Second"
+    },
+    {
+      "info": {
+        "id": "C0.9",
+        "level": 1,
+        "name": "Gradient Receiver",
+        "description": "Interface processor at I0.2 Training Influence. During training, received loss gradients from the training corpus and routed them to the Trained Weights subsystem for parameter updates. Dormant after training \u2014 retained in the model to make the training-time boundary crossing explicit and the post-training constraint (F0.5 Force) traceable to its origin."
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0.9",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": "I0.2"
+      },
+      "radius": 12.0,
+      "transform": {
+        "translation": [
+          -160.0,
+          220.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 0.0,
+      "time_constant": "Second"
     }
   ],
   "interactions": [
@@ -711,6 +837,69 @@
       "sink_interface": null,
       "amount": "1",
       "unit": "objective",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.6",
+        "level": 1,
+        "name": "Raw Prompt Text",
+        "description": "Natural-language text marshalled from the boundary (via C0.7) to the Tokenizer for segmentation into token IDs."
+      },
+      "substance": {
+        "sub_type": "Data",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.7",
+      "source_interface": null,
+      "sink": "C0.1",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "text",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.7",
+        "level": 1,
+        "name": "Detokenized Output Text",
+        "description": "Natural-language text produced by the Tokenizer (detokenization of sampled IDs) and handed to C0.8 for emission across the boundary."
+      },
+      "substance": {
+        "sub_type": "Data",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.1",
+      "source_interface": null,
+      "sink": "C0.8",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "text",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.8",
+        "level": 1,
+        "name": "Gradient Delivery",
+        "description": "Training-time flow of loss gradients from the Gradient Receiver to the Trained Weights, updating parameters via stochastic gradient descent. Dormant after training."
+      },
+      "substance": {
+        "sub_type": "Data",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Resource",
+      "source": "C0.9",
+      "source_interface": null,
+      "sink": "C0.6",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "gradient-update",
       "parameters": []
     }
   ],
