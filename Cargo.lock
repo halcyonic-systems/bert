@@ -781,6 +781,7 @@ dependencies = [
 name = "bert-tauri"
 version = "0.3.0"
 dependencies = [
+ "futures",
  "leptos",
  "serde",
  "serde_json",
@@ -789,6 +790,9 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
  "tauri-plugin-opener",
+ "tokio",
+ "typedb-driver",
+ "uuid",
 ]
 
 [[package]]

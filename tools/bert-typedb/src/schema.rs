@@ -48,6 +48,10 @@ mod tests {
             "entity agent_model",
             "entity primitive_assignment",
             "entity cognitive_parameter",
+            // Simulation layer
+            "entity simulation_run",
+            "entity flow_observation",
+            "entity system_observation",
         ] {
             assert!(
                 SCHEMA_TQL.contains(entity),
@@ -69,6 +73,10 @@ mod tests {
             "relation has_agent_config",
             "relation has_primitive",
             "relation has_cognitive_param",
+            // Simulation layer
+            "relation run_observation",
+            "relation observes_interaction",
+            "relation observes_system",
         ] {
             assert!(
                 SCHEMA_TQL.contains(relation),
@@ -90,6 +98,8 @@ mod tests {
             "attribute interface_type",
             "attribute agent_kind",
             "attribute process_primitive",
+            // Simulation layer
+            "attribute run_status",
         ] {
             let idx = SCHEMA_TQL
                 .find(attr_with_values)

@@ -98,7 +98,8 @@ entity system,
     plays in_environment:contained_system,
     plays has_boundary:enclosed,
     plays participates_in:participant,
-    plays has_agent_config:system;
+    plays has_agent_config:system,
+    plays observes_system:system;
 
 entity external_entity,
     owns bert_id @key,
@@ -140,7 +141,8 @@ entity interaction,
     owns amount,
     owns unit,
     plays participates_in:interaction,
-    plays routes_through:interaction;
+    plays routes_through:interaction,
+    plays observes_interaction:interaction;
 
 entity agent_model,
     owns agent_kind,
@@ -229,3 +231,67 @@ fun cross_model_equivalents() -> { external_entity, external_entity }:
         (primary: $a, equivalent: $b) isa is_equivalent_to;
         $aid != $bid;
     return { $a, $b };
+
+# =============================================================================
+# SIMULATION LAYER — timestamped observations from Mesa ABM runs
+# =============================================================================
+
+# --- Simulation attributes ---
+
+attribute run_id value string;
+attribute model_ref value string;
+attribute tick_count value integer;
+attribute run_status value string
+    @values("Pending", "Running", "Complete", "Failed");
+attribute scenario_id value string;
+attribute seed value integer;
+attribute tick value integer;
+attribute observed_amount value double;
+attribute observation_key value string;
+attribute observed_value value double;
+
+# --- Simulation entities ---
+
+# One per simulation run — namespace root, parallels bert_model
+entity simulation_run,
+    owns run_id @key,
+    owns model_ref,
+    owns tick_count,
+    owns run_status,
+    owns scenario_id,
+    owns seed,
+    plays run_observation:run;
+
+# One per (run, tick, interaction) — records realized flow amount
+entity flow_observation,
+    owns run_id,
+    owns tick,
+    owns observed_amount,
+    plays run_observation:observation,
+    plays observes_interaction:observer;
+
+# One per (run, tick, system, key) — records scalar system state
+entity system_observation,
+    owns run_id,
+    owns tick,
+    owns observation_key,
+    owns observed_value,
+    plays run_observation:observation,
+    plays observes_system:observer;
+
+# --- Simulation relations ---
+
+# Groups all observations under a run
+relation run_observation,
+    relates run,
+    relates observation;
+
+# Links a flow_observation to the interaction it measured
+relation observes_interaction,
+    relates observer,
+    relates interaction;
+
+# Links a system_observation to the system it measured
+relation observes_system,
+    relates observer,
+    relates system;

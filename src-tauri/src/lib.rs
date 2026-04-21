@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
+mod simulation;
+mod typedb_reader;
+
 #[derive(Serialize, Deserialize)]
 struct Data {
     data: String,
@@ -79,7 +82,11 @@ pub fn run() {
             save_to_file,
             save_with_dialog,
             pick_file,
-            load_file
+            load_file,
+            simulation::launch_simulation,
+            simulation::poll_run_status,
+            simulation::get_run_results,
+            simulation::list_runs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

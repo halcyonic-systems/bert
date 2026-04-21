@@ -1,6 +1,6 @@
 mod components;
 mod details;
-
+mod simulation;
 mod tree;
 mod use_file_dialog;
 
@@ -12,6 +12,7 @@ use crate::bevy_app::{
     SelectionFilter, SubSystemFilter, SubSystemQuery, SystemElement, SystemQuery,
 };
 use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast, ValidationPanel};
+use crate::leptos_app::simulation::SimPanel;
 use crate::leptos_app::details::Details;
 use crate::LoadFileEvent;
 use bevy::prelude::With;
@@ -231,6 +232,12 @@ pub fn App() -> impl IntoView {
     let (tree_visible, set_tree_visible) = signal(false);
     let (controls_visible, set_controls_visible) = signal(false);
     let (model_browser_visible, set_model_browser_visible) = signal(false);
+    let (sim_panel_visible, set_sim_panel_visible) = signal(false);
+    let (active_run, set_active_run) = signal(None::<simulation::types::RunInfo>);
+
+    let tauri_available = leptos_use::js! {
+        "__TAURI__" in &window()
+    };
 
     view! {
         <Show
@@ -264,6 +271,16 @@ pub fn App() -> impl IntoView {
                         >
                             {"Model Browser"}
                         </button>
+                        {if tauri_available { Some(view! {
+                            <button
+                                class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
+                                on:click=move |_| {
+                                    set_sim_panel_visible.set(true);
+                                }
+                            >
+                                {"Simulate"}
+                            </button>
+                        }) } else { None }}
                     </div>
                 }
             }
@@ -293,6 +310,16 @@ pub fn App() -> impl IntoView {
                 >
                     {"Model Browser"}
                 </button>
+                {if tauri_available { Some(view! {
+                    <button
+                        class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
+                        on:click=move |_| {
+                            set_sim_panel_visible.set(true);
+                        }
+                    >
+                        {"Simulate"}
+                    </button>
+                }) } else { None }}
             </div>
         </Show>
 
@@ -369,6 +396,14 @@ pub fn App() -> impl IntoView {
                 set_validation_issues.set(None);
                 set_pending_load.set(None);
             })
+        />
+        <SimPanel
+            visible=sim_panel_visible
+            on_close=Callback::new(move |_| set_sim_panel_visible.set(false))
+            on_launch=Callback::new(move |run_info: simulation::types::RunInfo| {
+                set_active_run.set(Some(run_info));
+            })
+            active_run=Signal::derive(move || active_run.get())
         />
         <div class="h-screen"
              tabindex="0"
