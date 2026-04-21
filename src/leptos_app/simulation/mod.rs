@@ -1,3 +1,4 @@
+pub mod chart;
 pub mod launch_panel;
 pub mod types;
 
