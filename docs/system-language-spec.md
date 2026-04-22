@@ -6,7 +6,7 @@
 
 This document specifies the **System Language** (SL) implemented by BERT — the Bounded Entity Reasoning Toolkit. The SL is a typed, hierarchical modeling language for describing complex systems following George Mobus's systems ontology, particularly the Deep Systems Analysis (DSA) framework presented in *Systems Science: Theory, Analysis, Modeling, and Design* (2022).
 
-The SL enables systems scientists to construct formal, machine-readable models that capture a system's composition, boundaries, flows, behavioral roles, and hierarchical decomposition. These models serve as both analytical artifacts and simulation blueprints.
+The SL enables systems scientists to construct formal, machine-readable models that capture a system's composition, boundaries, flows, behavioral roles, and hierarchical decomposition. These models serve as both analytical artifacts and executable simulation blueprints — any SL-compliant model can be transpiled to a typed graph (TypeDB) and run as an agent-based simulation (Mesa) without domain-specific code. The formal ontology drives the simulation: archetype selects agent behavior, time constant sets temporal resolution, flows wire interaction channels. §4 specifies this pipeline concretely.
 
 ### Audience
 
