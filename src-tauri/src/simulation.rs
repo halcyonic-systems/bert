@@ -16,9 +16,13 @@ pub async fn launch_simulation(params: LaunchParams) -> Result<typedb_reader::Ru
     let run_id = uuid::Uuid::new_v4().to_string();
     let seed = params.seed.unwrap_or(42);
 
-    let python_dir = std::env::current_dir()
-        .map_err(|e| format!("cwd: {e}"))?
-        .join("python");
+    let cwd = std::env::current_dir().map_err(|e| format!("cwd: {e}"))?;
+    // Tauri cwd is src-tauri/, python/ is at project root
+    let python_dir = if cwd.join("python").exists() {
+        cwd.join("python")
+    } else {
+        cwd.parent().unwrap_or(&cwd).join("python")
+    };
 
     let venv_python = python_dir.join("venv/bin/python3");
     let python_bin = if venv_python.exists() {

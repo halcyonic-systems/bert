@@ -1,13 +1,32 @@
 use leptos::prelude::*;
 use tauri_sys::core::invoke;
+use wasm_bindgen_futures::JsFuture;
+
+use serde::Serialize;
 
 use super::chart::LineChart;
-use super::types::{LaunchParams, ResultsParams, RunInfo, SimulationResults};
+use super::types::{LaunchParams, PollParams, ResultsParams, RunInfo, RunStatus, SimulationResults};
+
+#[derive(Serialize)]
+struct LaunchArgs { params: LaunchParams }
+#[derive(Serialize)]
+struct PollArgs { params: PollParams }
+#[derive(Serialize)]
+struct ResultsArgs { params: ResultsParams }
 
 const COLORS: &[&str] = &[
     "rgb(59,130,246)", "rgb(16,185,129)", "rgb(245,158,11)",
     "rgb(239,68,68)", "rgb(139,92,246)", "rgb(236,72,153)",
 ];
+
+async fn sleep_ms(ms: u32) {
+    let promise = js_sys::Promise::new(&mut |resolve, _| {
+        let _ = web_sys::window()
+            .unwrap()
+            .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, ms as i32);
+    });
+    let _ = JsFuture::from(promise).await;
+}
 
 #[component]
 pub fn SimPanel(
@@ -20,30 +39,21 @@ pub fn SimPanel(
     let (steps_text, set_steps_text) = signal("200".to_string());
     let (launching, set_launching) = signal(false);
     let (results, set_results) = signal(None::<SimulationResults>);
+    let (poll_status, set_poll_status) = signal(None::<RunStatus>);
 
     let is_running = Memo::new(move |_| {
-        active_run.get().map(|r| r.status == "Pending" || r.status == "Running").unwrap_or(false)
+        if let Some(ps) = poll_status.get() {
+            ps.status == "Pending" || ps.status == "Running"
+        } else {
+            active_run.get().map(|r| r.status == "Pending" || r.status == "Running").unwrap_or(false)
+        }
     });
 
-    let is_complete = Memo::new(move |_| {
-        active_run.get().map(|r| r.status == "Complete").unwrap_or(false)
-    });
-
-    // Fetch results when run completes
-    Effect::new(move |_| {
-        if is_complete.get() {
-            if let Some(run) = active_run.get() {
-                let run_id = run.run_id.clone();
-                use leptos::task::spawn_local;
-                spawn_local(async move {
-                    let params = ResultsParams {
-                        db: "bert-models".to_string(),
-                        run_id,
-                    };
-                    let res = invoke::<SimulationResults>("get_run_results", &params).await;
-                    set_results.set(Some(res));
-                });
-            }
+    let display_status = Memo::new(move |_| {
+        if let Some(ps) = poll_status.get() {
+            Some((ps.status.clone(), ps.tick_count, ps.run_id[..8.min(ps.run_id.len())].to_string()))
+        } else {
+            active_run.get().map(|r| (r.status.clone(), r.tick_count, r.run_id[..8.min(r.run_id.len())].to_string()))
         }
     });
 
@@ -53,17 +63,52 @@ pub fn SimPanel(
 
         set_launching.set(true);
         set_results.set(None);
+        set_poll_status.set(None);
+
         use leptos::task::spawn_local;
         spawn_local(async move {
+            leptos::logging::log!("Launching simulation...");
             let params = LaunchParams {
                 seed,
                 steps,
                 db: "bert-models".to_string(),
                 model_name: "bitcoin".to_string(),
             };
-            let run_info = invoke::<RunInfo>("launch_simulation", &params).await;
+            let run_info: RunInfo = invoke("launch_simulation", &LaunchArgs { params }).await;
+            leptos::logging::log!("Launched: run_id={}, status={}", run_info.run_id, run_info.status);
+            let run_id = run_info.run_id.clone();
             set_launching.set(false);
             on_launch.run(run_info);
+
+            // Poll until complete
+            loop {
+                sleep_ms(1_500).await;
+                leptos::logging::log!("Polling run {}...", run_id);
+                let poll_params = PollParams {
+                    db: "bert-models".to_string(),
+                    run_id: run_id.clone(),
+                };
+                let status: RunStatus = invoke("poll_run_status", &PollArgs { params: poll_params }).await;
+                leptos::logging::log!("Poll result: status={}, tick={}", status.status, status.tick_count);
+                let done = status.status == "Complete" || status.status == "Failed";
+                let completed = status.status == "Complete";
+                set_poll_status.set(Some(status));
+
+                if done {
+                    if completed {
+                        leptos::logging::log!("Run complete, fetching results...");
+                        let res_params = ResultsParams {
+                            db: "bert-models".to_string(),
+                            run_id: run_id.clone(),
+                        };
+                        let res: SimulationResults = invoke("get_run_results", &ResultsArgs { params: res_params }).await;
+                        leptos::logging::log!("Got {} system series, {} flow series",
+                            res.system_timeseries.len(), res.flow_timeseries.len());
+                        set_results.set(Some(res));
+                    }
+                    break;
+                }
+            }
         });
     };
 
@@ -71,7 +116,7 @@ pub fn SimPanel(
         <Show when=move || visible.get()>
             <div class="absolute top-16 right-4 z-30 w-80 bg-white rounded-lg shadow-lg border border-gray-200 max-h-[calc(100vh-5rem)] overflow-y-auto">
 
-                <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white rounded-t-lg">
+                <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white rounded-t-lg z-10">
                     <span class="text-sm font-semibold text-gray-900">{"Simulation"}</span>
                     <button class="text-gray-400 hover:text-gray-600 text-sm"
                             on:click=move |_| on_close.run(())>
@@ -115,8 +160,8 @@ pub fn SimPanel(
                     </button>
 
                     // --- Run status ---
-                    {move || active_run.get().map(|r| {
-                        let badge = match r.status.as_str() {
+                    {move || display_status.get().map(|(status, tick_count, short_id)| {
+                        let badge = match status.as_str() {
                             "Pending" => "bg-gray-100 text-gray-700",
                             "Running" => "bg-blue-100 text-blue-700",
                             "Complete" => "bg-green-100 text-green-700",
@@ -127,14 +172,14 @@ pub fn SimPanel(
                             <div class="pt-2 border-t border-gray-100">
                                 <div class="flex items-center gap-2">
                                     <span class={format!("px-2 py-0.5 rounded-full text-xs font-medium {badge}")}>
-                                        {r.status.clone()}
+                                        {status}
                                     </span>
                                     <span class="text-xs text-gray-500 font-mono truncate">
-                                        {r.run_id[..8.min(r.run_id.len())].to_string()}
+                                        {short_id}
                                     </span>
                                 </div>
                                 <div class="text-xs text-gray-500 mt-1 font-mono">
-                                    {"Tick "}{r.tick_count}
+                                    {"Tick "}{tick_count}
                                 </div>
                             </div>
                         }
