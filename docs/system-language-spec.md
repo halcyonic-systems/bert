@@ -478,11 +478,11 @@ This projection is many-to-one. Six categories of information have no Bunge coun
 
 ## 4. Execution Mapping — Model → Simulation
 
-How SL models translate to executable simulations.
+How SL models translate to executable simulations. This section specifies the concrete pipeline from authored model to running agent-based simulation, grounded in the operational BERT→TypeDB→Mesa bridge (v0.4.0, April 2026).
 
-### 4.1 JSON Schema
+### 4.1 Serialization Formats
 
-The canonical serialization is JSON via the `WorldModel` structure:
+**JSON** — the canonical authoring format via the `WorldModel` structure:
 
 ```
 WorldModel {
@@ -490,55 +490,127 @@ WorldModel {
   environment: Environment,
   systems: Vec<System>,   // Flat array; hierarchy via parent field
   interactions: Vec<Interaction>,
-  hidden_entities: Vec<Id> // UI extension — see §4.6
+  hidden_entities: Vec<Id> // UI extension — see §4.8
 }
 ```
 
 Serialization uses serde_json with externally-tagged enums. Complexity serializes as `{ "Complex": { } }` or `{ "Multiset": 1000 }`.
 
-### 4.2 System → Mesa Agent (Primary Target)
+**TypeDB** — the queryable projection. The `bert-typedb` transpiler converts any SL-compliant JSON model into a typed graph (see `tools/bert-typedb/schema.tql`). TypeDB serves as the integration substrate between the modeling tool (Rust/WASM), the simulation engine (Python/Mesa), and the observation store. All SL primitives have TypeDB entity or relation equivalents with `@values` constraints enforcing the controlled vocabularies at insert time.
 
-| SL concept | Mesa mapping |
-|------------|-------------|
-| System | Agent class |
-| System hierarchy | Model composition (MetaAgent) |
-| Interface | Agent interaction port |
-| Archetype | Behavior template (Governance → coordinator, Economy → transformer, Agent → autonomous) |
-| `time_constant` | MetaAgent internal scheduler step rate |
-| `member_autonomy` (membership) | Agent activation probability per step |
+### 4.2 Translation Pipeline
 
-Subsystems with faster `time_constant` values execute proportionally more steps per parent step. A `Millisecond` subsystem inside a `Minute` parent executes ~60,000 sub-steps per parent step.
+The simulation pipeline has three stages:
 
-### 4.3 Interaction → Step Logic
+```
+Stage 1: Transpile        BERT JSON → bert-typedb CLI → TypeDB (typed graph)
+Stage 2: Simulate         Python Mesa reads TypeDB → runs simulation → writes observations back
+Stage 3: Observe          Tauri reads TypeDB observations → renders in BERT UI
+```
 
-| SL concept | Mesa mapping |
-|------------|-------------|
-| Flow | Substance transfer in `step()` method |
-| Force | Parameter constraint / rule injection (no transfer) |
-| Substance type | Channel selection (Energy → energy pool, Material → inventory, Message → message queue) |
-| Usability | Step logic role (Resource → consumed, Product → produced, Waste → emitted, Disruption → degradation) |
-| `parameters` | Quantitative step values |
+**Stage 1** is a one-time push per model version. The transpiler emits ~141 TypeQL statements for a model like bitcoin.json in ~50ms. Multiple models can coexist in one TypeDB database via `bert_id` namespace prefixes.
 
-### 4.4 AgentModel → Behavioral Architecture
+**Stage 2** is a spawn-per-run process. The BERT Tauri backend spawns `mesa_runner.py` with arguments (model name, step count, seed, run ID). The runner connects to TypeDB, queries the model graph, constructs Mesa agents, runs the simulation, and writes timestamped observations back to TypeDB. The process exits on completion. TypeDB is the shared state bus — no direct IPC between Rust and Python.
 
-| SL concept | Mesa mapping |
-|------------|-------------|
-| `kind: Reactive` | Fixed rule-based step logic |
-| `kind: Anticipatory` | Step logic with internal world model and prediction |
-| `kind: Intentional` | Goal-directed planning with action selection |
-| `agency_capacity` | Degree of autonomous variation in step behavior |
-| ProcessPrimitives | Atomic operations composed into step logic |
+**Stage 3** polls TypeDB for `simulation_run` status and `flow_observation` / `system_observation` entities. Results render as time-series charts in the BERT UI. Because observations are linked back to the static model graph via `observes_interaction` and `observes_system` relations, any TypeQL query can join simulation results with structural metadata.
 
-### 4.5 Bevy ECS: Visualization and Exploration
+### 4.3 System → Mesa Agent
+
+Each `system` entity in the TypeDB graph with `system_level > 0` becomes a Mesa `Agent` subclass instance. The archetype field selects the agent class:
+
+| Archetype | Agent class | Behavioral profile |
+|-----------|-------------|-------------------|
+| `Economy` | `EconomySystem` | Throughput-maximizing. Reads Energy and Material flows, maintains `resource_level` state, scales output by `efficiency` (derived from `agency_capacity`). Decays resources over time. |
+| `Governance` | `GovernanceSystem` | Consensus-seeking. Reads Message flows, maintains `consensus` level (0–1), enforces rules proportional to `agency_capacity`. |
+| `Agent` | `AgentSystem` | Autonomous, adaptive. Behavior modulated by `agent_kind` — see §4.5. |
+| `Unspecified` | `PassiveSystem` | Pass-through relay. Accumulates throughput from incoming flows, no autonomous behavior. |
+
+The agent factory (`agent_from_row`) constructs the appropriate subclass from a TypeDB query result row. Each agent receives: `bert_id`, `display_name`, `archetype`, `time_constant`, `complexity_kind`, and (if present) `agent_kind` and `agency_capacity` from the `agent_model` relation.
+
+The root system (`system_level = 0`) is not instantiated as an agent — it is the Model-level container.
+
+### 4.4 Multi-Timescale Stepping
+
+Each agent's `time_constant` (the 11-value controlled vocabulary from §1.11) determines its step frequency relative to the simulation tick. The mapping uses a tick-modulo scheme:
+
+| `time_constant` | Ticks per step |
+|----------------|----------------|
+| Millisecond, Second | 1 (every tick) |
+| Minute | 60 |
+| Hour | 3,600 |
+| Day | 86,400 |
+| Month | 2,592,000 |
+| Year | 31,536,000 |
+
+On each tick, `agent.should_step(tick)` returns `True` only if `tick % step_interval == 0`. This is simpler than Mesa's `schedule_recurring()` API but produces equivalent behavior: subsystems with longer time constants step less frequently, creating the hierarchical temporal structure Mobus describes.
+
+Mesa's `shuffle_do("step")` iterates all agents each tick. Agents that should not step on this tick return immediately. The overhead is negligible for models with <1000 agents.
+
+### 4.5 AgentModel → Behavioral Architecture
+
+Systems with `archetype = Agent` carry an `AgentModel` configuration specifying `kind`, `agency_capacity`, and `process_primitives`. The `kind` field selects the step logic:
+
+**Reactive** — responds to current inputs without prediction. Each step updates `belief` proportionally to the gap between incoming signal and current belief, scaled by `adaptation_rate` (derived from `agency_capacity`).
+
+**Anticipatory** — maintains an internal `prediction` that tracks signal via exponential smoothing. The belief updates toward the prediction rather than raw signal, implementing Rosen's anticipatory system concept (the agent acts on an internal model of the future, not just current stimulus).
+
+**Intentional** — maintains an explicit `goal` state. Step logic balances goal-seeking (closing the gap between belief and goal) with signal-tracking (responding to environment), weighted by `agency_capacity`. Higher capacity agents are more goal-directed; lower capacity agents are more reactive.
+
+`agency_capacity` (0.0–1.0) is the continuous parameter that modulates all three kinds — it scales `adaptation_rate` for Reactive agents, prediction weight for Anticipatory agents, and goal-vs-signal balance for Intentional agents.
+
+### 4.6 Interaction → Flow Wiring
+
+Interactions in the TypeDB graph are wired as agent communication channels during model initialization. Each `interaction` entity's `participates_in` relations identify the source and sink agents. The wiring produces per-agent lists:
+
+- `incoming_flows` — flows where this agent is the sink
+- `outgoing_flows` — flows where this agent is the source
+
+Each flow carries `substance_type` (Energy, Material, Message) which agents use to differentiate input channels in their `_act()` method:
+
+- **Energy** flows drive resource-level dynamics (Economy agents read these for throughput calculations)
+- **Material** flows contribute to resource accumulation
+- **Message** flows drive consensus dynamics (Governance agents read these for rule enforcement)
+
+The `usability` field (Resource, Product, Waste, Disruption) is specified for future use in step logic — indicating whether a flow represents consumed input, produced output, waste emission, or disruptive perturbation.
+
+**Force interactions** (§3.7) are structurally present in the flow graph but do not transfer substance. They represent parameter constraints — a Governance system constraining an Economy system via Force means the governance agent's `rule_strength` affects the economy agent's behavior without any material exchange.
+
+### 4.7 Observation and Data Collection
+
+Simulation results are written to TypeDB as timestamped observation entities:
+
+| Entity | Fields | Links to |
+|--------|--------|----------|
+| `simulation_run` | `run_id`, `model_ref`, `seed`, `tick_count`, `run_status` | — |
+| `flow_observation` | `run_id`, `tick`, `observed_amount` | `interaction` via `observes_interaction` |
+| `system_observation` | `run_id`, `tick`, `observation_key`, `observed_value` | `system` via `observes_system` |
+
+Observations are batched (default: every 10 ticks) and written in a single TypeDB Write transaction. The `run_observation` relation groups all observations under a simulation run.
+
+Because observations link back to the static model graph, cross-cutting queries are native TypeQL:
+- "All flow amounts at tick 50 of run X, with source/sink system names"
+- "How did Economy agents' resource levels evolve across all runs for this model?"
+- "Compare hashrate dynamics between bitcoin and ethereum models"
+
+Mesa's `DataCollector` also runs in-process, collecting model-level aggregate reporters (agent counts by archetype, current tick) for the summary output.
+
+### 4.8 Bevy ECS: Visualization and Future Simulation Target
 
 The BERT implementation uses Bevy ECS for model visualization. The ECS architecture has natural correspondence to agent systems:
-- Bevy Entities = SL systems, interfaces, flows
-- Bevy Components = SL properties and state
-- Bevy Systems = update logic and rendering
 
-This mapping is under exploration as a **native Rust simulation target** — ECS could run agent-based models directly without Python/Mesa translation. The natural alignment between ECS (entities with components processed by systems) and ABM (agents with state updated by rules) makes this a promising path. The spec leaves this door open.
+| ECS concept | ABM equivalent |
+|-------------|----------------|
+| Entity | Agent |
+| Component | Agent state |
+| System | Step function |
+| World | Model |
+| `FixedUpdate` schedule | Simulation tick |
 
-### 4.6 UI Extension Fields
+BERT's data model already carries `AgentModel` on entities with `archetype = Agent`, including `kind`, `agency_capacity`, and `process_primitives`. The `feature/agent-dynamics` branch (exploratory, 5,600+ lines) validated that Bevy ECS can serve as a native Rust simulation runtime, running ABM stepping in-process without Python.
+
+The current architecture uses Mesa (Python, via TypeDB) for simulation and Bevy for visualization. A future version may add in-process Bevy ECS simulation for interactive browser-based stepping (WASM-compatible, zero IPC overhead). Both paths read from the same TypeDB substrate and produce the same observation schema.
+
+### 4.9 UI Extension Fields
 
 The following fields are **excluded from the semantic model** — they are visualization artifacts with no analytical meaning:
 
@@ -550,7 +622,7 @@ The following fields are **excluded from the semantic model** — they are visua
 
 Implementations may include additional UI extension fields. The semantic spec makes no claims about them.
 
-### 4.7 Version and Migration
+### 4.10 Version and Migration
 
 - `WorldModel.version` is currently `1`
 - Breaking schema changes increment the version
