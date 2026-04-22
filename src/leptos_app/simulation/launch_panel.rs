@@ -1,8 +1,7 @@
 use leptos::prelude::*;
-use tauri_sys::core::invoke;
-use wasm_bindgen_futures::JsFuture;
-
 use serde::Serialize;
+use tauri_sys::core::invoke_result;
+use wasm_bindgen_futures::JsFuture;
 
 use super::chart::LineChart;
 use super::types::{LaunchParams, PollParams, ResultsParams, RunInfo, RunStatus, SimulationResults};
@@ -34,12 +33,14 @@ pub fn SimPanel(
     on_close: Callback<()>,
     on_launch: Callback<RunInfo>,
     active_run: Signal<Option<RunInfo>>,
+    model_name: Signal<String>,
 ) -> impl IntoView {
     let (seed_text, set_seed_text) = signal("42".to_string());
     let (steps_text, set_steps_text) = signal("200".to_string());
     let (launching, set_launching) = signal(false);
     let (results, set_results) = signal(None::<SimulationResults>);
     let (poll_status, set_poll_status) = signal(None::<RunStatus>);
+    let (error_msg, set_error_msg) = signal(None::<String>);
 
     let is_running = Memo::new(move |_| {
         if let Some(ps) = poll_status.get() {
@@ -60,53 +61,74 @@ pub fn SimPanel(
     let do_launch = move |_| {
         let seed: Option<u64> = seed_text.get_untracked().parse().ok();
         let steps: u64 = steps_text.get_untracked().parse().unwrap_or(200);
+        let mn = model_name.get_untracked();
 
         set_launching.set(true);
         set_results.set(None);
         set_poll_status.set(None);
+        set_error_msg.set(None);
 
         use leptos::task::spawn_local;
         spawn_local(async move {
-            leptos::logging::log!("Launching simulation...");
+            leptos::logging::log!("Launching simulation for model '{}'...", mn);
             let params = LaunchParams {
                 seed,
                 steps,
                 db: "bert-models".to_string(),
-                model_name: "bitcoin".to_string(),
+                model_name: mn,
             };
-            let run_info: RunInfo = invoke("launch_simulation", &LaunchArgs { params }).await;
-            leptos::logging::log!("Launched: run_id={}, status={}", run_info.run_id, run_info.status);
-            let run_id = run_info.run_id.clone();
-            set_launching.set(false);
-            on_launch.run(run_info);
 
-            // Poll until complete
-            loop {
-                sleep_ms(1_500).await;
-                leptos::logging::log!("Polling run {}...", run_id);
-                let poll_params = PollParams {
-                    db: "bert-models".to_string(),
-                    run_id: run_id.clone(),
-                };
-                let status: RunStatus = invoke("poll_run_status", &PollArgs { params: poll_params }).await;
-                leptos::logging::log!("Poll result: status={}, tick={}", status.status, status.tick_count);
-                let done = status.status == "Complete" || status.status == "Failed";
-                let completed = status.status == "Complete";
-                set_poll_status.set(Some(status));
+            let launch_result = invoke_result::<RunInfo, String>("launch_simulation", &LaunchArgs { params }).await;
+            match launch_result {
+                Ok(run_info) => {
+                    leptos::logging::log!("Launched: run_id={}", run_info.run_id);
+                    let run_id = run_info.run_id.clone();
+                    set_launching.set(false);
+                    on_launch.run(run_info);
 
-                if done {
-                    if completed {
-                        leptos::logging::log!("Run complete, fetching results...");
-                        let res_params = ResultsParams {
+                    // Poll until complete
+                    loop {
+                        sleep_ms(1_500).await;
+                        let poll_params = PollParams {
                             db: "bert-models".to_string(),
                             run_id: run_id.clone(),
                         };
-                        let res: SimulationResults = invoke("get_run_results", &ResultsArgs { params: res_params }).await;
-                        leptos::logging::log!("Got {} system series, {} flow series",
-                            res.system_timeseries.len(), res.flow_timeseries.len());
-                        set_results.set(Some(res));
+                        match invoke_result::<RunStatus, String>("poll_run_status", &PollArgs { params: poll_params }).await {
+                            Ok(status) => {
+                                let done = status.status == "Complete" || status.status == "Failed";
+                                let completed = status.status == "Complete";
+                                set_poll_status.set(Some(status));
+
+                                if done {
+                                    if completed {
+                                        let res_params = ResultsParams {
+                                            db: "bert-models".to_string(),
+                                            run_id: run_id.clone(),
+                                        };
+                                        match invoke_result::<SimulationResults, String>("get_run_results", &ResultsArgs { params: res_params }).await {
+                                            Ok(res) => {
+                                                leptos::logging::log!("Got {} system series, {} flow series",
+                                                    res.system_timeseries.len(), res.flow_timeseries.len());
+                                                set_results.set(Some(res));
+                                            }
+                                            Err(e) => set_error_msg.set(Some(format!("Results fetch failed: {e}"))),
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            Err(e) => {
+                                leptos::logging::log!("Poll error: {}", e);
+                                set_error_msg.set(Some(format!("Poll failed: {e}")));
+                                break;
+                            }
+                        }
                     }
-                    break;
+                }
+                Err(e) => {
+                    leptos::logging::log!("Launch failed: {}", e);
+                    set_launching.set(false);
+                    set_error_msg.set(Some(e));
                 }
             }
         });
@@ -125,6 +147,11 @@ pub fn SimPanel(
                 </div>
 
                 <div class="px-4 py-3 space-y-3">
+                    // --- Model name ---
+                    <div class="text-xs text-gray-500">
+                        {"Model: "}<span class="font-mono font-medium text-gray-700">{move || model_name.get()}</span>
+                    </div>
+
                     // --- Controls ---
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -158,6 +185,13 @@ pub fn SimPanel(
                             else { "Run" }
                         }}
                     </button>
+
+                    // --- Error display ---
+                    {move || error_msg.get().map(|e| view! {
+                        <div class="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                            {e}
+                        </div>
+                    })}
 
                     // --- Run status ---
                     {move || display_status.get().map(|(status, tick_count, short_id)| {

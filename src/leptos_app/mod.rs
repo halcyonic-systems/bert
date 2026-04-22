@@ -110,10 +110,13 @@ pub fn App() -> impl IntoView {
             },
         });
 
+    let (loaded_model_name, set_loaded_model_name) = signal(String::new());
+
     // Connect file dialog signal to LoadFileEvent stream with validation
     Effect::new({
         let load_file_writer = load_file_writer.clone();
         let set_complexity_inner = set_complexity;
+        let set_loaded_model_name = set_loaded_model_name;
         move |_| {
             if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) =
                 file_dialog_signal.get()
@@ -122,6 +125,12 @@ pub fn App() -> impl IntoView {
                     Ok(world_model) => {
                         let complexity_result = calculate_simonian_complexity(&world_model);
                         set_complexity_inner.set(complexity_result.total_complexity);
+
+                        // Extract model name from path for simulation panel
+                        let mn = path.strip_prefix("template:").unwrap_or(&path);
+                        let mn = mn.strip_suffix(".json").unwrap_or(mn);
+                        let mn = mn.rsplit('/').next().unwrap_or(mn);
+                        set_loaded_model_name.set(mn.to_string());
 
                         let result = validate(&world_model);
                         if result.is_clean() {
@@ -404,6 +413,7 @@ pub fn App() -> impl IntoView {
                 set_active_run.set(Some(run_info));
             })
             active_run=Signal::derive(move || active_run.get())
+            model_name=Signal::derive(move || loaded_model_name.get())
         />
         <div class="h-screen"
              tabindex="0"
