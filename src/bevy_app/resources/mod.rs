@@ -70,6 +70,12 @@ impl Default for ZoomTarget {
 #[derive(Resource, Deref, DerefMut)]
 pub struct StrokeTessellator(bevy_prototype_lyon::prelude::tess::StrokeTessellator);
 
+impl Default for StrokeTessellator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StrokeTessellator {
     pub fn new() -> Self {
         StrokeTessellator(bevy_prototype_lyon::prelude::tess::StrokeTessellator::new())
@@ -86,18 +92,15 @@ pub struct CurrentFile(pub Option<String>);
 /// for screenshots and documentation. All other visual elements remain unchanged.
 #[derive(Debug, Resource, Clone, Copy, PartialEq, Eq, Reflect)]
 #[reflect(Resource)]
+#[derive(Default)]
 pub enum Theme {
     /// Original BERT background (beige)
+    #[default]
     Normal,
     /// White background for clean screenshots
     White,
 }
 
-impl Default for Theme {
-    fn default() -> Self {
-        Theme::Normal
-    }
-}
 
 impl Theme {
     /// Toggle between normal beige and white background

@@ -30,7 +30,7 @@ pub fn SvgNode(
             <switch>
                 <foreignObject x=x - 2.5 y=y + height * 0.6 width=width + 5.0 height=height>
                     <p
-                        style:font-size=move || format!("{font_size}")
+                        style:font-size=move || font_size.to_string()
                         style:line-height=move || format!("{height}px")
                         class="py-0 px-1 m-0 font-bold text-center text-gray-900 truncate font-tree"
                     >
@@ -67,7 +67,7 @@ pub fn SvgNode(
             <switch>
                 <foreignObject x=x - 1.0 y=y + 1.0 width=width + 2.5 height=height>
                     <p
-                        style:font-size=move || format!("{font_size}")
+                        style:font-size=move || font_size.to_string()
                         style:line-height=move || format!("{height}px")
                         class="py-0 px-1 m-0 font-bold text-center text-gray-900 truncate font-tree"
                     >
@@ -177,7 +177,7 @@ pub fn SvgText(
         <switch>
             <foreignObject x=x y=y width=width height=height>
                 <p
-                    style:font-size=move || format!("{font_size}")
+                    style:font-size=move || font_size.to_string()
                     style:line-height=move || format!("{height}px")
                     class=move || format!("{base_class} {class}")
                 >

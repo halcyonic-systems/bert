@@ -135,11 +135,9 @@ pub fn cleanup_labelled_removal<T: Component>(
 
             if pick_target.target == removed {
                 if let Ok(copy_positions) = copy_positions.get(removed) {
-                    if copy_positions
+                    if !copy_positions
                         .0
-                        .iter()
-                        .find(|copy_position| copy_position.target == label_entity)
-                        .is_none()
+                        .iter().any(|copy_position| copy_position.target == label_entity)
                     {
                         despawn();
                     }

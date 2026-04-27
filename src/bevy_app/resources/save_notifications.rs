@@ -31,7 +31,7 @@ pub fn init_save_notification_channel(commands: &mut Commands) {
 pub fn send_save_success_event(event: SaveSuccessEvent) {
     if let Some(sender) = SAVE_NOTIFICATION_SENDER.get() {
         if let Err(e) = sender.send(event) {
-            eprintln!("Failed to send save success event: {:?}", e);
+            eprintln!("Failed to send save success event: {e:?}");
         }
     }
 }

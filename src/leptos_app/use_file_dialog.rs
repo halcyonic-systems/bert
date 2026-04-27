@@ -103,7 +103,7 @@ where
                 input.set_hidden(true);
 
                 // Add an event listener for file selection
-                let set_file_data = set_file_data.clone();
+                let set_file_data = set_file_data;
                 let on_change = Closure::wrap(Box::new(move |ev: Event| {
                     let input = ev.target().unwrap().dyn_into::<HtmlInputElement>().unwrap();
                     if let Some(file) = input.files().and_then(|files| files.get(0)) {
@@ -112,7 +112,7 @@ where
                         let name = file.name().to_string();
 
                         // Set up the onload event handler for the FileReader
-                        let set_file_data = set_file_data.clone();
+                        let set_file_data = set_file_data;
                         let on_load = Closure::wrap(Box::new(move |ev: Event| {
                             let target = ev.target().unwrap().dyn_into::<FileReader>().unwrap();
                             if let Ok(result) = target.result() {

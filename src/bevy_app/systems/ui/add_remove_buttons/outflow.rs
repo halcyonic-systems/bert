@@ -18,14 +18,8 @@ pub fn outflow_create_button_needs_update(
     focused_system: Res<FocusedSystem>,
     mut remove_event_reader: MessageReader<RemoveEvent>,
 ) -> bool {
-    let needs_update = if !focused_system.is_changed()
-        && flow_finished_query.single().is_err()
-        && remove_event_reader.is_empty()
-    {
-        false
-    } else {
-        true
-    };
+    let needs_update = !(!focused_system.is_changed()
+        && flow_finished_query.single().is_err() && remove_event_reader.is_empty());
     remove_event_reader.clear();
 
     needs_update
@@ -108,7 +102,7 @@ pub fn add_outflow_create_button(
 }
 
 pub fn despawn_existing_buttons_due_to_incomplete_flow(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     focused_system: Entity,
     button_type: CreateButtonType,
     button_query: &Query<(Entity, &CreateButton, Option<&ChildOf>)>,
@@ -129,7 +123,7 @@ pub fn despawn_existing_buttons_due_to_incomplete_flow(
         incomplete_outflow_connections,
     ) {
         for (entity, button, parent) in button_entities {
-            despawn_create_button_with_component(&mut commands, entity, button, parent)
+            despawn_create_button_with_component(commands, entity, button, parent)
         }
 
         false
@@ -146,9 +140,9 @@ pub fn has_incomplete_interactions(
     let mut has_incomplete_interactions = false;
 
     for target in incomplete_inflow_connections
-        .into_iter()
+        .iter()
         .map(|c| c.target)
-        .chain(incomplete_outflow_connections.into_iter().map(|c| c.target))
+        .chain(incomplete_outflow_connections.iter().map(|c| c.target))
     {
         if target == system {
             has_incomplete_interactions = true;

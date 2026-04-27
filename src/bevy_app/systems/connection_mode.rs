@@ -340,8 +340,8 @@ pub fn finalize_connection(
         // Validate: Same nesting level (only for N network)
         // G network connections MUST cross levels (interface at N+1, external at N)
         // per Mobus theory - that's the system boundary!
-        if source_nesting_level != dest_nesting_level {
-            if is_valid_n_network {
+        if source_nesting_level != dest_nesting_level
+            && is_valid_n_network {
                 // N network requires same level
                 warn!(
                     "❌ Cannot connect elements at different nesting levels ({} vs {})",
@@ -350,7 +350,6 @@ pub fn finalize_connection(
                 continue;
             }
             // G network: cross-level is expected and correct, allow it
-        }
 
         // Find the parent system for the flow
         // Flows are parented to the GRANDPARENT system (subsystem.parent_system),
@@ -853,7 +852,7 @@ pub fn send_mode_change_events(
             "Connection Mode (F) - Click source".to_string()
         }
     } else if let Some(element_type) = &placement_mode.active_element {
-        format!("Placing {:?} - Click to place, ESC to cancel", element_type)
+        format!("Placing {element_type:?} - Click to place, ESC to cancel")
     } else {
         String::new()
     };

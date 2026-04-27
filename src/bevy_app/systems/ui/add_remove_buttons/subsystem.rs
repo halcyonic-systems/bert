@@ -99,27 +99,23 @@ pub fn add_interface_subsystem_create_buttons(
             .iter()
             .any(|(entity, _)| *entity == flow_end_connection.target)
         {
-            flow_usabilities
-                .get_mut(&flow_end_connection.target)
-                .map(|u| {
-                    if flow.usability.is_import() {
-                        u.usabilities.insert(flow.usability);
-                    }
-                    u.has_inflow = true;
-                });
+            if let Some(u) = flow_usabilities.get_mut(&flow_end_connection.target) {
+                if flow.usability.is_import() {
+                    u.usabilities.insert(flow.usability);
+                }
+                u.has_inflow = true;
+            }
         }
         if systems_at_the_same_nesting_level
             .iter()
             .any(|(entity, _)| *entity == flow_start_connection.target)
         {
-            flow_usabilities
-                .get_mut(&flow_start_connection.target)
-                .map(|u| {
-                    if flow.usability.is_export() {
-                        u.usabilities.insert(flow.usability);
-                    }
-                    u.has_outflow = true;
-                });
+            if let Some(u) = flow_usabilities.get_mut(&flow_start_connection.target) {
+                if flow.usability.is_export() {
+                    u.usabilities.insert(flow.usability);
+                }
+                u.has_outflow = true;
+            }
         }
     }
 
@@ -135,10 +131,10 @@ pub fn add_interface_subsystem_create_buttons(
             {
                 if let Some(connection) = flow_start_interface_connection {
                     if connection.target == interface_entity {
-                        flow_usabilities.get_mut(system_entity).map(|u| {
+                        if let Some(u) = flow_usabilities.get_mut(system_entity) {
                             u.usabilities.insert(flow.usability);
                             u.has_outflow = true;
-                        });
+                        }
 
                         interface_type = InterfaceType::Export;
                         // TODO : hybrid
@@ -146,10 +142,10 @@ pub fn add_interface_subsystem_create_buttons(
                 }
                 if let Some(connection) = flow_end_interface_connection {
                     if connection.target == interface_entity {
-                        flow_usabilities.get_mut(system_entity).map(|u| {
+                        if let Some(u) = flow_usabilities.get_mut(system_entity) {
                             u.usabilities.insert(flow.usability);
                             u.has_inflow = true;
-                        });
+                        }
                         interface_type = InterfaceType::Import;
                         // TODO : hybrid
                     }

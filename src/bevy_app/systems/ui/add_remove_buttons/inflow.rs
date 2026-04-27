@@ -73,11 +73,10 @@ pub fn add_inflow_create_button(
         let mut outflow_usabilities = HashSet::new();
 
         for (outflow, flow_start_connection) in &outflow_query {
-            if matches!(flow_start_connection.target_type, StartTargetType::System) {
-                if flow_start_connection.target == focused_system && outflow.usability.is_export() {
+            if matches!(flow_start_connection.target_type, StartTargetType::System)
+                && flow_start_connection.target == focused_system && outflow.usability.is_export() {
                     outflow_usabilities.insert(outflow.usability);
                 }
-            }
         }
 
         let is_completed_import_subsystem =

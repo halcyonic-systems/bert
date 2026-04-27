@@ -1,4 +1,5 @@
 mod components;
+#[allow(clippy::option_map_unit_fn)]
 mod details;
 mod simulation;
 mod tree;
@@ -214,12 +215,12 @@ pub fn App() -> impl IntoView {
 
     // Global ESC key handler - works regardless of focus
     {
-        let cancel_mode_writer = cancel_mode_writer.clone();
+        let cancel_mode_writer = cancel_mode_writer;
         Effect::new(move |_| {
             use wasm_bindgen::prelude::*;
             use wasm_bindgen::JsCast;
 
-            let cancel_writer = cancel_mode_writer.clone();
+            let cancel_writer = cancel_mode_writer;
             let closure = Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
                 if event.key() == "Escape" {
                     leptos::logging::log!("🌐 Global ESC detected - cancelling mode");
@@ -342,7 +343,7 @@ pub fn App() -> impl IntoView {
 
         <Palette
             on_element_click=Callback::new({
-                let palette_click_writer = palette_click_writer.clone();
+                let palette_click_writer = palette_click_writer;
                 move |element_type| {
                     leptos::logging::log!("🎨 Palette clicked: {:?}", element_type);
                     palette_click_writer.send(PaletteClickEvent { element_type }).ok();
@@ -422,7 +423,7 @@ pub fn App() -> impl IntoView {
                  leptos::logging::log!("🎯 Container clicked - should be focused for key events");
              }
              on:keydown={
-                 let cancel_mode_writer = cancel_mode_writer.clone();
+                 let cancel_mode_writer = cancel_mode_writer;
                  move |ev| {
                      // Log all key presses for debugging
                      leptos::logging::log!("Key pressed: {} (code: {})", ev.key(), ev.code());

@@ -146,7 +146,7 @@ pub fn save_world(
             let model = world_model.clone();
             async move {
                 // Determine if we should use save dialog
-                let should_use_dialog = file_name.as_ref().map_or(true, |name| {
+                let should_use_dialog = file_name.as_ref().is_none_or(|name| {
                     // Always use dialog for:
                     // 1. No file loaded (new model)
                     // 2. Template files from Model Browser
@@ -164,13 +164,13 @@ pub fn save_world(
                             if name.starts_with("template:") {
                                 // For Model Browser templates
                                 name.strip_prefix("template:")
-                                    .map(|n| format!("enhanced-{}", n))
+                                    .map(|n| format!("enhanced-{n}"))
                             } else if name.contains("assets/models/") {
                                 // For files loaded via Ctrl+L from assets
-                                name.split('/').last().map(|n| format!("my-{}", n))
+                                name.split('/').next_back().map(|n| format!("my-{n}"))
                             } else {
                                 // For other cases, suggest based on filename
-                                name.split('/').last().map(|n| n.to_string())
+                                name.split('/').next_back().map(|n| n.to_string())
                             }
                         })
                         .unwrap_or_else(|| "untitled.json".to_string());
@@ -213,9 +213,9 @@ pub fn save_world(
             .and_then(|name| {
                 if name.starts_with("template:") {
                     name.strip_prefix("template:")
-                        .map(|n| format!("enhanced-{}", n))
+                        .map(|n| format!("enhanced-{n}"))
                 } else {
-                    name.split('/').last().map(|n| n.to_string())
+                    name.split('/').next_back().map(|n| n.to_string())
                 }
             })
             .unwrap_or_else(|| "untitled.json".to_string());
@@ -252,7 +252,7 @@ pub fn save_world(
         // Send save success event after download completes
         save_success_events.write(SaveSuccessEvent {
             file_path: None, // Web downloads don't have a specific file path
-            message: format!("File downloaded: {}", download_name),
+            message: format!("File downloaded: {download_name}"),
         });
     }
 }
@@ -287,9 +287,9 @@ pub fn save_world_as(
                     .and_then(|name| {
                         if name.starts_with("template:") {
                             name.strip_prefix("template:")
-                                .map(|n| format!("enhanced-{}", n))
+                                .map(|n| format!("enhanced-{n}"))
                         } else {
-                            name.split('/').last().map(|n| n.to_string())
+                            name.split('/').next_back().map(|n| n.to_string())
                         }
                     })
                     .unwrap_or_else(|| "untitled.json".to_string());
@@ -524,7 +524,7 @@ pub fn serialize_world(
 /// the interactions between them and sources/sinks contained in the parent system.
 /// Then do it recursively for each subsystem again.
 fn build_subsystems(
-    mut ctx: &mut Context,
+    ctx: &mut Context,
     parent_system_entity: Entity,
     name_and_description_query: &Query<(&Name, &ElementDescription)>,
     transform_query: &Query<(&Transform, &InitialPosition)>,
@@ -545,7 +545,7 @@ fn build_subsystems(
         Option<&IsSameAsId>,
     )>,
     original_id_query: &Query<&OriginalId>,
-    mut entity_to_system: &mut HashMap<Entity, System>,
+    entity_to_system: &mut HashMap<Entity, System>,
 ) {
     let mut not_interface_subsystems = vec![];
 
@@ -643,10 +643,10 @@ fn build_subsystems(
                     level,
                     parent_id,
                     Some(interface_id),
-                    &name_and_description_query,
-                    &transform_query,
-                    &mut ctx,
-                    &mut entity_to_system,
+                    name_and_description_query,
+                    transform_query,
+                    ctx,
+                    entity_to_system,
                 );
             } else {
                 // ... otherwise save it as 'normal' subsystem for later processing
@@ -744,7 +744,7 @@ fn build_subsystems(
             name_and_description_query,
             transform_query,
             ctx,
-            &mut entity_to_system,
+            entity_to_system,
         );
     }
 
@@ -1260,7 +1260,7 @@ fn build_interface<C: Connection>(
                 interface_entity,
                 id,
                 system.info.level + 1,
-                &name_and_description_query,
+                name_and_description_query,
             ),
             protocol: interface.protocol.clone(),
             ty, // TODO : hybrid
@@ -1310,7 +1310,7 @@ fn build_interaction<P: HasInfo>(
             } else {
                 parent_level + 1
             },
-            &name_and_description_query,
+            name_and_description_query,
         ),
         substance: Substance {
             sub_type: flow.substance_sub_type.clone(),
@@ -1365,10 +1365,10 @@ fn build_external_entity<P: HasInfo>(
             } else {
                 parent_level + 1
             },
-            &name_and_description_query,
+            name_and_description_query,
         ),
         ty,
-        transform: transform2d_from_entity(entity, &transform_query),
+        transform: transform2d_from_entity(entity, transform_query),
         equivalence: external_entity_component.equivalence.clone(),
         model: external_entity_component.model.clone(),
         is_same_as_id: is_same_as_id.map(|id| **id),
@@ -1410,7 +1410,7 @@ fn build_system(
     };
 
     let root_system = crate::bevy_app::data_model::System {
-        info: info_from_entity(system_entity, id, level, &name_and_description_query),
+        info: info_from_entity(system_entity, id, level, name_and_description_query),
         parent: parent_id,
         complexity: system.complexity,
         boundary,

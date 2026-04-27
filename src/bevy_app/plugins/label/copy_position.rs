@@ -166,12 +166,10 @@ pub fn apply_copy_position(
         } else {
             pos
         }
+    } else if copy_position.local_offset {
+        transform.transform_point(copy_position.offset)
     } else {
-        if copy_position.local_offset {
-            transform.transform_point(copy_position.offset)
-        } else {
-            transform.translation() + copy_position.offset
-        }
+        transform.translation() + copy_position.offset
     };
 
     let pos = pos.round();

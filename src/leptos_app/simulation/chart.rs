@@ -38,9 +38,9 @@ pub fn LineChart(
 
     let y_mid = y_min + y_range / 2.0;
     let fmt = |v: f64| -> String {
-        if v.abs() >= 1000.0 { format!("{:.0}", v) }
-        else if v.abs() >= 1.0 { format!("{:.1}", v) }
-        else { format!("{:.3}", v) }
+        if v.abs() >= 1000.0 { format!("{v:.0}") }
+        else if v.abs() >= 1.0 { format!("{v:.1}") }
+        else { format!("{v:.3}") }
     };
 
     let y_min_str = fmt(y_min);
@@ -53,13 +53,13 @@ pub fn LineChart(
     let y_max_y = to_y(y_max);
     let y_mid_y = to_y(y_mid);
 
-    let vb = format!("0 0 {} {}", width, height);
+    let vb = format!("0 0 {width} {height}");
     let color2 = color.clone();
 
     view! {
         <div class="mb-2">
             <div class="text-xs font-medium text-gray-600 mb-0.5">{label}</div>
-            <svg viewBox={vb} class="w-full" style={format!("max-height: {}px", height)}>
+            <svg viewBox={vb} class="w-full" style={format!("max-height: {height}px")}>
                 // Y axis grid lines
                 <line x1={pad_l.to_string()} y1={y_min_y.to_string()} x2={(width - pad_r).to_string()} y2={y_min_y.to_string()} stroke="#e5e7eb" stroke-width="0.5"/>
                 <line x1={pad_l.to_string()} y1={y_mid_y.to_string()} x2={(width - pad_r).to_string()} y2={y_mid_y.to_string()} stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="3,3"/>

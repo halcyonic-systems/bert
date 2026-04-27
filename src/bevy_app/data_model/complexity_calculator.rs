@@ -60,6 +60,12 @@ pub struct ComplexityBreakdown {
     pub state_space_log: f64,
 }
 
+impl Default for ComplexityBreakdown {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ComplexityBreakdown {
     /// Creates a new empty complexity breakdown
     pub fn new() -> Self {
@@ -113,16 +119,16 @@ pub fn calculate_simonian_complexity(world_model: &WorldModel) -> ComplexityBrea
     let mut breakdown = ComplexityBreakdown::new();
 
     // Step 1: Count components by hierarchy level (C_il)
-    count_components_by_level(&world_model, &mut breakdown);
+    count_components_by_level(world_model, &mut breakdown);
 
     // Step 2: Count relations by hierarchy level (N_il)
-    count_relations_by_level(&world_model, &mut breakdown);
+    count_relations_by_level(world_model, &mut breakdown);
 
     // Step 3: Count boundary interfaces (B)
-    count_boundary_interfaces(&world_model, &mut breakdown);
+    count_boundary_interfaces(world_model, &mut breakdown);
 
     // Step 4: Approximate state space size (S + T)
-    approximate_state_space(&world_model, &mut breakdown);
+    approximate_state_space(world_model, &mut breakdown);
 
     // Step 5: Calculate final complexity using equation 4.10
     calculate_final_complexity(&mut breakdown);

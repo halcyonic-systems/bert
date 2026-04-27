@@ -11,7 +11,7 @@ pub fn Toast(
     // Auto-hide after 4 seconds when visible becomes true
     Effect::new(move |_| {
         if visible.get() {
-            let callback = on_hide.clone();
+            let callback = on_hide;
             // Use setTimeout via web_sys to auto-hide after 4 seconds
             let window = web_sys::window().unwrap();
             let closure = wasm_bindgen::closure::Closure::wrap(Box::new(move || {

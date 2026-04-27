@@ -107,10 +107,10 @@ fn compute_adjusted_curve(
     zoom: f32,
 ) -> FlowCurve {
     let Some(offset) = offset else {
-        return flow_curve.clone();
+        return *flow_curve;
     };
 
-    let mut adjusted = flow_curve.clone();
+    let mut adjusted = *flow_curve;
 
     // Compute adjusted start position from angle
     if let Some(start_angle) = offset.start_angle {

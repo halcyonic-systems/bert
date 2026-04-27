@@ -28,7 +28,7 @@ pub fn setup(
     geometries: ResMut<FixedSystemElementGeometriesByNestingLevel>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
     commands.insert_resource(ClearColor(CLEAR_COLOR));
 
     let system_entity = spawn_main_system(

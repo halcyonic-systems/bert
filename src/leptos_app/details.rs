@@ -294,7 +294,7 @@ pub fn InterfaceDetails(interface_query: RwSignalSynced<Option<InterfaceQuery>>)
             placeholder="Interface Name"
             value=name
             on_input=move |value: String| {
-                interface_query.write().as_mut().map(|(name, _, _)| name.set(value));
+                if let Some((name, _, _)) = interface_query.write().as_mut() { name.set(value) }
             }
         />
 
@@ -363,12 +363,9 @@ pub fn SimpleParameterInput(
                 unit: unit.clone(),
             };
 
-            interaction_query
+            if let Some((_, _, interaction)) = interaction_query
                 .write()
-                .as_mut()
-                .map(|(_, _, interaction)| {
-                    interaction.parameters.push(new_parameter);
-                });
+                .as_mut() { interaction.parameters.push(new_parameter); }
 
             // Reset form
             set_new_param_name.set(String::new());
@@ -438,9 +435,7 @@ pub fn SimpleParameterInput(
                                 <button
                                     type="button"
                                     on:click=move |_| {
-                                        interaction_query.write().as_mut().map(|(_, _, interaction)| {
-                                            interaction.parameters.retain(|p| p.id != param_id);
-                                        });
+                                        if let Some((_, _, interaction)) = interaction_query.write().as_mut() { interaction.parameters.retain(|p| p.id != param_id); }
                                     }
                                     class="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 flex-shrink-0"
                                     title="Remove attribute"
@@ -821,7 +816,7 @@ pub fn InteractionDetails(
             placeholder="Interaction Name"
             value=name
             on_input=move |value: String| {
-                interaction_query.write().as_mut().map(|(name, _, _)| name.set(value));
+                if let Some((name, _, _)) = interaction_query.write().as_mut() { name.set(value) }
             }
         />
 
@@ -1129,7 +1124,7 @@ pub fn ExternalEntityDetails(
             placeholder="External Entity Name"
             value=name
             on_input=move |value: String| {
-                external_entity_query.write().as_mut().map(|(name, _, _)| name.set(value));
+                if let Some((name, _, _)) = external_entity_query.write().as_mut() { name.set(value) }
             }
         />
 
@@ -1304,7 +1299,7 @@ pub fn SystemDetails(
                 placeholder="External Entity Name"
                 value=system_name
                 on_input=move |value: String| {
-                    system_query.write().as_mut().map(|(name, _, _, _)| name.set(value));
+                    if let Some((name, _, _, _)) = system_query.write().as_mut() { name.set(value) }
                 }
             />
 
@@ -1549,9 +1544,7 @@ pub fn SystemDetails(
                                             <button
                                                 class="text-red-600 hover:text-red-800 text-xs px-2"
                                                 on:click=move |_| {
-                                                    system_query.write().as_mut().map(|(_, _, _, system_env)| {
-                                                        system_env.milieu.remove(idx);
-                                                    });
+                                                    if let Some((_, _, _, system_env)) = system_query.write().as_mut() { system_env.milieu.remove(idx); }
                                                 }
                                             >
                                                 Remove
@@ -1581,9 +1574,7 @@ pub fn SystemDetails(
                 <button
                     class="w-full px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100"
                     on:click=move |_| {
-                        system_query.write().as_mut().map(|(_, _, _, system_env)| {
-                            system_env.milieu.push(("Property".to_string(), "Value".to_string()));
-                        });
+                        if let Some((_, _, _, system_env)) = system_query.write().as_mut() { system_env.milieu.push(("Property".to_string(), "Value".to_string())); }
                     }
                 >
                     + Add Milieu Property
@@ -1613,14 +1604,12 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or_default()
     });
 
-    let _complexity_types = vec![
-        Complexity::Complex {
+    let _complexity_types = [Complexity::Complex {
             adaptable: false,
             evolveable: false,
         },
         Complexity::Multiset(0),
-        Complexity::Atomic,
-    ];
+        Complexity::Atomic];
 
     let _complexity = Signal::derive(move || {
         sub_system_query
@@ -1756,7 +1745,7 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             placeholder="External Entity Name"
             value=name
             on_input=move |value: String| {
-                sub_system_query.write().as_mut().map(|(name, _, _, _)| name.set(value));
+                if let Some((name, _, _, _)) = sub_system_query.write().as_mut() { name.set(value) }
             }
         />
 

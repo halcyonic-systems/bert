@@ -250,7 +250,7 @@ pub fn execute_undo(world: &mut World) {
         let events = world.resource::<Messages<UndoEvent>>();
 
         // Read only the NEXT event (not all events)
-        if let Some(_event) = event_reader.0.read(&events).next() {
+        if let Some(_event) = event_reader.0.read(events).next() {
             // Process exactly ONE undo
             world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
                 command_history.undo(world);
@@ -269,7 +269,7 @@ pub fn execute_redo(world: &mut World) {
         let events = world.resource::<Messages<RedoEvent>>();
 
         // Read only the NEXT event (not all events)
-        if let Some(_event) = event_reader.0.read(&events).next() {
+        if let Some(_event) = event_reader.0.read(events).next() {
             // Process exactly ONE redo
             world.resource_scope(|world, mut command_history: Mut<CommandHistory>| {
                 command_history.redo(world);

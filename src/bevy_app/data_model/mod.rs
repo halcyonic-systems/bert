@@ -307,13 +307,13 @@ impl<'de> Visitor<'de> for IdVisitor {
     {
         if let Some(index) = v.find(|c: char| c.is_numeric() || c == '-') {
             let ty = serde_json::from_str(&format!("\"{}\"", &v[..index]))
-                .map_err(|err| E::custom(format!("Error parsing type prefix: {:?}", err)))?;
+                .map_err(|err| E::custom(format!("Error parsing type prefix: {err:?}")))?;
 
             let indices = v[index..]
                 .split(".")
                 .map(|i| i.parse::<i64>())
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|err| E::custom(format!("Error parsing indices: {:?}", err)))?;
+                .map_err(|err| E::custom(format!("Error parsing indices: {err:?}")))?;
 
             Ok(Id { ty, indices })
         } else {
@@ -1038,10 +1038,7 @@ impl Complexity {
     /// assert!(!atomic.is_adaptable());
     /// ```
     pub fn set_adaptable(&mut self, adapt: bool) {
-        match self {
-            Complexity::Complex { adaptable, .. } => *adaptable = adapt,
-            _ => (),
-        }
+        if let Complexity::Complex { adaptable, .. } = self { *adaptable = adapt }
     }
 
     /// Sets the evolvability property for complex systems.
@@ -1081,10 +1078,7 @@ impl Complexity {
     /// assert!(!multiset.is_evolveable());
     /// ```
     pub fn set_evolveable(&mut self, evolve: bool) {
-        match self {
-            Complexity::Complex { evolveable, .. } => *evolveable = evolve,
-            _ => (),
-        }
+        if let Complexity::Complex { evolveable, .. } = self { *evolveable = evolve }
     }
 }
 

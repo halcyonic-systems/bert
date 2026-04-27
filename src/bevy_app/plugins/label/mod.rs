@@ -400,7 +400,7 @@ pub fn add_name_label<B: Bundle>(
 ) {
     let mut text_commands = commands.spawn((
         Text2d::new(
-            &name_query
+            name_query
                 .get(entity)
                 .expect("Entity should have a name")
                 .to_string(),

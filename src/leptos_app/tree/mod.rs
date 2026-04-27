@@ -45,7 +45,7 @@ fn layout_tree(
         .read()
         .as_ref()
         .map(|TreeEvent { world_model }| {
-            let ordered_systems = get_world_systems_ordered(&world_model);
+            let ordered_systems = get_world_systems_ordered(world_model);
 
             let window_mid_x = width * 0.5;
 
@@ -56,7 +56,7 @@ fn layout_tree(
 
             let raw_svg_tree_view = draw_raw_node_tree(root_node);
             let svg_tree_description_view = draw_node_tree_description(
-                &world_model,
+                world_model,
                 &ordered_systems,
                 root_x_mid,
                 tree_start_x,
@@ -75,12 +75,12 @@ fn get_string_from_id(id: &Id) -> String {
     serde_json::to_string(&id).unwrap().replace("\"", "")
 }
 
-fn get_name_or_id(name: &String, id: &Id) -> String {
-    let default_names = vec!["System", "Subsystem", "Source", "Sink"];
-    if name.is_empty() || default_names.contains(&name.as_str()) {
+fn get_name_or_id(name: &str, id: &Id) -> String {
+    let default_names = ["System", "Subsystem", "Source", "Sink"];
+    if name.is_empty() || default_names.contains(&name) {
         get_string_from_id(id)
     } else {
-        name.clone()
+        name.to_string()
     }
 }
 
@@ -108,7 +108,7 @@ fn get_world_systems_ordered(world_model: &WorldModel) -> Vec<InputSystem> {
     systems_vec
 }
 
-fn create_node_tree(systems_vec: &Vec<InputSystem>, midpoint: f64) -> (SvgSystem, f64) {
+fn create_node_tree(systems_vec: &[InputSystem], midpoint: f64) -> (SvgSystem, f64) {
     let mut node_map: HashMap<String, Rc<RefCell<SvgSystem>>> = HashMap::new();
 
     for system in systems_vec.iter() {
@@ -165,7 +165,7 @@ fn draw_raw_node_tree(node: SvgSystem) -> Vec<AnyView> {
         .into_any(),
     );
 
-    if node.children.len() > 0 {
+    if !node.children.is_empty() {
         let parent_x = node.x;
         let parent_node_width = node.get_node_width();
         let children_mid_x = parent_x + parent_node_width * 0.5;
@@ -220,11 +220,11 @@ fn draw_node_tree_description(
     let mut last_sink_x = midpoint + svg_el_width + svg_el_gap;
 
     for (i, source) in world_model.environment.sources.iter().enumerate() {
-        let mut x = midpoint + ((i + 1) as f64 * svg_el_width + (i + 1) as f64 * svg_el_gap) * -1.0;
+        let mut x = midpoint + -((i + 1) as f64 * svg_el_width + (i + 1) as f64 * svg_el_gap);
 
         if sources_len > 1 {
             x = midpoint
-                + (svg_el_gap * 0.5 + (i + 1) as f64 * svg_el_width + i as f64 * svg_el_gap) * -1.0
+                + -(svg_el_gap * 0.5 + (i + 1) as f64 * svg_el_width + i as f64 * svg_el_gap)
         }
 
         let label = get_name_or_id(&source.info.name, &source.info.id);
@@ -291,7 +291,7 @@ fn draw_node_tree_description(
                     font_size="0.9rem"
                     x=x
                     y=y
-                    width=svg_el_width * -1.0
+                    width=-svg_el_width
                     height=svg_el_height
                 />
             }
@@ -359,7 +359,7 @@ fn draw_node_tree_description(
             ..Default::default()
         };
 
-        let level_text = format!("Level {}", level);
+        let level_text = format!("Level {level}");
 
         let level_x = tree_start_x - 110.0;
         let level_y = dummy.get_node_y();

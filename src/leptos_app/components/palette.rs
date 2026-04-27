@@ -24,7 +24,7 @@ pub fn Palette(
         <div class="fixed left-4 top-1/4 -translate-y-1/2 z-10 flex flex-col gap-2">
             // Mode indicator (above palette when active)
             {move || {
-                mode_text.map(|text| {
+                mode_text.and_then(|text| {
                     let current_text = text.get();
                     if !current_text.is_empty() {
                         Some(view! {
@@ -35,7 +35,7 @@ pub fn Palette(
                     } else {
                         None
                     }
-                }).flatten()
+                })
             }}
 
             // Element buttons row

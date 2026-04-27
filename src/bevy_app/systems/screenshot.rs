@@ -41,19 +41,18 @@ struct ScreenshotFilename(String);
 pub fn take_screenshot(mut commands: Commands) {
     // Use JS Date API for WASM-compatible timestamps
     let js_date = js_sys::Date::new_0();
-    let year = js_date.get_full_year() as u32;
-    let month = js_date.get_month() as u32 + 1; // JS months are 0-indexed
-    let day = js_date.get_date() as u32;
-    let hour = js_date.get_hours() as u32;
-    let minute = js_date.get_minutes() as u32;
-    let second = js_date.get_seconds() as u32;
+    let year = js_date.get_full_year();
+    let month = js_date.get_month() + 1; // JS months are 0-indexed
+    let day = js_date.get_date();
+    let hour = js_date.get_hours();
+    let minute = js_date.get_minutes();
+    let second = js_date.get_seconds();
 
     let timestamp = format!(
-        "{:04}-{:02}-{:02}_{:02}-{:02}-{:02}",
-        year, month, day, hour, minute, second
+        "{year:04}-{month:02}-{day:02}_{hour:02}-{minute:02}-{second:02}"
     );
 
-    let filename = format!("bert_screenshot_{}.png", timestamp);
+    let filename = format!("bert_screenshot_{timestamp}.png");
     info!("Initiating screenshot capture: {}", filename);
 
     commands
@@ -130,7 +129,7 @@ fn screenshot_download_handler(
 
     save_events.write(SaveSuccessEvent {
         file_path: Some(filename.clone()),
-        message: format!("Screenshot saved to Downloads: {}", filename),
+        message: format!("Screenshot saved to Downloads: {filename}"),
     });
 }
 

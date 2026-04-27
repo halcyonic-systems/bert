@@ -103,7 +103,7 @@ impl SvgSystem {
         if !self.is_leaf() {
             Some(Rc::clone(&self.children[0]))
         } else {
-            self.thread.as_ref().map(|t| t.upgrade()).flatten()
+            self.thread.as_ref().and_then(|t| t.upgrade())
         }
     }
 
@@ -111,7 +111,7 @@ impl SvgSystem {
         if !self.is_leaf() {
             Some(Rc::clone(&self.children[self.children.len() - 1]))
         } else {
-            self.thread.as_ref().map(|t| t.upgrade()).flatten()
+            self.thread.as_ref().and_then(|t| t.upgrade())
         }
     }
     pub fn left_sibling(&self) -> Option<Rc<RefCell<SvgSystem>>> {
@@ -325,8 +325,7 @@ pub fn get_ancestor(
                 .borrow()
                 .children
                 .iter()
-                .find(|c| *c.borrow() == *ancestor.borrow())
-                .is_some()
+                .any(|c| *c.borrow() == *ancestor.borrow())
             {
                 return Rc::clone(&ancestor);
             }
@@ -355,9 +354,9 @@ fn second_walk(node: Rc<RefCell<SvgSystem>>, m: f64) -> f64 {
 
     node.borrow_mut().x += m;
 
-    let tree_width = max_x - min_x;
+    
 
-    tree_width
+    max_x - min_x
 }
 
 fn third_walk(node: Rc<RefCell<SvgSystem>>, m: f64) {

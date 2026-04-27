@@ -46,12 +46,10 @@ pub fn apply_sink_and_source_equivalence(
         || entities_with_id.len() + entities_without_id.len() < 2
         || entities_with_id
             .iter()
-            .find(|(_, nesting_level, _)| *nesting_level != nesting_level_of_interest.unwrap())
-            .is_some()
+            .any(|(_, nesting_level, _)| *nesting_level != nesting_level_of_interest.unwrap())
         || entities_without_id
             .iter()
-            .find(|(_, nesting_level)| *nesting_level != nesting_level_of_interest.unwrap())
-            .is_some()
+            .any(|(_, nesting_level)| *nesting_level != nesting_level_of_interest.unwrap())
     {
         return;
     }
@@ -65,8 +63,7 @@ pub fn apply_sink_and_source_equivalence(
 
     if entities_with_id
         .iter()
-        .find(|(_, _, id)| ***id != id_of_interest)
-        .is_some()
+        .any(|(_, _, id)| ***id != id_of_interest)
     {
         return;
     }
@@ -84,10 +81,10 @@ pub fn update_and_cleanup_source_sink_equivalence(
     mut current_ids_query: Query<(Entity, &mut IsSameAsId)>,
     mut equivalence_counter: ResMut<IsSameAsIdCounter>,
 ) {
-    if removed_is_same_as_id.len() > 0 {
+    if !removed_is_same_as_id.is_empty() {
         let mut id_to_entities: HashMap<usize, Vec<Entity>> = HashMap::new();
         for (entity, id) in current_ids_query.iter() {
-            id_to_entities.entry(**id).or_insert(vec![]).push(entity);
+            id_to_entities.entry(**id).or_default().push(entity);
         }
 
         for (id, entities) in id_to_entities.clone() {

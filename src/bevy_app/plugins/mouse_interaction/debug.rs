@@ -16,10 +16,8 @@ pub fn debug_selection(
             if !selected_entities.contains(&entity) {
                 selected_entities.push(entity);
             }
-        } else {
-            if let Some(idx) = selected_entities.iter().position(|e| *e == entity) {
-                selected_entities.remove(idx);
-            }
+        } else if let Some(idx) = selected_entities.iter().position(|e| *e == entity) {
+            selected_entities.remove(idx);
         }
     }
 }
