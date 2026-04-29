@@ -1,4 +1,24 @@
+use ollama_rs::{
+    generation::chat::{request::ChatMessageRequest, ChatMessage, MessageRole},
+    Ollama,
+};
 use serde::{Deserialize, Serialize};
+
+const OLLAMA_MODEL: &str = "llama3.2:3b";
+
+const SYSTEM_PROMPT: &str = r#"You are a BERT systems analysis assistant. You analyze system models described in JSON.
+
+RULES:
+1. Extract data EXACTLY as written in JSON — quote field names and values directly.
+2. Count elements precisely.
+3. State what IS present, not what it might mean.
+4. If unsure about a fact, state "Data not available" instead of guessing.
+
+FORBIDDEN: "appears to be", "seems", "suggests", "likely", "probably"
+
+Start responses with **System Facts:** when describing the overall system.
+Use **bold** for entity names and `code` for IDs.
+Be concise."#;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatRequest {
@@ -14,12 +34,103 @@ pub struct ChatResponse {
 
 #[tauri::command]
 pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, String> {
-    let response = mock_response(&request.message, &request.model_context);
-    Ok(ChatResponse {
-        response,
-        provider: "mock".to_string(),
-    })
+    match try_ollama(&request.message, &request.model_context).await {
+        Ok(response) => Ok(ChatResponse {
+            response,
+            provider: "ollama".to_string(),
+        }),
+        Err(_) => Ok(ChatResponse {
+            response: mock_response(&request.message, &request.model_context),
+            provider: "mock".to_string(),
+        }),
+    }
 }
+
+async fn try_ollama(message: &str, model_context: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let ollama = Ollama::default();
+
+    let summary = extract_model_summary(model_context);
+    let user_prompt = format!(
+        "Model context:\n{summary}\n\nUser question: {message}"
+    );
+
+    let messages = vec![
+        ChatMessage::new(MessageRole::System, SYSTEM_PROMPT.to_string()),
+        ChatMessage::new(MessageRole::User, user_prompt),
+    ];
+
+    let request = ChatMessageRequest::new(OLLAMA_MODEL.to_string(), messages);
+    let response = ollama.send_chat_messages(request).await?;
+
+    Ok(response.message.content)
+}
+
+fn extract_model_summary(context: &str) -> String {
+    let Ok(json) = serde_json::from_str::<serde_json::Value>(context) else {
+        return format!("Raw model data:\n{context}");
+    };
+
+    let mut summary = String::new();
+
+    let s0 = find_s0(&json);
+    if let Some(name) = s0.and_then(|s| s.pointer("/info/name")).and_then(|v| v.as_str()) {
+        summary.push_str(&format!("System of Interest: {name}\n"));
+    }
+    if let Some(desc) = s0.and_then(|s| s.pointer("/info/description")).and_then(|v| v.as_str()) {
+        if !desc.is_empty() {
+            summary.push_str(&format!("Description: {desc}\n"));
+        }
+    }
+
+    if let Some(systems) = json.get("systems").and_then(|v| v.as_array()) {
+        summary.push_str(&format!("\nSystems ({}):\n", systems.len()));
+        for s in systems.iter().take(10) {
+            if let Some(name) = s.pointer("/info/name").and_then(|v| v.as_str()) {
+                let id = s.pointer("/info/id").and_then(|v| v.as_str()).unwrap_or("?");
+                let arch = s.get("archetype").and_then(|v| v.as_str()).unwrap_or("-");
+                let pi = s.pointer("/boundary/parent_interface").and_then(|v| v.as_str());
+                let role = if pi.is_some() { "processor" } else { "subsystem" };
+                summary.push_str(&format!("  {id}: {name} [{arch}, {role}]\n"));
+            }
+        }
+        if systems.len() > 10 {
+            summary.push_str(&format!("  ... and {} more\n", systems.len() - 10));
+        }
+    }
+
+    if let Some(interactions) = json.get("interactions").and_then(|v| v.as_array()) {
+        summary.push_str(&format!("\nInteractions ({}):\n", interactions.len()));
+        for ix in interactions.iter().take(8) {
+            if let Some(name) = ix.pointer("/info/name").and_then(|v| v.as_str()) {
+                let src = ix.get("source").and_then(|v| v.as_str()).unwrap_or("?");
+                let snk = ix.get("sink").and_then(|v| v.as_str()).unwrap_or("?");
+                let ty = ix.get("type").and_then(|v| v.as_str()).unwrap_or("?");
+                summary.push_str(&format!("  {name}: {src} → {snk} [{ty}]\n"));
+            }
+        }
+        if interactions.len() > 8 {
+            summary.push_str(&format!("  ... and {} more\n", interactions.len() - 8));
+        }
+    }
+
+    if let Some(sources) = json.pointer("/environment/sources").and_then(|v| v.as_array()) {
+        let names: Vec<&str> = sources.iter()
+            .filter_map(|s| s.pointer("/info/name").and_then(|v| v.as_str()))
+            .collect();
+        summary.push_str(&format!("\nSources: {}\n", names.join(", ")));
+    }
+
+    if let Some(sinks) = json.pointer("/environment/sinks").and_then(|v| v.as_array()) {
+        let names: Vec<&str> = sinks.iter()
+            .filter_map(|s| s.pointer("/info/name").and_then(|v| v.as_str()))
+            .collect();
+        summary.push_str(&format!("Sinks: {}\n", names.join(", ")));
+    }
+
+    summary
+}
+
+// --- Mock fallback (used when Ollama isn't running) ---
 
 fn mock_response(message: &str, context: &str) -> String {
     let model_info = parse_model_facts(context);
@@ -47,8 +158,7 @@ fn mock_response(message: &str, context: &str) -> String {
         format!("{}\n\n**Interface Processors:**\n{}", model_info, processors)
     } else {
         format!(
-            "{}\n\n*Mock mode — ask about subsystems, flows, interfaces, sources, or sinks.*\n\
-             *For LLM analysis, start Ollama: `ollama run llama3.2:3b`*",
+            "{}\n\n*Mock mode — Ollama not detected. Start it with: `ollama run {OLLAMA_MODEL}`*",
             model_info
         )
     }

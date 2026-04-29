@@ -29,4 +29,5 @@ typedb-driver = "3.8"
 uuid = { version = "1", features = ["v4"] }
 tokio = { version = "1", features = ["process", "io-util"] }
 futures = "0.3"
+ollama-rs = "0.3"
 
