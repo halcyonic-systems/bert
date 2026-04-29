@@ -54,16 +54,20 @@ fn mock_response(message: &str, context: &str) -> String {
     }
 }
 
+fn find_s0(json: &serde_json::Value) -> Option<&serde_json::Value> {
+    json.get("systems")?.as_array()?.iter()
+        .find(|s| s.pointer("/info/level").and_then(|v| v.as_i64()) == Some(0))
+}
+
 fn parse_model_facts(context: &str) -> String {
     let Ok(json) = serde_json::from_str::<serde_json::Value>(context) else {
         return "Unable to parse model data.".to_string();
     };
 
-    let name = json.pointer("/environment/info/name")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Unknown");
-    let desc = json.pointer("/environment/info/description")
-        .and_then(|v| v.as_str())
+    let s0 = find_s0(&json);
+    let name = s0.and_then(|s| s.pointer("/info/name")).and_then(|v| v.as_str())
+        .unwrap_or_else(|| json.pointer("/environment/info/name").and_then(|v| v.as_str()).unwrap_or("Unknown"));
+    let desc = s0.and_then(|s| s.pointer("/info/description")).and_then(|v| v.as_str())
         .unwrap_or("");
 
     let systems_count = json.get("systems")
