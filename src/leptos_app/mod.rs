@@ -289,6 +289,14 @@ pub fn App() -> impl IntoView {
                         >
                             {"Model Browser"}
                         </button>
+                        <button
+                            class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
+                            on:click=move |_| {
+                                set_chat_visible.set(true);
+                            }
+                        >
+                            {"Chat"}
+                        </button>
                         {if tauri_available { Some(view! {
                             <button
                                 class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
@@ -327,14 +335,6 @@ pub fn App() -> impl IntoView {
                     }
                 >
                     {"Model Browser"}
-                </button>
-                <button
-                    class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
-                    on:click=move |_| {
-                        set_chat_visible.set(true);
-                    }
-                >
-                    {"Chat"}
                 </button>
                 {if tauri_available { Some(view! {
                     <button
@@ -383,6 +383,10 @@ pub fn App() -> impl IntoView {
                         Ok(world_model) => {
                             let complexity_result = calculate_simonian_complexity(&world_model);
                             set_complexity.set(complexity_result.total_complexity);
+
+                            if let Ok(json_str) = String::from_utf8(event.data.clone()) {
+                                set_model_json_context.set(Some(json_str));
+                            }
 
                             let result = validate(&world_model);
                             if result.is_clean() {
