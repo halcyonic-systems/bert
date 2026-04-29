@@ -289,14 +289,16 @@ pub fn App() -> impl IntoView {
                         >
                             {"Model Browser"}
                         </button>
-                        <button
-                            class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
-                            on:click=move |_| {
-                                set_chat_visible.set(true);
-                            }
-                        >
-                            {"Chat"}
-                        </button>
+                        {if tauri_available { Some(view! {
+                            <button
+                                class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
+                                on:click=move |_| {
+                                    set_chat_visible.set(true);
+                                }
+                            >
+                                {"Chat"}
+                            </button>
+                        }) } else { None }}
                         {if tauri_available { Some(view! {
                             <button
                                 class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
