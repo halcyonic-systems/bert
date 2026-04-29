@@ -5,7 +5,7 @@ use bevy::prelude::{Color, ColorMaterial, KeyCode, MeshMaterial2d};
 /// Minimum scale of a system element before the visibility is switched to hidden.
 pub const SCALE_VISIBILITY_THRESHOLD: f32 = 0.2;
 /// Minimum scale of a label before the visibility is switched to hidden.
-pub const LABEL_SCALE_VISIBILITY_THRESHOLD: f32 = 0.5;
+pub const LABEL_SCALE_VISIBILITY_THRESHOLD: f32 = 0.2;
 // Default z-index of a label.
 pub const LABEL_Z: f32 = 150.0;
 
