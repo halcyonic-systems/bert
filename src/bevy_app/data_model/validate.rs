@@ -71,6 +71,7 @@ pub fn validate(model: &WorldModel) -> ValidationResult {
     check_orphan_sinks(model, &mut issues);
     check_interaction_references(model, &known_ids, &mut issues);
     check_interface_references(model, &interface_ids, &mut issues);
+    check_orphan_interfaces(model, &mut issues);
     check_parent_references(model, &known_ids, &mut issues);
     check_duplicate_ids(model, &mut issues);
 
@@ -229,6 +230,38 @@ fn check_interface_references(
                     format!("interactions[{i}].sink_interface"),
                     format!("sink_interface '{id_str}' does not resolve to any known interface"),
                     Some("Check the interface ID exists on the sink system's boundary"),
+                ));
+            }
+        }
+    }
+}
+
+fn check_orphan_interfaces(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
+    let mut referenced: HashSet<String> = HashSet::new();
+
+    for ix in &model.interactions {
+        if let Some(ref id) = ix.source_interface {
+            referenced.insert(serialize_id(id));
+        }
+        if let Some(ref id) = ix.sink_interface {
+            referenced.insert(serialize_id(id));
+        }
+    }
+
+    for system in &model.systems {
+        if let Some(ref id) = system.boundary.parent_interface {
+            referenced.insert(serialize_id(id));
+        }
+    }
+
+    for (i, system) in model.systems.iter().enumerate() {
+        for (j, iface) in system.boundary.interfaces.iter().enumerate() {
+            let id_str = serialize_id(&iface.info.id);
+            if !referenced.contains(&id_str) {
+                issues.push(ValidationIssue::warning(
+                    format!("systems[{i}].boundary.interfaces[{j}]"),
+                    format!("interface '{id_str}' has no flow routing and no attached processor"),
+                    Some("Add a flow using this interface, attach an interface processor, or remove it if unused"),
                 ));
             }
         }
@@ -615,6 +648,34 @@ mod tests {
         assert!(!result.has_errors());
         assert!(result.has_warnings());
         assert!(result.issues.iter().any(|i| i.location.contains("level")));
+    }
+
+    #[test]
+    fn orphan_interface_is_warning() {
+        let mut model = minimal_model();
+        model.systems[0].boundary.interfaces.push(Interface {
+            info: Info {
+                id: Id {
+                    ty: IdType::Interface,
+                    indices: vec![0, 0],
+                },
+                level: 1,
+                name: "Orphan".to_string(),
+                description: String::new(),
+            },
+            protocol: String::new(),
+            ty: InterfaceType::Import,
+            exports_to: vec![],
+            receives_from: vec![],
+            angle: Some(0.0),
+        });
+        let result = validate(&model);
+        assert!(!result.has_errors());
+        assert!(result.has_warnings());
+        assert!(result
+            .issues
+            .iter()
+            .any(|i| i.message.contains("no flow routing and no attached processor")));
     }
 
     #[test]
