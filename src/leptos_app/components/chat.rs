@@ -25,6 +25,7 @@ struct ChatMessage {
     id: usize,
     content: String,
     is_user: bool,
+    provider: Option<String>,
 }
 
 #[component]
@@ -52,7 +53,7 @@ pub fn ChatPanel(
 
         let uid = alloc_id();
         set_messages.update(|msgs| {
-            msgs.push(ChatMessage { id: uid, content: message.clone(), is_user: true });
+            msgs.push(ChatMessage { id: uid, content: message.clone(), is_user: true, provider: None });
         });
         set_is_loading.set(true);
         set_input_value.set(String::new());
@@ -68,16 +69,16 @@ pub fn ChatPanel(
                 },
             };
 
-            let response_text = match invoke_result::<ChatResponse, String>("chat_with_model", &args).await {
-                Ok(resp) => resp.response,
-                Err(e) => format!("Error: {e}"),
+            let (response_text, provider) = match invoke_result::<ChatResponse, String>("chat_with_model", &args).await {
+                Ok(resp) => (resp.response, Some(resp.provider)),
+                Err(e) => (format!("Error: {e}"), None),
             };
 
             let rid = next_id.get_untracked();
             set_next_id.set(rid + 1);
 
             set_messages.update(|msgs| {
-                msgs.push(ChatMessage { id: rid, content: response_text, is_user: false });
+                msgs.push(ChatMessage { id: rid, content: response_text, is_user: false, provider });
             });
             set_is_loading.set(false);
         });
@@ -125,10 +126,18 @@ pub fn ChatPanel(
                             } else {
                                 "bg-gray-100 text-gray-800 rounded-bl-none"
                             };
+                            let provider_label = msg.provider.clone();
                             view! {
                                 <div class=format!("flex {align}")>
-                                    <div class=format!("max-w-[80%] px-3 py-2 rounded-lg whitespace-pre-wrap {bubble}")>
-                                        {msg.content}
+                                    <div class="max-w-[80%]">
+                                        <div class=format!("px-3 py-2 rounded-lg whitespace-pre-wrap {bubble}")>
+                                            {msg.content}
+                                        </div>
+                                        {provider_label.map(|p| view! {
+                                            <div class="text-[10px] text-gray-400 mt-0.5 ml-1">
+                                                {"via "}{p}
+                                            </div>
+                                        })}
                                     </div>
                                 </div>
                             }

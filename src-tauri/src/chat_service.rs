@@ -1,10 +1,15 @@
+use std::collections::HashMap;
+use std::time::Duration;
+
 use ollama_rs::{
     generation::chat::{request::ChatMessageRequest, ChatMessage, MessageRole},
     Ollama,
 };
 use serde::{Deserialize, Serialize};
 
-const OLLAMA_MODEL: &str = "llama3.2:3b";
+const OLLAMA_MODEL: &str = "qwen3:8b";
+
+const BERT_RAG_URL: &str = "http://localhost:5010/ask";
 
 const SYSTEM_PROMPT: &str = r#"You are a BERT systems analysis assistant. You analyze system models described in JSON.
 
@@ -34,24 +39,59 @@ pub struct ChatResponse {
 
 #[tauri::command]
 pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, String> {
-    match try_ollama(&request.message, &request.model_context).await {
-        Ok(response) => Ok(ChatResponse {
+    let summary = extract_model_summary(&request.model_context);
+
+    if let Ok(response) = try_bert_rag(&request.message, &summary).await {
+        return Ok(ChatResponse {
+            response,
+            provider: "bert-rag".to_string(),
+        });
+    }
+
+    if let Ok(response) = try_ollama(&request.message, &summary).await {
+        return Ok(ChatResponse {
             response,
             provider: "ollama".to_string(),
-        }),
-        Err(_) => Ok(ChatResponse {
-            response: mock_response(&request.message, &request.model_context),
-            provider: "mock".to_string(),
-        }),
+        });
     }
+
+    Ok(ChatResponse {
+        response: mock_response(&request.message, &request.model_context),
+        provider: "mock".to_string(),
+    })
 }
 
-async fn try_ollama(message: &str, model_context: &str) -> Result<String, Box<dyn std::error::Error>> {
+async fn try_bert_rag(message: &str, model_summary: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let question = format!("Model context:\n{model_summary}\n\nQuestion: {message}");
+
+    let mut body = HashMap::new();
+    body.insert("question", question.as_str());
+
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(60))
+        .build()?;
+
+    let resp = client
+        .post(BERT_RAG_URL)
+        .json(&body)
+        .send()
+        .await?;
+
+    let json: serde_json::Value = resp.json().await?;
+    let answer = json
+        .get("answer")
+        .and_then(|v| v.as_str())
+        .ok_or("no answer field in bert-rag response")?;
+
+    Ok(answer.to_string())
+}
+
+async fn try_ollama(message: &str, model_summary: &str) -> Result<String, Box<dyn std::error::Error>> {
     let ollama = Ollama::default();
 
-    let summary = extract_model_summary(model_context);
     let user_prompt = format!(
-        "Model context:\n{summary}\n\nUser question: {message}"
+        "Model context:\n{model_summary}\n\nUser question: {message}"
     );
 
     let messages = vec![
@@ -130,7 +170,7 @@ fn extract_model_summary(context: &str) -> String {
     summary
 }
 
-// --- Mock fallback (used when Ollama isn't running) ---
+// --- Mock fallback (used when neither bert-rag nor Ollama is running) ---
 
 fn mock_response(message: &str, context: &str) -> String {
     let model_info = parse_model_facts(context);
@@ -158,7 +198,7 @@ fn mock_response(message: &str, context: &str) -> String {
         format!("{}\n\n**Interface Processors:**\n{}", model_info, processors)
     } else {
         format!(
-            "{}\n\n*Mock mode — Ollama not detected. Start it with: `ollama run {OLLAMA_MODEL}`*",
+            "{}\n\n*Mock mode — no LLM backend detected. Start bert-rag with `launch start facets` or Ollama with `ollama run {OLLAMA_MODEL}`*",
             model_info
         )
     }
