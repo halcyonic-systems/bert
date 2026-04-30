@@ -12,7 +12,7 @@ use crate::bevy_app::{
     InteractionQuery, InterfaceQuery, IsSameAsIdQuery, SelectedHighlightHelperAdded,
     SelectionFilter, SubSystemFilter, SubSystemQuery, SystemElement, SystemQuery,
 };
-use crate::leptos_app::components::{ControlsMenu, ModelBrowser, Palette, Toast, ValidationPanel};
+use crate::leptos_app::components::{ChatPanel, ControlsMenu, ModelBrowser, Palette, Toast, ValidationPanel};
 use crate::leptos_app::simulation::SimPanel;
 use crate::leptos_app::details::Details;
 use crate::LoadFileEvent;
@@ -112,12 +112,14 @@ pub fn App() -> impl IntoView {
         });
 
     let (loaded_model_name, set_loaded_model_name) = signal(String::new());
+    let (model_json_context, set_model_json_context) = signal(None::<String>);
 
     // Connect file dialog signal to LoadFileEvent stream with validation
     Effect::new({
         let load_file_writer = load_file_writer.clone();
         let set_complexity_inner = set_complexity;
         let set_loaded_model_name = set_loaded_model_name;
+        let set_model_json_context = set_model_json_context;
         move |_| {
             if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) =
                 file_dialog_signal.get()
@@ -126,6 +128,11 @@ pub fn App() -> impl IntoView {
                     Ok(world_model) => {
                         let complexity_result = calculate_simonian_complexity(&world_model);
                         set_complexity_inner.set(complexity_result.total_complexity);
+
+                        // Store serialized JSON for chat context
+                        if let Ok(json_str) = String::from_utf8(data.clone()) {
+                            set_model_json_context.set(Some(json_str));
+                        }
 
                         // Extract model name from path for simulation panel
                         let mn = path.strip_prefix("template:").unwrap_or(&path);
@@ -243,6 +250,7 @@ pub fn App() -> impl IntoView {
     let (controls_visible, set_controls_visible) = signal(false);
     let (model_browser_visible, set_model_browser_visible) = signal(false);
     let (sim_panel_visible, set_sim_panel_visible) = signal(false);
+    let (chat_visible, set_chat_visible) = signal(false);
     let (active_run, set_active_run) = signal(None::<simulation::types::RunInfo>);
 
     let tauri_available = leptos_use::js! {
@@ -281,6 +289,16 @@ pub fn App() -> impl IntoView {
                         >
                             {"Model Browser"}
                         </button>
+                        {if tauri_available { Some(view! {
+                            <button
+                                class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
+                                on:click=move |_| {
+                                    set_chat_visible.set(true);
+                                }
+                            >
+                                {"Chat"}
+                            </button>
+                        }) } else { None }}
                         {if tauri_available { Some(view! {
                             <button
                                 class="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-shadow"
@@ -368,6 +386,10 @@ pub fn App() -> impl IntoView {
                             let complexity_result = calculate_simonian_complexity(&world_model);
                             set_complexity.set(complexity_result.total_complexity);
 
+                            if let Ok(json_str) = String::from_utf8(event.data.clone()) {
+                                set_model_json_context.set(Some(json_str));
+                            }
+
                             let result = validate(&world_model);
                             if result.is_clean() {
                                 load_file_writer.send(event).ok();
@@ -406,6 +428,11 @@ pub fn App() -> impl IntoView {
                 set_validation_issues.set(None);
                 set_pending_load.set(None);
             })
+        />
+        <ChatPanel
+            visible=Signal::derive(move || chat_visible.get())
+            on_close=Callback::new(move |_| set_chat_visible.set(false))
+            model_context=Signal::derive(move || model_json_context.get())
         />
         <SimPanel
             visible=sim_panel_visible

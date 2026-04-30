@@ -1,4 +1,5 @@
 mod button;
+mod chat;
 mod checkbox; // Kept for potential future use
 mod controls_menu;
 mod divider;
@@ -13,6 +14,7 @@ mod toast;
 mod validation_panel;
 
 pub use button::*;
+pub use chat::*;
 // pub use checkbox::*; // Replaced by RadioGroup for Complexity
 pub use controls_menu::*;
 pub use divider::*;

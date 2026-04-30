@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
+mod chat_service;
 mod simulation;
 mod typedb_reader;
 
@@ -83,6 +84,7 @@ pub fn run() {
             save_with_dialog,
             pick_file,
             load_file,
+            chat_service::chat_with_model,
             simulation::launch_simulation,
             simulation::poll_run_status,
             simulation::get_run_results,
