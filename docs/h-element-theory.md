@@ -1,8 +1,12 @@
-# Formalizing Knowledge in Systems: From Mobus to Implementation
+# H Element Theory — History, Knowledge, and Computational State
 
-## Executive Summary
+*How H (history) in the 8-tuple connects to knowledge accumulation and conditions T (transformation) during simulation.*
 
-This document synthesizes insights from our exploration of how to formalize knowledge within George Mobus's Systems Language (SL) framework. We identify how Mobus's ontological concept of knowledge (K = f(1/I)) connects to his formal History (H) state in the 7-tuple system definition, and outline practical implementation strategies that make these abstract concepts computationally tractable. Through careful analysis of Mobus's work and his response to our inquiry, we reveal a sophisticated multi-level knowledge architecture that enables systems to learn their own dynamics.
+**Status**: Theoretical foundation. Not yet implemented — H is currently a string field, never read during `_act()`. This document specifies what H should become.
+**Ties to**: GitHub issue for "H as computational state in simulation", Wednesday 2026-05-07 session Q2, `atomic-work-processes.md` (which primitives need H?)
+**Originally written**: 2025. Updated 2026-05-03 to 8-tuple notation.
+
+**The key formula**: `T(t+1) = f(T(t), H(t), Input(t))` — transformations evolve based on accumulated history.
 
 ## 1. Background and Context
 
@@ -26,15 +30,16 @@ The key insight: **K = f(1/I)** - Knowledge is the inverse of information, repre
 
 ### 1.3 Mobus's Formal System Definition
 
-In Chapter 4, Mobus defines a system S as a 7-tuple:
+Mobus defines a system S as an 8-tuple (revised 2025):
 
 ```
-S = ⟨C, N, G, B, T, H, Δt⟩
+S = ⟨C, N, E, G, B, T, H, Δt⟩
 ```
 
 Where:
 - **C**: Set of components (subsystems)
 - **N**: Internal network graph (flows between components)
+- **E**: Environment (objects/sources/sinks + milieu)
 - **G**: External flow graph (between environment and components)
 - **B**: Boundary containing properties and interfaces
 - **T**: Transformation rules for subsystems
@@ -159,7 +164,7 @@ This shows how transformations evolve based on accumulated history.
 class SystemComponent:
     def __init__(self):
         self.current_state = initial_state
-        self.H = []  # History state from 7-tuple
+        self.H = []  # History state from 8-tuple
         self.T = initial_transformation  # Transformation rules
         self.transition_matrix = {}  # Learned patterns
         
@@ -191,7 +196,7 @@ class SystemComponent:
 
 ### 4.2 System-Level Architecture
 
-Following Mobus's 7-tuple structure:
+Following Mobus's 8-tuple structure:
 
 1. **C (Components)**: Each with embedded knowledge in structure
 2. **N (Internal flows)**: Information flows between components
@@ -210,7 +215,7 @@ class HierarchicalSystem:
     def __init__(self, level, index):
         self.level = l
         self.index = i
-        self.S = (C, N, G, B, T, H, Δt)  # 7-tuple at this level
+        self.S = (C, N, G, B, T, H, Δt)  # 8-tuple at this level
         
     def decompose(self):
         # Each complex component becomes a system at level l+1
@@ -308,7 +313,7 @@ Mobus specifically mentions that "brains (and indeed all biological systems) hav
 
 ## 7. Validation Against Mobus's Framework
 
-### 7.1 Consistency with 7-tuple
+### 7.1 Consistency with 8-tuple
 
 Our interpretation aligns with all elements:
 - Components (C) embody knowledge in structure
@@ -366,4 +371,4 @@ By recognizing that Mobus's History state H naturally embodies his knowledge con
 3. Enables self-modeling (meta-knowledge)
 4. Augments transformations (adaptive behavior)
 
-This framework shows how systems literally learn themselves into existence through the accumulation of structural knowledge in H, providing a thermodynamically grounded foundation for understanding learning, adaptation, and emergence in complex systems. The beauty lies in how the formal mathematical structure (7-tuple) perfectly supports the ontological concept (K = f(1/I)), creating a unified theory of learning systems that bridges physics, information theory, and systems science.
+This framework shows how systems literally learn themselves into existence through the accumulation of structural knowledge in H, providing a thermodynamically grounded foundation for understanding learning, adaptation, and emergence in complex systems. The beauty lies in how the formal mathematical structure (8-tuple) perfectly supports the ontological concept (K = f(1/I)), creating a unified theory of learning systems that bridges physics, information theory, and systems science.

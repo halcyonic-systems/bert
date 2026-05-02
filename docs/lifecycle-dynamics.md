@@ -1,5 +1,8 @@
 # Mathematical Approach for System Lifecycle Dynamics
 
+**Status**: Post-v0.4 theory. Depends on process primitive step logic + H being implemented first. Lifecycle phases (Origination → Dissolution) are what you'd observe once simulation produces meaningful steps — not the current priority.
+**Ties to**: `h-element-theory.md` (H conditioning enables lifecycle observation), `boundary-refinement.md` (boundaries evolve through lifecycle phases), `atomic-work-processes.md` (primitive T functions are what execute during each phase)
+
 ## Context and Current State
 
 George Mobus has extended his system framework from a 7-tuple to an 8-tuple (oct-tuple) representation:
@@ -15,7 +18,7 @@ Where:
 - G: Graph of external connections
 - B: Boundary
 - T: Transformations
-- H: Hierarchy
+- H: History/memory
 - ∆t: Time increment
 
 As Mobus states:
