@@ -4,6 +4,7 @@ mod checkbox; // Kept for potential future use
 mod controls_menu;
 mod divider;
 mod input_group;
+mod landing_screen;
 mod model_browser;
 mod palette;
 mod radio_group;
@@ -19,6 +20,7 @@ pub use chat::*;
 pub use controls_menu::*;
 pub use divider::*;
 pub use input_group::*;
+pub use landing_screen::*;
 pub use model_browser::*;
 pub use palette::*;
 pub use radio_group::*;

@@ -152,6 +152,7 @@ pub fn save_world(
                     // 2. Template files from Model Browser
                     // 3. Files in protected directories (src-tauri, assets)
                     name.starts_with("template:")
+                        || name.starts_with("generated:")
                         || name.contains("src-tauri")
                         || name.contains("assets/models")
                 });
@@ -161,8 +162,10 @@ pub fn save_world(
                     let suggested_name = file_name
                         .as_ref()
                         .and_then(|name| {
-                            if name.starts_with("template:") {
-                                // For Model Browser templates
+                            if name.starts_with("generated:") {
+                                name.strip_prefix("generated:")
+                                    .map(|n| n.to_string())
+                            } else if name.starts_with("template:") {
                                 name.strip_prefix("template:")
                                     .map(|n| format!("enhanced-{n}"))
                             } else if name.contains("assets/models/") {

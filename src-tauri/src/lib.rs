@@ -5,6 +5,8 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
 mod chat_service;
+pub mod generator;
+pub mod intermediate;
 mod simulation;
 mod typedb_reader;
 
@@ -85,6 +87,7 @@ pub fn run() {
             pick_file,
             load_file,
             chat_service::chat_with_model,
+            chat_service::generate_model_from_conversation,
             simulation::launch_simulation,
             simulation::poll_run_status,
             simulation::get_run_results,

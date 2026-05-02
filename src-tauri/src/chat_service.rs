@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::time::Duration;
 
 use ollama_rs::{
@@ -11,7 +10,7 @@ const OLLAMA_MODEL: &str = "qwen3:8b";
 
 const BERT_RAG_URL: &str = "http://localhost:5010/ask";
 
-const SYSTEM_PROMPT: &str = r#"You are a BERT systems analysis assistant. You analyze system models described in JSON.
+const ANALYSIS_PROMPT: &str = r#"You are a BERT systems analysis assistant. You analyze system models described in JSON.
 
 RULES:
 1. Extract data EXACTLY as written in JSON — quote field names and values directly.
@@ -25,10 +24,33 @@ Start responses with **System Facts:** when describing the overall system.
 Use **bold** for entity names and `code` for IDs.
 Be concise."#;
 
+const CREATION_PROMPT: &str = r#"You are helping a user design a systems model using Mobus's systems science framework. Your job is to help them identify the key structural elements of their system through natural conversation.
+
+Guide them through these elements (but conversationally, not as a checklist):
+1. **System name and purpose** — what is the system and what does it do?
+2. **Subsystems** — what are the main internal components? (2-5 is ideal)
+3. **Sources** — what enters the system from outside? (energy, materials, information)
+4. **Sinks** — what leaves the system to the outside? (products, waste, signals)
+5. **Internal flows** — how do subsystems connect to each other?
+
+Keep responses SHORT (2-4 sentences). Ask ONE clarifying question at a time. Use the user's language, not jargon. When you have enough information for a basic model (name + 2 subsystems + 1 source + 1 sink), tell them: "I think we have enough to generate a first draft! Click **Generate Model** when you're ready, or keep describing to add more detail."
+
+Do NOT output JSON. Just have a conversation."#;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatRequest {
     pub message: String,
     pub model_context: String,
+    #[serde(default)]
+    pub mode: String,
+    #[serde(default)]
+    pub history: Vec<HistoryMessage>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoryMessage {
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,6 +61,10 @@ pub struct ChatResponse {
 
 #[tauri::command]
 pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, String> {
+    if request.mode == "creation" {
+        return chat_creation_mode(&request.message, &request.history).await;
+    }
+
     let summary = extract_model_summary(&request.model_context);
 
     if let Ok(response) = try_bert_rag(&request.message, &summary).await {
@@ -61,11 +87,136 @@ pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, Strin
     })
 }
 
-async fn try_bert_rag(message: &str, model_summary: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let question = format!("Model context:\n{model_summary}\n\nQuestion: {message}");
+async fn chat_creation_mode(message: &str, history: &[HistoryMessage]) -> Result<ChatResponse, String> {
+    let ollama = Ollama::default();
 
-    let mut body = HashMap::new();
-    body.insert("question", question.as_str());
+    let mut messages = vec![
+        ChatMessage::new(MessageRole::System, CREATION_PROMPT.to_string()),
+    ];
+
+    for h in history {
+        let role = match h.role.as_str() {
+            "user" => MessageRole::User,
+            _ => MessageRole::Assistant,
+        };
+        messages.push(ChatMessage::new(role, h.content.clone()));
+    }
+
+    messages.push(ChatMessage::new(MessageRole::User, message.to_string()));
+
+    let request = ChatMessageRequest::new(OLLAMA_MODEL.to_string(), messages);
+
+    match ollama.send_chat_messages(request).await {
+        Ok(response) => Ok(ChatResponse {
+            response: response.message.content,
+            provider: "ollama".to_string(),
+        }),
+        Err(e) => Ok(ChatResponse {
+            response: format!("I'd love to help you design this system! Tell me more about the main components and what flows in and out.\n\n*(LLM unavailable: {})*", e),
+            provider: "fallback".to_string(),
+        }),
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenerateRequest {
+    pub conversation: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenerateModelResponse {
+    pub json_data: String,
+}
+
+#[tauri::command]
+pub async fn generate_model_from_conversation(
+    conversation: String,
+) -> Result<GenerateModelResponse, String> {
+    let intermediate = extract_intermediate_from_conversation(&conversation).await?;
+    let bert_json = compile_intermediate(&intermediate)?;
+    Ok(GenerateModelResponse { json_data: bert_json })
+}
+
+async fn extract_intermediate_from_conversation(
+    conversation: &str,
+) -> Result<serde_json::Value, String> {
+    let extraction_prompt = format!(
+        r#"You are a systems model compiler. Given a conversation about a system, extract the structured intermediate format for the BERT model generator.
+
+Output ONLY valid JSON with this structure (no markdown, no explanation):
+{{
+  "system": {{ "name": "...", "description": "...", "complexity": "Complex" }},
+  "sources": [{{ "name": "...", "description": "..." }}],
+  "sinks": [{{ "name": "...", "description": "..." }}],
+  "subsystems": [{{ "name": "...", "description": "...", "complexity": "Complex" }}],
+  "routing_table": [
+    {{ "interface": "...", "type": "Import", "connected_to": "source_name", "has_processor": true, "target_subsystem": "subsystem_name" }},
+    {{ "interface": "...", "type": "Export", "connected_to": "sink_name", "has_processor": true, "target_subsystem": "subsystem_name" }}
+  ],
+  "external_flows": [{{ "name": "...", "interface": "...", "substance": {{ "type": "Energy"|"Material"|"Message" }}, "usability": "Resource"|"Product"|"Waste" }}],
+  "internal_flows": [{{ "name": "...", "source": "subsystem_name", "sink": "subsystem_name", "substance": {{ "type": "Message" }}, "usability": "Resource" }}]
+}}
+
+CRITICAL RULES:
+- Every source needs an Import interface in routing_table with connected_to = source name
+- Every sink needs an Export interface in routing_table with connected_to = sink name
+- IMPORTANT: Each routing_table entry MUST have "has_processor": true and "target_subsystem" set to the subsystem that receives (Import) or produces (Export) the flow. This creates the internal routing from the boundary to the subsystem.
+- Every external_flow must reference an interface from routing_table
+- internal_flows connect subsystems to each other (not to interfaces)
+- Infer reasonable defaults when the user was vague
+
+Conversation:
+{conversation}"#
+    );
+
+    let ollama = Ollama::default();
+    let messages = vec![
+        ChatMessage::new(MessageRole::User, extraction_prompt),
+    ];
+    let request = ChatMessageRequest::new(OLLAMA_MODEL.to_string(), messages);
+
+    let response = ollama
+        .send_chat_messages(request)
+        .await
+        .map_err(|e| format!("LLM extraction failed: {e}"))?;
+
+    let raw = response.message.content.trim().to_string();
+    // Strip markdown code fences if present
+    let json_str = raw
+        .strip_prefix("```json")
+        .or_else(|| raw.strip_prefix("```"))
+        .unwrap_or(&raw);
+    let json_str = json_str.strip_suffix("```").unwrap_or(json_str).trim();
+
+    serde_json::from_str(json_str)
+        .map_err(|e| format!("Failed to parse extracted JSON: {e}\n\nRaw output:\n{raw}"))
+}
+
+fn compile_intermediate(
+    intermediate: &serde_json::Value,
+) -> Result<String, String> {
+    // Validate the intermediate format
+    let spec: crate::intermediate::IntermediateSpec = serde_json::from_value(intermediate.clone())
+        .map_err(|e| format!("Failed to parse intermediate format: {e}"))?;
+
+    let errors = crate::intermediate::validate_intermediate(&spec);
+    if !errors.is_empty() {
+        return Err(format!("Validation failed: {}", errors.join("; ")));
+    }
+
+    // Generate BERT JSON
+    let mut generator = crate::generator::BertModelGenerator::new(intermediate.clone());
+    let model = generator.generate();
+
+    serde_json::to_string(&model)
+        .map_err(|e| format!("Failed to serialize model: {e}"))
+}
+
+async fn try_bert_rag(message: &str, model_summary: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let body = serde_json::json!({
+        "question": message,
+        "model_context": model_summary,
+    });
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(5))
@@ -95,7 +246,7 @@ async fn try_ollama(message: &str, model_summary: &str) -> Result<String, Box<dy
     );
 
     let messages = vec![
-        ChatMessage::new(MessageRole::System, SYSTEM_PROMPT.to_string()),
+        ChatMessage::new(MessageRole::System, ANALYSIS_PROMPT.to_string()),
         ChatMessage::new(MessageRole::User, user_prompt),
     ];
 

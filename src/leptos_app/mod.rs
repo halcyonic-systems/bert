@@ -12,7 +12,7 @@ use crate::bevy_app::{
     InteractionQuery, InterfaceQuery, IsSameAsIdQuery, SelectedHighlightHelperAdded,
     SelectionFilter, SubSystemFilter, SubSystemQuery, SystemElement, SystemQuery,
 };
-use crate::leptos_app::components::{ChatPanel, ControlsMenu, ModelBrowser, Palette, Toast, ValidationPanel};
+use crate::leptos_app::components::{AppMode, ChatPanel, ControlsMenu, LandingScreen, ModelBrowser, Palette, Toast, ValidationPanel};
 use crate::leptos_app::simulation::SimPanel;
 use crate::leptos_app::details::Details;
 use crate::LoadFileEvent;
@@ -113,6 +113,7 @@ pub fn App() -> impl IntoView {
 
     let (loaded_model_name, set_loaded_model_name) = signal(String::new());
     let (model_json_context, set_model_json_context) = signal(None::<String>);
+    let (app_mode, set_app_mode) = signal(AppMode::Landing);
 
     // Connect file dialog signal to LoadFileEvent stream with validation
     Effect::new({
@@ -120,25 +121,36 @@ pub fn App() -> impl IntoView {
         let set_complexity_inner = set_complexity;
         let set_loaded_model_name = set_loaded_model_name;
         let set_model_json_context = set_model_json_context;
+        let set_app_mode = set_app_mode;
         move |_| {
             if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) =
                 file_dialog_signal.get()
             {
+                // L3: Pre-parse structural validation — catches missing fields
+                // before Serde fails with an unhelpful error
+                if let Ok(json_value) = serde_json::from_slice::<serde_json::Value>(&data) {
+                    let pre_result = crate::bevy_app::data_model::validate::validate_json_structure(&json_value);
+                    if pre_result.has_errors() {
+                        set_pending_load.set(None);
+                        set_validation_issues.set(Some(pre_result.issues));
+                        return;
+                    }
+                }
+
                 match serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&data) {
                     Ok(world_model) => {
                         let complexity_result = calculate_simonian_complexity(&world_model);
                         set_complexity_inner.set(complexity_result.total_complexity);
 
-                        // Store serialized JSON for chat context
                         if let Ok(json_str) = String::from_utf8(data.clone()) {
                             set_model_json_context.set(Some(json_str));
                         }
 
-                        // Extract model name from path for simulation panel
                         let mn = path.strip_prefix("template:").unwrap_or(&path);
                         let mn = mn.strip_suffix(".json").unwrap_or(mn);
                         let mn = mn.rsplit('/').next().unwrap_or(mn);
                         set_loaded_model_name.set(mn.to_string());
+                        set_app_mode.set(AppMode::Editing);
 
                         let result = validate(&world_model);
                         if result.is_clean() {
@@ -257,10 +269,27 @@ pub fn App() -> impl IntoView {
         "__TAURI__" in &window()
     };
 
+    let is_editing = Memo::new(move |_| app_mode.get() == AppMode::Editing);
+    let is_landing = Memo::new(move |_| app_mode.get() == AppMode::Landing);
+
     view! {
-        <Show
-            when=move || tree_visible.get()
-            fallback=move || {
+        // Landing screen — hidden while model browser is open
+        <Show when=move || is_landing.get() && !model_browser_visible.get()>
+            <LandingScreen
+                on_load_model=Callback::new(move |_| {
+                    set_model_browser_visible.set(true);
+                })
+                on_create_model=Callback::new(move |_| {
+                    set_app_mode.set(AppMode::Creating);
+                    set_chat_visible.set(true);
+                })
+                tauri_available=tauri_available
+            />
+        </Show>
+
+        // Toolbar (tree hidden) — Editing mode only
+        <Show when=move || is_editing.get() && !tree_visible.get()>
+            {
                 let trigger_event_sender = trigger_event_sender.clone();
                 view! {
                     <div class="absolute top-4 left-4 z-20 flex gap-2">
@@ -312,7 +341,10 @@ pub fn App() -> impl IntoView {
                     </div>
                 }
             }
-        >
+        </Show>
+
+        // Toolbar (tree visible) — Editing mode only
+        <Show when=move || is_editing.get() && tree_visible.get()>
             <div class="absolute top-4 left-4 z-20 flex gap-2">
                 <button
                     class="px-4 py-2 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow"
@@ -351,13 +383,15 @@ pub fn App() -> impl IntoView {
             </div>
         </Show>
 
-        // Complexity counter display (positioned to work with both open/closed Details panel)
-        <div class="absolute top-4 right-1/3 z-20 bg-white px-3 py-2 rounded-lg shadow-md">
-            <div class="text-sm text-gray-600">System Complexity</div>
-            <div class="text-lg font-mono text-blue-600">
-                {move || format!("{:.1}", complexity.get())}
+        // Complexity counter — Editing mode only
+        <Show when=move || is_editing.get()>
+            <div class="absolute top-4 right-1/3 z-20 bg-white px-3 py-2 rounded-lg shadow-md">
+                <div class="text-sm text-gray-600">{"System Complexity"}</div>
+                <div class="text-lg font-mono text-blue-600">
+                    {move || format!("{:.1}", complexity.get())}
+                </div>
             </div>
-        </div>
+        </Show>
 
         <Palette
             on_element_click=Callback::new({
@@ -380,6 +414,7 @@ pub fn App() -> impl IntoView {
             on_load=Callback::new({
                 let load_file_writer = load_file_writer.clone();
                 let set_complexity = set_complexity;
+                let set_app_mode = set_app_mode;
                 move |event: LoadFileEvent| {
                     match serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&event.data) {
                         Ok(world_model) => {
@@ -389,6 +424,7 @@ pub fn App() -> impl IntoView {
                             if let Ok(json_str) = String::from_utf8(event.data.clone()) {
                                 set_model_json_context.set(Some(json_str));
                             }
+                            set_app_mode.set(AppMode::Editing);
 
                             let result = validate(&world_model);
                             if result.is_clean() {
@@ -431,8 +467,45 @@ pub fn App() -> impl IntoView {
         />
         <ChatPanel
             visible=Signal::derive(move || chat_visible.get())
-            on_close=Callback::new(move |_| set_chat_visible.set(false))
+            on_close=Callback::new(move |_| {
+                set_chat_visible.set(false);
+                if app_mode.get() == AppMode::Creating {
+                    set_app_mode.set(AppMode::Landing);
+                }
+            })
             model_context=Signal::derive(move || model_json_context.get())
+            app_mode=Signal::derive(move || app_mode.get())
+            on_model_generated=Callback::new({
+                let load_file_writer = load_file_writer.clone();
+                let set_complexity = set_complexity;
+                let set_app_mode = set_app_mode;
+                move |json_data: Vec<u8>| {
+                    match serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&json_data) {
+                        Ok(world_model) => {
+                            let complexity_result = calculate_simonian_complexity(&world_model);
+                            set_complexity.set(complexity_result.total_complexity);
+
+                            let model_name = world_model.environment.info.name.clone();
+                            let file_slug = model_name.to_lowercase().replace(' ', "-");
+
+                            if let Ok(json_str) = String::from_utf8(json_data.clone()) {
+                                set_model_json_context.set(Some(json_str));
+                            }
+                            set_loaded_model_name.set(model_name);
+                            set_app_mode.set(AppMode::Editing);
+                            set_chat_visible.set(false);
+
+                            load_file_writer.send(LoadFileEvent {
+                                file_path: format!("generated:{file_slug}.json"),
+                                data: json_data,
+                            }).ok();
+                        }
+                        Err(e) => {
+                            leptos::logging::log!("Generated model parse error: {}", e);
+                        }
+                    }
+                }
+            })
         />
         <SimPanel
             visible=sim_panel_visible
