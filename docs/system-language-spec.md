@@ -21,6 +21,16 @@ The **Bitcoin network** serves as the reference model throughout this specificat
 
 The reference implementation is at `assets/models/examples/bitcoin.json`.
 
+### Design Imperative
+
+> Rather than reduce a system description to a set of state variables and functions alone, and those at a very abstract level for computational tractability, the language of system should be "speakable" as well as "viewable" as well as "computable." People should be able to talk to each other without over-abstraction causing the loss of details and meanings that support real understanding.
+> — Mobus, *Systems Science* (p. 70)
+
+> Organize knowledge more globally so that it is readily available from any number of perspectives. The usefulness of knowledge depends, ultimately, on how it can be retrieved not just from one perspective, no matter how interdisciplinary it might be, but from all perspectives. [...] By organizing data about any system in the system schema, we make it useful and retrievable from multiple perspectives.
+> — Mobus, *Systems Science* (pp. 642, 646)
+
+The SL satisfies all three modes: **speakable** (natural language descriptions generate models via chat), **viewable** (BERT canvas renders hierarchical decompositions), and **computable** (JSON schema → TypeDB typed graph → Mesa simulation). Multi-perspective retrieval is achieved through the typed graph substrate — the same model answers structural queries (TypeDB), behavioral questions (Mesa), and analytical questions (Facets RAG).
+
 ### Theoretical Grounding
 
 The SL is grounded in three formal sources:
