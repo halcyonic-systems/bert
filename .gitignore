@@ -49,5 +49,12 @@ private-dev/
 # GitBook build output
 gitbook/_book/
 
+# Python
+__pycache__/
+*.pyc
+
+# Generated artifacts
+src-tauri/generated:*
+
 # Local models (personal experiments, not shipped)
 assets/models/local/
