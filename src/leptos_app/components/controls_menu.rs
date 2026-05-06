@@ -21,58 +21,50 @@ pub fn ControlsMenu(
                         </div>
 
                         <div class="grid md:grid-cols-2 gap-6">
-                            // Navigation Controls
                             <div class="space-y-4">
                                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Navigation"</h3>
                                 <div class="space-y-2">
-                                    <ControlItem action="Pan" control="Right-click and drag" />
-                                    <ControlItem action="Scroll" control="Mouse wheel" />
-                                    <ControlItem action="Reset View" control="Ctrl+R" />
-                                </div>
-
-                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Zoom"</h3>
-                                <div class="space-y-2">
-                                    <ControlItem action="Zoom Out" control="- key" />
-                                    <ControlItem action="Zoom In" control="= key" />
+                                    <ControlItem action="Pan" control="Right-click drag" />
+                                    <ControlItem action="Scroll" control="Mouse wheel (⌘/Ctrl+scroll to zoom)" />
+                                    <ControlItem action="Zoom In / Out" control="= / -" />
+                                    <ControlItem action="Reset View" control="⌘R" />
                                 </div>
 
                                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Selection"</h3>
                                 <div class="space-y-2">
-                                    <ControlItem action="Select Element" control="Left-click" />
-                                    <ControlItem action="Multi-select" control="Shift + click" />
+                                    <ControlItem action="Select" control="Left-click" />
+                                    <ControlItem action="Multi-select" control="Shift+click" />
                                     <ControlItem action="Deselect All" control="Escape" />
                                 </div>
+
+                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"File"</h3>
+                                <div class="space-y-2">
+                                    <ControlItem action="Open" control="⌘L" />
+                                    <ControlItem action="Save" control="⌘S" />
+                                    <ControlItem action="Save As" control="⌘⇧S" />
+                                    <ControlItem action="Screenshot" control="⌘P" />
+                                </div>
                             </div>
 
-                            // Element Management & File Operations
                             <div class="space-y-4">
-                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Element Management"</h3>
+                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Modeling"</h3>
                                 <div class="space-y-2">
-                                    <ControlItem action="Move Elements" control="Click and drag" />
-                                    <ControlItem action="Delete Elements" control="Delete / Backspace" />
-                                    <ControlItem action="Hide Elements" control="H key" />
-                                    <ControlItem action="Unhide Elements" control="U key" />
+                                    <ControlItem action="Add Subsystem / Interface" control="Drag from palette" />
+                                    <ControlItem action="Create Interface Processor" control="I (select interface first)" />
+                                    <ControlItem action="Connect (Flow mode)" control="F (click source, then target)" />
+                                    <ControlItem action="Set Equivalence" control="E" />
+                                    <ControlItem action="Enter Subsystem" control="Double-click" />
                                 </div>
 
-                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"File Operations"</h3>
+                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Editing"</h3>
                                 <div class="space-y-2">
-                                    <ControlItem action="Open File" control="Ctrl+L" />
-                                    <ControlItem action="Save" control="Ctrl+S" />
-                                    <ControlItem action="Save As..." control="Ctrl+Shift+S" />
-                                </div>
-
-                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">"Advanced"</h3>
-                                <div class="space-y-2">
-                                    <ControlItem action="Sink/Source Equivalence" control="E key" />
-                                    <ControlItem action="Toggle Background" control="Ctrl+Alt+B" />
+                                    <ControlItem action="Move" control="Click and drag" />
+                                    <ControlItem action="Delete" control="Delete / Backspace" />
+                                    <ControlItem action="Hide / Unhide" control="H / U" />
+                                    <ControlItem action="Undo / Redo" control="⌘Z / ⌘⇧Z" />
+                                    <ControlItem action="Toggle Background" control="⌘⌥B" />
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="mt-6 pt-4 border-t border-gray-200">
-                            <p class="text-sm text-gray-600 text-center">
-                                "Double-click on subsystems to enter them. Use toolbar buttons to create new elements."
-                            </p>
                         </div>
                     </div>
                 </div>
