@@ -4,62 +4,24 @@
     "info": {
       "id": "E-1",
       "level": -1,
-      "name": "Sociotechnical Information Environment",
-      "description": "The environment in which a transformer language model operates: human users producing prompts and consuming generated text, training corpora that shaped the model's parameters at training time, and physical compute infrastructure that supplies energy and absorbs heat during inference."
+      "name": "Language Environment",
+      "description": "Natural language producers and consumers: humans, APIs, and upstream systems that supply prompts and receive generated text"
     },
     "sources": [
       {
         "info": {
           "id": "Src-1.0",
           "level": -1,
-          "name": "Users",
-          "description": "Humans producing natural-language prompts. Each prompt is a request for text generation conditioned on the prompt's content."
+          "name": "Prompt Input",
+          "description": "Natural language text from users or API calls \u2014 the conditioning context for generation"
         },
         "type": "Source",
         "transform": {
           "translation": [
-            -600.0,
-            -100.0
+            -520.0,
+            0.0
           ],
-          "rotation": -2.7
-        },
-        "equivalence": "",
-        "model": "",
-        "is_same_as_id": 0
-      },
-      {
-        "info": {
-          "id": "Src-1.1",
-          "level": -1,
-          "name": "Training Corpus",
-          "description": "Frozen historical text data that shaped the model's parameters during training. After training, this corpus does not flow live into the model \u2014 its influence persists as the trained weights and the loss-derived behavioral constraints."
-        },
-        "type": "Source",
-        "transform": {
-          "translation": [
-            -600.0,
-            200.0
-          ],
-          "rotation": 2.7
-        },
-        "equivalence": "",
-        "model": "",
-        "is_same_as_id": null
-      },
-      {
-        "info": {
-          "id": "Src-1.2",
-          "level": -1,
-          "name": "Compute Infrastructure",
-          "description": "Physical hardware (GPUs, TPUs, CPUs) supplying electrical energy and FLOPS to the model during inference. Substitutable substrate \u2014 the model's specification is hardware-independent."
-        },
-        "type": "Source",
-        "transform": {
-          "translation": [
-            -400.0,
-            -400.0
-          ],
-          "rotation": -3.0
+          "rotation": -3.141592653589793
         },
         "equivalence": "",
         "model": "",
@@ -71,35 +33,16 @@
         "info": {
           "id": "Snk-1.0",
           "level": -1,
-          "name": "Users",
-          "description": "Humans receiving generated text. Same external entity as Src-1.0 (linked via is_same_as_id) \u2014 users both produce prompts and consume outputs."
+          "name": "Generated Text",
+          "description": "Coherent natural language output \u2014 token sequences decoded from learned probability distributions"
         },
         "type": "Sink",
         "transform": {
           "translation": [
-            700.0,
+            520.0,
             0.0
           ],
-          "rotation": -0.2
-        },
-        "equivalence": "",
-        "model": "",
-        "is_same_as_id": 0
-      },
-      {
-        "info": {
-          "id": "Snk-1.1",
-          "level": -1,
-          "name": "Heat Dissipation",
-          "description": "Thermal waste from FLOP execution. Physical environment absorbing the thermodynamic cost of inference."
-        },
-        "type": "Sink",
-        "transform": {
-          "translation": [
-            600.0,
-            -400.0
-          ],
-          "rotation": -0.4
+          "rotation": 0.0
         },
         "equivalence": "",
         "model": "",
@@ -112,102 +55,57 @@
       "info": {
         "id": "S0",
         "level": 0,
-        "name": "Transformer Language Model",
-        "description": "An instance of the Generation-class instrument (per Halcyonic Systems' instruments catalog, \u00a703). Computes: next-token probability conditioned on all prior tokens, compressing the statistical structure of human language into billions of parameters. Ceiling: knows what has been said about systems; does not know what systems are. Cannot make the ontological commitments that formal specification requires \u2014 does not know which claims to stake credibility on. First in a planned series of formal models for computational instruments (Recognition, Prediction, Generation, Reasoning, Decision, Discovery)."
+        "name": "Language Transformer",
+        "description": "Generation instrument (\u00a703): produces next-token probability distributions conditioned on input context. Models the epistemic capability \u2014 what the system computes and where it reaches its ceiling \u2014 not the physical substrate. Energy, thermal, and infrastructure flows are real but out of scope: they describe deployment, not computation. Ceiling: synthesizes what has been said, not formal specifications of system structure."
       },
       "sources": [],
       "sinks": [],
       "parent": "E-1",
       "complexity": {
         "Complex": {
-          "adaptable": false,
-          "evolveable": false
+          "adaptable": true,
+          "evolveable": true
         }
       },
       "boundary": {
         "info": {
           "id": "B0",
           "level": 0,
-          "name": "Model Specification Boundary",
-          "description": "Encloses the trained parameters and computational graph. Does not include the runtime orchestration layer (batching, KV-cache, kernel scheduling) or the hardware substrate \u2014 those are environment. The boundary is precise (porosity 0: prompts and generated text cross only via defined interfaces) but semantically fuzzy (perceptive_fuzziness 0.5: the model's competence boundary across language, code, and concept domains is not crisply defined)."
+          "name": "",
+          "description": ""
         },
         "porosity": 0.0,
-        "perceptive_fuzziness": 0.5,
+        "perceptive_fuzziness": 0.0,
         "interfaces": [
           {
             "info": {
-              "id": "I0.0",
+              "id": "I0.50",
               "level": 1,
-              "name": "Prompt Intake",
-              "description": "Receives natural-language prompts from users for tokenization."
+              "name": "Tokenization Interface",
+              "description": "Receives raw text and segments into token sequences for embedding"
             },
-            "protocol": "Text-API",
+            "protocol": "",
             "type": "Import",
             "exports_to": [],
             "receives_from": [
               "Src-1.0"
             ],
-            "angle": -2.5
+            "angle": 3.141592653589793
           },
           {
             "info": {
-              "id": "I0.1",
+              "id": "I0.51",
               "level": 1,
-              "name": "Generated Text Output",
-              "description": "Emits sampled, detokenized text back to users."
+              "name": "Generation Interface",
+              "description": "Emits decoded token sequences as natural language output"
             },
-            "protocol": "Text-API",
+            "protocol": "",
             "type": "Export",
             "exports_to": [
               "Snk-1.0"
             ],
             "receives_from": [],
-            "angle": 0.2
-          },
-          {
-            "info": {
-              "id": "I0.2",
-              "level": 1,
-              "name": "Training Influence",
-              "description": "One-time historical inflow during training: gradients derived from the loss function over the training corpus. After training this interface is dormant \u2014 the corpus's influence persists only as baked-in weights and the Training Objective Constraint Force."
-            },
-            "protocol": "SGD-Backprop",
-            "type": "Import",
-            "exports_to": [],
-            "receives_from": [
-              "Src-1.1"
-            ],
-            "angle": 2.7
-          },
-          {
-            "info": {
-              "id": "I0.3",
-              "level": 1,
-              "name": "Energy Consumption",
-              "description": "Imports electrical power from compute infrastructure to drive forward-pass FLOPS."
-            },
-            "protocol": "Electricity",
-            "type": "Import",
-            "exports_to": [],
-            "receives_from": [
-              "Src-1.2"
-            ],
-            "angle": -2.0
-          },
-          {
-            "info": {
-              "id": "I0.4",
-              "level": 1,
-              "name": "Heat Emission",
-              "description": "Exports thermodynamic waste to the environment \u2014 the irreducible energy cost of computation."
-            },
-            "protocol": "Thermal-radiation",
-            "type": "Export",
-            "exports_to": [
-              "Snk-1.1"
-            ],
-            "receives_from": [],
-            "angle": -0.4
+            "angle": 0.0
           }
         ],
         "parent_interface": null
@@ -221,9 +119,51 @@
         "rotation": 0.0
       },
       "equivalence": "",
-      "history": "Trained once on a frozen corpus; weights fixed at deployment. Inference is stateless per request modulo the context window.",
-      "transformation": "text \u2192 tokens \u2192 vectors \u2192 contextualized vectors \u2192 logits \u2192 sampled token \u2192 text",
-      "member_autonomy": 0.0,
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "Second"
+    },
+    {
+      "info": {
+        "id": "C0.0",
+        "level": 1,
+        "name": "Encoding",
+        "description": "Tokenization and embedding: converts raw text to dense vector sequences in a learned representation space"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0.0",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 42.0,
+      "transform": {
+        "translation": [
+          -125.0,
+          -95.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
       "time_constant": "Second",
       "archetype": "Economy"
     },
@@ -231,15 +171,15 @@
       "info": {
         "id": "C0.1",
         "level": 1,
-        "name": "Tokenizer",
-        "description": "Segments raw text into discrete subword units (BPE, SentencePiece, or similar) and assigns each unit an integer ID from a fixed vocabulary. Reverses on output: detokenizes sampled IDs back to text. Boundary between continuous human language and the discrete symbolic units the rest of the model operates on."
+        "name": "Transformer Core",
+        "description": "Stacked self-attention and feed-forward layers: builds contextualized representations from token sequences through iterative refinement"
       },
       "sources": [],
       "sinks": [],
       "parent": "S0",
       "complexity": {
         "Complex": {
-          "adaptable": false,
+          "adaptable": true,
           "evolveable": false
         }
       },
@@ -255,33 +195,34 @@
         "interfaces": [],
         "parent_interface": null
       },
-      "radius": 50.0,
+      "radius": 42.0,
       "transform": {
         "translation": [
-          -200.0,
-          0.0
+          125.0,
+          -95.0
         ],
         "rotation": 0.0
       },
       "equivalence": "",
       "history": "",
-      "transformation": "text \u2194 token-ID stream",
-      "member_autonomy": 0.0,
-      "time_constant": "Second"
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "Second",
+      "archetype": "Economy"
     },
     {
       "info": {
         "id": "C0.2",
         "level": 1,
-        "name": "Embedding Layer",
-        "description": "Learned lookup mapping each token ID to a high-dimensional vector. Adds positional encoding so the transformer stack can distinguish token order. The output of this subsystem is a sequence of dense vectors \u2014 the geometric representation on which all subsequent computation operates."
+        "name": "Decoding",
+        "description": "Logit projection and sampling: converts contextualized representations to probability distributions over vocabulary and selects next tokens"
       },
       "sources": [],
       "sinks": [],
       "parent": "S0",
       "complexity": {
         "Complex": {
-          "adaptable": false,
+          "adaptable": true,
           "evolveable": false
         }
       },
@@ -297,153 +238,27 @@
         "interfaces": [],
         "parent_interface": null
       },
-      "radius": 50.0,
-      "transform": {
-        "translation": [
-          -100.0,
-          0.0
-        ],
-        "rotation": 0.0
-      },
-      "equivalence": "",
-      "history": "",
-      "transformation": "token-ID \u2192 embedding vector + positional encoding",
-      "member_autonomy": 0.0,
-      "time_constant": "Second"
-    },
-    {
-      "info": {
-        "id": "C0.3",
-        "level": 1,
-        "name": "Transformer Stack",
-        "description": "Stack of N transformer layers, each combining multi-head self-attention with a position-wise feed-forward network, with residual connections and layer normalization. The computational core: refines token vectors into context-aware hidden states. Each layer attends across the full context window; depth produces increasingly abstract representations. This is the subsystem most directly constrained by the Training Objective Constraint Force."
-      },
-      "sources": [],
-      "sinks": [],
-      "parent": "S0",
-      "complexity": {
-        "Complex": {
-          "adaptable": false,
-          "evolveable": false
-        }
-      },
-      "boundary": {
-        "info": {
-          "id": "B0.3",
-          "level": 1,
-          "name": "",
-          "description": ""
-        },
-        "porosity": 0.0,
-        "perceptive_fuzziness": 0.0,
-        "interfaces": [],
-        "parent_interface": null
-      },
-      "radius": 70.0,
+      "radius": 42.0,
       "transform": {
         "translation": [
           0.0,
-          0.0
+          160.0
         ],
         "rotation": 0.0
       },
       "equivalence": "",
       "history": "",
-      "transformation": "embedding sequence \u2192 contextualized hidden states",
-      "member_autonomy": 0.0,
-      "time_constant": "Second"
-    },
-    {
-      "info": {
-        "id": "C0.4",
-        "level": 1,
-        "name": "Output Head",
-        "description": "Linear projection from the transformer stack's final hidden state at the current position to a vector of size |vocabulary|, followed by softmax to produce a probability distribution over the next token. Does not sample \u2014 only constructs the distribution."
-      },
-      "sources": [],
-      "sinks": [],
-      "parent": "S0",
-      "complexity": {
-        "Complex": {
-          "adaptable": false,
-          "evolveable": false
-        }
-      },
-      "boundary": {
-        "info": {
-          "id": "B0.4",
-          "level": 1,
-          "name": "",
-          "description": ""
-        },
-        "porosity": 0.0,
-        "perceptive_fuzziness": 0.0,
-        "interfaces": [],
-        "parent_interface": null
-      },
-      "radius": 50.0,
-      "transform": {
-        "translation": [
-          100.0,
-          0.0
-        ],
-        "rotation": 0.0
-      },
-      "equivalence": "",
-      "history": "",
-      "transformation": "hidden state \u2192 vocabulary probability distribution (logits + softmax)",
-      "member_autonomy": 0.0,
-      "time_constant": "Second"
-    },
-    {
-      "info": {
-        "id": "C0.5",
-        "level": 1,
-        "name": "Sampler",
-        "description": "Samples a discrete token ID from the output head's probability distribution under a sampling policy (temperature, top-k, top-p / nucleus, beam search). Returns the sampled token to the Tokenizer for detokenization, and feeds it back into the input sequence for the next autoregressive step."
-      },
-      "sources": [],
-      "sinks": [],
-      "parent": "S0",
-      "complexity": {
-        "Complex": {
-          "adaptable": false,
-          "evolveable": false
-        }
-      },
-      "boundary": {
-        "info": {
-          "id": "B0.5",
-          "level": 1,
-          "name": "",
-          "description": ""
-        },
-        "porosity": 0.0,
-        "perceptive_fuzziness": 0.0,
-        "interfaces": [],
-        "parent_interface": null
-      },
-      "radius": 50.0,
-      "transform": {
-        "translation": [
-          200.0,
-          0.0
-        ],
-        "rotation": 0.0
-      },
-      "equivalence": "",
-      "history": "",
-      "transformation": "probability distribution \u2192 sampled token ID",
-      "member_autonomy": 0.0,
+      "transformation": "",
+      "member_autonomy": 1.0,
       "time_constant": "Second",
-      "archetype": "Agent"
+      "archetype": "Economy"
     },
     {
       "info": {
-        "id": "C0.6",
+        "id": "C0.50",
         "level": 1,
-        "name": "Trained Weights",
-        "description": "The frozen parameter tensors that resulted from training. Architecturally, this is the model's knowledgebase \u2014 the encoded embodiment of the loss function applied to the training corpus. Mobus parallel: as DNA is the knowledgebase that constrains a cell's protein production, the trained weights are the knowledgebase that constrains the Transformer Stack's hidden-state production. The weights are read every forward pass but do not change during inference. Source of the Training Objective Constraint Force on C0.3."
+        "name": "Tokenization Interface",
+        "description": ""
       },
       "sources": [],
       "sinks": [],
@@ -456,7 +271,7 @@
       },
       "boundary": {
         "info": {
-          "id": "B0.6",
+          "id": "B0.50",
           "level": 1,
           "name": "",
           "description": ""
@@ -464,70 +279,28 @@
         "porosity": 0.0,
         "perceptive_fuzziness": 0.0,
         "interfaces": [],
-        "parent_interface": null
-      },
-      "radius": 50.0,
-      "transform": {
-        "translation": [
-          0.0,
-          130.0
-        ],
-        "rotation": 0.0
-      },
-      "equivalence": "",
-      "history": "",
-      "transformation": "frozen parameters \u2014 read-only at inference; updated only during training",
-      "member_autonomy": 0.0,
-      "time_constant": "Epoch"
-    },
-    {
-      "info": {
-        "id": "C0.7",
-        "level": 1,
-        "name": "Prompt Receiver",
-        "description": "Interface processor at I0.0 Prompt Intake. Receives raw natural-language prompts from the boundary and hands them to the Tokenizer for segmentation. Does not process semantics \u2014 just marshals the text from the outside world into the internal pipeline."
-      },
-      "sources": [],
-      "sinks": [],
-      "parent": "S0",
-      "complexity": {
-        "Complex": {
-          "adaptable": false,
-          "evolveable": false
-        }
-      },
-      "boundary": {
-        "info": {
-          "id": "B0.7",
-          "level": 1,
-          "name": "",
-          "description": ""
-        },
-        "porosity": 0.0,
-        "perceptive_fuzziness": 0.0,
-        "interfaces": [],
-        "parent_interface": "I0.0"
+        "parent_interface": "I0.50"
       },
       "radius": 12.0,
       "transform": {
         "translation": [
-          -240.0,
-          -80.0
+          -1.72,
+          0.0
         ],
-        "rotation": 0.0
+        "rotation": -3.1415925
       },
       "equivalence": "",
       "history": "",
       "transformation": "",
-      "member_autonomy": 0.0,
+      "member_autonomy": 1.0,
       "time_constant": "Second"
     },
     {
       "info": {
-        "id": "C0.8",
+        "id": "C0.51",
         "level": 1,
-        "name": "Output Marshaller",
-        "description": "Interface processor at I0.1 Generated Text Output. Takes detokenized text from the Tokenizer and emits it to the boundary for delivery to the user. Does not generate content \u2014 just marshals it across the boundary."
+        "name": "Generation Interface",
+        "description": ""
       },
       "sources": [],
       "sinks": [],
@@ -540,7 +313,7 @@
       },
       "boundary": {
         "info": {
-          "id": "B0.8",
+          "id": "B0.51",
           "level": 1,
           "name": "",
           "description": ""
@@ -548,62 +321,20 @@
         "porosity": 0.0,
         "perceptive_fuzziness": 0.0,
         "interfaces": [],
-        "parent_interface": "I0.1"
+        "parent_interface": "I0.51"
       },
       "radius": 12.0,
       "transform": {
         "translation": [
-          240.0,
-          80.0
+          -1.72,
+          0.0
         ],
         "rotation": 0.0
       },
       "equivalence": "",
       "history": "",
       "transformation": "",
-      "member_autonomy": 0.0,
-      "time_constant": "Second"
-    },
-    {
-      "info": {
-        "id": "C0.9",
-        "level": 1,
-        "name": "Gradient Receiver",
-        "description": "Interface processor at I0.2 Training Influence. During training, received loss gradients from the training corpus and routed them to the Trained Weights subsystem for parameter updates. Dormant after training \u2014 retained in the model to make the training-time boundary crossing explicit and the post-training constraint (F0.5 Force) traceable to its origin."
-      },
-      "sources": [],
-      "sinks": [],
-      "parent": "S0",
-      "complexity": {
-        "Complex": {
-          "adaptable": false,
-          "evolveable": false
-        }
-      },
-      "boundary": {
-        "info": {
-          "id": "B0.9",
-          "level": 1,
-          "name": "",
-          "description": ""
-        },
-        "porosity": 0.0,
-        "perceptive_fuzziness": 0.0,
-        "interfaces": [],
-        "parent_interface": "I0.2"
-      },
-      "radius": 12.0,
-      "transform": {
-        "translation": [
-          -160.0,
-          220.0
-        ],
-        "rotation": 0.0
-      },
-      "equivalence": "",
-      "history": "",
-      "transformation": "",
-      "member_autonomy": 0.0,
+      "member_autonomy": 1.0,
       "time_constant": "Second"
     }
   ],
@@ -612,11 +343,11 @@
       "info": {
         "id": "F-1.0",
         "level": -1,
-        "name": "User Prompt",
-        "description": "Natural-language text from a user, entering the model for tokenization and contextualization."
+        "name": "Raw Text",
+        "description": "Natural language input segmented into token IDs"
       },
       "substance": {
-        "sub_type": "Data",
+        "sub_type": "",
         "type": "Message"
       },
       "type": "Flow",
@@ -624,283 +355,131 @@
       "source": "Src-1.0",
       "source_interface": null,
       "sink": "S0",
-      "sink_interface": "I0.0",
+      "sink_interface": "I0.50",
       "amount": "1",
-      "unit": "prompt",
+      "unit": "",
       "parameters": []
     },
     {
       "info": {
         "id": "F-1.1",
         "level": -1,
-        "name": "Generated Text",
-        "description": "Detokenized natural-language output produced autoregressively, one token at a time."
+        "name": "Generated Language",
+        "description": "Decoded token sequence as coherent text"
       },
       "substance": {
-        "sub_type": "Data",
+        "sub_type": "",
         "type": "Message"
       },
       "type": "Flow",
       "usability": "Product",
       "source": "S0",
-      "source_interface": "I0.1",
+      "source_interface": "I0.51",
       "sink": "Snk-1.0",
       "sink_interface": null,
       "amount": "1",
-      "unit": "completion",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F-1.2",
-        "level": -1,
-        "name": "Training Gradients",
-        "description": "Historical (training-time only) flow of loss gradients from the training corpus into the model, shaping parameters via stochastic gradient descent. Dormant after training; included to make the historical influence explicit."
-      },
-      "substance": {
-        "sub_type": "Data",
-        "type": "Message"
-      },
-      "type": "Flow",
-      "usability": "Resource",
-      "source": "Src-1.1",
-      "source_interface": null,
-      "sink": "S0",
-      "sink_interface": "I0.2",
-      "amount": "1",
-      "unit": "gradient-update",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F-1.3",
-        "level": -1,
-        "name": "Electricity",
-        "description": "Electrical power supplied by compute infrastructure to drive FLOP execution."
-      },
-      "substance": {
-        "sub_type": "Electricity",
-        "type": "Energy"
-      },
-      "type": "Flow",
-      "usability": "Resource",
-      "source": "Src-1.2",
-      "source_interface": null,
-      "sink": "S0",
-      "sink_interface": "I0.3",
-      "amount": "1",
-      "unit": "kWh",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F-1.4",
-        "level": -1,
-        "name": "Heat",
-        "description": "Thermodynamic waste \u2014 the irreducible energy cost of computation, dissipated to the environment."
-      },
-      "substance": {
-        "sub_type": "Thermal",
-        "type": "Energy"
-      },
-      "type": "Flow",
-      "usability": "Waste",
-      "source": "S0",
-      "source_interface": "I0.4",
-      "sink": "Snk-1.1",
-      "sink_interface": null,
-      "amount": "1",
-      "unit": "kWh",
+      "unit": "",
       "parameters": []
     },
     {
       "info": {
         "id": "F0.0",
         "level": 1,
-        "name": "Token Stream",
-        "description": "Sequence of integer token IDs produced by the Tokenizer for embedding lookup."
+        "name": "Tokenization Interface routing",
+        "description": ""
       },
       "substance": {
-        "sub_type": "Data",
+        "sub_type": "",
         "type": "Message"
       },
       "type": "Flow",
-      "usability": "Product",
-      "source": "C0.1",
+      "usability": "Resource",
+      "source": "C0.50",
       "source_interface": null,
-      "sink": "C0.2",
+      "sink": "C0.0",
       "sink_interface": null,
       "amount": "1",
-      "unit": "token-sequence",
-      "parameters": []
+      "unit": "",
+      "parameters": [],
+      "endpoint_offset": {
+        "start_angle": -0.49734271634682264,
+        "end_angle": 2.6442499372429706
+      }
     },
     {
       "info": {
         "id": "F0.1",
         "level": 1,
-        "name": "Embedding Vectors",
-        "description": "Sequence of dense vectors with positional encoding \u2014 the geometric representation entering the transformer stack."
+        "name": "Generation Interface routing",
+        "description": ""
       },
       "substance": {
-        "sub_type": "Data",
+        "sub_type": "",
         "type": "Message"
       },
       "type": "Flow",
-      "usability": "Product",
+      "usability": "Resource",
       "source": "C0.2",
       "source_interface": null,
-      "sink": "C0.3",
+      "sink": "C0.51",
       "sink_interface": null,
       "amount": "1",
-      "unit": "vector-sequence",
-      "parameters": []
+      "unit": "",
+      "parameters": [],
+      "endpoint_offset": {
+        "start_angle": -0.4899573262537283,
+        "end_angle": 2.651635327336065
+      }
     },
     {
       "info": {
         "id": "F0.2",
         "level": 1,
-        "name": "Hidden States",
-        "description": "Contextualized hidden state at the current generation position, output by the final transformer layer."
+        "name": "Token Embeddings",
+        "description": "Dense vector representations of input tokens"
       },
       "substance": {
-        "sub_type": "Data",
+        "sub_type": "",
         "type": "Message"
       },
       "type": "Flow",
-      "usability": "Product",
-      "source": "C0.3",
+      "usability": "Resource",
+      "source": "C0.0",
       "source_interface": null,
-      "sink": "C0.4",
+      "sink": "C0.1",
       "sink_interface": null,
       "amount": "1",
-      "unit": "hidden-state",
-      "parameters": []
+      "unit": "",
+      "parameters": [],
+      "endpoint_offset": {
+        "start_angle": 0.0,
+        "end_angle": 3.141592653589793
+      }
     },
     {
       "info": {
         "id": "F0.3",
         "level": 1,
-        "name": "Vocabulary Distribution",
-        "description": "Probability distribution over the vocabulary for the next token, ready for sampling."
+        "name": "Contextualized Representations",
+        "description": "Final hidden states enriched by self-attention"
       },
       "substance": {
-        "sub_type": "Signal",
-        "type": "Message"
-      },
-      "type": "Flow",
-      "usability": "Product",
-      "source": "C0.4",
-      "source_interface": null,
-      "sink": "C0.5",
-      "sink_interface": null,
-      "amount": "1",
-      "unit": "distribution",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F0.4",
-        "level": 1,
-        "name": "Sampled Token",
-        "description": "The discrete token ID drawn from the vocabulary distribution under the active sampling policy. Returned to the Tokenizer for detokenization to text."
-      },
-      "substance": {
-        "sub_type": "Data",
-        "type": "Message"
-      },
-      "type": "Flow",
-      "usability": "Product",
-      "source": "C0.5",
-      "source_interface": null,
-      "sink": "C0.1",
-      "sink_interface": null,
-      "amount": "1",
-      "unit": "token",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F0.5",
-        "level": 1,
-        "name": "Training Objective Constraint",
-        "description": "The loss function (typically cross-entropy over next-token prediction) shaped the Trained Weights (C0.6) during training. Now, every inference, the weights persistently constrain the Transformer Stack's behavior \u2014 every output reflects the objective the model was trained to minimize. Per SL \u00a71.7, this is a Force: influence without substance transfer. C0.6 holds the encoded constraint; C0.3 is the active computation that is constrained by it. Structurally analogous to bitcoin/ethereum/cosmos/solana's Protocol \u2192 Validating Force (Protocol subsystem holds consensus rules; Validating subsystem is constrained by them). Same SL pattern, different domain: a knowledgebase subsystem constraining a computational subsystem without material exchange."
-      },
-      "substance": {
-        "sub_type": "Training-Objective",
-        "type": "Message"
-      },
-      "type": "Force",
-      "usability": "Product",
-      "source": "C0.6",
-      "source_interface": null,
-      "sink": "C0.3",
-      "sink_interface": null,
-      "amount": "1",
-      "unit": "objective",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F0.6",
-        "level": 1,
-        "name": "Raw Prompt Text",
-        "description": "Natural-language text marshalled from the boundary (via C0.7) to the Tokenizer for segmentation into token IDs."
-      },
-      "substance": {
-        "sub_type": "Data",
-        "type": "Message"
-      },
-      "type": "Flow",
-      "usability": "Product",
-      "source": "C0.7",
-      "source_interface": null,
-      "sink": "C0.1",
-      "sink_interface": null,
-      "amount": "1",
-      "unit": "text",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F0.7",
-        "level": 1,
-        "name": "Detokenized Output Text",
-        "description": "Natural-language text produced by the Tokenizer (detokenization of sampled IDs) and handed to C0.8 for emission across the boundary."
-      },
-      "substance": {
-        "sub_type": "Data",
-        "type": "Message"
-      },
-      "type": "Flow",
-      "usability": "Product",
-      "source": "C0.1",
-      "source_interface": null,
-      "sink": "C0.8",
-      "sink_interface": null,
-      "amount": "1",
-      "unit": "text",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F0.8",
-        "level": 1,
-        "name": "Gradient Delivery",
-        "description": "Training-time flow of loss gradients from the Gradient Receiver to the Trained Weights, updating parameters via stochastic gradient descent. Dormant after training."
-      },
-      "substance": {
-        "sub_type": "Data",
+        "sub_type": "",
         "type": "Message"
       },
       "type": "Flow",
       "usability": "Resource",
-      "source": "C0.9",
+      "source": "C0.1",
       "source_interface": null,
-      "sink": "C0.6",
+      "sink": "C0.2",
       "sink_interface": null,
       "amount": "1",
-      "unit": "gradient-update",
-      "parameters": []
+      "unit": "",
+      "parameters": [],
+      "endpoint_offset": {
+        "start_angle": 2.026570082771602,
+        "end_angle": -1.1150225708181911
+      }
     }
   ],
   "hidden_entities": []

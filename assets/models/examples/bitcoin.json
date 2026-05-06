@@ -19,7 +19,7 @@
         "transform": {
           "translation": [
             -637.8666,
-            -15.706865
+            -15.706866
           ],
           "rotation": -3.1119733
         },
@@ -69,25 +69,6 @@
     "sinks": [
       {
         "info": {
-          "id": "Snk-1.1",
-          "level": -1,
-          "name": "Users",
-          "description": "Network participants who receive and consume confirmed transactions. Distinguished by observable patterns:\n\n1. Measurable Characteristics:\n- Active receiving addresses per time interval\n- Transaction confirmation rates\n- Balance changes post-receipt\n- Address reuse patterns\n- Transaction value ranges\n\n2. Participant Types (by activity pattern):\n- Payees: One-time or irregular receipt\n- Investors: Large value storage with low turnover\n- Traders: High-frequency receipt and redistribution\n\n3. Network Role:\nProvides essential economic feedback through consistent transaction demand and deterministic receipt confirmation \n\n\nUser Types (distinguished by observable patterns):\n\n1. P2P Transactors\n- Pattern: Irregular peer-to-peer transfers\n- Measurable: One-time addresses, diverse counterparties\n- Value range: Small to medium transfers\n\n2. Investors\n- Pattern: Large inbound transfers, long-term holding\n- Measurable: Low output turnover, secure storage patterns\n- Value range: Large value accumulation\n\n3. Traders\n- Pattern: High-frequency exchange activity\n- Measurable: Regular exchange interactions, high turnover\n- Value range: Variable sized transfers\n\n4. Protocol Developers\n- Pattern: Specialized technical operations\n- Measurable: OP_RETURN usage, cross-chain patterns\n- Value range: Typically small (metadata focused)"
-        },
-        "type": "Sink",
-        "transform": {
-          "translation": [
-            726.2668,
-            2.7674227
-          ],
-          "rotation": 0.00928613
-        },
-        "equivalence": "",
-        "model": "",
-        "is_same_as_id": 0
-      },
-      {
-        "info": {
           "id": "Snk-1.0",
           "level": -1,
           "name": "Environment",
@@ -99,11 +80,30 @@
             583.368,
             -378.16272
           ],
-          "rotation": -0.22724225
+          "rotation": -0.22724223
         },
         "equivalence": "",
         "model": "",
         "is_same_as_id": null
+      },
+      {
+        "info": {
+          "id": "Snk-1.1",
+          "level": -1,
+          "name": "Users",
+          "description": "Network participants who receive and consume confirmed transactions. Distinguished by observable patterns:\n\n1. Measurable Characteristics:\n- Active receiving addresses per time interval\n- Transaction confirmation rates\n- Balance changes post-receipt\n- Address reuse patterns\n- Transaction value ranges\n\n2. Participant Types (by activity pattern):\n- Payees: One-time or irregular receipt\n- Investors: Large value storage with low turnover\n- Traders: High-frequency receipt and redistribution\n\n3. Network Role:\nProvides essential economic feedback through consistent transaction demand and deterministic receipt confirmation \n\n\nUser Types (distinguished by observable patterns):\n\n1. P2P Transactors\n- Pattern: Irregular peer-to-peer transfers\n- Measurable: One-time addresses, diverse counterparties\n- Value range: Small to medium transfers\n\n2. Investors\n- Pattern: Large inbound transfers, long-term holding\n- Measurable: Low output turnover, secure storage patterns\n- Value range: Large value accumulation\n\n3. Traders\n- Pattern: High-frequency exchange activity\n- Measurable: Regular exchange interactions, high turnover\n- Value range: Variable sized transfers\n\n4. Protocol Developers\n- Pattern: Specialized technical operations\n- Measurable: OP_RETURN usage, cross-chain patterns\n- Value range: Typically small (metadata focused)"
+        },
+        "type": "Sink",
+        "transform": {
+          "translation": [
+            726.2668,
+            2.7674227
+          ],
+          "rotation": 0.380116
+        },
+        "equivalence": "",
+        "model": "",
+        "is_same_as_id": 0
       }
     ]
   },
@@ -207,7 +207,7 @@
               "Snk-1.1"
             ],
             "receives_from": [],
-            "angle": -3.9628354e-05
+            "angle": -0.25694948
           }
         ],
         "parent_interface": null
@@ -257,8 +257,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          150.0,
-          -120.0
+          231.87752,
+          -49.711422
         ],
         "rotation": 0.0
       },
@@ -299,8 +299,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          -24.003347,
-          5.2408023
+          -26.818003,
+          -8.503263
         ],
         "rotation": 0.0
       },
@@ -341,8 +341,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          23.102427,
-          5.577272
+          27.47205,
+          0.0
         ],
         "rotation": 0.0
       },
@@ -384,8 +384,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          -124.99998,
-          -120.0
+          -190.0153,
+          -40.554043
         ],
         "rotation": -3.1415925
       },
@@ -426,8 +426,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          -13.999999,
-          0.0
+          -20.27702,
+          6.5409966
         ],
         "rotation": 0.0
       },
@@ -468,8 +468,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          13.999999,
-          0.0
+          19.622942,
+          3.2704942
         ],
         "rotation": 0.0
       },
@@ -511,8 +511,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          6.499959,
-          197.0
+          -12.754899,
+          157.63748
         ],
         "rotation": -3.1415925
       },
@@ -527,7 +527,7 @@
         "id": "C0.4.0",
         "level": 2,
         "name": "Protocol Research",
-        "description": "Problem identification, solution design, and BIP authoring. Where new ideas enter the development pipeline \u2014 identifying scalability bottlenecks, security vulnerabilities, or feature gaps, then designing protocol-level solutions. Produces Bitcoin Improvement Proposals (BIPs) as formal specifications. Includes academic research, mailing list discussions, and informal design exploration."
+        "description": "Problem identification, solution design, and BIP authoring. Where new ideas enter the development pipeline — identifying scalability bottlenecks, security vulnerabilities, or feature gaps, then designing protocol-level solutions. Produces Bitcoin Improvement Proposals (BIPs) as formal specifications. Includes academic research, mailing list discussions, and informal design exploration."
       },
       "sources": [],
       "sinks": [],
@@ -553,8 +553,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          -16.0,
-          -9.0
+          -10.465558,
+          -5.8868766
         ],
         "rotation": 0.0
       },
@@ -597,7 +597,7 @@
       "transform": {
         "translation": [
           0.0,
-          13.999999
+          9.157363
         ],
         "rotation": 0.0
       },
@@ -613,7 +613,7 @@
         "id": "C0.4.2",
         "level": 2,
         "name": "Review & Governance",
-        "description": "Peer review, security audit, and merge decisions. The social consensus process that gates what changes enter the codebase. Includes concept ACKs/NACKs, code review, testing feedback, and maintainer merge decisions. No formal voting \u2014 rough consensus emerges through sustained technical discussion. The legitimacy layer that ensures changes reflect community agreement."
+        "description": "Peer review, security audit, and merge decisions. The social consensus process that gates what changes enter the codebase. Includes concept ACKs/NACKs, code review, testing feedback, and maintainer merge decisions. No formal voting — rough consensus emerges through sustained technical discussion. The legitimacy layer that ensures changes reflect community agreement."
       },
       "sources": [],
       "sinks": [],
@@ -639,8 +639,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          16.0,
-          -9.0
+          10.465558,
+          -5.8868766
         ],
         "rotation": 0.0
       },
@@ -682,8 +682,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          19.0,
-          46.000008
+          -9.484422,
+          -30.088474
         ],
         "rotation": 0.0
       },
@@ -698,7 +698,7 @@
         "id": "C0.5.0",
         "level": 2,
         "name": "Consensus Rules",
-        "description": "Defines validity conditions for blocks and transactions. Includes proof-of-work difficulty adjustment algorithm, block size/weight limits, transaction script verification, coinbase maturity rules, and halving schedule. These rules are deterministic and universal \u2014 all nodes must agree. Changes require network-wide coordination (soft forks, hard forks). The constitution that all other subsystems must respect."
+        "description": "Defines validity conditions for blocks and transactions. Includes proof-of-work difficulty adjustment algorithm, block size/weight limits, transaction script verification, coinbase maturity rules, and halving schedule. These rules are deterministic and universal — all nodes must agree. Changes require network-wide coordination (soft forks, hard forks). The constitution that all other subsystems must respect."
       },
       "sources": [],
       "sinks": [],
@@ -724,8 +724,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          -16.0,
-          -9.0
+          -10.465558,
+          -5.8868766
         ],
         "rotation": 0.0
       },
@@ -768,7 +768,7 @@
       "transform": {
         "translation": [
           0.0,
-          13.999999
+          9.157363
         ],
         "rotation": 0.0
       },
@@ -809,8 +809,8 @@
       "radius": 5.88,
       "transform": {
         "translation": [
-          16.0,
-          -9.0
+          10.465558,
+          -5.8868766
         ],
         "rotation": 0.0
       },
@@ -851,7 +851,7 @@
       "radius": 12.0,
       "transform": {
         "translation": [
-          -1.7194061,
+          -1.1246591,
           0.0
         ],
         "rotation": -3.1415925
@@ -893,7 +893,7 @@
       "radius": 12.0,
       "transform": {
         "translation": [
-          -1.7194061,
+          -1.1246591,
           0.0
         ],
         "rotation": -3.1415925
@@ -935,7 +935,7 @@
       "radius": 12.0,
       "transform": {
         "translation": [
-          -1.7194061,
+          -1.1246591,
           0.0
         ],
         "rotation": 0.0
@@ -1194,8 +1194,8 @@
         }
       ],
       "endpoint_offset": {
-        "start_angle": -0.029942956,
-        "end_angle": 1.5668627
+        "start_angle": -1.4862528,
+        "end_angle": 1.4243121
       }
     },
     {
@@ -1236,7 +1236,7 @@
       ],
       "endpoint_offset": {
         "start_angle": -0.45951575,
-        "end_angle": -2.7008166
+        "end_angle": -2.7173991
       }
     },
     {
@@ -1347,7 +1347,7 @@
         }
       ],
       "endpoint_offset": {
-        "start_angle": 0.764552,
+        "start_angle": 0.9241655,
         "end_angle": 2.0922894
       }
     },
@@ -1494,7 +1494,7 @@
       "parameters": [],
       "endpoint_offset": {
         "start_angle": -1.0,
-        "end_angle": 3.14
+        "end_angle": -2.4111316
       }
     },
     {
@@ -1516,7 +1516,11 @@
       "sink_interface": null,
       "amount": "1",
       "unit": "unit",
-      "parameters": []
+      "parameters": [],
+      "endpoint_offset": {
+        "start_angle": 0.6929894,
+        "end_angle": -2.8824036
+      }
     }
   ],
   "hidden_entities": []

@@ -1237,13 +1237,22 @@ impl BertModelGenerator {
                 .copied()
                 .unwrap_or((0.0, 0.0));
 
+            let proc_pos = self
+                .subsystem_positions
+                .get(&processor_iface)
+                .copied()
+                .unwrap_or((0.0, 0.0));
+
             let (source_id, sink_id, start_angle, end_angle) = if iface_type == "Import" {
                 // Import processor: processor → subsystem (routes inward)
-                (proc_id, target_id, 0.0f64, PI)
+                let sa = angle_from_to(proc_pos, target_pos);
+                let ea = angle_from_to(target_pos, proc_pos);
+                (proc_id, target_id, sa, ea)
             } else {
                 // Export processor: subsystem → processor (routes outward)
-                let sa = angle_from_to(target_pos, (0.0, 0.0));
-                (target_id, proc_id, sa, PI)
+                let sa = angle_from_to(target_pos, proc_pos);
+                let ea = angle_from_to(proc_pos, target_pos);
+                (target_id, proc_id, sa, ea)
             };
 
             let flow_name = pflow
@@ -1725,27 +1734,16 @@ fn compute_level1_positions(n: usize) -> Vec<(f64, f64)> {
     match n {
         0 => vec![],
         1 => vec![(0.0, 0.0)],
-        2 => vec![(-80.0, 0.0), (80.0, 0.0)],
-        3 => vec![(-80.0, -60.0), (80.0, -60.0), (0.0, 100.0)],
-        4 => vec![(0.0, -100.0), (-100.0, 0.0), (100.0, 0.0), (0.0, 100.0)],
-        5 => {
-            // Pentagon at 72-degree intervals, radius 120
-            (0..5usize)
-                .map(|i| {
-                    let angle = -PI / 2.0 + i as f64 * (2.0 * PI / 5.0);
-                    let x = round2(120.0 * angle.cos());
-                    let y = round2(120.0 * angle.sin());
-                    (x, y)
-                })
-                .collect()
-        }
+        2 => vec![(-125.0, 0.0), (125.0, 0.0)],
+        3 => vec![(-125.0, -95.0), (125.0, -95.0), (0.0, 160.0)],
+        4 => vec![(0.0, -160.0), (-160.0, 0.0), (160.0, 0.0), (0.0, 160.0)],
         _ => {
-            // 6+: distribute at (360/N) degree intervals, radius 120
+            // N-gon at (360/N) degree intervals, radius 190
             (0..n)
                 .map(|i| {
                     let angle = -PI / 2.0 + i as f64 * (2.0 * PI / n as f64);
-                    let x = round2(120.0 * angle.cos());
-                    let y = round2(120.0 * angle.sin());
+                    let x = round2(190.0 * angle.cos());
+                    let y = round2(190.0 * angle.sin());
                     (x, y)
                 })
                 .collect()
@@ -1763,20 +1761,20 @@ fn compute_level2_positions(n: usize, parent_pos: (f64, f64)) -> Vec<(f64, f64)>
     match n {
         0 => vec![],
         1 => vec![(px, py)],
-        2 => vec![(px - 15.0, py), (px + 15.0, py)],
+        2 => vec![(px - 27.0, py), (px + 27.0, py)],
         3 => vec![
-            (px - 20.0, py + 12.0),
-            (px + 5.0, py + 12.0),
-            (px + 20.0, py - 12.0),
+            (px - 27.0, py + 16.0),
+            (px + 27.0, py + 16.0),
+            (px, py - 32.0),
         ],
         4 => vec![
-            (px - 15.0, py - 15.0),
-            (px + 15.0, py - 15.0),
-            (px - 15.0, py + 15.0),
-            (px + 15.0, py + 15.0),
+            (px - 27.0, py - 27.0),
+            (px + 27.0, py - 27.0),
+            (px - 27.0, py + 27.0),
+            (px + 27.0, py + 27.0),
         ],
         _ => {
-            let r = 18.0_f64;
+            let r = 32.0_f64;
             (0..n)
                 .map(|i| {
                     let angle = -PI / 2.0 + i as f64 * (2.0 * PI / n as f64);

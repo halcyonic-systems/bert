@@ -257,8 +257,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          157.99998,
-          -119.0
+          200.70195,
+          -31.158463
         ],
         "rotation": 0.0
       },
@@ -300,8 +300,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          -124.5,
-          -118.5
+          -217.35114,
+          -16.690863
         ],
         "rotation": -3.1415925
       },
@@ -343,8 +343,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          -19.999998,
-          207.99997
+          -2.1457164,
+          189.47232
         ],
         "rotation": -3.1415925
       },
@@ -386,8 +386,8 @@
       "radius": 42.0,
       "transform": {
         "translation": [
-          19.000017,
-          46.0
+          3.2796233,
+          44.19358
         ],
         "rotation": 0.0
       },
@@ -429,7 +429,7 @@
       "radius": 12.0,
       "transform": {
         "translation": [
-          -1.7194062,
+          -1.719406,
           0.0
         ],
         "rotation": -3.1415925
@@ -471,7 +471,7 @@
       "radius": 12.0,
       "transform": {
         "translation": [
-          -1.7194062,
+          -1.719406,
           0.0
         ],
         "rotation": -3.1415925
@@ -808,8 +808,8 @@
         }
       ],
       "endpoint_offset": {
-        "start_angle": -0.5,
-        "end_angle": 1.8
+        "start_angle": -2.0111012,
+        "end_angle": 2.1405525
       }
     },
     {
@@ -854,8 +854,8 @@
         }
       ],
       "endpoint_offset": {
-        "start_angle": -0.6,
-        "end_angle": 2.5
+        "start_angle": -0.0394532,
+        "end_angle": -3.0189245
       }
     },
     {
@@ -910,8 +910,8 @@
         }
       ],
       "endpoint_offset": {
-        "start_angle": 2.8,
-        "end_angle": 0.6
+        "start_angle": -2.93999,
+        "end_angle": 0.2563054
       }
     },
     {
@@ -971,7 +971,7 @@
         }
       ],
       "endpoint_offset": {
-        "start_angle": -0.9,
+        "start_angle": -0.37325132,
         "end_angle": 2.7
       }
     },
@@ -1022,8 +1022,8 @@
         }
       ],
       "endpoint_offset": {
-        "start_angle": 2.3,
-        "end_angle": -0.4
+        "start_angle": 2.2281861,
+        "end_angle": 0.1491727
       }
     },
     {
@@ -1148,7 +1148,7 @@
       "parameters": [],
       "endpoint_offset": {
         "start_angle": 0.0,
-        "end_angle": 3.14
+        "end_angle": 2.1346657
       }
     },
     {
@@ -1172,8 +1172,8 @@
       "unit": "confirmations",
       "parameters": [],
       "endpoint_offset": {
-        "start_angle": -1.0,
-        "end_angle": 3.14
+        "start_angle": -1.6315323,
+        "end_angle": -2.330614
       }
     }
   ],
