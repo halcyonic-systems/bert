@@ -699,13 +699,13 @@ This list is not exhaustive — the full gap analysis is available via the onto-
 **OWL/RDF ontology** — `gitbook/for-researchers/bert-systems-ontology.rdf`
 : Formal ontology (40 entities, 10 object properties)
 
-**Lean 8-tuple** — `systems-ontology/Systems/Mobus/Tuple.lean`
+**Lean 8-tuple** — `systems-science-foundations/Systems/Mobus/Tuple.lean`
 : Machine-verified coherence constraints
 
-**Lean bridge** — `systems-ontology/Systems/Mobus/Bridge.lean`
+**Lean bridge** — `systems-science-foundations/Systems/Mobus/Bridge.lean`
 : Mobus to Bunge projection with information loss characterization
 
-**Lean boundary** — `systems-ontology/Systems/Mobus/Boundary.lean`
+**Lean boundary** — `systems-science-foundations/Systems/Mobus/Boundary.lean`
 : Boundary completeness and shielding theorems
 
 **Bitcoin model** — `assets/models/examples/bitcoin.json`

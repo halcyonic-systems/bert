@@ -318,13 +318,17 @@ System complexity classification. Serialized as an adjacently-tagged enum.
 7. All `exports_to` and `receives_from` IDs on interfaces resolve to existing entities
 8. No orphan sources/sinks — every external entity must appear in at least one interaction
 
-### L3 — Required field presence (missing = BERT freezes on load)
+### L3 — Required field presence (pre-parse validation)
 
-9. **System**: `sources`, `sinks` (empty arrays OK), `equivalence`, `history`, `transformation`, `member_autonomy`, `time_constant`, `radius`
-10. **Boundary**: `porosity`, `perceptive_fuzziness`
-11. **Interface**: `protocol`, `exports_to`, `receives_from`
-12. **Interaction**: `amount`, `unit`, `parameters`
-13. **ExternalEntity**: `equivalence`, `model`, `is_same_as_id`
+Checked by `validate_json_structure()` before Serde deserialization. Missing fields produce clear error messages with location, not silent crashes.
+
+9. **System**: `info`, `sources`, `sinks`, `parent`, `complexity`, `boundary`, `radius`, `equivalence`, `history`, `transformation`, `member_autonomy`, `time_constant`
+10. **Boundary**: `info`, `porosity`, `perceptive_fuzziness`, `interfaces`
+11. **Interface**: `info`, `protocol`, `type`, `exports_to`, `receives_from`
+12. **Interaction**: `info`, `substance`, `type`, `usability`, `source`, `sink`, `amount`, `unit`, `parameters`
+13. **ExternalEntity**: `info`, `type`, `equivalence`, `model`
+14. **Info** (all entities): `id`, `level`, `name`, `description`
+15. **Processor boundary-tracing**: systems with `parent_interface` must appear as source or sink in at least one flow (warning)
 
 ### L4 — Semantic consistency (future — OWL ontology conformance)
 
@@ -404,7 +408,7 @@ These are conventions, not hard constraints — BERT renders whatever valid coor
 **OWL/RDF ontology** — `gitbook/for-researchers/bert-systems-ontology.rdf`
 : Formal ontology (40 entities, 10 object properties).
 
-**Lean 8-tuple** — `systems-ontology/Systems/Mobus/Tuple.lean`
+**Lean 8-tuple** — `systems-science-foundations/Systems/Mobus/Tuple.lean`
 : Machine-verified coherence constraints.
 
 **Bitcoin model** — `assets/models/examples/bitcoin.json`
