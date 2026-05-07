@@ -33,7 +33,12 @@ pub async fn launch_simulation(params: LaunchParams) -> Result<typedb_reader::Ru
 
     let runner = python_dir.join("mesa_runner.py");
     if !runner.exists() {
-        return Err(format!("mesa_runner.py not found at {}", runner.display()));
+        return Err(
+            "Simulation requires running BERT from source (cargo tauri dev) \
+             with Python and TypeDB installed. \
+             See https://bert.gitbook.io for setup instructions."
+                .into(),
+        );
     }
 
     Command::new(&python_bin)
