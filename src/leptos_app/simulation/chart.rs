@@ -25,22 +25,36 @@ pub fn LineChart(
     let y_min = values.iter().cloned().fold(f64::INFINITY, f64::min);
     let y_max = values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
 
-    let x_range = if (x_max - x_min).abs() < 1e-10 { 1.0 } else { x_max - x_min };
-    let y_range = if (y_max - y_min).abs() < 1e-10 { 1.0 } else { y_max - y_min };
+    let x_range = if (x_max - x_min).abs() < 1e-10 {
+        1.0
+    } else {
+        x_max - x_min
+    };
+    let y_range = if (y_max - y_min).abs() < 1e-10 {
+        1.0
+    } else {
+        y_max - y_min
+    };
 
     let to_x = move |t: f64| pad_l as f64 + (t - x_min) / x_range * plot_w;
     let to_y = move |v: f64| pad_t as f64 + plot_h - (v - y_min) / y_range * plot_h;
 
-    let points: String = ticks.iter().zip(values.iter())
+    let points: String = ticks
+        .iter()
+        .zip(values.iter())
         .map(|(t, v)| format!("{:.1},{:.1}", to_x(*t as f64), to_y(*v)))
         .collect::<Vec<_>>()
         .join(" ");
 
     let y_mid = y_min + y_range / 2.0;
     let fmt = |v: f64| -> String {
-        if v.abs() >= 1000.0 { format!("{v:.0}") }
-        else if v.abs() >= 1.0 { format!("{v:.1}") }
-        else { format!("{v:.3}") }
+        if v.abs() >= 1000.0 {
+            format!("{v:.0}")
+        } else if v.abs() >= 1.0 {
+            format!("{v:.1}")
+        } else {
+            format!("{v:.3}")
+        }
     };
 
     let y_min_str = fmt(y_min);

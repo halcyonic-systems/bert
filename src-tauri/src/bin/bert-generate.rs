@@ -12,7 +12,9 @@ fn main() {
         std::process::exit(1);
     });
 
-    if let Ok(parsed) = serde_json::from_value::<bert_lib::intermediate::IntermediateSpec>(spec.clone()) {
+    if let Ok(parsed) =
+        serde_json::from_value::<bert_lib::intermediate::IntermediateSpec>(spec.clone())
+    {
         let errors = bert_lib::intermediate::validate_intermediate(&parsed);
         if !errors.is_empty() {
             for e in &errors {

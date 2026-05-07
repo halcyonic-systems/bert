@@ -1038,7 +1038,9 @@ impl Complexity {
     /// assert!(!atomic.is_adaptable());
     /// ```
     pub fn set_adaptable(&mut self, adapt: bool) {
-        if let Complexity::Complex { adaptable, .. } = self { *adaptable = adapt }
+        if let Complexity::Complex { adaptable, .. } = self {
+            *adaptable = adapt
+        }
     }
 
     /// Sets the evolvability property for complex systems.
@@ -1078,7 +1080,9 @@ impl Complexity {
     /// assert!(!multiset.is_evolveable());
     /// ```
     pub fn set_evolveable(&mut self, evolve: bool) {
-        if let Complexity::Complex { evolveable, .. } = self { *evolveable = evolve }
+        if let Complexity::Complex { evolveable, .. } = self {
+            *evolveable = evolve
+        }
     }
 }
 

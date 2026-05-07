@@ -87,12 +87,16 @@ pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, Strin
     })
 }
 
-async fn chat_creation_mode(message: &str, history: &[HistoryMessage]) -> Result<ChatResponse, String> {
+async fn chat_creation_mode(
+    message: &str,
+    history: &[HistoryMessage],
+) -> Result<ChatResponse, String> {
     let ollama = Ollama::default();
 
-    let mut messages = vec![
-        ChatMessage::new(MessageRole::System, CREATION_PROMPT.to_string()),
-    ];
+    let mut messages = vec![ChatMessage::new(
+        MessageRole::System,
+        CREATION_PROMPT.to_string(),
+    )];
 
     for h in history {
         let role = match h.role.as_str() {
@@ -134,7 +138,9 @@ pub async fn generate_model_from_conversation(
 ) -> Result<GenerateModelResponse, String> {
     let intermediate = extract_intermediate_from_conversation(&conversation).await?;
     let bert_json = compile_intermediate(&intermediate)?;
-    Ok(GenerateModelResponse { json_data: bert_json })
+    Ok(GenerateModelResponse {
+        json_data: bert_json,
+    })
 }
 
 async fn extract_intermediate_from_conversation(
@@ -170,9 +176,7 @@ Conversation:
     );
 
     let ollama = Ollama::default();
-    let messages = vec![
-        ChatMessage::new(MessageRole::User, extraction_prompt),
-    ];
+    let messages = vec![ChatMessage::new(MessageRole::User, extraction_prompt)];
     let request = ChatMessageRequest::new(OLLAMA_MODEL.to_string(), messages);
 
     let response = ollama
@@ -192,9 +196,7 @@ Conversation:
         .map_err(|e| format!("Failed to parse extracted JSON: {e}\n\nRaw output:\n{raw}"))
 }
 
-fn compile_intermediate(
-    intermediate: &serde_json::Value,
-) -> Result<String, String> {
+fn compile_intermediate(intermediate: &serde_json::Value) -> Result<String, String> {
     // Validate the intermediate format
     let spec: crate::intermediate::IntermediateSpec = serde_json::from_value(intermediate.clone())
         .map_err(|e| format!("Failed to parse intermediate format: {e}"))?;
@@ -208,11 +210,13 @@ fn compile_intermediate(
     let mut generator = crate::generator::BertModelGenerator::new(intermediate.clone());
     let model = generator.generate();
 
-    serde_json::to_string(&model)
-        .map_err(|e| format!("Failed to serialize model: {e}"))
+    serde_json::to_string(&model).map_err(|e| format!("Failed to serialize model: {e}"))
 }
 
-async fn try_bert_rag(message: &str, model_summary: &str) -> Result<String, Box<dyn std::error::Error>> {
+async fn try_bert_rag(
+    message: &str,
+    model_summary: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     let body = serde_json::json!({
         "question": message,
         "model_context": model_summary,
@@ -223,11 +227,7 @@ async fn try_bert_rag(message: &str, model_summary: &str) -> Result<String, Box<
         .timeout(Duration::from_secs(60))
         .build()?;
 
-    let resp = client
-        .post(BERT_RAG_URL)
-        .json(&body)
-        .send()
-        .await?;
+    let resp = client.post(BERT_RAG_URL).json(&body).send().await?;
 
     let json: serde_json::Value = resp.json().await?;
     let answer = json
@@ -238,12 +238,13 @@ async fn try_bert_rag(message: &str, model_summary: &str) -> Result<String, Box<
     Ok(answer.to_string())
 }
 
-async fn try_ollama(message: &str, model_summary: &str) -> Result<String, Box<dyn std::error::Error>> {
+async fn try_ollama(
+    message: &str,
+    model_summary: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     let ollama = Ollama::default();
 
-    let user_prompt = format!(
-        "Model context:\n{model_summary}\n\nUser question: {message}"
-    );
+    let user_prompt = format!("Model context:\n{model_summary}\n\nUser question: {message}");
 
     let messages = vec![
         ChatMessage::new(MessageRole::System, ANALYSIS_PROMPT.to_string()),
@@ -264,10 +265,16 @@ fn extract_model_summary(context: &str) -> String {
     let mut summary = String::new();
 
     let s0 = find_s0(&json);
-    if let Some(name) = s0.and_then(|s| s.pointer("/info/name")).and_then(|v| v.as_str()) {
+    if let Some(name) = s0
+        .and_then(|s| s.pointer("/info/name"))
+        .and_then(|v| v.as_str())
+    {
         summary.push_str(&format!("System of Interest: {name}\n"));
     }
-    if let Some(desc) = s0.and_then(|s| s.pointer("/info/description")).and_then(|v| v.as_str()) {
+    if let Some(desc) = s0
+        .and_then(|s| s.pointer("/info/description"))
+        .and_then(|v| v.as_str())
+    {
         if !desc.is_empty() {
             summary.push_str(&format!("Description: {desc}\n"));
         }
@@ -277,10 +284,19 @@ fn extract_model_summary(context: &str) -> String {
         summary.push_str(&format!("\nSystems ({}):\n", systems.len()));
         for s in systems.iter().take(10) {
             if let Some(name) = s.pointer("/info/name").and_then(|v| v.as_str()) {
-                let id = s.pointer("/info/id").and_then(|v| v.as_str()).unwrap_or("?");
+                let id = s
+                    .pointer("/info/id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("?");
                 let arch = s.get("archetype").and_then(|v| v.as_str()).unwrap_or("-");
-                let pi = s.pointer("/boundary/parent_interface").and_then(|v| v.as_str());
-                let role = if pi.is_some() { "processor" } else { "subsystem" };
+                let pi = s
+                    .pointer("/boundary/parent_interface")
+                    .and_then(|v| v.as_str());
+                let role = if pi.is_some() {
+                    "processor"
+                } else {
+                    "subsystem"
+                };
                 summary.push_str(&format!("  {id}: {name} [{arch}, {role}]\n"));
             }
         }
@@ -304,15 +320,23 @@ fn extract_model_summary(context: &str) -> String {
         }
     }
 
-    if let Some(sources) = json.pointer("/environment/sources").and_then(|v| v.as_array()) {
-        let names: Vec<&str> = sources.iter()
+    if let Some(sources) = json
+        .pointer("/environment/sources")
+        .and_then(|v| v.as_array())
+    {
+        let names: Vec<&str> = sources
+            .iter()
             .filter_map(|s| s.pointer("/info/name").and_then(|v| v.as_str()))
             .collect();
         summary.push_str(&format!("\nSources: {}\n", names.join(", ")));
     }
 
-    if let Some(sinks) = json.pointer("/environment/sinks").and_then(|v| v.as_array()) {
-        let names: Vec<&str> = sinks.iter()
+    if let Some(sinks) = json
+        .pointer("/environment/sinks")
+        .and_then(|v| v.as_array())
+    {
+        let names: Vec<&str> = sinks
+            .iter()
             .filter_map(|s| s.pointer("/info/name").and_then(|v| v.as_str()))
             .collect();
         summary.push_str(&format!("Sinks: {}\n", names.join(", ")));
@@ -327,7 +351,9 @@ fn mock_response(message: &str, context: &str) -> String {
     let model_info = parse_model_facts(context);
     let message_lower = message.to_lowercase();
 
-    if message_lower.contains("what is") && (message_lower.contains("system") || message_lower.contains("this")) {
+    if message_lower.contains("what is")
+        && (message_lower.contains("system") || message_lower.contains("this"))
+    {
         model_info
     } else if message_lower.contains("source") {
         let sources = extract_list(context, "environment.sources", "info.name");
@@ -346,7 +372,10 @@ fn mock_response(message: &str, context: &str) -> String {
         format!("{}\n\n**Interfaces:**\n{}", model_info, interfaces)
     } else if message_lower.contains("processor") {
         let processors = extract_processors(context);
-        format!("{}\n\n**Interface Processors:**\n{}", model_info, processors)
+        format!(
+            "{}\n\n**Interface Processors:**\n{}",
+            model_info, processors
+        )
     } else {
         format!(
             "{}\n\n*Mock mode — no LLM backend detected. Start bert-rag with `launch start facets` or Ollama with `ollama run {OLLAMA_MODEL}`*",
@@ -356,7 +385,9 @@ fn mock_response(message: &str, context: &str) -> String {
 }
 
 fn find_s0(json: &serde_json::Value) -> Option<&serde_json::Value> {
-    json.get("systems")?.as_array()?.iter()
+    json.get("systems")?
+        .as_array()?
+        .iter()
         .find(|s| s.pointer("/info/level").and_then(|v| v.as_i64()) == Some(0))
 }
 
@@ -366,29 +397,42 @@ fn parse_model_facts(context: &str) -> String {
     };
 
     let s0 = find_s0(&json);
-    let name = s0.and_then(|s| s.pointer("/info/name")).and_then(|v| v.as_str())
-        .unwrap_or_else(|| json.pointer("/environment/info/name").and_then(|v| v.as_str()).unwrap_or("Unknown"));
-    let desc = s0.and_then(|s| s.pointer("/info/description")).and_then(|v| v.as_str())
+    let name = s0
+        .and_then(|s| s.pointer("/info/name"))
+        .and_then(|v| v.as_str())
+        .unwrap_or_else(|| {
+            json.pointer("/environment/info/name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown")
+        });
+    let desc = s0
+        .and_then(|s| s.pointer("/info/description"))
+        .and_then(|v| v.as_str())
         .unwrap_or("");
 
-    let systems_count = json.get("systems")
+    let systems_count = json
+        .get("systems")
         .and_then(|v| v.as_array())
         .map(|a| a.len())
         .unwrap_or(0);
-    let interactions_count = json.get("interactions")
+    let interactions_count = json
+        .get("interactions")
         .and_then(|v| v.as_array())
         .map(|a| a.len())
         .unwrap_or(0);
-    let sources_count = json.pointer("/environment/sources")
+    let sources_count = json
+        .pointer("/environment/sources")
         .and_then(|v| v.as_array())
         .map(|a| a.len())
         .unwrap_or(0);
-    let sinks_count = json.pointer("/environment/sinks")
+    let sinks_count = json
+        .pointer("/environment/sinks")
         .and_then(|v| v.as_array())
         .map(|a| a.len())
         .unwrap_or(0);
 
-    let subsystem_names: Vec<&str> = json.get("systems")
+    let subsystem_names: Vec<&str> = json
+        .get("systems")
         .and_then(|v| v.as_array())
         .map(|arr| {
             arr.iter()
@@ -406,8 +450,16 @@ fn parse_model_facts(context: &str) -> String {
          • **Sources**: {sources_count}\n\
          • **Sinks**: {sinks_count}\n\
          • **Subsystems**: {subs}",
-        desc_line = if desc.is_empty() { String::new() } else { format!("• **Description**: {desc}\n") },
-        subs = if subsystem_names.is_empty() { "None".to_string() } else { subsystem_names.join(", ") },
+        desc_line = if desc.is_empty() {
+            String::new()
+        } else {
+            format!("• **Description**: {desc}\n")
+        },
+        subs = if subsystem_names.is_empty() {
+            "None".to_string()
+        } else {
+            subsystem_names.join(", ")
+        },
     )
 }
 
@@ -442,10 +494,26 @@ fn extract_systems_detail(context: &str) -> String {
                 .filter_map(|(i, s)| {
                     let name = s.pointer("/info/name")?.as_str()?;
                     let id = s.pointer("/info/id")?.as_str().unwrap_or("?");
-                    let archetype = s.get("archetype").and_then(|v| v.as_str()).unwrap_or("unspecified");
-                    let parent_iface = s.pointer("/boundary/parent_interface").and_then(|v| v.as_str());
-                    let role = if parent_iface.is_some() { "processor" } else { "independent" };
-                    Some(format!("{}. **{}** ({}) — {} [{}]", i + 1, name, id, archetype, role))
+                    let archetype = s
+                        .get("archetype")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unspecified");
+                    let parent_iface = s
+                        .pointer("/boundary/parent_interface")
+                        .and_then(|v| v.as_str());
+                    let role = if parent_iface.is_some() {
+                        "processor"
+                    } else {
+                        "independent"
+                    };
+                    Some(format!(
+                        "{}. **{}** ({}) — {} [{}]",
+                        i + 1,
+                        name,
+                        id,
+                        archetype,
+                        role
+                    ))
                 })
                 .collect::<Vec<_>>()
                 .join("\n")
@@ -468,7 +536,14 @@ fn extract_interactions_detail(context: &str) -> String {
                     let src = ix.get("source")?.as_str().unwrap_or("?");
                     let snk = ix.get("sink")?.as_str().unwrap_or("?");
                     let ty = ix.get("type")?.as_str().unwrap_or("?");
-                    Some(format!("{}. **{}** — {} → {} [{}]", i + 1, name, src, snk, ty))
+                    Some(format!(
+                        "{}. **{}** — {} → {} [{}]",
+                        i + 1,
+                        name,
+                        src,
+                        snk,
+                        ty
+                    ))
                 })
                 .collect::<Vec<_>>()
                 .join("\n")
@@ -511,7 +586,8 @@ fn extract_processors(context: &str) -> String {
     json.get("systems")
         .and_then(|v| v.as_array())
         .map(|arr| {
-            let procs: Vec<String> = arr.iter()
+            let procs: Vec<String> = arr
+                .iter()
                 .filter_map(|s| {
                     let pi = s.pointer("/boundary/parent_interface")?.as_str()?;
                     let name = s.pointer("/info/name")?.as_str()?;
@@ -532,6 +608,10 @@ fn bullet_list(items: &[String]) -> String {
     if items.is_empty() {
         "None found.".to_string()
     } else {
-        items.iter().map(|s| format!("• {s}")).collect::<Vec<_>>().join("\n")
+        items
+            .iter()
+            .map(|s| format!("• {s}"))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }

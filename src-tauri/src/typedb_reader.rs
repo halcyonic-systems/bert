@@ -17,7 +17,10 @@ pub async fn connect() -> Result<TypeDBDriver, String> {
     .map_err(|e| format!("TypeDB connection failed: {e}"))
 }
 
-fn extract_str(concept: Option<&typedb_driver::concept::Concept>, field: &str) -> Result<String, String> {
+fn extract_str(
+    concept: Option<&typedb_driver::concept::Concept>,
+    field: &str,
+) -> Result<String, String> {
     concept
         .ok_or_else(|| format!("missing {field}"))?
         .try_get_string()
@@ -25,14 +28,20 @@ fn extract_str(concept: Option<&typedb_driver::concept::Concept>, field: &str) -
         .ok_or_else(|| format!("{field} is not a string"))
 }
 
-fn extract_i64(concept: Option<&typedb_driver::concept::Concept>, field: &str) -> Result<i64, String> {
+fn extract_i64(
+    concept: Option<&typedb_driver::concept::Concept>,
+    field: &str,
+) -> Result<i64, String> {
     concept
         .ok_or_else(|| format!("missing {field}"))?
         .try_get_integer()
         .ok_or_else(|| format!("{field} is not an integer"))
 }
 
-fn extract_f64(concept: Option<&typedb_driver::concept::Concept>, field: &str) -> Result<f64, String> {
+fn extract_f64(
+    concept: Option<&typedb_driver::concept::Concept>,
+    field: &str,
+) -> Result<f64, String> {
     concept
         .ok_or_else(|| format!("missing {field}"))?
         .try_get_double()
@@ -78,7 +87,11 @@ pub struct SimulationResults {
     pub system_timeseries: Vec<SystemTimeseries>,
 }
 
-pub async fn query_run_status(driver: &TypeDBDriver, db: &str, run_id: &str) -> Result<RunStatus, String> {
+pub async fn query_run_status(
+    driver: &TypeDBDriver,
+    db: &str,
+    run_id: &str,
+) -> Result<RunStatus, String> {
     let query = format!(
         r#"match $r isa simulation_run, has run_id "{run_id}", has run_status $st, has tick_count $tc;"#
     );
@@ -107,7 +120,11 @@ pub async fn query_run_status(driver: &TypeDBDriver, db: &str, run_id: &str) -> 
     }
 }
 
-pub async fn query_runs(driver: &TypeDBDriver, db: &str, model_name: &str) -> Result<Vec<RunInfo>, String> {
+pub async fn query_runs(
+    driver: &TypeDBDriver,
+    db: &str,
+    model_name: &str,
+) -> Result<Vec<RunInfo>, String> {
     let query = format!(
         r#"match $r isa simulation_run, has run_id $rid, has model_ref "{model_name}", has run_status $st, has tick_count $tc;"#
     );
@@ -127,13 +144,21 @@ pub async fn query_runs(driver: &TypeDBDriver, db: &str, model_name: &str) -> Re
         let status = extract_str(row.get("st").map_err(|e| format!("{e}"))?, "st")?;
         let tick_count = extract_i64(row.get("tc").map_err(|e| format!("{e}"))?, "tc")? as u64;
 
-        runs.push(RunInfo { run_id, status, tick_count });
+        runs.push(RunInfo {
+            run_id,
+            status,
+            tick_count,
+        });
     }
 
     Ok(runs)
 }
 
-pub async fn query_results(driver: &TypeDBDriver, db: &str, run_id: &str) -> Result<SimulationResults, String> {
+pub async fn query_results(
+    driver: &TypeDBDriver,
+    db: &str,
+    run_id: &str,
+) -> Result<SimulationResults, String> {
     let flow_query = format!(
         r#"match
             $fo isa flow_observation, has run_id "{run_id}", has tick $t, has observed_amount $amt;
@@ -154,9 +179,13 @@ pub async fn query_results(driver: &TypeDBDriver, db: &str, run_id: &str) -> Res
         .map_err(|e| format!("Transaction: {e}"))?;
 
     // Flow observations
-    let flow_answer = tx.query(&flow_query).await.map_err(|e| format!("Flow query: {e}"))?;
+    let flow_answer = tx
+        .query(&flow_query)
+        .await
+        .map_err(|e| format!("Flow query: {e}"))?;
     let mut flow_stream = flow_answer.into_rows();
-    let mut flow_map: std::collections::HashMap<String, FlowTimeseries> = std::collections::HashMap::new();
+    let mut flow_map: std::collections::HashMap<String, FlowTimeseries> =
+        std::collections::HashMap::new();
 
     while let Some(row_result) = flow_stream.next().await {
         let row = row_result.map_err(|e| format!("Flow row: {e}"))?;
@@ -165,20 +194,26 @@ pub async fn query_results(driver: &TypeDBDriver, db: &str, run_id: &str) -> Res
         let tick = extract_i64(row.get("t").map_err(|e| format!("{e}"))?, "t")? as u64;
         let amount = extract_f64(row.get("amt").map_err(|e| format!("{e}"))?, "amt")?;
 
-        let entry = flow_map.entry(iid.clone()).or_insert_with(|| FlowTimeseries {
-            interaction_id: iid,
-            name,
-            ticks: Vec::new(),
-            values: Vec::new(),
-        });
+        let entry = flow_map
+            .entry(iid.clone())
+            .or_insert_with(|| FlowTimeseries {
+                interaction_id: iid,
+                name,
+                ticks: Vec::new(),
+                values: Vec::new(),
+            });
         entry.ticks.push(tick);
         entry.values.push(amount);
     }
 
     // System observations
-    let sys_answer = tx.query(&sys_query).await.map_err(|e| format!("System query: {e}"))?;
+    let sys_answer = tx
+        .query(&sys_query)
+        .await
+        .map_err(|e| format!("System query: {e}"))?;
     let mut sys_stream = sys_answer.into_rows();
-    let mut sys_map: std::collections::HashMap<String, SystemTimeseries> = std::collections::HashMap::new();
+    let mut sys_map: std::collections::HashMap<String, SystemTimeseries> =
+        std::collections::HashMap::new();
 
     while let Some(row_result) = sys_stream.next().await {
         let row = row_result.map_err(|e| format!("System row: {e}"))?;

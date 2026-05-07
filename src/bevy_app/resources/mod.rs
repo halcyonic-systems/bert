@@ -101,7 +101,6 @@ pub enum Theme {
     White,
 }
 
-
 impl Theme {
     /// Toggle between normal beige and white background
     pub fn toggle(&self) -> Self {

@@ -55,12 +55,8 @@ fn layout_tree(
             let tree_start_x = root_x_mid - tree_width * 0.5;
 
             let raw_svg_tree_view = draw_raw_node_tree(root_node);
-            let svg_tree_description_view = draw_node_tree_description(
-                world_model,
-                &ordered_systems,
-                root_x_mid,
-                tree_start_x,
-            );
+            let svg_tree_description_view =
+                draw_node_tree_description(world_model, &ordered_systems, root_x_mid, tree_start_x);
 
             view! {
                 <svg width=width height=height>

@@ -74,9 +74,11 @@ pub fn add_inflow_create_button(
 
         for (outflow, flow_start_connection) in &outflow_query {
             if matches!(flow_start_connection.target_type, StartTargetType::System)
-                && flow_start_connection.target == focused_system && outflow.usability.is_export() {
-                    outflow_usabilities.insert(outflow.usability);
-                }
+                && flow_start_connection.target == focused_system
+                && outflow.usability.is_export()
+            {
+                outflow_usabilities.insert(outflow.usability);
+            }
         }
 
         let is_completed_import_subsystem =

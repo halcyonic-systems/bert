@@ -48,9 +48,7 @@ pub fn take_screenshot(mut commands: Commands) {
     let minute = js_date.get_minutes();
     let second = js_date.get_seconds();
 
-    let timestamp = format!(
-        "{year:04}-{month:02}-{day:02}_{hour:02}-{minute:02}-{second:02}"
-    );
+    let timestamp = format!("{year:04}-{month:02}-{day:02}_{hour:02}-{minute:02}-{second:02}");
 
     let filename = format!("bert_screenshot_{timestamp}.png");
     info!("Initiating screenshot capture: {}", filename);

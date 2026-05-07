@@ -1,5 +1,5 @@
-use leptos::prelude::*;
 use leptos::ev;
+use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use tauri_sys::core::invoke_result;
 
@@ -94,7 +94,12 @@ pub fn ChatPanel(
 
         let uid = alloc_id();
         set_messages.update(|msgs| {
-            msgs.push(ChatMessage { id: uid, content: message.clone(), is_user: true, provider: None });
+            msgs.push(ChatMessage {
+                id: uid,
+                content: message.clone(),
+                is_user: true,
+                provider: None,
+            });
         });
         set_is_loading.set(true);
         set_input_value.set(String::new());
@@ -102,12 +107,17 @@ pub fn ChatPanel(
         let creating = is_creating.get_untracked();
 
         // Build history from prior messages (exclude the message we just added)
-        let history: Vec<HistoryEntry> = messages.get_untracked()
+        let history: Vec<HistoryEntry> = messages
+            .get_untracked()
             .iter()
             .filter(|m| m.id != uid)
             .filter(|m| m.provider.as_deref() != Some("system"))
             .map(|m| HistoryEntry {
-                role: if m.is_user { "user".to_string() } else { "assistant".to_string() },
+                role: if m.is_user {
+                    "user".to_string()
+                } else {
+                    "assistant".to_string()
+                },
                 content: m.content.clone(),
             })
             .collect();
@@ -132,16 +142,22 @@ pub fn ChatPanel(
                 },
             };
 
-            let (response_text, provider) = match invoke_result::<ChatResponse, String>("chat_with_model", &args).await {
-                Ok(resp) => (resp.response, Some(resp.provider)),
-                Err(e) => (format!("Error: {e}"), None),
-            };
+            let (response_text, provider) =
+                match invoke_result::<ChatResponse, String>("chat_with_model", &args).await {
+                    Ok(resp) => (resp.response, Some(resp.provider)),
+                    Err(e) => (format!("Error: {e}"), None),
+                };
 
             let rid = next_id.get_untracked();
             set_next_id.set(rid + 1);
 
             set_messages.update(|msgs| {
-                msgs.push(ChatMessage { id: rid, content: response_text, is_user: false, provider });
+                msgs.push(ChatMessage {
+                    id: rid,
+                    content: response_text,
+                    is_user: false,
+                    provider,
+                });
             });
             set_is_loading.set(false);
         });
@@ -169,7 +185,8 @@ pub fn ChatPanel(
             });
         });
 
-        let transcript = messages.get_untracked()
+        let transcript = messages
+            .get_untracked()
             .iter()
             .filter(|m| m.id != status_id)
             .map(|m| {
@@ -180,9 +197,16 @@ pub fn ChatPanel(
             .join("\n\n");
 
         leptos::task::spawn_local(async move {
-            let args = GenerateArgs { conversation: transcript };
+            let args = GenerateArgs {
+                conversation: transcript,
+            };
 
-            match invoke_result::<GenerateResponse, String>("generate_model_from_conversation", &args).await {
+            match invoke_result::<GenerateResponse, String>(
+                "generate_model_from_conversation",
+                &args,
+            )
+            .await
+            {
                 Ok(resp) => {
                     on_model_generated.run(resp.json_data.into_bytes());
                 }
@@ -203,9 +227,7 @@ pub fn ChatPanel(
         });
     };
 
-    let has_user_messages = Memo::new(move |_| {
-        messages.get().iter().any(|m| m.is_user)
-    });
+    let has_user_messages = Memo::new(move |_| messages.get().iter().any(|m| m.is_user));
 
     view! {
         <Show when=move || visible.get()>

@@ -12,9 +12,11 @@ use crate::bevy_app::{
     InteractionQuery, InterfaceQuery, IsSameAsIdQuery, SelectedHighlightHelperAdded,
     SelectionFilter, SubSystemFilter, SubSystemQuery, SystemElement, SystemQuery,
 };
-use crate::leptos_app::components::{AppMode, ChatPanel, ControlsMenu, LandingScreen, ModelBrowser, Palette, Toast, ValidationPanel};
-use crate::leptos_app::simulation::SimPanel;
+use crate::leptos_app::components::{
+    AppMode, ChatPanel, ControlsMenu, LandingScreen, ModelBrowser, Palette, Toast, ValidationPanel,
+};
 use crate::leptos_app::details::Details;
+use crate::leptos_app::simulation::{SimDashboard, SimPanel};
 use crate::LoadFileEvent;
 use bevy::prelude::With;
 use leptos::prelude::*;
@@ -129,7 +131,8 @@ pub fn App() -> impl IntoView {
                 // L3: Pre-parse structural validation — catches missing fields
                 // before Serde fails with an unhelpful error
                 if let Ok(json_value) = serde_json::from_slice::<serde_json::Value>(&data) {
-                    let pre_result = crate::bevy_app::data_model::validate::validate_json_structure(&json_value);
+                    let pre_result =
+                        crate::bevy_app::data_model::validate::validate_json_structure(&json_value);
                     if pre_result.has_errors() {
                         set_pending_load.set(None);
                         set_validation_issues.set(Some(pre_result.issues));
@@ -264,6 +267,7 @@ pub fn App() -> impl IntoView {
     let (sim_panel_visible, set_sim_panel_visible) = signal(false);
     let (chat_visible, set_chat_visible) = signal(false);
     let (active_run, set_active_run) = signal(None::<simulation::types::RunInfo>);
+    let (sim_results, set_sim_results) = signal(None::<simulation::types::SimulationResults>);
 
     let tauri_available = leptos_use::js! {
         "__TAURI__" in &window()
@@ -513,8 +517,14 @@ pub fn App() -> impl IntoView {
             on_launch=Callback::new(move |run_info: simulation::types::RunInfo| {
                 set_active_run.set(Some(run_info));
             })
+            on_results=Callback::new(move |res: simulation::types::SimulationResults| {
+                set_sim_results.set(Some(res));
+            })
             active_run=Signal::derive(move || active_run.get())
             model_name=Signal::derive(move || loaded_model_name.get())
+        />
+        <SimDashboard
+            results=Signal::derive(move || sim_results.get())
         />
         <div class="h-screen"
              tabindex="0"

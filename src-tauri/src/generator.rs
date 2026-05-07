@@ -253,9 +253,7 @@ impl BertModelGenerator {
                     // Auto-generate processor flow if not already covered by
                     // processor_flows OR internal_flows.
                     let existing_pf = proc_flows.iter().any(|pf| {
-                        pf.get("processor_interface")
-                            .and_then(|v| v.as_str())
-                            == Some(&iface_name)
+                        pf.get("processor_interface").and_then(|v| v.as_str()) == Some(&iface_name)
                     });
 
                     let existing_if = int_flows.iter().any(|ifl| {
@@ -363,15 +361,18 @@ impl BertModelGenerator {
                         .and_then(|v| v.as_str())
                         .unwrap_or(&iface_name)
                         .to_string();
-                    self.processor_name_to_iface
-                        .insert(proc_name, iface_name);
+                    self.processor_name_to_iface.insert(proc_name, iface_name);
                 }
             }
         }
 
         // 4. Normalize substance format in all flow lists
         for flow_list_key in &["external_flows", "internal_flows", "processor_flows"] {
-            if let Some(flows) = self.spec.get_mut(flow_list_key).and_then(|v| v.as_array_mut()) {
+            if let Some(flows) = self
+                .spec
+                .get_mut(flow_list_key)
+                .and_then(|v| v.as_array_mut())
+            {
                 for flow in flows.iter_mut() {
                     // Flatten substance dict → substance_type / substance_subtype
                     if let Some(subst) = flow.get("substance").cloned() {
@@ -427,8 +428,7 @@ impl BertModelGenerator {
             .unwrap_or_default();
         for (i, snk) in sinks.iter().enumerate() {
             if let Some(name) = snk.get("name").and_then(|v| v.as_str()) {
-                self.sink_ids
-                    .insert(name.to_string(), format!("Snk-1.{i}"));
+                self.sink_ids.insert(name.to_string(), format!("Snk-1.{i}"));
             }
         }
 
@@ -455,8 +455,7 @@ impl BertModelGenerator {
                 self.processor_interface_counter += 1;
                 let iface_id = format!("I0.{idx}");
                 self.interface_ids.insert(name.clone(), iface_id);
-                self.processor_ids
-                    .insert(name.clone(), format!("C0.{idx}"));
+                self.processor_ids.insert(name.clone(), format!("C0.{idx}"));
             } else {
                 let idx = self.bare_interface_counter;
                 self.bare_interface_counter += 1;
@@ -484,7 +483,8 @@ impl BertModelGenerator {
                 .to_string();
             let sub_id = format!("C0.{i}");
             self.subsystem_ids.insert(name.clone(), sub_id);
-            self.subsystem_positions.insert(name.clone(), level1_positions[i]);
+            self.subsystem_positions
+                .insert(name.clone(), level1_positions[i]);
 
             // Level-2 children
             let children: Vec<Value> = sub
@@ -493,8 +493,7 @@ impl BertModelGenerator {
                 .cloned()
                 .unwrap_or_default();
             if !children.is_empty() {
-                let child_positions =
-                    compute_level2_positions(children.len(), level1_positions[i]);
+                let child_positions = compute_level2_positions(children.len(), level1_positions[i]);
                 for (j, child) in children.iter().enumerate() {
                     let child_name = child
                         .get("name")
@@ -502,8 +501,7 @@ impl BertModelGenerator {
                         .unwrap_or("")
                         .to_string();
                     let child_id = format!("C0.{i}.{j}");
-                    self.subsystem_ids
-                        .insert(child_name.clone(), child_id);
+                    self.subsystem_ids.insert(child_name.clone(), child_id);
                     self.subsystem_positions
                         .insert(child_name, child_positions[j]);
                 }
@@ -518,7 +516,11 @@ impl BertModelGenerator {
             .cloned()
             .unwrap_or_default();
         for iface in &ifaces_for_processors {
-            if iface.get("processor").map(|v| !v.is_null()).unwrap_or(false) {
+            if iface
+                .get("processor")
+                .map(|v| !v.is_null())
+                .unwrap_or(false)
+            {
                 let iface_name = iface
                     .get("name")
                     .and_then(|v| v.as_str())
@@ -759,10 +761,7 @@ impl BertModelGenerator {
                 .to_string();
 
             let (angle, receives_from, exports_to) = if iface_type == "Import" {
-                let a = import_angles
-                    .get(import_idx)
-                    .copied()
-                    .unwrap_or(PI);
+                let a = import_angles.get(import_idx).copied().unwrap_or(PI);
                 import_idx += 1;
 
                 let rf: Vec<Value> = iface
@@ -779,10 +778,7 @@ impl BertModelGenerator {
                     .unwrap_or_default();
                 (a, rf, vec![])
             } else {
-                let a = export_angles
-                    .get(export_idx)
-                    .copied()
-                    .unwrap_or(0.0);
+                let a = export_angles.get(export_idx).copied().unwrap_or(0.0);
                 export_idx += 1;
 
                 let et: Vec<Value> = iface
@@ -791,9 +787,7 @@ impl BertModelGenerator {
                     .map(|arr| {
                         arr.iter()
                             .filter_map(|v| v.as_str())
-                            .filter_map(|snk_name| {
-                                self.sink_ids.get(snk_name).map(|id| json!(id))
-                            })
+                            .filter_map(|snk_name| self.sink_ids.get(snk_name).map(|id| json!(id)))
                             .collect()
                     })
                     .unwrap_or_default();
@@ -861,7 +855,10 @@ impl BertModelGenerator {
                 .get("evolveable")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
-            let archetype = sub.get("archetype").and_then(|v| v.as_str()).map(String::from);
+            let archetype = sub
+                .get("archetype")
+                .and_then(|v| v.as_str())
+                .map(String::from);
             let agent = sub.get("agent").cloned();
 
             let system = make_system(
@@ -922,7 +919,10 @@ impl BertModelGenerator {
                     .get("evolveable")
                     .and_then(|v| v.as_bool())
                     .unwrap_or(false);
-                let child_archetype = child.get("archetype").and_then(|v| v.as_str()).map(String::from);
+                let child_archetype = child
+                    .get("archetype")
+                    .and_then(|v| v.as_str())
+                    .map(String::from);
                 let child_agent = child.get("agent").cloned();
 
                 let child_system = make_system(
@@ -1355,9 +1355,7 @@ impl BertModelGenerator {
                 let snk_str = sink_id.as_str().unwrap_or("");
                 let src_parts = strip_c_prefix_parts(src_str);
                 let snk_parts = strip_c_prefix_parts(snk_str);
-                if src_parts.len() >= 3
-                    && snk_parts.len() >= 3
-                    && src_parts[..2] == snk_parts[..2]
+                if src_parts.len() >= 3 && snk_parts.len() >= 3 && src_parts[..2] == snk_parts[..2]
                 {
                     2
                 } else {
@@ -1515,7 +1513,10 @@ impl BertModelGenerator {
 
         for iface in &iface_specs {
             let name = iface.get("name").and_then(|v| v.as_str()).unwrap_or("");
-            let ty = iface.get("type").and_then(|v| v.as_str()).unwrap_or("Import");
+            let ty = iface
+                .get("type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Import");
 
             if name == iface_name {
                 return if ty == "Import" {
@@ -1557,9 +1558,7 @@ fn make_system(
     agent: Option<&Value>,
     parent_interface: Option<&str>,
 ) -> Value {
-    let boundary_id = sys_id
-        .replacen('C', "B", 1)
-        .replacen('S', "B", 1);
+    let boundary_id = sys_id.replacen('C', "B", 1).replacen('S', "B", 1);
 
     let complexity_val = serialize_complexity(complexity, adaptable, evolveable);
 
@@ -1675,18 +1674,12 @@ fn make_parameters(flow: &Value) -> Vec<Value> {
         .map(|arr| {
             arr.iter()
                 .map(|p| {
-                    let name = p
-                        .get("name")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("");
+                    let name = p.get("name").and_then(|v| v.as_str()).unwrap_or("");
                     let value = p
                         .get("value")
                         .map(|v| v.to_string().trim_matches('"').to_string())
                         .unwrap_or_default();
-                    let unit = p
-                        .get("unit")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("");
+                    let unit = p.get("unit").and_then(|v| v.as_str()).unwrap_or("");
                     json!({ "name": name, "value": value, "unit": unit })
                 })
                 .collect()

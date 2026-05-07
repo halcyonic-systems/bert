@@ -338,9 +338,7 @@ pub fn validate_intermediate(spec: &IntermediateSpec) -> Vec<String> {
         let mut sink_names: Vec<&str> = Vec::new();
         for (i, snk) in spec.sinks.iter().enumerate() {
             if snk.name.trim().is_empty() {
-                errors.push(format!(
-                    "sinks[{i}].name is required and must be non-empty"
-                ));
+                errors.push(format!("sinks[{i}].name is required and must be non-empty"));
             } else {
                 sink_names.push(&snk.name);
             }
@@ -373,10 +371,8 @@ pub fn validate_intermediate(spec: &IntermediateSpec) -> Vec<String> {
 
     // -- routing_table --------------------------------------------------------
     // Also accept the normalized `interfaces` list; validate whichever is present.
-    let mut interface_names: std::collections::HashSet<String> =
-        std::collections::HashSet::new();
-    let mut processor_names: std::collections::HashSet<String> =
-        std::collections::HashSet::new();
+    let mut interface_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut processor_names: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for (i, rt) in spec.routing_table.iter().enumerate() {
         if rt.interface.trim().is_empty() {
@@ -403,8 +399,7 @@ pub fn validate_intermediate(spec: &IntermediateSpec) -> Vec<String> {
                     "routing_table[{i}].connected_to '{}' must reference an existing source name for Import interfaces",
                     rt.connected_to
                 ));
-            } else if rt.type_name == "Export"
-                && !sink_name_set.contains(rt.connected_to.as_str())
+            } else if rt.type_name == "Export" && !sink_name_set.contains(rt.connected_to.as_str())
             {
                 errors.push(format!(
                     "routing_table[{i}].connected_to '{}' must reference an existing sink name for Export interfaces",

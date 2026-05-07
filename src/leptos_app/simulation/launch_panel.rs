@@ -4,18 +4,30 @@ use tauri_sys::core::invoke_result;
 use wasm_bindgen_futures::JsFuture;
 
 use super::chart::LineChart;
-use super::types::{LaunchParams, PollParams, ResultsParams, RunInfo, RunStatus, SimulationResults};
+use super::types::{
+    LaunchParams, PollParams, ResultsParams, RunInfo, RunStatus, SimulationResults,
+};
 
 #[derive(Serialize)]
-struct LaunchArgs { params: LaunchParams }
+struct LaunchArgs {
+    params: LaunchParams,
+}
 #[derive(Serialize)]
-struct PollArgs { params: PollParams }
+struct PollArgs {
+    params: PollParams,
+}
 #[derive(Serialize)]
-struct ResultsArgs { params: ResultsParams }
+struct ResultsArgs {
+    params: ResultsParams,
+}
 
 const COLORS: &[&str] = &[
-    "rgb(59,130,246)", "rgb(16,185,129)", "rgb(245,158,11)",
-    "rgb(239,68,68)", "rgb(139,92,246)", "rgb(236,72,153)",
+    "rgb(59,130,246)",
+    "rgb(16,185,129)",
+    "rgb(245,158,11)",
+    "rgb(239,68,68)",
+    "rgb(139,92,246)",
+    "rgb(236,72,153)",
 ];
 
 async fn sleep_ms(ms: u32) {
@@ -32,6 +44,7 @@ pub fn SimPanel(
     visible: ReadSignal<bool>,
     on_close: Callback<()>,
     on_launch: Callback<RunInfo>,
+    on_results: Callback<SimulationResults>,
     active_run: Signal<Option<RunInfo>>,
     model_name: Signal<String>,
 ) -> impl IntoView {
@@ -46,15 +59,28 @@ pub fn SimPanel(
         if let Some(ps) = poll_status.get() {
             ps.status == "Pending" || ps.status == "Running"
         } else {
-            active_run.get().map(|r| r.status == "Pending" || r.status == "Running").unwrap_or(false)
+            active_run
+                .get()
+                .map(|r| r.status == "Pending" || r.status == "Running")
+                .unwrap_or(false)
         }
     });
 
     let display_status = Memo::new(move |_| {
         if let Some(ps) = poll_status.get() {
-            Some((ps.status.clone(), ps.tick_count, ps.run_id[..8.min(ps.run_id.len())].to_string()))
+            Some((
+                ps.status.clone(),
+                ps.tick_count,
+                ps.run_id[..8.min(ps.run_id.len())].to_string(),
+            ))
         } else {
-            active_run.get().map(|r| (r.status.clone(), r.tick_count, r.run_id[..8.min(r.run_id.len())].to_string()))
+            active_run.get().map(|r| {
+                (
+                    r.status.clone(),
+                    r.tick_count,
+                    r.run_id[..8.min(r.run_id.len())].to_string(),
+                )
+            })
         }
     });
 
@@ -78,7 +104,8 @@ pub fn SimPanel(
                 model_name: mn,
             };
 
-            let launch_result = invoke_result::<RunInfo, String>("launch_simulation", &LaunchArgs { params }).await;
+            let launch_result =
+                invoke_result::<RunInfo, String>("launch_simulation", &LaunchArgs { params }).await;
             match launch_result {
                 Ok(run_info) => {
                     leptos::logging::log!("Launched: run_id={}", run_info.run_id);
@@ -93,7 +120,14 @@ pub fn SimPanel(
                             db: "bert-models".to_string(),
                             run_id: run_id.clone(),
                         };
-                        match invoke_result::<RunStatus, String>("poll_run_status", &PollArgs { params: poll_params }).await {
+                        match invoke_result::<RunStatus, String>(
+                            "poll_run_status",
+                            &PollArgs {
+                                params: poll_params,
+                            },
+                        )
+                        .await
+                        {
                             Ok(status) => {
                                 let done = status.status == "Complete" || status.status == "Failed";
                                 let completed = status.status == "Complete";
@@ -105,13 +139,23 @@ pub fn SimPanel(
                                             db: "bert-models".to_string(),
                                             run_id: run_id.clone(),
                                         };
-                                        match invoke_result::<SimulationResults, String>("get_run_results", &ResultsArgs { params: res_params }).await {
+                                        match invoke_result::<SimulationResults, String>(
+                                            "get_run_results",
+                                            &ResultsArgs { params: res_params },
+                                        )
+                                        .await
+                                        {
                                             Ok(res) => {
-                                                leptos::logging::log!("Got {} system series, {} flow series",
-                                                    res.system_timeseries.len(), res.flow_timeseries.len());
+                                                leptos::logging::log!(
+                                                    "Got {} system series, {} flow series",
+                                                    res.system_timeseries.len(),
+                                                    res.flow_timeseries.len()
+                                                );
+                                                on_results.run(res.clone());
                                                 set_results.set(Some(res));
                                             }
-                                            Err(e) => set_error_msg.set(Some(format!("Results fetch failed: {e}"))),
+                                            Err(e) => set_error_msg
+                                                .set(Some(format!("Results fetch failed: {e}"))),
                                         }
                                     }
                                     break;

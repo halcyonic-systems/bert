@@ -363,9 +363,9 @@ pub fn SimpleParameterInput(
                 unit: unit.clone(),
             };
 
-            if let Some((_, _, interaction)) = interaction_query
-                .write()
-                .as_mut() { interaction.parameters.push(new_parameter); }
+            if let Some((_, _, interaction)) = interaction_query.write().as_mut() {
+                interaction.parameters.push(new_parameter);
+            }
 
             // Reset form
             set_new_param_name.set(String::new());
@@ -1604,12 +1604,14 @@ pub fn SubSystemDetails(sub_system_query: RwSignalSynced<Option<SubSystemQuery>>
             .unwrap_or_default()
     });
 
-    let _complexity_types = [Complexity::Complex {
+    let _complexity_types = [
+        Complexity::Complex {
             adaptable: false,
             evolveable: false,
         },
         Complexity::Multiset(0),
-        Complexity::Atomic];
+        Complexity::Atomic,
+    ];
 
     let _complexity = Signal::derive(move || {
         sub_system_query

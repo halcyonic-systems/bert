@@ -19,7 +19,8 @@ pub fn outflow_create_button_needs_update(
     mut remove_event_reader: MessageReader<RemoveEvent>,
 ) -> bool {
     let needs_update = !(!focused_system.is_changed()
-        && flow_finished_query.single().is_err() && remove_event_reader.is_empty());
+        && flow_finished_query.single().is_err()
+        && remove_event_reader.is_empty());
     remove_event_reader.clear();
 
     needs_update

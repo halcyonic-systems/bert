@@ -39,11 +39,16 @@ pub async fn launch_simulation(params: LaunchParams) -> Result<typedb_reader::Ru
     Command::new(&python_bin)
         .arg(runner.to_string_lossy().as_ref())
         .args([
-            "--seed", &seed.to_string(),
-            "--steps", &params.steps.to_string(),
-            "--db", &params.db,
-            "--model-name", &params.model_name,
-            "--run-id", &run_id,
+            "--seed",
+            &seed.to_string(),
+            "--steps",
+            &params.steps.to_string(),
+            "--db",
+            &params.db,
+            "--model-name",
+            &params.model_name,
+            "--run-id",
+            &run_id,
         ])
         .spawn()
         .map_err(|e| format!("Failed to spawn mesa_runner.py: {e}"))?;
@@ -74,7 +79,9 @@ pub struct ResultsParams {
 }
 
 #[tauri::command]
-pub async fn get_run_results(params: ResultsParams) -> Result<typedb_reader::SimulationResults, String> {
+pub async fn get_run_results(
+    params: ResultsParams,
+) -> Result<typedb_reader::SimulationResults, String> {
     let driver = typedb_reader::connect().await?;
     typedb_reader::query_results(&driver, &params.db, &params.run_id).await
 }

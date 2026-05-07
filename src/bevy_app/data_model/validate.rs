@@ -438,14 +438,32 @@ fn check_level_consistency(model: &WorldModel, issues: &mut Vec<ValidationIssue>
 
 const WORLD_MODEL_FIELDS: &[&str] = &["version", "environment", "systems", "interactions"];
 const SYSTEM_FIELDS: &[&str] = &[
-    "info", "sources", "sinks", "parent", "complexity", "boundary",
-    "radius", "equivalence", "history", "transformation", "member_autonomy", "time_constant",
+    "info",
+    "sources",
+    "sinks",
+    "parent",
+    "complexity",
+    "boundary",
+    "radius",
+    "equivalence",
+    "history",
+    "transformation",
+    "member_autonomy",
+    "time_constant",
 ];
 const INFO_FIELDS: &[&str] = &["id", "level", "name", "description"];
 const BOUNDARY_FIELDS: &[&str] = &["info", "porosity", "perceptive_fuzziness", "interfaces"];
 const ENVIRONMENT_FIELDS: &[&str] = &["info", "sources", "sinks"];
 const INTERACTION_FIELDS: &[&str] = &[
-    "info", "substance", "type", "usability", "source", "sink", "amount", "unit", "parameters",
+    "info",
+    "substance",
+    "type",
+    "usability",
+    "source",
+    "sink",
+    "amount",
+    "unit",
+    "parameters",
 ];
 const EXTERNAL_ENTITY_FIELDS: &[&str] = &["info", "type", "equivalence", "model"];
 const INTERFACE_FIELDS: &[&str] = &["info", "protocol", "type", "exports_to", "receives_from"];
@@ -524,9 +542,19 @@ pub fn validate_json_structure(json: &serde_json::Value) -> ValidationResult {
                 check_required_fields(info, INFO_FIELDS, &format!("{loc}.info"), &mut issues);
             }
             if let Some(boundary) = sys.get("boundary") {
-                check_required_fields(boundary, BOUNDARY_FIELDS, &format!("{loc}.boundary"), &mut issues);
+                check_required_fields(
+                    boundary,
+                    BOUNDARY_FIELDS,
+                    &format!("{loc}.boundary"),
+                    &mut issues,
+                );
                 if let Some(info) = boundary.get("info") {
-                    check_required_fields(info, INFO_FIELDS, &format!("{loc}.boundary.info"), &mut issues);
+                    check_required_fields(
+                        info,
+                        INFO_FIELDS,
+                        &format!("{loc}.boundary.info"),
+                        &mut issues,
+                    );
                 }
                 if let Some(ifaces) = boundary.get("interfaces").and_then(|v| v.as_array()) {
                     for (j, iface) in ifaces.iter().enumerate() {
@@ -566,11 +594,17 @@ fn check_processor_flows(model: &WorldModel, issues: &mut Vec<ValidationIssue>) 
             continue;
         }
         let sys_id = serialize_id(&system.info.id);
-        let is_source = model.interactions.iter().any(|f| serialize_id(&f.source) == sys_id);
-        let is_sink = model.interactions.iter().any(|f| serialize_id(&f.sink) == sys_id);
+        let is_source = model
+            .interactions
+            .iter()
+            .any(|f| serialize_id(&f.source) == sys_id);
+        let is_sink = model
+            .interactions
+            .iter()
+            .any(|f| serialize_id(&f.sink) == sys_id);
         if !is_source && !is_sink {
             issues.push(ValidationIssue::warning(
-                &format!("systems.{}", system.info.name),
+                format!("systems.{name}", name = system.info.name),
                 format!(
                     "Processor '{}' has parent_interface but no connecting flows",
                     system.info.name
@@ -596,7 +630,7 @@ fn check_s0_interface_processors(model: &WorldModel, issues: &mut Vec<Validation
         .systems
         .iter()
         .filter_map(|s| s.boundary.parent_interface.as_ref())
-        .map(|id| serialize_id(id))
+        .map(serialize_id)
         .collect();
 
     for (j, iface) in s0.boundary.interfaces.iter().enumerate() {
@@ -641,7 +675,11 @@ mod tests {
             assert!(
                 !result.has_errors(),
                 "{name} should have no errors; got: {:#?}",
-                result.issues.iter().filter(|i| i.severity == Severity::Error).collect::<Vec<_>>()
+                result
+                    .issues
+                    .iter()
+                    .filter(|i| i.severity == Severity::Error)
+                    .collect::<Vec<_>>()
             );
         }
     }
@@ -885,7 +923,8 @@ mod tests {
             }
             let name = path.file_name().unwrap().to_str().unwrap();
             let bytes = std::fs::read(&path).unwrap_or_else(|_| panic!("should read {name}"));
-            let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap_or_else(|_| panic!("should parse {name}"));
+            let json: serde_json::Value =
+                serde_json::from_slice(&bytes).unwrap_or_else(|_| panic!("should parse {name}"));
             let result = validate_json_structure(&json);
             assert!(
                 result.is_clean(),
@@ -899,8 +938,14 @@ mod tests {
     #[test]
     fn processor_without_flows_is_warning() {
         let mut model = minimal_model();
-        let proc_id = Id { ty: IdType::System, indices: vec![0, 0] };
-        let parent_iface_id = Id { ty: IdType::Interface, indices: vec![0, 0] };
+        let proc_id = Id {
+            ty: IdType::System,
+            indices: vec![0, 0],
+        };
+        let parent_iface_id = Id {
+            ty: IdType::Interface,
+            indices: vec![0, 0],
+        };
         model.systems[0].boundary.interfaces.push(Interface {
             info: Info {
                 id: parent_iface_id.clone(),
@@ -927,7 +972,10 @@ mod tests {
             complexity: Complexity::Atomic,
             boundary: Boundary {
                 info: Info {
-                    id: Id { ty: IdType::Boundary, indices: vec![0, 0] },
+                    id: Id {
+                        ty: IdType::Boundary,
+                        indices: vec![0, 0],
+                    },
                     level: 1,
                     name: String::new(),
                     description: String::new(),
@@ -949,7 +997,10 @@ mod tests {
         });
         let result = validate(&model);
         assert!(result.has_warnings());
-        assert!(result.issues.iter().any(|i| i.message.contains("Processor") && i.message.contains("no connecting flows")));
+        assert!(result
+            .issues
+            .iter()
+            .any(|i| i.message.contains("Processor") && i.message.contains("no connecting flows")));
     }
 
     #[test]
@@ -974,10 +1025,9 @@ mod tests {
         let result = validate(&model);
         assert!(!result.has_errors());
         assert!(result.has_warnings());
-        assert!(result
-            .issues
-            .iter()
-            .any(|i| i.message.contains("no flow routing and no attached processor")));
+        assert!(result.issues.iter().any(|i| i
+            .message
+            .contains("no flow routing and no attached processor")));
     }
 
     #[test]
@@ -998,7 +1048,10 @@ mod tests {
     #[test]
     fn s0_interface_without_processor_is_warning() {
         let mut model = minimal_model();
-        let iface_id = Id { ty: IdType::Interface, indices: vec![0, 0] };
+        let iface_id = Id {
+            ty: IdType::Interface,
+            indices: vec![0, 0],
+        };
         model.systems[0].boundary.interfaces.push(Interface {
             info: Info {
                 id: iface_id.clone(),
@@ -1015,7 +1068,10 @@ mod tests {
         // Add a flow referencing the interface so check_orphan_interfaces doesn't fire
         model.environment.sources.push(ExternalEntity {
             info: Info {
-                id: Id { ty: IdType::Source, indices: vec![-1, 0] },
+                id: Id {
+                    ty: IdType::Source,
+                    indices: vec![-1, 0],
+                },
                 level: -1,
                 name: "Src".to_string(),
                 description: String::new(),
@@ -1028,17 +1084,29 @@ mod tests {
         });
         model.interactions.push(Interaction {
             info: Info {
-                id: Id { ty: IdType::Flow, indices: vec![-1, 0] },
+                id: Id {
+                    ty: IdType::Flow,
+                    indices: vec![-1, 0],
+                },
                 level: -1,
                 name: "Inflow".to_string(),
                 description: String::new(),
             },
-            substance: Substance { sub_type: String::new(), ty: SubstanceType::Message },
+            substance: Substance {
+                sub_type: String::new(),
+                ty: SubstanceType::Message,
+            },
             ty: InteractionType::Flow,
             usability: InteractionUsability::Product,
-            source: Id { ty: IdType::Source, indices: vec![-1, 0] },
+            source: Id {
+                ty: IdType::Source,
+                indices: vec![-1, 0],
+            },
             source_interface: None,
-            sink: Id { ty: IdType::System, indices: vec![0] },
+            sink: Id {
+                ty: IdType::System,
+                indices: vec![0],
+            },
             sink_interface: Some(iface_id),
             amount: rust_decimal::Decimal::ZERO,
             unit: String::new(),
@@ -1048,15 +1116,19 @@ mod tests {
         });
         let result = validate(&model);
         assert!(!result.has_errors());
-        assert!(result.issues.iter().any(|i|
-            i.message.contains("has no processor")
-        ));
+        assert!(result
+            .issues
+            .iter()
+            .any(|i| i.message.contains("has no processor")));
     }
 
     #[test]
     fn s0_interface_with_processor_no_warning() {
         let mut model = minimal_model();
-        let iface_id = Id { ty: IdType::Interface, indices: vec![0, 0] };
+        let iface_id = Id {
+            ty: IdType::Interface,
+            indices: vec![0, 0],
+        };
         model.systems[0].boundary.interfaces.push(Interface {
             info: Info {
                 id: iface_id.clone(),
@@ -1073,7 +1145,10 @@ mod tests {
         // Add a processor subsystem claiming this interface
         model.systems.push(System {
             info: Info {
-                id: Id { ty: IdType::System, indices: vec![0, 0] },
+                id: Id {
+                    ty: IdType::System,
+                    indices: vec![0, 0],
+                },
                 level: 1,
                 name: "Processor".to_string(),
                 description: String::new(),
@@ -1084,7 +1159,10 @@ mod tests {
             complexity: Complexity::Atomic,
             boundary: Boundary {
                 info: Info {
-                    id: Id { ty: IdType::Boundary, indices: vec![0, 0] },
+                    id: Id {
+                        ty: IdType::Boundary,
+                        indices: vec![0, 0],
+                    },
                     level: 1,
                     name: String::new(),
                     description: String::new(),
@@ -1107,7 +1185,10 @@ mod tests {
         // Add a flow so the processor doesn't trigger check_processor_flows warning
         model.environment.sources.push(ExternalEntity {
             info: Info {
-                id: Id { ty: IdType::Source, indices: vec![-1, 0] },
+                id: Id {
+                    ty: IdType::Source,
+                    indices: vec![-1, 0],
+                },
                 level: -1,
                 name: "Src".to_string(),
                 description: String::new(),
@@ -1120,17 +1201,29 @@ mod tests {
         });
         model.interactions.push(Interaction {
             info: Info {
-                id: Id { ty: IdType::Flow, indices: vec![-1, 0] },
+                id: Id {
+                    ty: IdType::Flow,
+                    indices: vec![-1, 0],
+                },
                 level: -1,
                 name: "Inflow".to_string(),
                 description: String::new(),
             },
-            substance: Substance { sub_type: String::new(), ty: SubstanceType::Message },
+            substance: Substance {
+                sub_type: String::new(),
+                ty: SubstanceType::Message,
+            },
             ty: InteractionType::Flow,
             usability: InteractionUsability::Product,
-            source: Id { ty: IdType::Source, indices: vec![-1, 0] },
+            source: Id {
+                ty: IdType::Source,
+                indices: vec![-1, 0],
+            },
             source_interface: None,
-            sink: Id { ty: IdType::System, indices: vec![0, 0] },
+            sink: Id {
+                ty: IdType::System,
+                indices: vec![0, 0],
+            },
             sink_interface: Some(iface_id),
             amount: rust_decimal::Decimal::ZERO,
             unit: String::new(),
@@ -1139,8 +1232,13 @@ mod tests {
             endpoint_offset: None,
         });
         let result = validate(&model);
-        assert!(!result.issues.iter().any(|i|
-            i.message.contains("has no processor")
-        ), "should not warn when processor exists; got: {:#?}", result.issues);
+        assert!(
+            !result
+                .issues
+                .iter()
+                .any(|i| i.message.contains("has no processor")),
+            "should not warn when processor exists; got: {:#?}",
+            result.issues
+        );
     }
 }

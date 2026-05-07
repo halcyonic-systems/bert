@@ -80,6 +80,27 @@ def read_systems(driver, db: str, model_name: str) -> pd.DataFrame:
         df["agent_kind"] = None
         df["agency_capacity"] = None
 
+    # Read process primitives per agent
+    prim_query = f"""
+        match
+            $s isa system, has bert_id $id;
+            (system: $s, config: $a) isa has_agent_config;
+            (agent: $a, primitive: $p) isa has_primitive;
+            $p has process_primitive $pp;
+            $id like "^{model_name}:.*";
+    """
+    with driver.transaction(db, TransactionType.READ) as tx:
+        prim_rows = _query_rows(tx, prim_query, ["id", "pp"])
+
+    if prim_rows:
+        prim_map = {}
+        for row in prim_rows:
+            bid = row["id"]
+            prim_map.setdefault(bid, []).append(row["pp"])
+        df["primitives"] = df["bert_id"].map(lambda bid: prim_map.get(bid, []))
+    else:
+        df["primitives"] = [[] for _ in range(len(df))]
+
     return df
 
 

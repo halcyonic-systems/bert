@@ -163,8 +163,7 @@ pub fn save_world(
                         .as_ref()
                         .and_then(|name| {
                             if name.starts_with("generated:") {
-                                name.strip_prefix("generated:")
-                                    .map(|n| n.to_string())
+                                name.strip_prefix("generated:").map(|n| n.to_string())
                             } else if name.starts_with("template:") {
                                 name.strip_prefix("template:")
                                     .map(|n| format!("enhanced-{n}"))

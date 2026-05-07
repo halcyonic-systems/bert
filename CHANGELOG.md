@@ -5,6 +5,41 @@ All notable changes to BERT will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05-07 — Create & Simulate
+
+### Added
+- **Natural Language Model Creation** — Landing screen with creation chat; describe a system, BERT generates the model (#31)
+- **TypeDB Transpiler** — `bert-typedb` CLI converts JSON models to typed graphs in TypeDB (#37)
+- **Mesa Simulation Bridge** — Run agent-based simulations from BERT models; Python Mesa agents driven by archetype and flow topology (#11)
+- **Simulation Dashboard** — Bottom-dock State Panel showing v(t) bars per subsystem with direction indicators
+- **Process Primitive T Functions** — 9 Mobus primitives (Buffering, Combining, Splitting, etc.) implemented as pure-function transforms
+- **Test Primitive Suite** — 9 minimal JSON models exercising one primitive each (`test-primitives/`)
+- **Chat Integration** — Three-tier RAG routing through bert-rag for model-aware responses (#31)
+- **Agent System** — AgentModel with kind (Reactive/Anticipatory/Intentional), agency capacity, process primitives
+- **Pre-load Validator** — Checks model JSON before loading, surfaces errors in UI panel (#15)
+- **Standalone CLI Generator** — `bert-generate` binary for headless model generation (#55)
+- **Orphan Interface Warning** — Validator flags interfaces with no flow routing or processor (#47, #56)
+
+### Changed
+- **Blockchain Models Hardened** — Bitcoin, Ethereum, Cosmos, Solana: standardized protocols, sub_types, archetypes, is_same_as_id linking, Force reclassification
+- **LLM Model Overhauled** — Reclassified as Generation-class instrument per Halcyonic catalog
+- **Model Browser** — Curated to 5 example models
+- **README Rewritten** — Reflects current capabilities (creation, validation, simulation, querying)
+- **Lib/Bin Split** — `bert` crate split into library + binary for better reuse (#43)
+
+### Fixed
+- **Slider Reactivity** — Agency capacity slider knob tracking, filler sync, empty parse handling
+- **Label Visibility** — Threshold lowered to match system element rendering
+- **System Name Reading** — Reads from S0, not environment
+- **Nightly Compatibility** — Disambiguate System import for latest nightly
+
+### Documentation
+- System Language Specification v0.1 (complete formal spec)
+- H-Element Theory (history-knowledge connection)
+- Atomic Work Processes (9+1 primitives reference)
+- TypeDB schema design, query patterns
+- Simulation execution mapping (SL spec §4)
+
 ## [0.3.0] - 2026-02-07
 
 ### Added

@@ -354,8 +354,6 @@ fn second_walk(node: Rc<RefCell<SvgSystem>>, m: f64) -> f64 {
 
     node.borrow_mut().x += m;
 
-    
-
     max_x - min_x
 }
 
