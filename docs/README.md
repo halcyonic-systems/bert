@@ -20,6 +20,7 @@ This folder contains developer reference materials:
 |------|---------|
 | `atomic-work-processes.md` | 9+1 process primitives with T functions and substance constraints |
 | `h-element-theory.md` | H element: history → knowledge connection, implementation sketches |
+| `simulation-linalg-bridge.md` | Maps every simulation concept to its linear algebra dual (living spec) |
 | `lifecycle-dynamics.md` | System lifecycle phases (post-v0.4 theory) |
 
 ## Development
