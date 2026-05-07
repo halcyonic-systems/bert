@@ -392,7 +392,10 @@ fn spawn_external_entities<S: HasSourcesAndSinks + HasInfo>(
 
         let external_entity = spawn_external_entity_only(
             commands,
-            ctx.external_entity_id_to_substance[&ext_entity.info.id],
+            ctx.external_entity_id_to_substance
+                .get(&ext_entity.info.id)
+                .copied()
+                .unwrap_or(SubstanceType::Message),
             false,
             &ext_entity.info.name,
             &ext_entity.info.description,
