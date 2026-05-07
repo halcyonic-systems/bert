@@ -714,7 +714,7 @@ This list is not exhaustive — the full gap analysis is available via the onto-
 **System Language theory** — `gitbook/for-researchers/system-language.md`
 : Theoretical grounding
 
-**Mobus reference** — `docs/MOBUS_REFERENCE.md`
+**Mobus reference** — `docs/mobus-reference.md`
 : DSA quick reference
 
 **Coverage analysis** — `onto-viz/ARCHITECTURE.md`

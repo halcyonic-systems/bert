@@ -103,7 +103,7 @@ refactor(systems): optimize flow rendering
 
 - **Format**: Run `cargo fmt` before committing
 - **Linting**: No clippy warnings allowed
-- **Documentation**: Document public functions (see [docs/DOCUMENTATION_GUIDELINES.md](docs/DOCUMENTATION_GUIDELINES.md))
+- **Documentation**: Document public functions (see [docs/documentation-guidelines.md](docs/documentation-guidelines.md))
 - **Performance**: Maintain 60+ FPS in visualization
 
 ## Architecture Overview

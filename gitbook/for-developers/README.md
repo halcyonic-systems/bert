@@ -102,7 +102,7 @@ cargo test --all
 - [Contributing Guide](contributing.md) - Development workflow and standards
 - [Architecture Overview](architecture.md) - Technical overview
 - [Deep Architecture](architecture/comprehensive-architecture-overview.md) - Detailed system design
-- [Documentation Standards](https://github.com/halcyonic-systems/bert/blob/main/docs/DOCUMENTATION_GUIDELINES.md) - Code documentation templates
+- [Documentation Standards](https://github.com/halcyonic-systems/bert/blob/main/docs/documentation-guidelines.md) - Code documentation templates
 
 ## First Contribution
 

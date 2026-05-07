@@ -414,7 +414,7 @@ These are conventions, not hard constraints — BERT renders whatever valid coor
 **Bitcoin model** — `assets/models/examples/bitcoin.json`
 : Reference implementation. All four blockchain examples (bitcoin, ethereum, cosmos-hub, solana) share the same 4+3 structural pattern.
 
-**Mobus reference** — `docs/MOBUS_REFERENCE.md`
+**Mobus reference** — `docs/mobus-reference.md`
 : DSA quick reference.
 
 ---
