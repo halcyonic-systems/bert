@@ -854,13 +854,7 @@ impl Complexity {
     ///
     /// `true` only for [`Complex`](Self::Complex) variants, `false` for atomic and multiset systems.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///
@@ -885,13 +879,7 @@ impl Complexity {
     ///
     /// `true` only for [`Atomic`](Self::Atomic) variants.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///
@@ -912,13 +900,7 @@ impl Complexity {
     ///
     /// `true` only for [`Multiset`](Self::Multiset) variants.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///
@@ -940,13 +922,7 @@ impl Complexity {
     /// `true` only for [`Complex`](Self::Complex) systems with `adaptable: true`.
     /// All other complexity types return `false`.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///
@@ -974,13 +950,7 @@ impl Complexity {
     /// `true` only for [`Complex`](Self::Complex) systems with `evolveable: true`.
     /// All other complexity types return `false`.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///
@@ -1007,17 +977,8 @@ impl Complexity {
     ///
     /// - `adapt`: New adaptability setting
     ///
-    /// # Returns
     ///
-    /// This function returns `()` (unit type) and operates through side effects.
     ///
-    /// # Errors
-    ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Behavior
     ///
@@ -1049,17 +1010,8 @@ impl Complexity {
     ///
     /// - `evolve`: New evolvability setting
     ///
-    /// # Returns
     ///
-    /// This function returns `()` (unit type) and operates through side effects.
     ///
-    /// # Errors
-    ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Behavior
     ///
@@ -1188,13 +1140,7 @@ pub trait HasInfo {
     /// A reference to the [`Info`] struct containing the entity's ID,
     /// hierarchical level, name, and description.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///
@@ -1280,13 +1226,7 @@ pub trait HasSourcesAndSinks {
     /// A slice containing all [`ExternalEntity`] instances classified as sources
     /// that are contained within this entity.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///
@@ -1306,13 +1246,7 @@ pub trait HasSourcesAndSinks {
     /// A mutable reference to the vector containing source entities,
     /// enabling addition, removal, and modification of sources.
     ///
-    /// # Errors
     ///
-    /// This function does not return errors.
-    ///
-    /// # Panics
-    ///
-    /// Does not panic under normal operation.
     ///
     /// # Examples
     ///

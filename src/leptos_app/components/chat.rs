@@ -259,7 +259,7 @@ pub fn ChatPanel(
                             </h3>
                             <span class="text-xs text-gray-400">
                                 {move || if is_creating.get() {
-                                    "Describe your system — I'll help you structure it"
+                                    "Describe your system to generate a model"
                                 } else if has_model.get() {
                                     "Ask about your loaded model"
                                 } else {

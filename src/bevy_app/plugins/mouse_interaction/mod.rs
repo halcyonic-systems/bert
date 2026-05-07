@@ -782,73 +782,12 @@ fn mouse_screen_to_world_position(
     }
 }
 
-/// System function for deselecting all currently selected entities.
-///
-/// `deselect_all` clears the selection state of all entities with `PickSelection`
-/// components, typically triggered by the Escape key or other global deselection
-/// events.
-///
-/// # Usage
-///
-/// This function is automatically called by the mouse interaction systems, but
-/// can also be used manually:
-/// ```rust
-/// use bert::mouse_interaction::deselect_all;
-///
-/// app.add_systems(Update, deselect_all.run_if(some_condition));
-/// ```
-///
-/// # Parameters
-///
-/// - `query`: Mutable query for all entities with `PickSelection` components
-///
-/// # Returns
-///
-/// This function returns `()` (unit type) and operates through side effects.
-///
-/// # Errors
-///
-/// This function does not return errors.
-///
-/// # Panics
-///
-/// Does not panic under normal operation.
-///
-/// # See Also
-///
-/// - [`do_deselect_all`]: The underlying implementation function
-/// - [`SelectionEnabled`]: Resource that can disable this functionality
+/// Clears selection state on all entities with `PickSelection`.
 pub fn deselect_all(mut query: Query<&mut PickSelection>) {
     do_deselect_all(&mut query);
 }
 
-/// Internal helper function implementing the deselection logic.
-///
-/// `do_deselect_all` is the core implementation for clearing selection state
-/// across all entities. It's separated from the system function to allow
-/// reuse in other contexts without the query parameter constraints.
-///
-/// # Parameters
-///
-/// - `pick_selection_query`: Mutable query for entities with `PickSelection`
-///
-/// # Returns
-///
-/// This function returns `()` (unit type) and operates through side effects.
-///
-/// # Errors
-///
-/// This function does not return errors.
-///
-/// # Panics
-///
-/// Does not panic under normal operation.
-///
-/// # Implementation
-///
-/// Iterates through all entities with `PickSelection` components and sets
-/// their `is_selected` field to `false`. This operation respects the
-/// `NoDeselect` component by only operating on the provided query.
+/// Core deselection logic, separated for reuse outside system constraints.
 pub fn do_deselect_all(pick_selection_query: &mut Query<&mut PickSelection>) {
     let mut count = 0;
     for mut pick_selection in pick_selection_query {
@@ -862,96 +801,12 @@ pub fn do_deselect_all(pick_selection_query: &mut Query<&mut PickSelection>) {
     }
 }
 
-/// System function to disable mouse selection functionality.
-///
-/// `disable_selection` sets the global `SelectionEnabled` resource to `false`,
-/// preventing any selection operations from occurring. This is useful during
-/// modes where selection should be temporarily disabled.
-///
-/// # Use Cases
-///
-/// - Flow terminal selection mode
-/// - Modal dialog interactions
-/// - Drawing or annotation modes
-/// - Any context where selection would interfere with other operations
-///
-/// # Usage
-///
-/// ```rust
-/// use bert::mouse_interaction::disable_selection;
-///
-/// // Disable selection during a specific mode
-/// app.add_systems(OnEnter(DrawingMode), disable_selection);
-/// ```
-///
-/// # Parameters
-///
-/// - `selection_enabled`: Mutable resource for controlling selection state
-///
-/// # Returns
-///
-/// This function returns `()` (unit type) and operates through side effects.
-///
-/// # Errors
-///
-/// This function does not return errors.
-///
-/// # Panics
-///
-/// Does not panic under normal operation.
-///
-/// # See Also
-///
-/// - [`enable_selection`]: Function to re-enable selection
-/// - [`SelectionEnabled`]: The resource being modified
+/// Disables mouse selection globally.
 pub fn disable_selection(mut selection_enabled: ResMut<SelectionEnabled>) {
     **selection_enabled = false;
 }
 
-/// System function to enable mouse selection functionality and reset drag state.
-///
-/// `enable_selection` sets the global `SelectionEnabled` resource to `true`
-/// and clears any ongoing drag operations. This ensures a clean state when
-/// re-enabling selection after it was disabled.
-///
-/// # State Reset
-///
-/// In addition to enabling selection, this function:
-/// - Clears any hovered entity state
-/// - Resets drag operation flags
-/// - Ensures clean interaction state
-///
-/// # Usage
-///
-/// ```rust
-/// use bert::mouse_interaction::enable_selection;
-///
-/// // Re-enable selection when exiting a special mode
-/// app.add_systems(OnExit(DrawingMode), enable_selection);
-/// ```
-///
-/// # Parameters
-///
-/// - `selection_enabled`: Mutable resource for controlling selection state
-/// - `dragging`: Mutable resource for drag operation state (reset to default)
-///
-/// # Returns
-///
-/// This function returns `()` (unit type) and operates through side effects.
-///
-/// # Errors
-///
-/// This function does not return errors.
-///
-/// # Panics
-///
-/// Does not panic under normal operation.
-///
-/// # See Also
-///
-/// - [`disable_selection`]: Function to disable selection
-/// - [`SelectionEnabled`]: The resource being modified
-/// - [`Dragging`]: The resource being reset
+/// Re-enables mouse selection and resets drag state.
 pub fn enable_selection(
     mut selection_enabled: ResMut<SelectionEnabled>,
     mut dragging: ResMut<Dragging>,
@@ -962,53 +817,7 @@ pub fn enable_selection(
     dragging.started = false;
 }
 
-/// System to automatically deselect entities when they become invisible.
-///
-/// `deselect_when_invisible` monitors visibility changes and automatically
-/// deselects entities that become invisible. This prevents having selected
-/// entities that the user cannot see, which would be confusing.
-///
-/// # Visibility Integration
-///
-/// Uses Bevy's `InheritedVisibility` component to detect when entities
-/// become invisible through:
-/// - Direct visibility changes
-/// - Parent visibility changes (inheritance)
-/// - Layer or rendering visibility changes
-///
-/// # Change Detection
-///
-/// The system uses Bevy's change detection (`Changed<InheritedVisibility>`)
-/// to efficiently process only entities whose visibility has changed,
-/// minimizing performance impact.
-///
-/// # Usage
-///
-/// This system runs automatically as part of the mouse interaction plugin.
-/// No manual configuration is required.
-///
-/// # Parameters
-///
-/// - `selection_query`: Query for entities with both `PickSelection` and
-///   `InheritedVisibility`, filtered to only changed visibility
-///
-/// # Returns
-///
-/// This function returns `()` (unit type) and operates through side effects.
-///
-/// # Errors
-///
-/// This function does not return errors.
-///
-/// # Panics
-///
-/// Does not panic under normal operation.
-///
-/// # Behavior
-///
-/// When an entity's visibility changes to invisible (`!visibility.get()`),
-/// its selection state is cleared. Entities becoming visible are not
-/// automatically selected.
+/// Clears selection on entities that become invisible via change detection.
 pub fn deselect_when_invisible(
     mut selection_query: Query<
         (&mut PickSelection, &InheritedVisibility),
