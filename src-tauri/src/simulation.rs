@@ -25,10 +25,17 @@ fn resolve_model_path(python_dir: &std::path::Path, model_name: &str) -> Option<
         project_root.join("dist/assets/models/examples"),
         project_root.join("dist/assets/models/local/test-primitives"),
     ];
+    let candidates = [
+        format!("{model_name}.json"),
+        format!("{}.json", model_name.to_lowercase()),
+        format!("{}.json", model_name.to_lowercase().replace(' ', "-")),
+    ];
     for dir in &asset_dirs {
-        let path = dir.join(format!("{model_name}.json"));
-        if path.exists() {
-            return Some(path.to_string_lossy().to_string());
+        for candidate in &candidates {
+            let path = dir.join(candidate);
+            if path.exists() {
+                return Some(path.to_string_lossy().to_string());
+            }
         }
     }
     None
@@ -208,4 +215,62 @@ pub async fn get_json_run_results(
     let _ = std::fs::remove_file(&status_path);
 
     Ok(results)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ExportCsvParams {
+    pub results_json: String,
+    pub model_name: String,
+}
+
+#[tauri::command]
+pub fn export_simulation_csv(app: tauri::AppHandle, params: ExportCsvParams) {
+    use tauri_plugin_dialog::DialogExt;
+
+    let results: typedb_reader::SimulationResults = match serde_json::from_str(&params.results_json)
+    {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("Failed to parse results for export: {e}");
+            return;
+        }
+    };
+
+    let mut csv = String::from("tick,type,id,name,key,value\n");
+    for ts in &results.flow_timeseries {
+        for (i, tick) in ts.ticks.iter().enumerate() {
+            let val = ts.values.get(i).copied().unwrap_or(0.0);
+            csv.push_str(&format!(
+                "{tick},flow,{},{},,{val}\n",
+                ts.interaction_id, ts.name
+            ));
+        }
+    }
+    for ts in &results.system_timeseries {
+        for (i, tick) in ts.ticks.iter().enumerate() {
+            let val = ts.values.get(i).copied().unwrap_or(0.0);
+            csv.push_str(&format!(
+                "{tick},system,{},{},{},{val}\n",
+                ts.system_id, ts.name, ts.key
+            ));
+        }
+    }
+
+    let filename = format!("{}-simulation.csv", params.model_name);
+    app.dialog()
+        .file()
+        .add_filter("CSV", &["csv"])
+        .set_file_name(&filename)
+        .save_file(move |file_path| {
+            if let Some(path) = file_path {
+                match path.into_path() {
+                    Ok(path_buf) => {
+                        if let Err(e) = std::fs::write(&path_buf, &csv) {
+                            eprintln!("Failed to write CSV: {e}");
+                        }
+                    }
+                    Err(e) => eprintln!("Failed to get path: {e:?}"),
+                }
+            }
+        });
 }

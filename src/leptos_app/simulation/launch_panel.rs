@@ -102,12 +102,25 @@ pub fn SimPanel(
     let do_launch = move |_| {
         let seed: Option<u64> = seed_text.get_untracked().parse().ok();
         let steps: u64 = steps_text.get_untracked().parse().unwrap_or(200);
-        let mn = model_name.get_untracked();
+        let mut mn = model_name.get_untracked();
         let jp = json_path.get_untracked();
+        let mj = model_json.get_untracked();
 
-        if jp.is_none() && mn.is_empty() {
+        if jp.is_none() && mn.is_empty() && mj.is_none() {
             set_error_msg.set(Some("No model loaded".to_string()));
             return;
+        }
+
+        if mn.is_empty() {
+            if let Some(ref json) = mj {
+                mn = serde_json::from_str::<serde_json::Value>(json)
+                    .ok()
+                    .and_then(|v| v["systems"].as_array()
+                        .and_then(|sys| sys.iter().find(|s| s["info"]["level"].as_i64() == Some(0)))
+                        .and_then(|s| s["info"]["name"].as_str())
+                        .map(|s| s.to_lowercase().replace(' ', "-")))
+                    .unwrap_or_else(|| "model".to_string());
+            }
         }
 
         set_launching.set(true);
@@ -264,12 +277,17 @@ pub fn SimPanel(
     };
 
     let (expanded, set_expanded) = signal(true);
+    let (maximized, set_maximized) = signal(false);
 
     view! {
         <Show when=move || visible.get()>
             <div
                 class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] transition-all duration-200"
-                style=move || if expanded.get() { "height: 340px;" } else { "height: 44px;" }
+                style=move || {
+                    if maximized.get() { "height: calc(100vh - 20px);" }
+                    else if expanded.get() { "height: 340px;" }
+                    else { "height: 44px;" }
+                }
             >
                 // --- Header bar (always visible) ---
                 <div class="flex items-center justify-between px-4 h-11 border-b border-gray-100 bg-gray-50/80">
@@ -330,10 +348,51 @@ pub fn SimPanel(
                         </button>
 
                         <button
-                            class="text-gray-400 hover:text-gray-600 text-sm px-1 ml-1"
-                            on:click=move |_| set_expanded.update(|e| *e = !*e)
+                            class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition disabled:opacity-30"
+                            disabled=move || results.get().is_none()
+                            on:click={
+                                let model_name = model_name;
+                                move |_| {
+                                    if let Some(res) = results.get() {
+                                        if let Ok(json) = serde_json::to_string(&res) {
+                                            #[derive(serde::Serialize)]
+                                            struct ExportArgs { params: ExportParams }
+                                            #[derive(serde::Serialize)]
+                                            struct ExportParams { results_json: String, model_name: String }
+                                            let args = ExportArgs { params: ExportParams {
+                                                results_json: json,
+                                                model_name: model_name.get_untracked(),
+                                            }};
+                                            use leptos::task::spawn_local;
+                                            spawn_local(async move {
+                                                let _ = invoke_result::<(), String>("export_simulation_csv", &args).await;
+                                            });
+                                        }
+                                    }
+                                }
+                            }
                         >
-                            {move || if expanded.get() { "\u{25BC}" } else { "\u{25B2}" }}
+                            {"Export"}
+                        </button>
+
+                        <button
+                            class="text-gray-400 hover:text-gray-600 text-sm px-1 ml-1"
+                            on:click=move |_| {
+                                if maximized.get() {
+                                    set_maximized.set(false);
+                                } else {
+                                    set_expanded.update(|e| *e = !*e);
+                                }
+                            }
+                        >
+                            {move || if maximized.get() { "\u{25BC}" } else if expanded.get() { "\u{25BC}" } else { "\u{25B2}" }}
+                        </button>
+                        <button
+                            class="text-gray-400 hover:text-gray-600 text-sm px-1"
+                            title="Maximize"
+                            on:click=move |_| set_maximized.update(|m| *m = !*m)
+                        >
+                            {move || if maximized.get() { "\u{2913}" } else { "\u{2912}" }}
                         </button>
                         <button
                             class="text-gray-300 hover:text-gray-500 text-xs px-1"

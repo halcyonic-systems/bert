@@ -92,6 +92,9 @@ pub fn run() {
             simulation::poll_run_status,
             simulation::get_run_results,
             simulation::list_runs,
+            simulation::poll_json_run_status,
+            simulation::get_json_run_results,
+            simulation::export_simulation_csv,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
