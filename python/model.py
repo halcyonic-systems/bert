@@ -44,6 +44,8 @@ class BertModel(Model):
             return
 
         for _, row in interactions_df.iterrows():
+            if row.get("interaction_type", "Flow") == "Force":
+                continue
             flow_info = {
                 "bert_id": row["bert_id"],
                 "substance_type": row.get("substance_type", ""),

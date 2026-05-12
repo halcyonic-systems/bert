@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 
@@ -9,6 +11,27 @@ pub struct LaunchParams {
     pub steps: u64,
     pub db: String,
     pub model_name: String,
+    #[serde(default)]
+    pub json_path: Option<String>,
+    #[serde(default)]
+    pub params: Option<HashMap<String, f64>>,
+}
+
+fn resolve_model_path(python_dir: &std::path::Path, model_name: &str) -> Option<String> {
+    let project_root = python_dir.parent()?;
+    let asset_dirs = [
+        project_root.join("assets/models/examples"),
+        project_root.join("assets/models/local/test-primitives"),
+        project_root.join("dist/assets/models/examples"),
+        project_root.join("dist/assets/models/local/test-primitives"),
+    ];
+    for dir in &asset_dirs {
+        let path = dir.join(format!("{model_name}.json"));
+        if path.exists() {
+            return Some(path.to_string_lossy().to_string());
+        }
+    }
+    None
 }
 
 #[tauri::command]
@@ -41,21 +64,35 @@ pub async fn launch_simulation(params: LaunchParams) -> Result<typedb_reader::Ru
         );
     }
 
-    Command::new(&python_bin)
-        .arg(runner.to_string_lossy().as_ref())
-        .args([
-            "--seed",
-            &seed.to_string(),
-            "--steps",
-            &params.steps.to_string(),
-            "--db",
-            &params.db,
-            "--model-name",
-            &params.model_name,
-            "--run-id",
-            &run_id,
-        ])
-        .spawn()
+    let mut cmd = Command::new(&python_bin);
+    cmd.arg(runner.to_string_lossy().as_ref())
+        .args(["--seed", &seed.to_string()])
+        .args(["--steps", &params.steps.to_string()])
+        .args(["--run-id", &run_id]);
+
+    if let Some(ref json_path) = params.json_path {
+        cmd.args(["--json-path", json_path]);
+    } else if !params.model_name.is_empty() {
+        let resolved = resolve_model_path(&python_dir, &params.model_name);
+        if let Some(path) = resolved {
+            cmd.args(["--json-path", &path]);
+        } else {
+            cmd.args(["--db", &params.db])
+                .args(["--model-name", &params.model_name]);
+        }
+    } else {
+        return Err("No model loaded".into());
+    }
+
+    if let Some(ref overrides) = params.params {
+        if !overrides.is_empty() {
+            let json_str =
+                serde_json::to_string(overrides).map_err(|e| format!("params serialize: {e}"))?;
+            cmd.args(["--params", &json_str]);
+        }
+    }
+
+    cmd.spawn()
         .map_err(|e| format!("Failed to spawn mesa_runner.py: {e}"))?;
 
     Ok(typedb_reader::RunInfo {
@@ -101,4 +138,74 @@ pub struct ListRunsParams {
 pub async fn list_runs(params: ListRunsParams) -> Result<Vec<typedb_reader::RunInfo>, String> {
     let driver = typedb_reader::connect().await?;
     typedb_reader::query_runs(&driver, &params.db, &params.model_name).await
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JsonPollParams {
+    pub run_id: String,
+}
+
+#[tauri::command]
+pub async fn poll_json_run_status(
+    params: JsonPollParams,
+) -> Result<typedb_reader::RunStatus, String> {
+    let temp_dir = std::env::temp_dir();
+    let results_path = temp_dir.join(format!("{}_results.json", params.run_id));
+    let status_path = temp_dir.join(format!("{}_status.json", params.run_id));
+
+    if results_path.exists() {
+        let mut tick_count = 0u64;
+        let mut total_ticks = 0u64;
+        if let Ok(data) = std::fs::read_to_string(&status_path) {
+            if let Ok(st) = serde_json::from_str::<typedb_reader::RunStatus>(&data) {
+                tick_count = st.tick_count;
+                total_ticks = st.total_ticks;
+            }
+        }
+        return Ok(typedb_reader::RunStatus {
+            run_id: params.run_id,
+            status: "Complete".into(),
+            tick_count,
+            total_ticks,
+        });
+    }
+
+    if status_path.exists() {
+        let data = std::fs::read_to_string(&status_path)
+            .map_err(|e| format!("Failed to read status file: {e}"))?;
+        let status: typedb_reader::RunStatus =
+            serde_json::from_str(&data).map_err(|e| format!("Failed to parse status: {e}"))?;
+        return Ok(status);
+    }
+
+    Ok(typedb_reader::RunStatus {
+        run_id: params.run_id,
+        status: "Running".into(),
+        tick_count: 0,
+        total_ticks: 0,
+    })
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JsonResultsParams {
+    pub run_id: String,
+}
+
+#[tauri::command]
+pub async fn get_json_run_results(
+    params: JsonResultsParams,
+) -> Result<typedb_reader::SimulationResults, String> {
+    let temp_dir = std::env::temp_dir();
+    let results_path = temp_dir.join(format!("{}_results.json", params.run_id));
+    let status_path = temp_dir.join(format!("{}_status.json", params.run_id));
+
+    let data = std::fs::read_to_string(&results_path)
+        .map_err(|e| format!("Failed to read results file: {e}"))?;
+    let results: typedb_reader::SimulationResults =
+        serde_json::from_str(&data).map_err(|e| format!("Failed to parse results: {e}"))?;
+
+    let _ = std::fs::remove_file(&results_path);
+    let _ = std::fs::remove_file(&status_path);
+
+    Ok(results)
 }

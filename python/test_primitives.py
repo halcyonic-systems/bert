@@ -207,6 +207,120 @@ def test_archetype_fallback():
     )
 
 
+def test_chain_propagation():
+    """Port -> Propelling -> Port: verify activity propagates end-to-end."""
+    systems = [
+        {
+            "bert_id": "test:PortIn", "display_name": "PortIn",
+            "archetype": "Unspecified", "time_constant": "Second",
+            "system_level": 1, "complexity_kind": "Atomic",
+            "agent_kind": None, "agency_capacity": None, "primitives": [],
+        },
+        make_system("Pump", "Propelling", agency_capacity=0.8),
+        {
+            "bert_id": "test:PortOut", "display_name": "PortOut",
+            "archetype": "Unspecified", "time_constant": "Second",
+            "system_level": 1, "complexity_kind": "Atomic",
+            "agent_kind": None, "agency_capacity": None, "primitives": [],
+        },
+    ]
+    interactions = [
+        make_flow("env_in", "Src", "PortIn", amount=10.0),
+        make_flow("to_pump", "PortIn", "Pump", amount=0.0),
+        make_flow("from_pump", "Pump", "PortOut", amount=0.0),
+    ]
+
+    def check(agent, model):
+        agents = {a.bert_id: a for a in model.agents}
+        port_in = agents["test:PortIn"]
+        pump = agents["test:Pump"]
+        port_out = agents["test:PortOut"]
+        assert abs(port_in.state["activity"] - 10.0) < 0.01, \
+            f"port_in activity should be 10.0, got {port_in.state['activity']}"
+        assert abs(pump.state["activity"] - 8.0) < 0.01, \
+            f"pump activity should be 8.0, got {pump.state['activity']}"
+        assert abs(port_out.state["activity"] - 8.0) < 0.01, \
+            f"port_out activity should be 8.0, got {port_out.state['activity']}"
+
+    return run_test("Chain Propagation", systems, interactions, check)
+
+
+def test_nan_safety():
+    """Agent with None agency_capacity must not produce NaN."""
+    import math as _math
+    systems = [{
+        "bert_id": "test:Relay", "display_name": "Relay",
+        "archetype": "Unspecified", "time_constant": "Second",
+        "system_level": 1, "complexity_kind": "Atomic",
+        "agent_kind": None, "agency_capacity": None, "primitives": [],
+    }]
+    interactions = [
+        make_flow("in", "Src", "Relay", amount=5.0),
+        make_flow("out", "Relay", "Snk", amount=0.0, usability="Product"),
+    ]
+
+    def check(agent, model):
+        assert not _math.isnan(agent.state["activity"]), "activity must not be NaN"
+        assert abs(agent.state["activity"] - 5.0) < 0.01, \
+            f"relay should pass through 5.0, got {agent.state['activity']}"
+
+    return run_test("NaN Safety", systems, interactions, check)
+
+
+def test_buffering_accumulation():
+    """Inflow > demand: storage must grow over time."""
+    def check(agent, model):
+        assert agent.state["storage"] >= 200.0, \
+            f"storage should accumulate (>=200), got {agent.state['storage']}"
+        snapshots = [h.get("storage", 0) for h in agent.history]
+        for i in range(1, len(snapshots)):
+            assert snapshots[i] >= snapshots[i - 1], \
+                f"storage should be monotonically non-decreasing at step {i}"
+
+    return run_test(
+        "Buffering Accumulation",
+        [make_system("Buffer", "Buffering")],
+        [make_flow("in", "Src", "Buffer", amount=10.0),
+         make_flow("out", "Buffer", "Snk", amount=3.0, usability="Product")],
+        check,
+    )
+
+
+def test_json_models():
+    """Load each test-primitives JSON model, run 50 steps, verify no NaN."""
+    import os
+    import math as _math
+    from json_bridge import read_model
+
+    test_dir = os.path.join(os.path.dirname(__file__),
+                            "..", "assets", "models", "local", "test-primitives")
+    if not os.path.isdir(test_dir):
+        return True, "SKIP (test-primitives dir not found)"
+
+    failures = []
+    count = 0
+    for fname in sorted(os.listdir(test_dir)):
+        if not fname.endswith(".json"):
+            continue
+        count += 1
+        fpath = os.path.join(test_dir, fname)
+        systems_df, interactions_df = read_model(fpath)
+        m = BertModel(systems_df, interactions_df, seed=42)
+        for _ in range(50):
+            m.step()
+        flow_obs, sys_obs = m.collect_all_observations()
+        for obs in flow_obs:
+            if _math.isnan(obs["amount"]):
+                failures.append(f"{fname}: NaN flow amount")
+        for obs in sys_obs:
+            if _math.isnan(obs["value"]):
+                failures.append(f"{fname}: NaN sys value ({obs['key']})")
+
+    if failures:
+        return False, "; ".join(failures[:5])
+    return True, f"OK ({count} models)"
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -218,6 +332,10 @@ ALL_TESTS = [
     ("Inverting",  test_inverting),
     ("Copying",    test_copying),
     ("Archetype Fallback", test_archetype_fallback),
+    ("Chain Propagation", test_chain_propagation),
+    ("NaN Safety", test_nan_safety),
+    ("Buffering Accumulation", test_buffering_accumulation),
+    ("JSON Models Integration", test_json_models),
 ]
 
 

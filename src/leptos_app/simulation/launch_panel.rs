@@ -1,11 +1,15 @@
+use std::collections::HashMap;
+
 use leptos::prelude::*;
 use serde::Serialize;
 use tauri_sys::core::invoke_result;
 use wasm_bindgen_futures::JsFuture;
 
 use super::chart::LineChart;
+use super::inputs_panel::InputsPanel;
 use super::types::{
-    LaunchParams, PollParams, ResultsParams, RunInfo, RunStatus, SimulationResults,
+    JsonPollParams, JsonResultsParams, LaunchParams, PollParams, ResultsParams, RunInfo, RunStatus,
+    SimulationResults,
 };
 
 #[derive(Serialize)]
@@ -19,6 +23,14 @@ struct PollArgs {
 #[derive(Serialize)]
 struct ResultsArgs {
     params: ResultsParams,
+}
+#[derive(Serialize)]
+struct JsonPollArgs {
+    params: JsonPollParams,
+}
+#[derive(Serialize)]
+struct JsonResultsArgs {
+    params: JsonResultsParams,
 }
 
 const COLORS: &[&str] = &[
@@ -47,6 +59,8 @@ pub fn SimPanel(
     on_results: Callback<SimulationResults>,
     active_run: Signal<Option<RunInfo>>,
     model_name: Signal<String>,
+    json_path: Signal<Option<String>>,
+    model_json: Signal<Option<String>>,
 ) -> impl IntoView {
     let (seed_text, set_seed_text) = signal("42".to_string());
     let (steps_text, set_steps_text) = signal("200".to_string());
@@ -54,6 +68,7 @@ pub fn SimPanel(
     let (results, set_results) = signal(None::<SimulationResults>);
     let (poll_status, set_poll_status) = signal(None::<RunStatus>);
     let (error_msg, set_error_msg) = signal(None::<String>);
+    let (input_params, set_input_params) = signal(HashMap::<String, f64>::new());
 
     let is_running = Memo::new(move |_| {
         if let Some(ps) = poll_status.get() {
@@ -88,20 +103,32 @@ pub fn SimPanel(
         let seed: Option<u64> = seed_text.get_untracked().parse().ok();
         let steps: u64 = steps_text.get_untracked().parse().unwrap_or(200);
         let mn = model_name.get_untracked();
+        let jp = json_path.get_untracked();
+
+        if jp.is_none() && mn.is_empty() {
+            set_error_msg.set(Some("No model loaded".to_string()));
+            return;
+        }
 
         set_launching.set(true);
         set_results.set(None);
         set_poll_status.set(None);
         set_error_msg.set(None);
 
+        let json_path_val = jp.clone();
+
         use leptos::task::spawn_local;
         spawn_local(async move {
             leptos::logging::log!("Launching simulation for model '{}'...", mn);
+            let ip = input_params.get_untracked();
+            let has_model_name = !mn.is_empty();
             let params = LaunchParams {
                 seed,
                 steps,
                 db: "bert-models".to_string(),
                 model_name: mn,
+                json_path: jp,
+                params: if ip.is_empty() { None } else { Some(ip) },
             };
 
             let launch_result =
@@ -113,58 +140,116 @@ pub fn SimPanel(
                     set_launching.set(false);
                     on_launch.run(run_info);
 
-                    // Poll until complete
+                    let use_json_poll = json_path_val.is_some() || has_model_name;
+
                     loop {
                         sleep_ms(1_500).await;
-                        let poll_params = PollParams {
-                            db: "bert-models".to_string(),
-                            run_id: run_id.clone(),
-                        };
-                        match invoke_result::<RunStatus, String>(
-                            "poll_run_status",
-                            &PollArgs {
-                                params: poll_params,
-                            },
-                        )
-                        .await
-                        {
-                            Ok(status) => {
-                                let done = status.status == "Complete" || status.status == "Failed";
-                                let completed = status.status == "Complete";
-                                set_poll_status.set(Some(status));
 
-                                if done {
-                                    if completed {
-                                        let res_params = ResultsParams {
-                                            db: "bert-models".to_string(),
-                                            run_id: run_id.clone(),
-                                        };
-                                        match invoke_result::<SimulationResults, String>(
-                                            "get_run_results",
-                                            &ResultsArgs { params: res_params },
-                                        )
-                                        .await
-                                        {
-                                            Ok(res) => {
-                                                leptos::logging::log!(
-                                                    "Got {} system series, {} flow series",
-                                                    res.system_timeseries.len(),
-                                                    res.flow_timeseries.len()
-                                                );
-                                                on_results.run(res.clone());
-                                                set_results.set(Some(res));
+                        if use_json_poll {
+                            let poll_params = JsonPollParams {
+                                run_id: run_id.clone(),
+                            };
+                            match invoke_result::<RunStatus, String>(
+                                "poll_json_run_status",
+                                &JsonPollArgs {
+                                    params: poll_params,
+                                },
+                            )
+                            .await
+                            {
+                                Ok(status) => {
+                                    let done =
+                                        status.status == "Complete" || status.status == "Failed";
+                                    let completed = status.status == "Complete";
+                                    set_poll_status.set(Some(status));
+
+                                    if done {
+                                        if completed {
+                                            let res_params = JsonResultsParams {
+                                                run_id: run_id.clone(),
+                                            };
+                                            match invoke_result::<SimulationResults, String>(
+                                                "get_json_run_results",
+                                                &JsonResultsArgs { params: res_params },
+                                            )
+                                            .await
+                                            {
+                                                Ok(res) => {
+                                                    leptos::logging::log!(
+                                                        "Got {} system series, {} flow series",
+                                                        res.system_timeseries.len(),
+                                                        res.flow_timeseries.len()
+                                                    );
+                                                    on_results.run(res.clone());
+                                                    set_results.set(Some(res));
+                                                }
+                                                Err(e) => set_error_msg.set(Some(format!(
+                                                    "Results fetch failed: {e}"
+                                                ))),
                                             }
-                                            Err(e) => set_error_msg
-                                                .set(Some(format!("Results fetch failed: {e}"))),
                                         }
+                                        break;
                                     }
+                                }
+                                Err(e) => {
+                                    leptos::logging::log!("Poll error: {}", e);
+                                    set_error_msg.set(Some(format!("Poll failed: {e}")));
                                     break;
                                 }
                             }
-                            Err(e) => {
-                                leptos::logging::log!("Poll error: {}", e);
-                                set_error_msg.set(Some(format!("Poll failed: {e}")));
-                                break;
+                        } else {
+                            let poll_params = PollParams {
+                                db: "bert-models".to_string(),
+                                run_id: run_id.clone(),
+                            };
+                            match invoke_result::<RunStatus, String>(
+                                "poll_run_status",
+                                &PollArgs {
+                                    params: poll_params,
+                                },
+                            )
+                            .await
+                            {
+                                Ok(status) => {
+                                    let done =
+                                        status.status == "Complete" || status.status == "Failed";
+                                    let completed = status.status == "Complete";
+                                    set_poll_status.set(Some(status));
+
+                                    if done {
+                                        if completed {
+                                            let res_params = ResultsParams {
+                                                db: "bert-models".to_string(),
+                                                run_id: run_id.clone(),
+                                            };
+                                            match invoke_result::<SimulationResults, String>(
+                                                "get_run_results",
+                                                &ResultsArgs { params: res_params },
+                                            )
+                                            .await
+                                            {
+                                                Ok(res) => {
+                                                    leptos::logging::log!(
+                                                        "Got {} system series, {} flow series",
+                                                        res.system_timeseries.len(),
+                                                        res.flow_timeseries.len()
+                                                    );
+                                                    on_results.run(res.clone());
+                                                    set_results.set(Some(res));
+                                                }
+                                                Err(e) => set_error_msg.set(Some(format!(
+                                                    "Results fetch failed: {e}"
+                                                ))),
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                                Err(e) => {
+                                    leptos::logging::log!("Poll error: {}", e);
+                                    set_error_msg.set(Some(format!("Poll failed: {e}")));
+                                    break;
+                                }
                             }
                         }
                     }
@@ -178,157 +263,168 @@ pub fn SimPanel(
         });
     };
 
+    let (expanded, set_expanded) = signal(true);
+
     view! {
         <Show when=move || visible.get()>
-            <div class="absolute top-16 right-4 z-30 w-80 bg-white rounded-lg shadow-lg border border-gray-200 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div
+                class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] transition-all duration-200"
+                style=move || if expanded.get() { "height: 340px;" } else { "height: 44px;" }
+            >
+                // --- Header bar (always visible) ---
+                <div class="flex items-center justify-between px-4 h-11 border-b border-gray-100 bg-gray-50/80">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-semibold text-gray-700">{"Simulation"}</span>
+                        <span class="text-xs text-gray-400 font-mono">{move || model_name.get()}</span>
 
-                <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white rounded-t-lg z-10">
-                    <span class="text-sm font-semibold text-gray-900">{"Simulation"}</span>
-                    <button class="text-gray-400 hover:text-gray-600 text-sm"
-                            on:click=move |_| on_close.run(())>
-                        {"x"}
-                    </button>
-                </div>
+                        {move || display_status.get().map(|(status, tick_count, short_id)| {
+                            let badge = match status.as_str() {
+                                "Pending" => "bg-gray-100 text-gray-600",
+                                "Running" => "bg-blue-50 text-blue-600",
+                                "Complete" => "bg-emerald-50 text-emerald-600",
+                                "Failed" => "bg-red-50 text-red-600",
+                                _ => "bg-gray-100 text-gray-600",
+                            };
+                            view! {
+                                <span class={format!("px-2 py-0.5 rounded text-xs font-medium {badge}")}>
+                                    {status}{" · "}{tick_count}{" steps"}
+                                </span>
+                                <span class="text-xs text-gray-300 font-mono">{short_id}</span>
+                            }
+                        })}
 
-                <div class="px-4 py-3 space-y-3">
-                    // --- Model name ---
-                    <div class="text-xs text-gray-500">
-                        {"Model: "}<span class="font-mono font-medium text-gray-700">{move || model_name.get()}</span>
+                        {move || error_msg.get().map(|e| view! {
+                            <span class="text-xs text-red-500 truncate max-w-xs">{e}</span>
+                        })}
                     </div>
 
-                    // --- Controls ---
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">{"Seed"}</label>
+                    <div class="flex items-center gap-2">
+                        // --- Inline controls ---
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-xs text-gray-400">{"Seed"}</label>
                             <input
                                 type="number"
-                                class="w-full px-2 py-1.5 border border-gray-200 rounded text-sm font-mono"
+                                class="w-16 px-1.5 py-1 border border-gray-200 rounded text-xs font-mono bg-white"
                                 prop:value=move || seed_text.get()
                                 on:input=move |ev| set_seed_text.set(event_target_value(&ev))
                             />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">{"Steps"}</label>
+                            <label class="text-xs text-gray-400 ml-1">{"Steps"}</label>
                             <input
                                 type="number"
-                                class="w-full px-2 py-1.5 border border-gray-200 rounded text-sm font-mono"
+                                class="w-16 px-1.5 py-1 border border-gray-200 rounded text-xs font-mono bg-white"
                                 prop:value=move || steps_text.get()
                                 on:input=move |ev| set_steps_text.set(event_target_value(&ev))
                             />
                         </div>
+
+                        <button
+                            class="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition disabled:opacity-50"
+                            disabled=move || launching.get() || is_running.get()
+                            on:click=do_launch
+                        >
+                            {move || {
+                                if launching.get() { "Launching..." }
+                                else if is_running.get() { "Running..." }
+                                else { "Run" }
+                            }}
+                        </button>
+
+                        <button
+                            class="text-gray-400 hover:text-gray-600 text-sm px-1 ml-1"
+                            on:click=move |_| set_expanded.update(|e| *e = !*e)
+                        >
+                            {move || if expanded.get() { "\u{25BC}" } else { "\u{25B2}" }}
+                        </button>
+                        <button
+                            class="text-gray-300 hover:text-gray-500 text-xs px-1"
+                            on:click=move |_| on_close.run(())
+                        >
+                            {"\u{2715}"}
+                        </button>
                     </div>
-
-                    <button
-                        class="w-full px-3 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded transition disabled:opacity-50"
-                        disabled=move || launching.get() || is_running.get()
-                        on:click=do_launch
-                    >
-                        {move || {
-                            if launching.get() { "Launching..." }
-                            else if is_running.get() { "Running..." }
-                            else { "Run" }
-                        }}
-                    </button>
-
-                    // --- Error display ---
-                    {move || error_msg.get().map(|e| view! {
-                        <div class="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                            {e}
-                        </div>
-                    })}
-
-                    // --- Run status ---
-                    {move || display_status.get().map(|(status, tick_count, short_id)| {
-                        let badge = match status.as_str() {
-                            "Pending" => "bg-gray-100 text-gray-700",
-                            "Running" => "bg-blue-100 text-blue-700",
-                            "Complete" => "bg-green-100 text-green-700",
-                            "Failed" => "bg-red-100 text-red-700",
-                            _ => "bg-gray-100 text-gray-700",
-                        };
-                        view! {
-                            <div class="pt-2 border-t border-gray-100">
-                                <div class="flex items-center gap-2">
-                                    <span class={format!("px-2 py-0.5 rounded-full text-xs font-medium {badge}")}>
-                                        {status}
-                                    </span>
-                                    <span class="text-xs text-gray-500 font-mono truncate">
-                                        {short_id}
-                                    </span>
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1 font-mono">
-                                    {"Tick "}{tick_count}
-                                </div>
-                            </div>
-                        }
-                    })}
-
-                    // --- Results: time series charts ---
-                    {move || results.get().map(|res| {
-                        let sys_series = res.system_timeseries.clone();
-                        let flow_series = res.flow_timeseries.clone();
-                        let has_data = !sys_series.is_empty() || !flow_series.is_empty();
-
-                        view! {
-                            <div class="pt-3 border-t border-gray-100 space-y-1">
-                                <div class="text-xs font-semibold text-gray-700 mb-2">{"Results"}</div>
-
-                                {if !sys_series.is_empty() {
-                                    Some(view! {
-                                        <div class="space-y-1">
-                                            <div class="text-xs text-gray-500 font-medium">{"System metrics"}</div>
-                                            <For
-                                                each=move || sys_series.clone().into_iter().enumerate()
-                                                key=|(i, _)| *i
-                                                children=move |(i, s)| {
-                                                    let label = format!("{} — {}", s.name, s.key);
-                                                    let color = COLORS[i % COLORS.len()].to_string();
-                                                    view! {
-                                                        <LineChart
-                                                            label=label
-                                                            ticks=s.ticks.clone()
-                                                            values=s.values.clone()
-                                                            color=color
-                                                        />
-                                                    }
-                                                }
-                                            />
-                                        </div>
-                                    })
-                                } else { None }}
-
-                                {if !flow_series.is_empty() {
-                                    Some(view! {
-                                        <div class="space-y-1">
-                                            <div class="text-xs text-gray-500 font-medium mt-2">{"Flow observations"}</div>
-                                            <For
-                                                each=move || flow_series.clone().into_iter().enumerate()
-                                                key=|(i, _)| *i
-                                                children=move |(i, s)| {
-                                                    let color = COLORS[(i + 3) % COLORS.len()].to_string();
-                                                    view! {
-                                                        <LineChart
-                                                            label=s.name.clone()
-                                                            ticks=s.ticks.clone()
-                                                            values=s.values.clone()
-                                                            color=color
-                                                        />
-                                                    }
-                                                }
-                                            />
-                                        </div>
-                                    })
-                                } else { None }}
-
-                                {if !has_data {
-                                    Some(view! {
-                                        <div class="text-xs text-gray-400 italic">{"No observations recorded"}</div>
-                                    })
-                                } else { None }}
-                            </div>
-                        }
-                    })}
                 </div>
+
+                // --- Input sliders ---
+                <InputsPanel
+                    model_json=model_json
+                    on_change=Callback::new(move |vals: HashMap<String, f64>| {
+                        set_input_params.set(vals);
+                    })
+                />
+
+                // --- Expanded content: chart grid ---
+                <Show when=move || expanded.get()>
+                    <div class="h-[calc(100%-44px)] overflow-y-auto px-4 py-3">
+                        {move || {
+                            let res = results.get();
+                            if let Some(res) = res {
+                                let sys_series: Vec<_> = res.system_timeseries.iter()
+                                    .filter(|s| s.key == "activity" || s.key == "storage" || s.key == "throughput")
+                                    .cloned()
+                                    .collect();
+                                let flow_series: Vec<_> = res.flow_timeseries.iter()
+                                    .filter(|f| f.sink_id.starts_with("Snk"))
+                                    .cloned().collect();
+
+                                if sys_series.is_empty() && flow_series.is_empty() {
+                                    view! {
+                                        <div class="text-sm text-gray-400 italic py-8 text-center">
+                                            {"No observations recorded"}
+                                        </div>
+                                    }.into_any()
+                                } else {
+                                    let sys_views: Vec<_> = sys_series.iter().enumerate().map(|(i, s)| {
+                                        let label = format!("{} \u{2014} {}", s.name, s.key);
+                                        let color = COLORS[i % COLORS.len()].to_string();
+                                        let ticks = s.ticks.clone();
+                                        let values = s.values.clone();
+                                        view! {
+                                            <div class="bg-gray-50/50 rounded-lg p-2 border border-gray-100">
+                                                <LineChart label=label ticks=ticks values=values color=color />
+                                            </div>
+                                        }
+                                    }).collect();
+
+                                    let flow_views: Vec<_> = flow_series.iter().enumerate().map(|(i, s)| {
+                                        let color = COLORS[(i + 3) % COLORS.len()].to_string();
+                                        let name = s.name.clone();
+                                        let ticks = s.ticks.clone();
+                                        let values = s.values.clone();
+                                        view! {
+                                            <div class="bg-gray-50/50 rounded-lg p-2 border border-gray-100">
+                                                <LineChart label=name ticks=ticks values=values color=color />
+                                            </div>
+                                        }
+                                    }).collect();
+
+                                    view! {
+                                        <div>
+                                            <div class="grid grid-cols-2 xl:grid-cols-3 gap-3">
+                                                {sys_views}
+                                            </div>
+                                            {if !flow_views.is_empty() {
+                                                Some(view! {
+                                                    <div class="mt-3">
+                                                        <div class="text-xs text-gray-400 font-medium mb-2">{"Flows"}</div>
+                                                        <div class="grid grid-cols-2 xl:grid-cols-3 gap-3">
+                                                            {flow_views}
+                                                        </div>
+                                                    </div>
+                                                })
+                                            } else { None }}
+                                        </div>
+                                    }.into_any()
+                                }
+                            } else {
+                                view! {
+                                    <div class="text-sm text-gray-400 italic py-8 text-center">
+                                        {"Run a simulation to see results"}
+                                    </div>
+                                }.into_any()
+                            }
+                        }}
+                    </div>
+                </Show>
             </div>
         </Show>
     }

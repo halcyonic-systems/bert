@@ -16,7 +16,7 @@ use crate::leptos_app::components::{
     AppMode, ChatPanel, ControlsMenu, LandingScreen, ModelBrowser, Palette, Toast, ValidationPanel,
 };
 use crate::leptos_app::details::Details;
-use crate::leptos_app::simulation::{SimDashboard, SimPanel};
+use crate::leptos_app::simulation::SimPanel;
 use crate::LoadFileEvent;
 use bevy::prelude::With;
 use leptos::prelude::*;
@@ -114,6 +114,7 @@ pub fn App() -> impl IntoView {
         });
 
     let (loaded_model_name, set_loaded_model_name) = signal(String::new());
+    let (loaded_file_path, set_loaded_file_path) = signal(None::<String>);
     let (model_json_context, set_model_json_context) = signal(None::<String>);
     let (app_mode, set_app_mode) = signal(AppMode::Landing);
 
@@ -122,14 +123,13 @@ pub fn App() -> impl IntoView {
         let load_file_writer = load_file_writer.clone();
         let set_complexity_inner = set_complexity;
         let set_loaded_model_name = set_loaded_model_name;
+        let set_loaded_file_path = set_loaded_file_path;
         let set_model_json_context = set_model_json_context;
         let set_app_mode = set_app_mode;
         move |_| {
             if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) =
                 file_dialog_signal.get()
             {
-                // L3: Pre-parse structural validation — catches missing fields
-                // before Serde fails with an unhelpful error
                 if let Ok(json_value) = serde_json::from_slice::<serde_json::Value>(&data) {
                     let pre_result =
                         crate::bevy_app::data_model::validate::validate_json_structure(&json_value);
@@ -147,6 +147,12 @@ pub fn App() -> impl IntoView {
 
                         if let Ok(json_str) = String::from_utf8(data.clone()) {
                             set_model_json_context.set(Some(json_str));
+                        }
+
+                        if path.starts_with("generated:") || path.starts_with("template:") {
+                            set_loaded_file_path.set(None);
+                        } else {
+                            set_loaded_file_path.set(Some(path.clone()));
                         }
 
                         let mn = path.strip_prefix("template:").unwrap_or(&path);
@@ -267,7 +273,7 @@ pub fn App() -> impl IntoView {
     let (sim_panel_visible, set_sim_panel_visible) = signal(false);
     let (chat_visible, set_chat_visible) = signal(false);
     let (active_run, set_active_run) = signal(None::<simulation::types::RunInfo>);
-    let (sim_results, set_sim_results) = signal(None::<simulation::types::SimulationResults>);
+    let (_sim_results, set_sim_results) = signal(None::<simulation::types::SimulationResults>);
 
     let tauri_available = leptos_use::js! {
         "__TAURI__" in &window()
@@ -419,6 +425,7 @@ pub fn App() -> impl IntoView {
                 let load_file_writer = load_file_writer.clone();
                 let set_complexity = set_complexity;
                 let set_app_mode = set_app_mode;
+                let set_loaded_file_path = set_loaded_file_path;
                 move |event: LoadFileEvent| {
                     match serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&event.data) {
                         Ok(world_model) => {
@@ -428,6 +435,13 @@ pub fn App() -> impl IntoView {
                             if let Ok(json_str) = String::from_utf8(event.data.clone()) {
                                 set_model_json_context.set(Some(json_str));
                             }
+
+                            if event.file_path.starts_with("generated:") || event.file_path.starts_with("template:") {
+                                set_loaded_file_path.set(None);
+                            } else {
+                                set_loaded_file_path.set(Some(event.file_path.clone()));
+                            }
+
                             set_app_mode.set(AppMode::Editing);
 
                             let result = validate(&world_model);
@@ -483,6 +497,7 @@ pub fn App() -> impl IntoView {
                 let load_file_writer = load_file_writer.clone();
                 let set_complexity = set_complexity;
                 let set_app_mode = set_app_mode;
+                let set_loaded_file_path = set_loaded_file_path;
                 move |json_data: Vec<u8>| {
                     match serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&json_data) {
                         Ok(world_model) => {
@@ -495,6 +510,7 @@ pub fn App() -> impl IntoView {
                             if let Ok(json_str) = String::from_utf8(json_data.clone()) {
                                 set_model_json_context.set(Some(json_str));
                             }
+                            set_loaded_file_path.set(None);
                             set_loaded_model_name.set(model_name);
                             set_app_mode.set(AppMode::Editing);
                             set_chat_visible.set(false);
@@ -522,9 +538,8 @@ pub fn App() -> impl IntoView {
             })
             active_run=Signal::derive(move || active_run.get())
             model_name=Signal::derive(move || loaded_model_name.get())
-        />
-        <SimDashboard
-            results=Signal::derive(move || sim_results.get())
+            json_path=Signal::derive(move || loaded_file_path.get())
+            model_json=Signal::derive(move || model_json_context.get())
         />
         <div class="h-screen"
              tabindex="0"

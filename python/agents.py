@@ -14,9 +14,20 @@ Each T function is a pure state transform: (agent, state, inflows, outflows) -> 
 Design intent: portable to Rust ECS via PyO3.
 """
 
+import math
 from collections import deque
 
 from mesa import Agent
+
+
+def _safe_float(val, default):
+    if val is None:
+        return default
+    try:
+        f = float(val)
+        return default if math.isnan(f) else f
+    except (TypeError, ValueError):
+        return default
 
 TIME_CONSTANT_TICKS = {
     "Millisecond": 1,
@@ -152,7 +163,7 @@ class BertAgent(Agent):
         self.time_constant = time_constant
         self.complexity_kind = complexity_kind
         self.agent_kind = agent_kind or "Reactive"
-        self.agency_capacity = agency_capacity or 0.5
+        self.agency_capacity = _safe_float(agency_capacity, 0.5)
         self.primitives = primitives or []
 
         self.step_interval = TIME_CONSTANT_TICKS.get(time_constant, 1)
@@ -222,15 +233,12 @@ class BertAgent(Agent):
         self.state["activity"] = self.state["throughput"] * self.agency_capacity
 
     def _produce_outputs(self):
-        """Scale outgoing flows by activity level.
-
-        When primitives are active, they set output amounts directly
-        (Splitting conserves, Copying replicates), so skip generic scaling.
-        """
-        if self.primitives:
+        _SELF_WRITING = {"Splitting", "Copying"}
+        if set(self.primitives) & _SELF_WRITING:
             return
+        activity = self.state.get("activity", 0.0)
         for flow in self.outgoing_flows:
-            flow["amount"] = flow.get("amount", 0) * (0.5 + 0.5 * self.agency_capacity)
+            flow["amount"] = activity
 
     def collect_observations(self) -> list[dict]:
         return [
