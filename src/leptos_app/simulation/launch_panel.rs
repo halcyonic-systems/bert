@@ -5,6 +5,7 @@ use serde::Serialize;
 use tauri_sys::core::invoke_result;
 use wasm_bindgen_futures::JsFuture;
 
+use super::agent_table::AgentComparisonTable;
 use super::chart::LineChart;
 use super::inputs_panel::InputsPanel;
 use super::types::{
@@ -410,6 +411,8 @@ pub fn SimPanel(
                         set_input_params.set(vals);
                     })
                 />
+
+                <AgentComparisonTable model_json=model_json />
 
                 // --- Expanded content: chart grid ---
                 <Show when=move || expanded.get()>
