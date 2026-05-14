@@ -940,4 +940,60 @@ mod tests {
             "routes_through count diverges from source/sink_interface presence"
         );
     }
+
+    // -------------------------------------------------------------------
+    // Primitive emission tests
+    // -------------------------------------------------------------------
+
+    fn load_test_buffering() -> WorldModel {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../assets/models/local/test-primitives/test-buffering.json"
+        );
+        let bytes = std::fs::read(path).expect("test-buffering.json should exist");
+        serde_json::from_slice(&bytes).expect("test-buffering.json should deserialize")
+    }
+
+    #[test]
+    fn primitive_model_emits_has_primitive_relation() {
+        let model = load_test_buffering();
+        let stmts = model_to_typeql(&model, "test-buffering").unwrap();
+
+        let has_primitive = stmts
+            .iter()
+            .filter(|s| s.contains("isa has_primitive"))
+            .count();
+        assert!(
+            has_primitive > 0,
+            "test-buffering model should emit at least one has_primitive relation"
+        );
+    }
+
+    #[test]
+    fn primitive_assignment_carries_correct_value() {
+        let model = load_test_buffering();
+        let stmts = model_to_typeql(&model, "test-buffering").unwrap();
+
+        let buffering_stmt = stmts
+            .iter()
+            .find(|s| s.contains(r#"has process_primitive "Buffering""#));
+        assert!(
+            buffering_stmt.is_some(),
+            "expected a primitive_assignment with process_primitive \"Buffering\""
+        );
+    }
+
+    #[test]
+    fn agent_bundle_contains_primitive_and_config() {
+        let model = load_test_buffering();
+        let stmts = model_to_typeql(&model, "test-buffering").unwrap();
+
+        let bundle = stmts
+            .iter()
+            .find(|s| s.contains("isa agent_model") && s.contains("isa has_primitive"));
+        assert!(
+            bundle.is_some(),
+            "agent_model and has_primitive should be in the same bundled statement"
+        );
+    }
 }
