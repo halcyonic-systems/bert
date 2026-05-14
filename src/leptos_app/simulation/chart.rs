@@ -6,8 +6,8 @@ pub fn LineChart(
     ticks: Vec<u64>,
     values: Vec<f64>,
     #[prop(default = "rgb(59,130,246)".to_string())] color: String,
-    #[prop(default = 260)] width: u32,
-    #[prop(default = 120)] height: u32,
+    #[prop(default = 400)] width: u32,
+    #[prop(default = 180)] height: u32,
 ) -> impl IntoView {
     if ticks.is_empty() || values.is_empty() {
         return view! { <div class="text-xs text-gray-400">{"No data"}</div> }.into_any();

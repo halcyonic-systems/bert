@@ -67,6 +67,8 @@ pub struct RunInfo {
 pub struct FlowTimeseries {
     pub interaction_id: String,
     pub name: String,
+    #[serde(default)]
+    pub sink_id: String,
     pub ticks: Vec<u64>,
     pub values: Vec<f64>,
 }
@@ -199,6 +201,7 @@ pub async fn query_results(
             .or_insert_with(|| FlowTimeseries {
                 interaction_id: iid,
                 name,
+                sink_id: String::new(),
                 ticks: Vec::new(),
                 values: Vec::new(),
             });
