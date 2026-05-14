@@ -6,7 +6,7 @@ use ollama_rs::{
 };
 use serde::{Deserialize, Serialize};
 
-const OLLAMA_MODEL: &str = "qwen3:8b";
+const OLLAMA_MODEL: &str = "gemma4:e2b";
 
 const BERT_RAG_URL: &str = "http://localhost:5010/ask";
 const BERT_RAG_GENERATE_URL: &str = "http://localhost:5010/generate-from-description";
@@ -87,12 +87,13 @@ pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, Strin
         return chat_creation_mode(&request.message, &request.history).await;
     }
 
-    let summary = extract_model_summary(&request.model_context);
-
-    if let Ok(resp) = try_bert_rag(&request.message, &summary, &request.history).await {
+    // Engine gets full model JSON for structural reasoning.
+    // Ollama fallback gets compressed summary to fit smaller context windows.
+    if let Ok(resp) = try_bert_rag(&request.message, &request.model_context, &request.history).await {
         return Ok(resp);
     }
 
+    let summary = extract_model_summary(&request.model_context);
     if let Ok(response) = try_ollama(&request.message, &summary).await {
         return Ok(ChatResponse {
             response,
