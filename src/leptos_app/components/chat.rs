@@ -5,6 +5,20 @@ use tauri_sys::core::invoke_result;
 
 use super::AppMode;
 
+fn dimension_color(dim: &str) -> &'static str {
+    match dim {
+        "C" => "bg-blue-100 text-blue-700",
+        "N" => "bg-green-100 text-green-700",
+        "E" => "bg-amber-100 text-amber-700",
+        "G" => "bg-purple-100 text-purple-700",
+        "B" => "bg-red-100 text-red-700",
+        "T" => "bg-cyan-100 text-cyan-700",
+        "H" => "bg-orange-100 text-orange-700",
+        "Δt" | "Dt" => "bg-pink-100 text-pink-700",
+        _ => "bg-gray-100 text-gray-700",
+    }
+}
+
 #[derive(Serialize)]
 struct ChatArgs {
     request: ChatRequest,
@@ -25,9 +39,22 @@ struct HistoryEntry {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+struct SourceRef {
+    source: String,
+    #[serde(default)]
+    excerpt: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 struct ChatResponse {
     response: String,
     provider: String,
+    #[serde(default)]
+    dimensions: Option<Vec<String>>,
+    #[serde(default)]
+    route: Option<String>,
+    #[serde(default)]
+    sources: Option<Vec<SourceRef>>,
 }
 
 #[derive(Serialize)]
@@ -46,6 +73,9 @@ struct ChatMessage {
     content: String,
     is_user: bool,
     provider: Option<String>,
+    dimensions: Option<Vec<String>>,
+    route: Option<String>,
+    sources: Option<Vec<SourceRef>>,
 }
 
 #[component]
@@ -71,15 +101,15 @@ pub fn ChatPanel(
     let is_creating = Memo::new(move |_| app_mode.get() == AppMode::Creating);
     let has_model = Memo::new(move |_| model_context.get().is_some());
 
-    // Seed creation mode with a welcome message
     Effect::new(move |prev_creating: Option<bool>| {
         let creating = is_creating.get();
         if creating && prev_creating != Some(true) {
             set_messages.set(vec![ChatMessage {
                 id: 0,
-                content: "What system would you like to model? Describe it in a few sentences — what it does, its main components, and what crosses its boundary.".to_string(),
+                content: "Name a system and I'll generate a first draft. You can refine it from there.".to_string(),
                 is_user: false,
                 provider: Some("system".to_string()),
+                dimensions: None, route: None, sources: None,
             }]);
             set_next_id.set(1);
         }
@@ -99,14 +129,58 @@ pub fn ChatPanel(
                 content: message.clone(),
                 is_user: true,
                 provider: None,
+                dimensions: None,
+                route: None,
+                sources: None,
             });
         });
         set_is_loading.set(true);
         set_input_value.set(String::new());
 
         let creating = is_creating.get_untracked();
+        let first_user_msg = creating && !messages.get_untracked().iter().any(|m| m.is_user && m.id != uid);
 
-        // Build history from prior messages (exclude the message we just added)
+        if first_user_msg {
+            leptos::task::spawn_local(async move {
+                let transcript = format!("User: {message}");
+                let args = GenerateArgs { conversation: transcript };
+
+                match invoke_result::<GenerateResponse, String>(
+                    "generate_model_from_conversation", &args,
+                ).await {
+                    Ok(resp) => {
+                        on_model_generated.run(resp.json_data.into_bytes());
+                        let rid = next_id.get_untracked();
+                        set_next_id.set(rid + 1);
+                        set_messages.update(|msgs| {
+                            msgs.push(ChatMessage {
+                                id: rid,
+                                content: "First draft generated! Describe changes and click **Generate Model** to rebuild.".to_string(),
+                                is_user: false,
+                                provider: Some("system".to_string()),
+                                dimensions: None, route: None, sources: None,
+                            });
+                        });
+                    }
+                    Err(e) => {
+                        let rid = next_id.get_untracked();
+                        set_next_id.set(rid + 1);
+                        set_messages.update(|msgs| {
+                            msgs.push(ChatMessage {
+                                id: rid,
+                                content: format!("Generation failed: {e}"),
+                                is_user: false,
+                                provider: Some("system".to_string()),
+                                dimensions: None, route: None, sources: None,
+                            });
+                        });
+                    }
+                }
+                set_is_loading.set(false);
+            });
+            return;
+        }
+
         let history: Vec<HistoryEntry> = messages
             .get_untracked()
             .iter()
@@ -142,10 +216,10 @@ pub fn ChatPanel(
                 },
             };
 
-            let (response_text, provider) =
+            let (response_text, provider, dims, route, sources) =
                 match invoke_result::<ChatResponse, String>("chat_with_model", &args).await {
-                    Ok(resp) => (resp.response, Some(resp.provider)),
-                    Err(e) => (format!("Error: {e}"), None),
+                    Ok(resp) => (resp.response, Some(resp.provider), resp.dimensions, resp.route, resp.sources),
+                    Err(e) => (format!("Error: {e}"), None, None, None, None),
                 };
 
             let rid = next_id.get_untracked();
@@ -157,6 +231,9 @@ pub fn ChatPanel(
                     content: response_text,
                     is_user: false,
                     provider,
+                    dimensions: dims,
+                    route,
+                    sources,
                 });
             });
             set_is_loading.set(false);
@@ -182,6 +259,7 @@ pub fn ChatPanel(
                 content: "Generating your model... This may take a moment.".to_string(),
                 is_user: false,
                 provider: Some("system".to_string()),
+                dimensions: None, route: None, sources: None,
             });
         });
 
@@ -219,6 +297,7 @@ pub fn ChatPanel(
                             content: format!("Generation failed: {e}"),
                             is_user: false,
                             provider: Some("system".to_string()),
+                            dimensions: None, route: None, sources: None,
                         });
                     });
                 }
@@ -301,17 +380,52 @@ pub fn ChatPanel(
                                     "bg-gray-100 text-gray-800 rounded-bl-none"
                                 };
                                 let provider_label = msg.provider.clone();
+                                let route_label = msg.route.clone();
+                                let dims = msg.dimensions.clone().unwrap_or_default();
+                                let srcs = msg.sources.clone().unwrap_or_default();
                                 view! {
                                     <div class=format!("flex {align}")>
                                         <div class="max-w-[80%]">
                                             <div class=format!("px-3 py-2 rounded-lg whitespace-pre-wrap {bubble}")>
                                                 {msg.content}
                                             </div>
-                                            {provider_label.map(|p| view! {
-                                                <div class="text-[10px] text-gray-400 mt-0.5 ml-1">
-                                                    {"via "}{p}
-                                                </div>
-                                            })}
+                                            {if !dims.is_empty() {
+                                                Some(view! {
+                                                    <div class="flex flex-wrap gap-1 mt-1 ml-1">
+                                                        {dims.into_iter().map(|d| {
+                                                            let color = dimension_color(&d);
+                                                            view! {
+                                                                <span class=format!("px-1.5 py-0.5 rounded text-[10px] font-medium {color}")>{d}</span>
+                                                            }
+                                                        }).collect::<Vec<_>>()}
+                                                    </div>
+                                                })
+                                            } else { None }}
+                                            <div class="flex items-center gap-2 mt-0.5 ml-1">
+                                                {provider_label.map(|p| {
+                                                    let label = if let Some(ref r) = route_label {
+                                                        format!("via {p} ({r})")
+                                                    } else {
+                                                        format!("via {p}")
+                                                    };
+                                                    view! {
+                                                        <span class="text-[10px] text-gray-400">{label}</span>
+                                                    }
+                                                })}
+                                            </div>
+                                            {if !srcs.is_empty() {
+                                                Some(view! {
+                                                    <div class="mt-1 ml-1 space-y-0.5">
+                                                        {srcs.into_iter().take(3).map(|s| {
+                                                            view! {
+                                                                <div class="text-[10px] text-gray-400 truncate" title=s.excerpt.clone()>
+                                                                    {"\u{1F4D6} "}{s.source}
+                                                                </div>
+                                                            }
+                                                        }).collect::<Vec<_>>()}
+                                                    </div>
+                                                })
+                                            } else { None }}
                                         </div>
                                     </div>
                                 }

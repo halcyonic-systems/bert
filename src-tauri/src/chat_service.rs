@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 const OLLAMA_MODEL: &str = "qwen3:8b";
 
 const BERT_RAG_URL: &str = "http://localhost:5010/ask";
+const BERT_RAG_GENERATE_URL: &str = "http://localhost:5010/generate-from-description";
 
 const ANALYSIS_PROMPT: &str = r#"You are a BERT systems analysis assistant. You analyze system models described in JSON.
 
@@ -54,9 +55,30 @@ pub struct HistoryMessage {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SourceRef {
+    pub source: String,
+    #[serde(default)]
+    pub excerpt: String,
+    #[serde(default)]
+    pub score: Option<f64>,
+    #[serde(default, rename = "type")]
+    pub source_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatResponse {
     pub response: String,
     pub provider: String,
+    #[serde(default)]
+    pub dimensions: Option<Vec<String>>,
+    #[serde(default)]
+    pub route: Option<String>,
+    #[serde(default)]
+    pub confidence: Option<f64>,
+    #[serde(default)]
+    pub intensity: Option<String>,
+    #[serde(default)]
+    pub sources: Option<Vec<SourceRef>>,
 }
 
 #[tauri::command]
@@ -67,23 +89,30 @@ pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, Strin
 
     let summary = extract_model_summary(&request.model_context);
 
-    if let Ok(response) = try_bert_rag(&request.message, &summary).await {
-        return Ok(ChatResponse {
-            response,
-            provider: "bert-rag".to_string(),
-        });
+    if let Ok(resp) = try_bert_rag(&request.message, &summary, &request.history).await {
+        return Ok(resp);
     }
 
     if let Ok(response) = try_ollama(&request.message, &summary).await {
         return Ok(ChatResponse {
             response,
             provider: "ollama".to_string(),
+            dimensions: None,
+            route: None,
+            confidence: None,
+            intensity: None,
+            sources: None,
         });
     }
 
     Ok(ChatResponse {
         response: mock_response(&request.message, &request.model_context),
         provider: "mock".to_string(),
+        dimensions: None,
+        route: None,
+        confidence: None,
+        intensity: None,
+        sources: None,
     })
 }
 
@@ -114,10 +143,12 @@ async fn chat_creation_mode(
         Ok(response) => Ok(ChatResponse {
             response: response.message.content,
             provider: "ollama".to_string(),
+            dimensions: None, route: None, confidence: None, intensity: None, sources: None,
         }),
         Err(e) => Ok(ChatResponse {
             response: format!("I'd love to help you design this system! Tell me more about the main components and what flows in and out.\n\n*(LLM unavailable: {})*", e),
             provider: "fallback".to_string(),
+            dimensions: None, route: None, confidence: None, intensity: None, sources: None,
         }),
     }
 }
@@ -136,42 +167,185 @@ pub struct GenerateModelResponse {
 pub async fn generate_model_from_conversation(
     conversation: String,
 ) -> Result<GenerateModelResponse, String> {
-    let intermediate = extract_intermediate_from_conversation(&conversation).await?;
+    // Try the engine first (full pipeline: description → extraction → compile)
+    if let Ok(resp) = try_engine_generate(&conversation).await {
+        return Ok(resp);
+    }
+
+    // Fallback: local Ollama extraction + local Rust compile
+    let mut intermediate = extract_intermediate_from_conversation(&conversation).await?;
+    repair_intermediate(&mut intermediate);
     let bert_json = compile_intermediate(&intermediate)?;
     Ok(GenerateModelResponse {
         json_data: bert_json,
     })
 }
 
+async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse, Box<dyn std::error::Error>> {
+    let body = serde_json::json!({ "description": description });
+
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(120))
+        .build()?;
+
+    let resp = client.post(BERT_RAG_GENERATE_URL).json(&body).send().await?;
+
+    if !resp.status().is_success() {
+        let text = resp.text().await.unwrap_or_default();
+        return Err(format!("Engine returned {text}").into());
+    }
+
+    let json: serde_json::Value = resp.json().await?;
+    let model = json.get("model").ok_or("no model field in engine response")?;
+    let json_data = serde_json::to_string(model)?;
+
+    Ok(GenerateModelResponse { json_data })
+}
+
+fn repair_intermediate(spec: &mut serde_json::Value) {
+    // Fill empty names
+    for (section, prefix) in [
+        ("sources", "Source"),
+        ("sinks", "Sink"),
+        ("subsystems", "Subsystem"),
+        ("external_flows", "Flow"),
+        ("internal_flows", "Flow"),
+    ] {
+        if let Some(arr) = spec.get_mut(section).and_then(|v| v.as_array_mut()) {
+            for (i, item) in arr.iter_mut().enumerate() {
+                if let Some(name) = item.get_mut("name") {
+                    if name.as_str().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                        *name = serde_json::Value::String(format!("{prefix} {}", i + 1));
+                    }
+                } else if let Some(obj) = item.as_object_mut() {
+                    obj.insert("name".to_string(), serde_json::Value::String(format!("{prefix} {}", i + 1)));
+                }
+            }
+        }
+    }
+
+    // Ensure at least 1 sink exists
+    let has_sinks = spec.get("sinks")
+        .and_then(|v| v.as_array())
+        .map(|a| !a.is_empty())
+        .unwrap_or(false);
+    if !has_sinks {
+        let sys_name = spec.pointer("/system/name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("System");
+        let sink_name = format!("{sys_name} Output");
+        let first_sub = spec.get("subsystems")
+            .and_then(|v| v.as_array())
+            .and_then(|a| a.first())
+            .and_then(|s| s.get("name"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("Subsystem 1")
+            .to_string();
+
+        spec.as_object_mut().map(|obj| {
+            obj.insert("sinks".to_string(), serde_json::json!([
+                {"name": sink_name, "description": "Primary output"}
+            ]));
+        });
+
+        // Add routing_table entry for the new sink
+        if let Some(rt) = spec.get_mut("routing_table").and_then(|v| v.as_array_mut()) {
+            rt.push(serde_json::json!({
+                "interface": format!("{sink_name} Port"),
+                "type": "Export",
+                "connected_to": sink_name,
+                "has_processor": true,
+                "target_subsystem": first_sub,
+            }));
+        }
+
+        // Add external flow for the new sink
+        if let Some(ef) = spec.get_mut("external_flows").and_then(|v| v.as_array_mut()) {
+            ef.push(serde_json::json!({
+                "name": format!("{sink_name} Flow"),
+                "interface": format!("{sink_name} Port"),
+                "substance": {"type": "Message", "sub_type": "Output"},
+                "usability": "Product",
+            }));
+        }
+    }
+
+    // Fix routing_table type mismatches: Import must connect to a source, Export to a sink
+    let source_names: Vec<String> = spec.get("sources")
+        .and_then(|v| v.as_array())
+        .map(|a| a.iter().filter_map(|s| s.get("name").and_then(|v| v.as_str()).map(|s| s.to_string())).collect())
+        .unwrap_or_default();
+    let sink_names: Vec<String> = spec.get("sinks")
+        .and_then(|v| v.as_array())
+        .map(|a| a.iter().filter_map(|s| s.get("name").and_then(|v| v.as_str()).map(|s| s.to_string())).collect())
+        .unwrap_or_default();
+
+    if let Some(rt) = spec.get_mut("routing_table").and_then(|v| v.as_array_mut()) {
+        for entry in rt.iter_mut() {
+            let connected = entry.get("connected_to").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            if source_names.contains(&connected) {
+                entry.as_object_mut().map(|obj| obj.insert("type".to_string(), serde_json::Value::String("Import".to_string())));
+            } else if sink_names.contains(&connected) {
+                entry.as_object_mut().map(|obj| obj.insert("type".to_string(), serde_json::Value::String("Export".to_string())));
+            }
+        }
+    }
+
+    // Fill empty substance sub_types
+    for section in ["external_flows", "internal_flows"] {
+        if let Some(arr) = spec.get_mut(section).and_then(|v| v.as_array_mut()) {
+            for item in arr.iter_mut() {
+                if let Some(sub) = item.get_mut("substance").and_then(|v| v.as_object_mut()) {
+                    let has_subtype = sub.get("sub_type")
+                        .and_then(|v| v.as_str())
+                        .map(|s| !s.trim().is_empty())
+                        .unwrap_or(false);
+                    if !has_subtype {
+                        let default = match sub.get("type").and_then(|v| v.as_str()).unwrap_or("Message") {
+                            "Energy" => "Kinetic",
+                            "Material" => "Solid",
+                            _ => "Data",
+                        };
+                        sub.insert("sub_type".to_string(), serde_json::Value::String(default.to_string()));
+                    }
+                }
+            }
+        }
+    }
+}
+
 async fn extract_intermediate_from_conversation(
     conversation: &str,
 ) -> Result<serde_json::Value, String> {
     let extraction_prompt = format!(
-        r#"You are a systems model compiler. Given a conversation about a system, extract the structured intermediate format for the BERT model generator.
+        r#"You are a systems model compiler. Extract a minimal system model from the user's description.
 
-Output ONLY valid JSON with this structure (no markdown, no explanation):
+Output ONLY valid JSON (no markdown, no explanation, no thinking):
 {{
-  "system": {{ "name": "...", "description": "...", "complexity": "Complex" }},
+  "system": {{ "name": "...", "description": "..." }},
   "sources": [{{ "name": "...", "description": "..." }}],
   "sinks": [{{ "name": "...", "description": "..." }}],
-  "subsystems": [{{ "name": "...", "description": "...", "complexity": "Complex" }}],
+  "subsystems": [{{ "name": "...", "description": "..." }}],
   "routing_table": [
-    {{ "interface": "...", "type": "Import", "connected_to": "source_name", "has_processor": true, "target_subsystem": "subsystem_name" }},
-    {{ "interface": "...", "type": "Export", "connected_to": "sink_name", "has_processor": true, "target_subsystem": "subsystem_name" }}
+    {{ "interface": "unique_interface_name", "type": "Import", "connected_to": "source_name", "has_processor": true, "target_subsystem": "subsystem_name" }},
+    {{ "interface": "unique_interface_name", "type": "Export", "connected_to": "sink_name", "has_processor": true, "target_subsystem": "subsystem_name" }}
   ],
-  "external_flows": [{{ "name": "...", "interface": "...", "substance": {{ "type": "Energy"|"Material"|"Message" }}, "usability": "Resource"|"Product"|"Waste" }}],
-  "internal_flows": [{{ "name": "...", "source": "subsystem_name", "sink": "subsystem_name", "substance": {{ "type": "Message" }}, "usability": "Resource" }}]
+  "external_flows": [{{ "name": "descriptive_flow_name", "interface": "matches_routing_table_interface", "substance": {{ "type": "Energy|Material|Message", "sub_type": "descriptive_label" }}, "usability": "Resource|Product|Waste" }}],
+  "internal_flows": [{{ "name": "descriptive_flow_name", "source": "subsystem_name", "sink": "subsystem_name", "substance": {{ "type": "Message", "sub_type": "descriptive_label" }}, "usability": "Resource" }}]
 }}
 
-CRITICAL RULES:
-- Every source needs an Import interface in routing_table with connected_to = source name
-- Every sink needs an Export interface in routing_table with connected_to = sink name
-- Each routing_table entry MUST have "has_processor": true and "target_subsystem" set to the subsystem that receives (Import) or produces (Export) the flow
-- The "interface" field in each external_flow MUST be copied EXACTLY from a routing_table entry's "interface" field — same string, same spelling. Do NOT invent new interface names in external_flows. First write routing_table, then use only those interface strings in external_flows.
-- internal_flows connect subsystems to each other (not to interfaces)
-- Infer reasonable defaults when the user was vague
-
-SELF-CHECK before outputting: for every external_flow, verify its "interface" value appears as an "interface" value in routing_table. If not, fix it.
+RULES:
+1. Keep it minimal: 2-3 subsystems, 1-2 sources, 1 sink. Simple first draft.
+2. If the user only gave a name, infer the most obvious components.
+3. MUST have at least 1 source AND at least 1 sink. Every system has outputs.
+4. Every "name" field must be a non-empty descriptive string.
+5. Every source gets ONE Import interface in routing_table. Every sink gets ONE Export interface.
+6. Each source/sink connects through its OWN unique interface — never route two flows through the same interface.
+7. routing_table "type" must be "Import" when connected_to is a source, "Export" when connected_to is a sink.
+8. Each external_flow "interface" must EXACTLY match an interface name from routing_table.
+9. "sub_type" describes what flows (e.g., "Electricity", "Data", "Funds", "Regulations", "Heat").
+10. internal_flows connect subsystems to each other (not to interfaces).
 
 Conversation:
 {conversation}"#
@@ -215,13 +389,35 @@ fn compile_intermediate(intermediate: &serde_json::Value) -> Result<String, Stri
     serde_json::to_string(&model).map_err(|e| format!("Failed to serialize model: {e}"))
 }
 
+#[derive(Deserialize)]
+struct EngineResponse {
+    answer: String,
+    #[serde(default)]
+    dimensions: Option<Vec<String>>,
+    #[serde(default)]
+    route: Option<String>,
+    #[serde(default)]
+    confidence: Option<f64>,
+    #[serde(default)]
+    intensity: Option<String>,
+    #[serde(default)]
+    sources: Option<Vec<SourceRef>>,
+}
+
 async fn try_bert_rag(
     message: &str,
     model_summary: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
+    history: &[HistoryMessage],
+) -> Result<ChatResponse, Box<dyn std::error::Error>> {
+    let hist: Vec<serde_json::Value> = history
+        .iter()
+        .map(|h| serde_json::json!({"role": h.role, "content": h.content}))
+        .collect();
+
     let body = serde_json::json!({
         "question": message,
         "model_context": model_summary,
+        "history": hist,
     });
 
     let client = reqwest::Client::builder()
@@ -230,14 +426,17 @@ async fn try_bert_rag(
         .build()?;
 
     let resp = client.post(BERT_RAG_URL).json(&body).send().await?;
+    let engine: EngineResponse = resp.json().await?;
 
-    let json: serde_json::Value = resp.json().await?;
-    let answer = json
-        .get("answer")
-        .and_then(|v| v.as_str())
-        .ok_or("no answer field in bert-rag response")?;
-
-    Ok(answer.to_string())
+    Ok(ChatResponse {
+        response: engine.answer,
+        provider: "bert-rag".to_string(),
+        dimensions: engine.dimensions,
+        route: engine.route,
+        confidence: engine.confidence,
+        intensity: engine.intensity,
+        sources: engine.sources,
+    })
 }
 
 async fn try_ollama(
