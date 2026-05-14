@@ -169,6 +169,28 @@ This is why spectral theory (Axler Ch 5) matters for simulation stability — th
 
 ---
 
+## Seven Mechanisms for Boundedness
+
+The eigenvalue section above asks: does v(t) diverge? The answer: Mobus's framework has seven independent mechanisms that prevent unbounded growth. A simulation that implements none of them will diverge — this is expected, not a bug in the primitives.
+
+These mechanisms are ordered from most fundamental (thermodynamic) to most compositional (evolutionary). A well-grounded sim layers them in progressively.
+
+| # | Mechanism | Source | What it constrains | Implementation status |
+|---|-----------|--------|-------------------|----------------------|
+| 1 | **Conservation** | 1st/2nd Laws (Ch. 3 MEIK) | Material/Energy flows can't create substance. Every transform has η < 1, so every cycle loses energy. Message is the exception — Copying replicates without loss | Not implemented |
+| 2 | **Lawful state space S_L(K)** | Bunge Vol. 4 §2.2, `State.lean` line 47 | v(t) confined to physically realizable states. S_L(K) ⊂ S(K). A state where output >> input violates the law predicate | Not implemented |
+| 3 | **Boundary interfaces** | Eq. 4.6 B = {P, I}, `Boundary.lean` | Every external flow crosses an interface with its own T function. The boundary IS a bottleneck — nothing enters/exits except through a capacity-limited interface | Not implemented (interfaces are pass-through) |
+| 4 | **Edge capacity κ** | Eq. 4.4 N = {C, L}, `FlowNetwork.lean` line 34 | Every flow edge has a hard throughput ceiling. Property of the CONNECTION, not the agent | **Implemented v0.4.0** — `capacity` field on flows, clamped in `_produce_outputs` |
+| 5 | **Hierarchical governance** | Ch. 7-8 HCGS | Negative feedback via Force interactions (parameter injection). Governance doesn't add flow — it modulates parameters of work processes | **Implemented v0.4.0** — `force_polarity` field, positive/negative modulation of `agency_capacity` |
+| 6 | **Multi-timescale damping** | Eq. 4.1 Δt hierarchy | Slow governance corrects fast operational loops. A fast positive feedback is counteracted by slower negative feedback at the coordination level | Partially implemented — `should_step()` supports different intervals, but models use uniform time constants |
+| 7 | **Environmental selection** | Bunge Postulate 1.6, `Selection.lean` line 124 | All systems subject to environmental selection. Unbounded systems are not viable over evolutionary timescales. Structural guarantee, not per-step mechanism | Not implemented (evolutionary timescale) |
+
+**Key insight (from 2026-05-13 research session):** `agency_capacity` is transformation efficiency — how well T converts inputs to outputs. It is NOT carrying capacity. Carrying capacity κ is a property of the flow edge (Mechanism 4) or the boundary interface (Mechanism 3). Using `agency_capacity` as κ conflates two distinct concepts.
+
+**Why the Bitcoin cycle diverges:** The Validating→Mining→Protocol→Validating cycle grows because (a) PassiveSystem relays set activity = throughput with no damping, (b) no flow edges have capacity values, (c) the Protocol→Mining Force was positive feedback instead of negative, and (d) no conservation check prevents outputs from exceeding inputs. Adding edge capacities and negative force polarity (Mechanisms 4+5) is the theoretically grounded first fix. Conservation enforcement (Mechanism 1) is the next layer.
+
+---
+
 ## The H Element: When T Itself Changes
 
 **Stateless (most primitives):**
