@@ -413,6 +413,171 @@ def test_negative_force():
     return run_test("Negative Force", systems, interactions, check)
 
 
+def test_conservation_clamps_output():
+    """Propelling with agency_capacity=2.0 would double input — conservation must clamp."""
+    systems = [make_system("Amplifier", "Propelling", agency_capacity=2.0)]
+    interactions = [
+        make_flow("in", "Src", "Amplifier", substance="Energy", amount=10.0),
+        make_flow("out", "Amplifier", "Snk", substance="Energy", usability="Product"),
+    ]
+
+    def check(agent, model):
+        out = agent.outgoing_flows[0]["amount"]
+        assert out <= 10.0, \
+            f"conservation should clamp output to ≤ 10.0, got {out}"
+        assert agent.state["conservation_deficit"] > 0, \
+            f"should record deficit, got {agent.state['conservation_deficit']}"
+
+    return run_test("Conservation Clamps Output", systems, interactions, check)
+
+
+def test_conservation_skips_message():
+    """Message flows replicate freely — conservation must not clamp them."""
+    systems = [make_system("Copier", "Copying")]
+    interactions = [
+        make_flow("in", "Src", "Copier", substance="Message", amount=6.0),
+        make_flow("outA", "Copier", "SnkA", substance="Message", usability="Product"),
+        make_flow("outB", "Copier", "SnkB", substance="Message", usability="Product"),
+    ]
+
+    def check(agent, model):
+        outs = [f["amount"] for f in agent.outgoing_flows]
+        assert all(abs(o - 6.0) < 0.01 for o in outs), \
+            f"Message outputs should NOT be clamped, got {outs}"
+        assert agent.state["conservation_deficit"] == 0.0, \
+            "no deficit for Message-only flows"
+
+    return run_test("Conservation Skips Message", systems, interactions, check)
+
+
+def test_conservation_with_buffer():
+    """Buffering accumulates storage — conservation budget includes it."""
+    systems = [make_system("Tank", "Buffering")]
+    interactions = [
+        make_flow("in", "Src", "Tank", substance="Energy", amount=10.0),
+        make_flow("out", "Tank", "Snk", substance="Energy", amount=3.0, usability="Product"),
+    ]
+
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    model = BertModel(sys_df, int_df, seed=42)
+
+    for _ in range(10):
+        model.step()
+
+    agent = list(model.agents)[0]
+    try:
+        assert agent.state["storage"] > 0, \
+            f"storage should have accumulated, got {agent.state['storage']}"
+        assert agent.state["conservation_deficit"] == 0.0, \
+            "buffered output within budget should have no deficit"
+        return True, "OK"
+    except AssertionError as e:
+        return False, str(e)
+
+
+def test_copying_ignores_material():
+    """Copying should only process Message flows, ignoring Material."""
+    def check(agent, model):
+        assert abs(agent.state["activity"] - 4.0) < 0.01, \
+            f"activity should be 4.0 (Message only), got {agent.state['activity']}"
+        outs = [f["amount"] for f in agent.outgoing_flows]
+        assert all(abs(o - 4.0) < 0.01 for o in outs), \
+            f"outputs should equal Message input (4.0), got {outs}"
+    return run_test(
+        "Copying Ignores Material",
+        [make_system("Copier", "Copying")],
+        [make_flow("mat_in", "Src", "Copier", substance="Material", amount=10.0),
+         make_flow("msg_in", "SrcM", "Copier", substance="Message", amount=4.0),
+         make_flow("outA", "Copier", "SnkA", substance="Message", usability="Product"),
+         make_flow("outB", "Copier", "SnkB", substance="Message", usability="Product")],
+        check,
+    )
+
+
+def test_splitting_ignores_message():
+    """Splitting should only process Energy/Material flows, ignoring Message."""
+    def check(agent, model):
+        assert abs(agent.state["activity"] - 8.0) < 0.01, \
+            f"activity should be 8.0 (Energy only), got {agent.state['activity']}"
+        outs = [f["amount"] for f in agent.outgoing_flows]
+        assert all(abs(o - 4.0) < 0.01 for o in outs), \
+            f"outputs should be 4.0 each, got {outs}"
+    return run_test(
+        "Splitting Ignores Message",
+        [make_system("Splitter", "Splitting")],
+        [make_flow("msg_in", "SrcM", "Splitter", substance="Message", amount=5.0),
+         make_flow("nrg_in", "Src", "Splitter", substance="Energy", amount=8.0),
+         make_flow("outA", "Splitter", "SnkA", usability="Product"),
+         make_flow("outB", "Splitter", "SnkB", usability="Product")],
+        check,
+    )
+
+
+def test_combining_ignores_message():
+    """Combining should only sum Energy/Material flows, ignoring Message."""
+    def check(agent, model):
+        assert abs(agent.state["activity"] - 7.0) < 0.01, \
+            f"activity should be 7.0 (Energy only), got {agent.state['activity']}"
+    return run_test(
+        "Combining Ignores Message",
+        [make_system("Combiner", "Combining")],
+        [make_flow("nrg", "SrcA", "Combiner", substance="Energy", amount=7.0),
+         make_flow("msg", "SrcB", "Combiner", substance="Message", amount=3.0),
+         make_flow("out", "Combiner", "Snk", usability="Product")],
+        check,
+    )
+
+
+def test_inverting_ignores_physical():
+    """Inverting with only Energy input should output max_val (no Message to subtract)."""
+    def check(agent, model):
+        assert abs(agent.state["activity"] - 1.0) < 0.01, \
+            f"activity should be 1.0 (max_signal, no Message input), got {agent.state['activity']}"
+    return run_test(
+        "Inverting Ignores Physical",
+        [make_system("Inverter", "Inverting")],
+        [make_flow("nrg_in", "Src", "Inverter", substance="Energy", amount=5.0),
+         make_flow("out", "Inverter", "Snk", substance="Message", usability="Product")],
+        check,
+    )
+
+
+def test_h_conditioned_buffering():
+    """Two-phase test: filling trend → generous release, draining trend → conservative."""
+    systems = [make_system("Tank", "Buffering")]
+    interactions = [
+        make_flow("in", "Src", "Tank", substance="Energy", amount=10.0),
+        make_flow("out", "Tank", "Snk", substance="Energy", amount=3.0, usability="Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    model = BertModel(sys_df, int_df, seed=42)
+
+    agent = list(model.agents)[0]
+
+    # Phase 1: high inflow, storage fills → release_factor should rise above 1.0
+    for _ in range(20):
+        model.step()
+    factor_filling = agent.state.get("_release_factor", 1.0)
+
+    # Phase 2: cut inflow to zero, storage drains → release_factor should drop below 1.0
+    for f in agent.incoming_flows:
+        f["amount"] = 0.0
+    for _ in range(20):
+        model.step()
+    factor_draining = agent.state.get("_release_factor", 1.0)
+
+    try:
+        assert factor_filling > 1.0, \
+            f"filling trend should push release_factor > 1.0, got {factor_filling}"
+        assert factor_draining < 1.0, \
+            f"draining trend should push release_factor < 1.0, got {factor_draining}"
+        return True, f"OK (filling={factor_filling:.2f}, draining={factor_draining:.2f})"
+    except AssertionError as e:
+        return False, str(e)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -431,6 +596,14 @@ ALL_TESTS = [
     ("Edge Capacity", test_edge_capacity),
     ("Negative Force", test_negative_force),
     ("JSON Models Integration", test_json_models),
+    ("Conservation Clamps Output", test_conservation_clamps_output),
+    ("Conservation Skips Message", test_conservation_skips_message),
+    ("Conservation With Buffer", test_conservation_with_buffer),
+    ("Copying Ignores Material", test_copying_ignores_material),
+    ("Splitting Ignores Message", test_splitting_ignores_message),
+    ("Combining Ignores Message", test_combining_ignores_message),
+    ("Inverting Ignores Physical", test_inverting_ignores_physical),
+    ("H-Conditioned Buffering", test_h_conditioned_buffering),
 ]
 
 

@@ -372,3 +372,25 @@ By recognizing that Mobus's History state H naturally embodies his knowledge con
 4. Augments transformations (adaptive behavior)
 
 This framework shows how systems literally learn themselves into existence through the accumulation of structural knowledge in H, providing a thermodynamically grounded foundation for understanding learning, adaptation, and emergence in complex systems. The beauty lies in how the formal mathematical structure (8-tuple) perfectly supports the ontological concept (K = f(1/I)), creating a unified theory of learning systems that bridges physics, information theory, and systems science.
+
+## 10. Implementation Notes (2026-05-14)
+
+**Status**: Buffering is the first H-conditioned primitive. Pattern is extensible to all 9.
+
+### Hook point
+
+`BertAgent._condition_T()` runs per-step between `_apply_forces()` and `_act_by_primitive()`. It reads `self.history` (deque of state snapshots) and writes conditioning parameters into `self.state` for T functions to consume.
+
+### Buffering conditioning
+
+Reads last 10 `storage` values from history. Computes trend (filling vs draining). Sets `state["_release_factor"]` ∈ [0.5, 1.5]:
+- Filling → factor > 1.0 → releases more than base demand (prevents over-accumulation)
+- Draining → factor < 1.0 → releases less than base demand (conserves remaining stock)
+
+Uses `_base_demand` (first-observed demand) as the scaling base to avoid compounding through the `_produce_outputs` → demand feedback loop.
+
+### Conventions
+
+- H-derived parameters are prefixed with `_` in the state dict (e.g., `_release_factor`, `_base_demand`) to distinguish them from direct observables
+- Window length is fixed at 10 steps for v1; adaptive window tied to `time_constant` is future work (see §8)
+- Trend normalization uses `max(abs(trend), 1.0)` to avoid division by zero and keep the factor bounded

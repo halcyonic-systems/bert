@@ -6,10 +6,26 @@ wires flows as interaction channels. No domain-specific logic —
 behavior emerges from the typed graph structure.
 """
 
+import logging
+
 import pandas as pd
 from mesa import Model, DataCollector
 
 from agents import agent_from_row
+
+logger = logging.getLogger(__name__)
+
+PRIMITIVE_SUBSTANCE_VALID = {
+    "Buffering":  {"Energy", "Material", "Message"},
+    "Combining":  {"Energy", "Material"},
+    "Splitting":  {"Energy", "Material"},
+    "Propelling": {"Energy", "Material", "Message"},
+    "Impeding":   {"Energy", "Material", "Message"},
+    "Sensing":    {"Energy", "Material"},
+    "Modulating": {"Energy", "Material", "Message"},
+    "Inverting":  {"Message"},
+    "Copying":    {"Message"},
+}
 
 
 class BertModel(Model):
@@ -29,6 +45,7 @@ class BertModel(Model):
 
         self._create_agents(systems_df)
         self._build_flow_adjacency(interactions_df)
+        self._validate_substance_compatibility()
         self._build_force_adjacency(interactions_df)
         self._setup_datacollector()
 
@@ -62,6 +79,22 @@ class BertModel(Model):
                 src.outgoing_flows.append(flow_info)
             if snk:
                 snk.incoming_flows.append(flow_info)
+
+    def _validate_substance_compatibility(self):
+        for agent in self.agents:
+            if not agent.primitives:
+                continue
+            allowed = set()
+            for prim in agent.primitives:
+                allowed |= PRIMITIVE_SUBSTANCE_VALID.get(prim, set())
+            for flow in agent.incoming_flows:
+                stype = flow.get("substance_type", "")
+                if stype and stype not in allowed:
+                    logger.warning(
+                        "Invalid substance for %s (%s): flow %s carries %s",
+                        agent.display_name, ", ".join(agent.primitives),
+                        flow.get("bert_id", "?"), stype,
+                    )
 
     def _build_force_adjacency(self, interactions_df: pd.DataFrame):
         if interactions_df.empty:

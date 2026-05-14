@@ -60,20 +60,29 @@ def _t_buffering(agent, state, incoming, outgoing):
     demand = sum(f.get("amount", 0) for f in outgoing)
     storage = state.get("storage", 0.0)
     storage += inflow
-    released = min(demand, storage)
+    if "_base_demand" not in state:
+        state["_base_demand"] = demand
+    adjusted = state["_base_demand"] * state.get("_release_factor", 1.0)
+    released = min(adjusted, storage)
     storage -= released
     state["storage"] = storage
     state["activity"] = released
 
 
 def _t_combining(agent, state, incoming, outgoing):
-    """activity = Σ(all inflows). Linear."""
-    state["activity"] = sum(f.get("amount", 0) for f in incoming)
+    """activity = Σ(M/E inflows). Linear."""
+    state["activity"] = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") in ("Energy", "Material")
+    )
 
 
 def _t_splitting(agent, state, incoming, outgoing):
     """out_i = total / n. Linear, conserves Material/Energy."""
-    total = sum(f.get("amount", 0) for f in incoming)
+    total = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") in ("Energy", "Material")
+    )
     n = max(len(outgoing), 1)
     share = total / n
     for f in outgoing:
@@ -124,14 +133,20 @@ def _t_modulating(agent, state, incoming, outgoing):
 
 def _t_inverting(agent, state, incoming, outgoing):
     """out = max_val - in. Affine. Message only."""
-    total_in = sum(f.get("amount", 0) for f in incoming)
+    total_in = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Message"
+    )
     max_val = state.get("max_signal", 1.0)
     state["activity"] = max(0.0, max_val - total_in)
 
 
 def _t_copying(agent, state, incoming, outgoing):
     """out_i = in (replication, NOT conservation). Message only."""
-    total_in = sum(f.get("amount", 0) for f in incoming)
+    total_in = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Message"
+    )
     for f in outgoing:
         f["amount"] = min(total_in, f.get("capacity", float('inf')))
     state["activity"] = total_in
@@ -183,8 +198,10 @@ class BertAgent(Agent):
         """Initialize mutable state from graph properties."""
         self.state["activity"] = 0.0
         self.state["throughput"] = 0.0
+        self.state["conservation_deficit"] = 0.0
         if "Buffering" in self.primitives:
             self.state["storage"] = 0.0
+            self.state["_release_factor"] = 1.0
         if "Impeding" in self.primitives:
             self.state["back_pressure"] = 0.0
         if "Sensing" in self.primitives:
@@ -205,11 +222,13 @@ class BertAgent(Agent):
             return
         self._process_inputs()
         self._apply_forces()
+        self._condition_T()
         if self.primitives:
             self._act_by_primitive()
         else:
             self._act()
         self._produce_outputs()
+        self._enforce_conservation()
         self._record_history()
 
     def _apply_forces(self):
@@ -224,6 +243,17 @@ class BertAgent(Agent):
             self._base_agency_capacity * pos_factor * neg_factor,
             self._base_agency_capacity,
         )
+
+    def _condition_T(self):
+        """Read H (history) to set conditioning parameters before T dispatch."""
+        if len(self.history) < 2:
+            return
+        if "Buffering" in self.primitives:
+            recent = [h.get("storage", 0) for h in list(self.history)[-10:]]
+            if len(recent) >= 2:
+                trend = recent[-1] - recent[0]
+                norm = max(abs(trend), 1.0)
+                self.state["_release_factor"] = max(0.5, min(1.5, 1.0 + 0.3 * (trend / norm)))
 
     def _act_by_primitive(self):
         """Dispatch through process primitives in sequence."""
@@ -259,6 +289,36 @@ class BertAgent(Agent):
             flow["amount"] = min(activity, flow.get("capacity", float('inf')))
         for force in self.force_outputs:
             force["amount"] = activity
+
+    def _enforce_conservation(self):
+        """Post-step 1st/2nd Law enforcement for Material/Energy flows."""
+        _CONSERVED = ("Energy", "Material")
+        me_inflow = sum(
+            f.get("amount", 0) for f in self.incoming_flows
+            if f.get("substance_type") in _CONSERVED
+        )
+        me_outflow = sum(
+            f.get("amount", 0) for f in self.outgoing_flows
+            if f.get("substance_type") in _CONSERVED
+        )
+        inflow_budget = me_inflow + self.state.get("storage", 0.0)
+
+        if me_outflow <= inflow_budget:
+            self.state["conservation_deficit"] = 0.0
+            return
+
+        self.state["conservation_deficit"] = me_outflow - inflow_budget
+
+        if inflow_budget <= 0:
+            for f in self.outgoing_flows:
+                if f.get("substance_type") in _CONSERVED:
+                    f["amount"] = 0.0
+            return
+
+        ratio = inflow_budget / me_outflow
+        for f in self.outgoing_flows:
+            if f.get("substance_type") in _CONSERVED:
+                f["amount"] *= ratio
 
     def collect_observations(self) -> list[dict]:
         return [
