@@ -166,10 +166,12 @@ Output ONLY valid JSON with this structure (no markdown, no explanation):
 CRITICAL RULES:
 - Every source needs an Import interface in routing_table with connected_to = source name
 - Every sink needs an Export interface in routing_table with connected_to = sink name
-- IMPORTANT: Each routing_table entry MUST have "has_processor": true and "target_subsystem" set to the subsystem that receives (Import) or produces (Export) the flow. This creates the internal routing from the boundary to the subsystem.
-- Every external_flow must reference an interface from routing_table
+- Each routing_table entry MUST have "has_processor": true and "target_subsystem" set to the subsystem that receives (Import) or produces (Export) the flow
+- The "interface" field in each external_flow MUST be copied EXACTLY from a routing_table entry's "interface" field — same string, same spelling. Do NOT invent new interface names in external_flows. First write routing_table, then use only those interface strings in external_flows.
 - internal_flows connect subsystems to each other (not to interfaces)
 - Infer reasonable defaults when the user was vague
+
+SELF-CHECK before outputting: for every external_flow, verify its "interface" value appears as an "interface" value in routing_table. If not, fix it.
 
 Conversation:
 {conversation}"#
