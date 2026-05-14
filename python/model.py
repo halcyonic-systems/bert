@@ -29,6 +29,7 @@ class BertModel(Model):
 
         self._create_agents(systems_df)
         self._build_flow_adjacency(interactions_df)
+        self._build_force_adjacency(interactions_df)
         self._setup_datacollector()
 
         self.datacollector.collect(self)
@@ -46,11 +47,14 @@ class BertModel(Model):
         for _, row in interactions_df.iterrows():
             if row.get("interaction_type", "Flow") == "Force":
                 continue
+            raw_cap = row.get("capacity")
+            capacity = float(raw_cap) if raw_cap is not None else float('inf')
             flow_info = {
                 "bert_id": row["bert_id"],
                 "substance_type": row.get("substance_type", ""),
                 "usability": row.get("usability", ""),
                 "amount": float(row.get("amount", 0)),
+                "capacity": capacity,
             }
             src = self._agents_by_bert_id.get(row.get("source_id"))
             snk = self._agents_by_bert_id.get(row.get("sink_id"))
@@ -58,6 +62,24 @@ class BertModel(Model):
                 src.outgoing_flows.append(flow_info)
             if snk:
                 snk.incoming_flows.append(flow_info)
+
+    def _build_force_adjacency(self, interactions_df: pd.DataFrame):
+        if interactions_df.empty:
+            return
+        for _, row in interactions_df.iterrows():
+            if row.get("interaction_type") != "Force":
+                continue
+            force_info = {
+                "bert_id": row["bert_id"],
+                "substance_type": row.get("substance_type", ""),
+                "amount": float(row.get("amount", 0)),
+                "polarity": row.get("force_polarity", "positive"),
+            }
+            src = self._agents_by_bert_id.get(row.get("source_id"))
+            snk = self._agents_by_bert_id.get(row.get("sink_id"))
+            if src and snk:
+                src.force_outputs.append(force_info)
+                snk.force_inputs.append(force_info)
 
     def _setup_datacollector(self):
         """Build DataCollector dynamically from whatever agents exist."""

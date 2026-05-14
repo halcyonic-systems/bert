@@ -321,6 +321,98 @@ def test_json_models():
     return True, f"OK ({count} models)"
 
 
+def test_force_parameter_injection():
+    """Force from A to B should modulate B's agency_capacity."""
+    systems = [
+        make_system("Controller", "Propelling", agency_capacity=0.8),
+        make_system("Worker", "Propelling", agency_capacity=0.5),
+    ]
+    interactions = [
+        make_flow("env_in_ctrl", "Src", "Controller", amount=1.0),
+        make_flow("env_in_work", "Src", "Worker", amount=10.0),
+        make_flow("out", "Worker", "Snk", usability="Product"),
+        {
+            "bert_id": "test:force",
+            "display_name": "Control Signal",
+            "substance_type": "Message",
+            "usability": "Resource",
+            "interaction_type": "Force",
+            "amount": 0.0,
+            "source_id": "test:Controller",
+            "sink_id": "test:Worker",
+        },
+    ]
+
+    def check(agent, model):
+        agents = {a.bert_id: a for a in model.agents}
+        worker = agents["test:Worker"]
+        assert worker.agency_capacity != worker._base_agency_capacity, \
+            "force should have modulated agency_capacity"
+        assert len(worker.force_inputs) == 1, "worker should have 1 force input"
+
+    return run_test("Force Parameter Injection", systems, interactions, check)
+
+
+def test_edge_capacity():
+    """Flow with capacity=5 should cap output even when activity > 5."""
+    systems = [make_system("Pump", "Propelling", agency_capacity=1.0)]
+    interactions = [
+        make_flow("in", "Src", "Pump", amount=10.0),
+        {
+            "bert_id": "test:capped_out",
+            "display_name": "capped_out",
+            "substance_type": "Energy",
+            "usability": "Product",
+            "interaction_type": "Flow",
+            "amount": 0.0,
+            "capacity": 5.0,
+            "source_id": "test:Pump",
+            "sink_id": "test:Snk",
+        },
+    ]
+
+    def check(agent, model):
+        assert agent.state["activity"] == 10.0, \
+            f"activity should be 10.0 (uncapped internally), got {agent.state['activity']}"
+        out = agent.outgoing_flows[0]["amount"]
+        assert abs(out - 5.0) < 0.01, \
+            f"output should be capped at 5.0, got {out}"
+
+    return run_test("Edge Capacity", systems, interactions, check)
+
+
+def test_negative_force():
+    """Negative-polarity force should reduce agency_capacity."""
+    systems = [
+        make_system("Gov", "Propelling", agency_capacity=0.8),
+        make_system("Worker", "Propelling", agency_capacity=0.5),
+    ]
+    interactions = [
+        make_flow("env_in_gov", "Src", "Gov", amount=1.0),
+        make_flow("env_in_work", "Src", "Worker", amount=10.0),
+        make_flow("out", "Worker", "Snk", usability="Product"),
+        {
+            "bert_id": "test:neg_force",
+            "display_name": "Constraint",
+            "substance_type": "Message",
+            "usability": "Resource",
+            "interaction_type": "Force",
+            "force_polarity": "negative",
+            "amount": 0.0,
+            "source_id": "test:Gov",
+            "sink_id": "test:Worker",
+        },
+    ]
+
+    def check(agent, model):
+        agents = {a.bert_id: a for a in model.agents}
+        worker = agents["test:Worker"]
+        assert worker.agency_capacity < worker._base_agency_capacity, \
+            f"negative force should reduce capacity: {worker.agency_capacity} should be < {worker._base_agency_capacity}"
+
+    return run_test("Negative Force", systems, interactions, check)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -335,6 +427,9 @@ ALL_TESTS = [
     ("Chain Propagation", test_chain_propagation),
     ("NaN Safety", test_nan_safety),
     ("Buffering Accumulation", test_buffering_accumulation),
+    ("Force Parameter Injection", test_force_parameter_injection),
+    ("Edge Capacity", test_edge_capacity),
+    ("Negative Force", test_negative_force),
     ("JSON Models Integration", test_json_models),
 ]
 

@@ -77,7 +77,7 @@ def _t_splitting(agent, state, incoming, outgoing):
     n = max(len(outgoing), 1)
     share = total / n
     for f in outgoing:
-        f["amount"] = share
+        f["amount"] = min(share, f.get("capacity", float('inf')))
     state["activity"] = total
 
 
@@ -133,7 +133,7 @@ def _t_copying(agent, state, incoming, outgoing):
     """out_i = in (replication, NOT conservation). Message only."""
     total_in = sum(f.get("amount", 0) for f in incoming)
     for f in outgoing:
-        f["amount"] = total_in
+        f["amount"] = min(total_in, f.get("capacity", float('inf')))
     state["activity"] = total_in
 
 
@@ -168,9 +168,13 @@ class BertAgent(Agent):
 
         self.step_interval = TIME_CONSTANT_TICKS.get(time_constant, 1)
 
+        self._base_agency_capacity = self.agency_capacity
+
         self.state = {}
         self.incoming_flows = []
         self.outgoing_flows = []
+        self.force_inputs = []
+        self.force_outputs = []
         self.history = deque(maxlen=100)
 
         self._init_state()
@@ -200,12 +204,26 @@ class BertAgent(Agent):
         if not self.should_step(tick):
             return
         self._process_inputs()
+        self._apply_forces()
         if self.primitives:
             self._act_by_primitive()
         else:
             self._act()
         self._produce_outputs()
         self._record_history()
+
+    def _apply_forces(self):
+        """Force = parameter injection. Source activity modulates sink's agency_capacity."""
+        if not self.force_inputs:
+            return
+        pos_signal = sum(f.get("amount", 0) for f in self.force_inputs if f.get("polarity") != "negative")
+        neg_signal = sum(f.get("amount", 0) for f in self.force_inputs if f.get("polarity") == "negative")
+        pos_factor = 0.5 + 0.5 * min(pos_signal, 2.0)
+        neg_factor = 1.5 - 0.5 * min(neg_signal, 2.0)
+        self.agency_capacity = _safe_float(
+            self._base_agency_capacity * pos_factor * neg_factor,
+            self._base_agency_capacity,
+        )
 
     def _act_by_primitive(self):
         """Dispatch through process primitives in sequence."""
@@ -238,7 +256,9 @@ class BertAgent(Agent):
             return
         activity = self.state.get("activity", 0.0)
         for flow in self.outgoing_flows:
-            flow["amount"] = activity
+            flow["amount"] = min(activity, flow.get("capacity", float('inf')))
+        for force in self.force_outputs:
+            force["amount"] = activity
 
     def collect_observations(self) -> list[dict]:
         return [
