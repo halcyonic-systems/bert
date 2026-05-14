@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 
 const OLLAMA_MODEL: &str = "gemma4:e2b";
 
-const BERT_RAG_URL: &str = "http://localhost:5010/ask";
-const BERT_RAG_GENERATE_URL: &str = "http://localhost:5010/generate-from-description";
+const REASONER_URL: &str = "http://localhost:5010/ask";
+const REASONER_GENERATE_URL: &str = "http://localhost:5010/generate-from-description";
 
 const ANALYSIS_PROMPT: &str = r#"You are a BERT systems analysis assistant. You analyze system models described in JSON.
 
@@ -89,7 +89,7 @@ pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, Strin
 
     // Engine gets full model JSON for structural reasoning.
     // Ollama fallback gets compressed summary to fit smaller context windows.
-    if let Ok(resp) = try_bert_rag(&request.message, &request.model_context, &request.history).await {
+    if let Ok(resp) = try_reasoner(&request.message, &request.model_context, &request.history).await {
         return Ok(resp);
     }
 
@@ -182,7 +182,7 @@ pub async fn generate_model_from_conversation(
     })
 }
 
-/// Primary generation path: delegates to bert-rag engine which handles
+/// Primary generation path: delegates to General Systems Reasoner engine which handles
 /// LLM extraction, intermediate validation, and deterministic compilation.
 async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse, Box<dyn std::error::Error>> {
     let body = serde_json::json!({ "description": description });
@@ -192,7 +192,7 @@ async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse,
         .timeout(Duration::from_secs(120))
         .build()?;
 
-    let resp = client.post(BERT_RAG_GENERATE_URL).json(&body).send().await?;
+    let resp = client.post(REASONER_GENERATE_URL).json(&body).send().await?;
 
     if !resp.status().is_success() {
         let text = resp.text().await.unwrap_or_default();
@@ -409,9 +409,9 @@ struct EngineResponse {
     sources: Option<Vec<SourceRef>>,
 }
 
-/// Query the local bert-rag engine for analysis. Sends conversation history
+/// Query the local General Systems Reasoner for analysis. Sends conversation history
 /// for multi-turn context. Returns full metadata (dimensions, route, sources).
-async fn try_bert_rag(
+async fn try_reasoner(
     message: &str,
     model_summary: &str,
     history: &[HistoryMessage],
@@ -432,12 +432,12 @@ async fn try_bert_rag(
         .timeout(Duration::from_secs(60))
         .build()?;
 
-    let resp = client.post(BERT_RAG_URL).json(&body).send().await?;
+    let resp = client.post(REASONER_URL).json(&body).send().await?;
     let engine: EngineResponse = resp.json().await?;
 
     Ok(ChatResponse {
         response: engine.answer,
-        provider: "bert-rag".to_string(),
+        provider: "reasoner".to_string(),
         dimensions: engine.dimensions,
         route: engine.route,
         confidence: engine.confidence,
@@ -553,7 +553,7 @@ fn extract_model_summary(context: &str) -> String {
     summary
 }
 
-// --- Mock fallback (used when neither bert-rag nor Ollama is running) ---
+// --- Mock fallback (used when neither the reasoner nor Ollama is running) ---
 
 fn mock_response(message: &str, context: &str) -> String {
     let model_info = parse_model_facts(context);
@@ -586,7 +586,7 @@ fn mock_response(message: &str, context: &str) -> String {
         )
     } else {
         format!(
-            "{}\n\n*Mock mode — no LLM backend detected. Start bert-rag with `launch start facets` or Ollama with `ollama run {OLLAMA_MODEL}`*",
+            "{}\n\n*Mock mode — no LLM backend detected. Start the reasoner with `launch start facets` or Ollama with `ollama run {OLLAMA_MODEL}`*",
             model_info
         )
     }
