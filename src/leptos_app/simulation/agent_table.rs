@@ -1,3 +1,6 @@
+//! Agent comparison table: read-only pre-sim overview of all subsystems.
+//! Parses model_json signal — no Bevy ECS dependency.
+
 use leptos::prelude::*;
 use serde::Deserialize;
 

@@ -181,6 +181,8 @@ pub async fn generate_model_from_conversation(
     })
 }
 
+/// Primary generation path: delegates to bert-rag engine which handles
+/// LLM extraction, intermediate validation, and deterministic compilation.
 async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse, Box<dyn std::error::Error>> {
     let body = serde_json::json!({ "description": description });
 
@@ -203,6 +205,8 @@ async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse,
     Ok(GenerateModelResponse { json_data })
 }
 
+/// Fallback-only: patches LLM output when engine is unavailable and local Ollama
+/// extraction produces incomplete intermediate specs (empty names, missing sinks, etc).
 fn repair_intermediate(spec: &mut serde_json::Value) {
     // Fill empty names
     for (section, prefix) in [
@@ -404,6 +408,8 @@ struct EngineResponse {
     sources: Option<Vec<SourceRef>>,
 }
 
+/// Query the local bert-rag engine for analysis. Sends conversation history
+/// for multi-turn context. Returns full metadata (dimensions, route, sources).
 async fn try_bert_rag(
     message: &str,
     model_summary: &str,

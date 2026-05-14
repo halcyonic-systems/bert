@@ -245,7 +245,8 @@ class BertAgent(Agent):
         )
 
     def _condition_T(self):
-        """Read H (history) to set conditioning parameters before T dispatch."""
+        """Read H (history) to set conditioning parameters before T dispatch.
+        Implements Mobus's T(t+1) = f(T(t), H(t), Input(t)). Currently Buffering only."""
         if len(self.history) < 2:
             return
         if "Buffering" in self.primitives:
@@ -291,7 +292,7 @@ class BertAgent(Agent):
             force["amount"] = activity
 
     def _enforce_conservation(self):
-        """Post-step 1st/2nd Law enforcement for Material/Energy flows."""
+        """Post-step 1st/2nd Law: M/E outflows clamped to inflow budget. Message exempt."""
         _CONSERVED = ("Energy", "Material")
         me_inflow = sum(
             f.get("amount", 0) for f in self.incoming_flows
