@@ -1,0 +1,66 @@
+---
+---
+
+<section id="download" class="py-20 sm:py-28" style="border-top: 1px solid var(--border);">
+  <div class="mx-auto max-w-5xl px-6 text-center">
+    <p class="font-mono text-[11px] font-medium tracking-[0.14em] uppercase mb-3" style="color: var(--accent);">
+      Download
+    </p>
+    <h2 class="font-serif text-2xl sm:text-3xl font-normal italic mb-3" style="color: var(--ink);">
+      Run BERT on your machine.
+    </h2>
+    <p class="font-sans text-sm mb-8 mx-auto max-w-md" style="color: var(--ink-dim);">
+      Desktop app with simulation, local model storage, and offline support. Or use the web app — no install required.
+    </p>
+
+    <div class="flex flex-col items-center gap-4">
+      <a
+        id="primary-download"
+        href="https://github.com/halcyonic-systems/bert/releases/latest"
+        class="inline-flex items-center gap-2 px-6 py-3 rounded-md font-sans text-sm font-medium text-white transition-all hover:opacity-90"
+        style="background: var(--accent);"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+        </svg>
+        <span id="download-label">Download for Desktop</span>
+      </a>
+
+      <button
+        id="toggle-platforms"
+        class="font-sans text-xs cursor-pointer transition-colors"
+        style="color: var(--ink-dim);"
+      >
+        Other platforms &darr;
+      </button>
+
+      <div id="platforms" class="hidden flex flex-wrap justify-center gap-3 mt-2">
+        {['macOS (Apple Silicon)', 'macOS (Intel)', 'Windows', 'Linux'].map((name) => (
+          <a
+            href="https://github.com/halcyonic-systems/bert/releases/latest"
+            class="inline-flex items-center px-4 py-2 rounded-md font-sans text-[13px] font-medium transition-all border"
+            style="color: var(--ink); border-color: var(--border);"
+          >
+            {name}
+          </a>
+        ))}
+      </div>
+
+      <p class="font-sans text-xs mt-4" style="color: var(--ink-dim); opacity: 0.6;">
+        Or <a href="https://app.bert.systems" class="underline">use the web app</a> — runs entirely in your browser.
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  const label = document.getElementById('download-label');
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('mac')) label!.textContent = 'Download for macOS';
+  else if (ua.includes('win')) label!.textContent = 'Download for Windows';
+  else if (ua.includes('linux')) label!.textContent = 'Download for Linux';
+
+  document.getElementById('toggle-platforms')?.addEventListener('click', () => {
+    document.getElementById('platforms')?.classList.toggle('hidden');
+  });
+</script>

@@ -1,0 +1,111 @@
+---
+const navItems = [
+  { href: 'https://bert.gitbook.io', label: 'Docs' },
+  { href: 'https://github.com/halcyonic-systems/bert', label: 'GitHub' },
+];
+---
+
+<header class="sticky top-0 z-50 backdrop-blur-sm transition-colors" style="background: color-mix(in srgb, var(--bg) 90%, transparent); border-bottom: 1px solid var(--border);">
+  <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+    <a href="/" class="flex items-center gap-2.5">
+      <svg width="28" height="35" viewBox="0 0 64 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="14" y="10" width="2.5" height="60" rx="1.25" fill="var(--ink)" opacity="0.6" />
+        <rect x="47.5" y="10" width="2.5" height="60" rx="1.25" fill="var(--ink)" opacity="0.6" />
+        <line x1="16" y1="40" x2="46" y2="40" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" opacity="0.9" />
+        <polygon points="43,35 52,40 43,45" fill="var(--accent)" opacity="0.7" />
+        <circle cx="15.5" cy="40" r="3.5" fill="#6366f1" opacity="0.5" />
+        <circle cx="49" cy="40" r="3.5" fill="var(--accent)" opacity="0.5" />
+      </svg>
+      <span class="font-sans text-sm font-medium tracking-[0.1em] uppercase" style="color: var(--ink);">
+        BERT
+      </span>
+    </a>
+    <div class="flex items-center gap-4 sm:gap-6">
+      <ul class="flex items-center gap-3 sm:gap-5">
+        {navItems.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class="link-hover font-sans text-sm transition-colors"
+              style="color: var(--ink-dim);"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+        <li class="relative">
+          <button
+            id="dl-toggle"
+            class="link-hover font-sans text-sm transition-colors cursor-pointer"
+            style="color: var(--ink-dim);"
+          >
+            Download
+          </button>
+          <div id="dl-dropdown" class="hidden absolute right-0 top-8 w-48 rounded-lg py-1 shadow-lg border" style="background: var(--bg); border-color: var(--border);">
+            <a href="https://app.bert.systems" class="dl-item font-medium" style="color: var(--accent);">
+              Web App
+              <span class="font-normal text-[10px] ml-1" style="color: var(--ink-dim);">no install</span>
+            </a>
+            <div class="my-1" style="border-top: 1px solid var(--border);"></div>
+            <a href="https://github.com/halcyonic-systems/bert/releases/latest" class="dl-item">macOS (Apple Silicon)</a>
+            <a href="https://github.com/halcyonic-systems/bert/releases/latest" class="dl-item">macOS (Intel)</a>
+            <a href="https://github.com/halcyonic-systems/bert/releases/latest" class="dl-item">Windows</a>
+            <a href="https://github.com/halcyonic-systems/bert/releases/latest" class="dl-item">Linux</a>
+          </div>
+        </li>
+      </ul>
+      <button
+        id="theme-toggle"
+        class="transition-colors cursor-pointer"
+        style="color: var(--ink-dim);"
+        aria-label="Toggle dark mode"
+      >
+        <svg class="w-4 h-4 dark-hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+        <svg class="w-4 h-4 dark-show" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <circle cx="12" cy="12" r="5" /><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+        </svg>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<style>
+  .dl-item {
+    display: block;
+    padding: 0.4rem 0.75rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--ink);
+    transition: background 0.15s ease;
+  }
+  .dl-item:hover {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+</style>
+
+<style is:global>
+  .dark-show { display: none; }
+  .dark-hidden { display: block; }
+  html.dark .dark-show { display: block; }
+  html.dark .dark-hidden { display: none; }
+</style>
+
+<script>
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  });
+
+  const dlToggle = document.getElementById('dl-toggle');
+  const dlDropdown = document.getElementById('dl-dropdown');
+  dlToggle?.addEventListener('click', () => dlDropdown?.classList.toggle('hidden'));
+  document.addEventListener('click', (e) => {
+    if (!dlToggle?.contains(e.target as Node) && !dlDropdown?.contains(e.target as Node)) {
+      dlDropdown?.classList.add('hidden');
+    }
+  });
+</script>

@@ -1,0 +1,48 @@
+---
+const steps = [
+  {
+    title: 'Define',
+    body: 'Identify bounded entities — the components that constitute your system. Mark sources, sinks, and the boundary that separates inside from outside.',
+    glyph: 'B',
+  },
+  {
+    title: 'Connect',
+    body: 'Wire flows between entities across boundaries. Energy, material, and message — each typed, each directional. The network IS the model.',
+    glyph: 'N',
+  },
+  {
+    title: 'Simulate',
+    body: 'Run dynamics grounded in the 8-tuple. Process primitives transform flows, conservation laws enforce constraints, history conditions behavior.',
+    glyph: 'T',
+  },
+];
+---
+
+<section class="py-20 sm:py-28" style="border-top: 1px solid var(--border);">
+  <div class="mx-auto max-w-5xl px-6">
+    <p class="font-mono text-[11px] font-medium tracking-[0.14em] uppercase mb-3" style="color: var(--accent);">
+      How It Works
+    </p>
+    <h2 class="font-serif text-2xl sm:text-3xl font-normal italic mb-14" style="color: var(--ink);">
+      Three moves from name to simulation.
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8">
+      {steps.map((step, i) => (
+        <div class="pt-4" style="border-top: 2px solid var(--accent);">
+          <div class="flex items-baseline gap-2 mb-2">
+            <span class="font-serif text-2xl italic" style="color: var(--accent);">{step.glyph}</span>
+            <span class="font-mono text-[10px] tracking-[0.12em] uppercase" style="color: var(--ink-dim);">
+              Step {i + 1}
+            </span>
+          </div>
+          <h3 class="font-serif text-xl font-normal italic mb-2" style="color: var(--ink);">
+            {step.title}
+          </h3>
+          <p class="font-sans text-sm leading-relaxed" style="color: var(--ink-dim);">
+            {step.body}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme {
+  --color-frost-bg: #f0f4f8;
+  --color-frost-card: rgba(255, 255, 255, 0.8);
+  --color-frost-teal: #0d9488;
+  --color-frost-teal-dim: rgba(13, 148, 136, 0.55);
+  --color-frost-slate: #1e293b;
+  --color-frost-slate-dim: rgba(30, 41, 59, 0.6);
+  --color-frost-border: rgba(30, 41, 59, 0.1);
+
+  --color-bert-canvas: #FBE4CB;
+  --color-bert-canvas-dim: rgba(251, 228, 203, 0.5);
+
+  --color-night-bg: #0f172a;
+  --color-night-surface: #1e293b;
+  --color-night-ink: #e2e8f0;
+  --color-night-ink-dim: rgba(226, 232, 240, 0.6);
+  --color-night-border: rgba(226, 232, 240, 0.08);
+  --color-night-canvas: #3d2e1e;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --bg: var(--color-frost-bg);
+  --ink: var(--color-frost-slate);
+  --ink-dim: var(--color-frost-slate-dim);
+  --accent: var(--color-frost-teal);
+  --card-bg: var(--color-frost-card);
+  --border: var(--color-frost-border);
+  --canvas: var(--color-bert-canvas);
+}
+
+html.dark {
+  --bg: var(--color-night-bg);
+  --ink: var(--color-night-ink);
+  --ink-dim: var(--color-night-ink-dim);
+  --accent: #14b8a6;
+  --card-bg: rgba(30, 41, 59, 0.4);
+  --border: var(--color-night-border);
+  --canvas: var(--color-night-canvas);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3 { font-family: var(--font-serif); }
+
+.link-hover {
+  position: relative;
+}
+.link-hover::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--color-frost-teal);
+  transition: width 0.3s ease;
+}
+.link-hover:hover::after {
+  width: 100%;
+}
+
+.card-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fadeUp 0.6s ease forwards;
+  opacity: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.6); }
+}
+
+.dot-pulse { animation: pulse 1.5s ease infinite; }
+
+.stepper-dot:hover { opacity: 0.5 !important; transform: scale(1.3); }
+
+@keyframes gentle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+.scroll-cue { animation: gentle-bounce 2s ease infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { animation: none; opacity: 1; }
+  .card-lift:hover { transform: none; }
+  .dot-pulse { animation: none; }
+  .scroll-cue { animation: none; }
+}
