@@ -279,22 +279,235 @@ pub fn App() -> impl IntoView {
         "__TAURI__" in &window()
     };
 
+    let (ollama_available, set_ollama_available) = signal(false);
+    let (recent_models, set_recent_models) = signal(Vec::<(String, String)>::new());
+
+    if tauri_available {
+        use leptos::task::spawn_local;
+        use tauri_sys::core::invoke;
+
+        spawn_local({
+            let set_ollama = set_ollama_available;
+            async move {
+                let status = invoke::<bool>("check_ollama_status", ()).await;
+                set_ollama.set(status);
+            }
+        });
+
+        spawn_local({
+            let set_recent = set_recent_models;
+            async move {
+                #[derive(serde::Deserialize)]
+                struct LocalModelInfo {
+                    name: String,
+                    path: String,
+                    #[allow(dead_code)]
+                    modified: u64,
+                }
+                let models = invoke::<Vec<LocalModelInfo>>("list_local_models", ()).await;
+                set_recent.set(models.into_iter().map(|m| (m.name, m.path)).collect());
+            }
+        });
+    }
+
     let is_editing = Memo::new(move |_| app_mode.get() == AppMode::Editing);
     let is_landing = Memo::new(move |_| app_mode.get() == AppMode::Landing);
+
+    let load_writer_describe = load_file_writer.clone();
+    let load_writer_scratch = load_file_writer.clone();
+    let load_writer_recent = load_file_writer.clone();
 
     view! {
         // Landing screen — hidden while model browser is open
         <Show when=move || is_landing.get() && !model_browser_visible.get()>
             <LandingScreen
-                on_load_model=Callback::new(move |_| {
+                on_describe=Callback::new({
+                    let load_file_writer = load_writer_describe.clone();
+                    let set_complexity = set_complexity;
+                    let set_app_mode = set_app_mode;
+                    let set_chat_visible = set_chat_visible;
+                    let set_loaded_model_name = set_loaded_model_name;
+                    let set_loaded_file_path = set_loaded_file_path;
+                    let set_model_json_context = set_model_json_context;
+                    let set_toast_message = set_toast_message;
+                    let set_toast_visible = set_toast_visible;
+                    let set_validation_issues = set_validation_issues;
+                    let set_pending_load = set_pending_load;
+                    move |description: String| {
+                        set_app_mode.set(AppMode::Describing);
+                        let load_writer = load_file_writer.clone();
+                        leptos::task::spawn_local({
+                            let desc = description.clone();
+                            let set_app_mode = set_app_mode;
+                            let set_chat_visible = set_chat_visible;
+                            let set_loaded_model_name = set_loaded_model_name;
+                            let set_loaded_file_path = set_loaded_file_path;
+                            let set_model_json_context = set_model_json_context;
+                            let set_toast_message = set_toast_message;
+                            let set_toast_visible = set_toast_visible;
+                            let set_complexity = set_complexity;
+                            let set_validation_issues = set_validation_issues;
+                            let set_pending_load = set_pending_load;
+                            async move {
+                                #[derive(serde::Serialize)]
+                                struct GenArgs { conversation: String }
+                                #[derive(serde::Deserialize)]
+                                struct GenResponse { json_data: String }
+
+                                let result = tauri_sys::core::invoke::<GenResponse>(
+                                    "generate_model_from_conversation",
+                                    &GenArgs { conversation: desc },
+                                ).await;
+
+                                let json_data = result.json_data;
+                                match serde_json::from_str::<crate::bevy_app::data_model::WorldModel>(&json_data) {
+                                    Ok(world_model) => {
+                                        let complexity_result = calculate_simonian_complexity(&world_model);
+                                        set_complexity.set(complexity_result.total_complexity);
+
+                                        let model_name = world_model.environment.info.name.clone();
+                                        let file_slug = model_name.to_lowercase().replace(' ', "-");
+
+                                        set_model_json_context.set(Some(json_data.clone()));
+                                        set_loaded_file_path.set(None);
+                                        set_loaded_model_name.set(model_name);
+                                        set_app_mode.set(AppMode::Editing);
+                                        set_chat_visible.set(true);
+
+                                        let event = LoadFileEvent {
+                                            file_path: format!("generated:{file_slug}.json"),
+                                            data: json_data.into_bytes(),
+                                        };
+
+                                        let result = validate(&world_model);
+                                        if result.is_clean() {
+                                            load_writer.send(event).ok();
+                                        } else {
+                                            set_pending_load.set(Some(event));
+                                            set_validation_issues.set(Some(result.issues));
+                                        }
+                                    }
+                                    Err(e) => {
+                                        set_app_mode.set(AppMode::Landing);
+                                        set_toast_message.set(format!("Generation failed: {e}"));
+                                        set_toast_visible.set(true);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                on_scratch=Callback::new({
+                    let load_file_writer = load_writer_scratch.clone();
+                    let set_app_mode = set_app_mode;
+                    let set_complexity = set_complexity;
+                    let set_loaded_model_name = set_loaded_model_name;
+                    let set_loaded_file_path = set_loaded_file_path;
+                    move |_| {
+                        let blank = include_str!("../../assets/models/examples/blank.json");
+                        if let Ok(world_model) = serde_json::from_str::<crate::bevy_app::data_model::WorldModel>(blank) {
+                            let complexity_result = calculate_simonian_complexity(&world_model);
+                            set_complexity.set(complexity_result.total_complexity);
+                            set_loaded_model_name.set("New System".to_string());
+                            set_loaded_file_path.set(None);
+                            set_app_mode.set(AppMode::Editing);
+                            load_file_writer.send(LoadFileEvent {
+                                file_path: "template:blank.json".to_string(),
+                                data: blank.as_bytes().to_vec(),
+                            }).ok();
+                        }
+                    }
+                })
+                on_browse=Callback::new(move |_| {
                     set_model_browser_visible.set(true);
                 })
-                on_create_model=Callback::new(move |_| {
-                    set_app_mode.set(AppMode::Creating);
-                    set_chat_visible.set(true);
+                on_open_file=Callback::new(move |_| {
+                    file_dialog_signal.set(None);
+                    // Trigger the Tauri file picker
+                    if tauri_available {
+                        use leptos::task::spawn_local;
+                        use tauri_sys::core::invoke;
+                        spawn_local({
+                            let file_signal = file_dialog_signal;
+                            async move {
+                                let file_path = invoke::<Option<std::path::PathBuf>>("pick_file", ()).await;
+                                if let Some(path) = file_path {
+                                    #[derive(serde::Serialize)]
+                                    struct Args { pb: std::path::PathBuf }
+                                    let file_data = invoke::<crate::leptos_app::use_file_dialog::UseFile>(
+                                        "load_file", &Args { pb: path },
+                                    ).await;
+                                    file_signal.update(|file| { *file = Some(file_data); });
+                                }
+                            }
+                        });
+                    }
+                })
+                on_open_recent=Callback::new({
+                    let load_file_writer = load_writer_recent.clone();
+                    let set_app_mode = set_app_mode;
+                    let set_complexity = set_complexity;
+                    let set_loaded_model_name = set_loaded_model_name;
+                    let set_loaded_file_path = set_loaded_file_path;
+                    let set_model_json_context = set_model_json_context;
+                    let set_validation_issues = set_validation_issues;
+                    let set_pending_load = set_pending_load;
+                    move |path: String| {
+                        leptos::task::spawn_local({
+                            let load_writer = load_file_writer.clone();
+                            let path = path.clone();
+                            let set_app_mode = set_app_mode;
+                            let set_complexity = set_complexity;
+                            let set_loaded_model_name = set_loaded_model_name;
+                            let set_loaded_file_path = set_loaded_file_path;
+                            let set_model_json_context = set_model_json_context;
+                            let set_validation_issues = set_validation_issues;
+                            let set_pending_load = set_pending_load;
+                            async move {
+                                #[derive(serde::Serialize)]
+                                struct Args { pb: std::path::PathBuf }
+                                #[derive(serde::Deserialize)]
+                                struct FileData { data: Vec<u8>, path: String }
+                                let file_data = tauri_sys::core::invoke::<FileData>(
+                                    "load_file", &Args { pb: std::path::PathBuf::from(&path) },
+                                ).await;
+                                let event = LoadFileEvent { data: file_data.data, file_path: file_data.path };
+                                if let Ok(world_model) = serde_json::from_slice::<crate::bevy_app::data_model::WorldModel>(&event.data) {
+                                    let complexity_result = calculate_simonian_complexity(&world_model);
+                                    set_complexity.set(complexity_result.total_complexity);
+                                    if let Ok(json_str) = String::from_utf8(event.data.clone()) {
+                                        set_model_json_context.set(Some(json_str));
+                                    }
+                                    set_loaded_file_path.set(Some(path));
+                                    set_loaded_model_name.set(world_model.environment.info.name.clone());
+                                    set_app_mode.set(AppMode::Editing);
+                                    let result = validate(&world_model);
+                                    if result.is_clean() {
+                                        load_writer.send(event).ok();
+                                    } else {
+                                        set_pending_load.set(Some(event));
+                                        set_validation_issues.set(Some(result.issues));
+                                    }
+                                }
+                            }
+                        });
+                    }
                 })
                 tauri_available=tauri_available
+                ollama_available=Signal::derive(move || ollama_available.get())
+                recent_models=Signal::derive(move || recent_models.get())
             />
+        </Show>
+
+        // Describing overlay — loading state during generation
+        <Show when=move || app_mode.get() == AppMode::Describing>
+            <div class="absolute inset-0 z-40 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl p-12 text-center">
+                    <div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-600 font-medium">"Generating your model..."</p>
+                    <p class="text-sm text-gray-400 mt-1">"This takes a few seconds"</p>
+                </div>
+            </div>
         </Show>
 
         // Toolbar (tree hidden) — Editing mode only
