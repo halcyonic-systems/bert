@@ -515,10 +515,18 @@ pub fn App() -> impl IntoView {
                             set_app_mode.set(AppMode::Editing);
                             set_chat_visible.set(false);
 
-                            load_file_writer.send(LoadFileEvent {
+                            let event = LoadFileEvent {
                                 file_path: format!("generated:{file_slug}.json"),
                                 data: json_data,
-                            }).ok();
+                            };
+
+                            let result = validate(&world_model);
+                            if result.is_clean() {
+                                load_file_writer.send(event).ok();
+                            } else {
+                                set_pending_load.set(Some(event));
+                                set_validation_issues.set(Some(result.issues));
+                            }
                         }
                         Err(e) => {
                             leptos::logging::log!("Generated model parse error: {}", e);

@@ -160,7 +160,9 @@ pub fn update_flow_curve(
     let simplified_curve = flow_curve.skip_start();
     let simplified_curve_shape = create_flow_curve_shape(&simplified_curve, scale);
 
+    let old_mesh = simplified_mesh.0.clone();
     simplified_mesh.0 = tessellate_simplified_mesh(&simplified_curve_shape, meshes, stroke_tess);
+    meshes.remove(&old_mesh);
     *aabb = create_aabb_from_flow_curve(&simplified_curve);
 
     // Update the shape's path while preserving fill/stroke settings
