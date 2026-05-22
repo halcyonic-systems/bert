@@ -154,7 +154,7 @@ pub fn spawn_selected_external_entity(
 pub fn update_selected_flow_curve(
     flow_curve_query: Query<
         (&FlowCurve, &SelectedHighlightHelperAdded, &NestingLevel),
-        Changed<FlowCurve>,
+        Or<(Changed<FlowCurve>, Changed<FlowEndpointOffset>)>,
     >,
     mut selected_query: Query<&mut Shape>,
     zoom: Res<Zoom>,
@@ -168,7 +168,6 @@ pub fn update_selected_flow_curve(
             NestingLevel::compute_scale(**nesting_level, **zoom),
         );
 
-        // Update path while preserving stroke settings
         shape.path = curve_shape.path;
     }
 }
