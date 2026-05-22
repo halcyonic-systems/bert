@@ -98,7 +98,7 @@ pub fn draw_flow_curve(
 
 /// Compute flow curve with angle-based offsets applied.
 /// If an angle is set, position = subsystem_center + Vec2::from_angle(angle) * radius
-fn compute_adjusted_curve(
+pub fn compute_adjusted_curve(
     flow_curve: &FlowCurve,
     offset: Option<&FlowEndpointOffset>,
     start_conn: Option<&FlowStartConnection>,
