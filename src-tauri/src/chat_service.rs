@@ -209,7 +209,7 @@ async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse,
 /// Fallback-only: patches LLM output when engine is unavailable and local Ollama
 /// extraction produces incomplete intermediate specs (empty names, missing sinks, etc).
 fn repair_intermediate(spec: &mut serde_json::Value) {
-    bert_generator::repair(spec);
+    bert_generator_core::repair(spec);
 }
 
 async fn extract_intermediate_from_conversation(
