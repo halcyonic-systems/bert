@@ -32,4 +32,5 @@ tokio = { version = "1", features = ["process", "io-util"] }
 futures = "0.3"
 reqwest = { version = "0.12", features = ["json"] }
 ollama-rs = "0.3"
+bert-generator-core = { path = "../../bert-generator/core" }
 
