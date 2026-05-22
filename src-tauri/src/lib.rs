@@ -5,8 +5,8 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
 mod chat_service;
-pub mod generator;
-pub mod intermediate;
+pub use bert_generator::generator;
+pub use bert_generator::intermediate;
 mod simulation;
 mod typedb_reader;
 
