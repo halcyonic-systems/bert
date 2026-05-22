@@ -109,6 +109,34 @@ pub fn ModelBrowser(
                         </button>
                     </div>
 
+                    // Examples section
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">"Examples"</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {EXAMPLES.iter().map(|example| {
+                                let fp = example.file_path;
+                                let name = example.name;
+                                let desc = example.description;
+                                view! {
+                                    <button
+                                        class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                                        on:click=move |_| {
+                                            let data = get_example_data(fp);
+                                            on_load.run(LoadFileEvent {
+                                                file_path: fp.to_string(),
+                                                data: data.as_bytes().to_vec(),
+                                            });
+                                            on_close.run(());
+                                        }
+                                    >
+                                        <h3 class="font-semibold text-gray-800">{name}</h3>
+                                        <p class="text-sm text-gray-600 mt-1">{desc}</p>
+                                    </button>
+                                }
+                            }).collect_view()}
+                        </div>
+                    </div>
+
                     // Your Models section
                     {move || {
                         let models = local_models.get();
@@ -158,33 +186,6 @@ pub fn ModelBrowser(
                         }
                     }}
 
-                    // Examples section
-                    <div>
-                        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">"Examples"</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {EXAMPLES.iter().map(|example| {
-                                let fp = example.file_path;
-                                let name = example.name;
-                                let desc = example.description;
-                                view! {
-                                    <button
-                                        class="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
-                                        on:click=move |_| {
-                                            let data = get_example_data(fp);
-                                            on_load.run(LoadFileEvent {
-                                                file_path: fp.to_string(),
-                                                data: data.as_bytes().to_vec(),
-                                            });
-                                            on_close.run(());
-                                        }
-                                    >
-                                        <h3 class="font-semibold text-gray-800">{name}</h3>
-                                        <p class="text-sm text-gray-600 mt-1">{desc}</p>
-                                    </button>
-                                }
-                            }).collect_view()}
-                        </div>
-                    </div>
                 </div>
             </div>
         </Show>

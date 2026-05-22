@@ -97,7 +97,8 @@ async fn check_ollama_status() -> bool {
 
 #[tauri::command]
 fn list_local_models() -> Vec<LocalModelInfo> {
-    let local_dir = PathBuf::from("assets/models/local");
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    let local_dir = project_root.join("assets/models/local");
     let mut models = Vec::new();
 
     if let Ok(entries) = std::fs::read_dir(&local_dir) {
