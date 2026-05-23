@@ -162,6 +162,8 @@ pub struct GenerateRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenerateModelResponse {
     pub json_data: String,
+    #[serde(default)]
+    pub repairs: Vec<String>,
 }
 
 #[tauri::command]
@@ -175,10 +177,11 @@ pub async fn generate_model_from_conversation(
 
     // Fallback: local Ollama extraction + local Rust compile
     let mut intermediate = extract_intermediate_from_conversation(&conversation).await?;
-    repair_intermediate(&mut intermediate);
+    let repairs = repair_intermediate(&mut intermediate);
     let bert_json = compile_intermediate(&intermediate)?;
     Ok(GenerateModelResponse {
         json_data: bert_json,
+        repairs,
     })
 }
 
@@ -202,14 +205,16 @@ async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse,
     let json: serde_json::Value = resp.json().await?;
     let model = json.get("model").ok_or("no model field in engine response")?;
     let json_data = serde_json::to_string(model)?;
+    let repairs = json.get("repairs")
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+        .unwrap_or_default();
 
-    Ok(GenerateModelResponse { json_data })
+    Ok(GenerateModelResponse { json_data, repairs })
 }
 
-/// Fallback-only: patches LLM output when engine is unavailable and local Ollama
-/// extraction produces incomplete intermediate specs (empty names, missing sinks, etc).
-fn repair_intermediate(spec: &mut serde_json::Value) {
-    bert_generator_core::repair(spec);
+fn repair_intermediate(spec: &mut serde_json::Value) -> Vec<String> {
+    bert_generator_core::repair(spec)
 }
 
 async fn extract_intermediate_from_conversation(
@@ -228,8 +233,8 @@ Output ONLY valid JSON (no markdown, no explanation, no thinking):
     {{ "interface": "unique_interface_name", "type": "Import", "connected_to": "source_name", "has_processor": true, "target_subsystem": "subsystem_name" }},
     {{ "interface": "unique_interface_name", "type": "Export", "connected_to": "sink_name", "has_processor": true, "target_subsystem": "subsystem_name" }}
   ],
-  "external_flows": [{{ "name": "descriptive_flow_name", "interface": "matches_routing_table_interface", "substance": {{ "type": "Energy|Material|Message", "sub_type": "descriptive_label" }}, "usability": "Resource|Product|Waste" }}],
-  "internal_flows": [{{ "name": "descriptive_flow_name", "source": "subsystem_name", "sink": "subsystem_name", "substance": {{ "type": "Message", "sub_type": "descriptive_label" }}, "usability": "Resource" }}]
+  "external_flows": [{{ "name": "descriptive_flow_name", "description": "what this flow carries and why", "interface": "matches_routing_table_interface", "substance": {{ "type": "Energy|Material|Message", "sub_type": "descriptive_label" }}, "usability": "Resource|Product|Waste" }}],
+  "internal_flows": [{{ "name": "descriptive_flow_name", "description": "what this flow carries and why", "source": "subsystem_name", "sink": "subsystem_name", "substance": {{ "type": "Message", "sub_type": "descriptive_label" }}, "usability": "Resource" }}]
 }}
 
 RULES:
@@ -241,8 +246,12 @@ RULES:
 6. Each source/sink connects through its OWN unique interface — never route two flows through the same interface.
 7. routing_table "type" must be "Import" when connected_to is a source, "Export" when connected_to is a sink.
 8. Each external_flow "interface" must EXACTLY match an interface name from routing_table.
-9. "sub_type" describes what flows (e.g., "Electricity", "Data", "Funds", "Regulations", "Heat").
+9. "sub_type" describes the SUBSTANCE that flows (e.g., "Electricity", "Treated Water", "Funds"), NOT the destination.
 10. internal_flows connect subsystems to each other (not to interfaces).
+11. Subsystems are structural COMPONENTS (nouns), not processes. "Engineering Team" not "Development".
+12. Sources/Sinks are EXTERNAL ENTITIES, not substances. "Customers" not "Revenue".
+13. substance.type: if it has mass/volume → "Material". If electromagnetic/thermal → "Energy". ONLY data/signals → "Message".
+14. Include at least one return flow creating a cycle (A→B→A or A→B→C→A).
 
 Conversation:
 {conversation}"#
