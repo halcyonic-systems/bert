@@ -786,10 +786,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bert-rag"
+version = "0.1.0"
+dependencies = [
+ "ollama-rs",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "bert-tauri"
 version = "0.4.0"
 dependencies = [
  "bert-generator-core",
+ "bert-rag",
  "futures",
  "leptos",
  "ollama-rs",

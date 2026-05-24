@@ -1,15 +1,38 @@
+use std::path::PathBuf;
 use std::time::Duration;
 
+use bert_rag::RagEngine;
 use ollama_rs::{
     generation::chat::{request::ChatMessageRequest, ChatMessage, MessageRole},
     Ollama,
 };
 use serde::{Deserialize, Serialize};
+use tokio::sync::OnceCell;
 
 const OLLAMA_MODEL: &str = "gemma4:e2b";
 
-const REASONER_URL: &str = "http://localhost:5010/ask";
 const REASONER_GENERATE_URL: &str = "http://localhost:5010/generate-from-description";
+
+static RAG_ENGINE: OnceCell<RagEngine> = OnceCell::const_new();
+
+fn kg_data_path() -> PathBuf {
+    if let Ok(dir) = std::env::var("GSR_INDEX_DIR") {
+        return PathBuf::from(dir);
+    }
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../general-systems-reasoner/kg_data")
+}
+
+async fn get_rag_engine() -> Result<&'static RagEngine, Box<dyn std::error::Error + Send + Sync>> {
+    RAG_ENGINE
+        .get_or_try_init(|| async {
+            let path = kg_data_path();
+            RagEngine::new(&path, OLLAMA_MODEL, "nomic-embed-text").await
+                .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> {
+                    Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+                })
+        })
+        .await
+}
 
 const ANALYSIS_PROMPT: &str = r#"You are a BERT systems analysis assistant. You analyze system models described in JSON.
 
@@ -295,55 +318,53 @@ fn compile_intermediate(intermediate: &serde_json::Value) -> Result<String, Stri
     serde_json::to_string(&model).map_err(|e| format!("Failed to serialize model: {e}"))
 }
 
-#[derive(Deserialize)]
-struct EngineResponse {
-    answer: String,
-    #[serde(default)]
-    dimensions: Option<Vec<String>>,
-    #[serde(default)]
-    route: Option<String>,
-    #[serde(default)]
-    confidence: Option<f64>,
-    #[serde(default)]
-    intensity: Option<String>,
-    #[serde(default)]
-    sources: Option<Vec<SourceRef>>,
-}
-
-/// Query the local General Systems Reasoner for analysis. Sends conversation history
-/// for multi-turn context. Returns full metadata (dimensions, route, sources).
+/// Query the in-process RAG engine for grounded systems-science analysis.
 async fn try_reasoner(
     message: &str,
-    model_summary: &str,
+    model_context: &str,
     history: &[HistoryMessage],
 ) -> Result<ChatResponse, Box<dyn std::error::Error>> {
-    let hist: Vec<serde_json::Value> = history
+    let engine = get_rag_engine().await.map_err(|e| -> Box<dyn std::error::Error> {
+        Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+    })?;
+
+    let hist: Vec<bert_rag::HistoryMessage> = history
         .iter()
-        .map(|h| serde_json::json!({"role": h.role, "content": h.content}))
+        .map(|h| bert_rag::HistoryMessage {
+            role: h.role.clone(),
+            content: h.content.clone(),
+        })
         .collect();
 
-    let body = serde_json::json!({
-        "question": message,
-        "model_context": model_summary,
-        "history": hist,
-    });
+    let ctx = if model_context.is_empty() {
+        None
+    } else {
+        Some(model_context)
+    };
 
-    let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_secs(5))
-        .timeout(Duration::from_secs(60))
-        .build()?;
-
-    let resp = client.post(REASONER_URL).json(&body).send().await?;
-    let engine: EngineResponse = resp.json().await?;
+    let result = engine.ask(message, ctx, &hist).await.map_err(|e| -> Box<dyn std::error::Error> {
+        Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+    })?;
 
     Ok(ChatResponse {
-        response: engine.answer,
+        response: result.answer,
         provider: "reasoner".to_string(),
-        dimensions: engine.dimensions,
-        route: engine.route,
-        confidence: engine.confidence,
-        intensity: engine.intensity,
-        sources: engine.sources,
+        dimensions: Some(result.dimensions),
+        route: Some(result.route),
+        confidence: Some(result.confidence),
+        intensity: Some(result.intensity),
+        sources: Some(
+            result
+                .sources
+                .into_iter()
+                .map(|s| SourceRef {
+                    source: s.source,
+                    excerpt: s.excerpt,
+                    score: Some(s.score),
+                    source_type: Some(s.source_type),
+                })
+                .collect(),
+        ),
     })
 }
 
