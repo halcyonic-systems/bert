@@ -246,7 +246,12 @@ class BertAgent(Agent):
 
     def _condition_T(self):
         """Read H (history) to set conditioning parameters before T dispatch.
-        Implements Mobus's T(t+1) = f(T(t), H(t), Input(t)). Currently Buffering only."""
+        Implements Mobus's T(t+1) = f(T(t), H(t), Input(t)).
+
+        Reactive agents: no H conditioning (stateless response).
+        Anticipatory agents: H predicts future input, adjusts agency_capacity.
+        Intentional agents: H tracks goal progress, amplifies or dampens effort.
+        Buffering: H tracks storage trend, adjusts release factor."""
         if len(self.history) < 2:
             return
         if "Buffering" in self.primitives:
@@ -255,6 +260,24 @@ class BertAgent(Agent):
                 trend = recent[-1] - recent[0]
                 norm = max(abs(trend), 1.0)
                 self.state["_release_factor"] = max(0.5, min(1.5, 1.0 + 0.3 * (trend / norm)))
+        if self.agent_kind == "Anticipatory" and len(self.history) >= 3:
+            recent_activity = [h.get("activity", 0) for h in list(self.history)[-5:]]
+            if len(recent_activity) >= 2:
+                trend = recent_activity[-1] - recent_activity[0]
+                norm = max(abs(recent_activity[-1]), 1.0)
+                prediction_factor = max(0.7, min(1.3, 1.0 + 0.2 * (trend / norm)))
+                self.agency_capacity = self._base_agency_capacity * prediction_factor
+                self.state["_prediction_factor"] = prediction_factor
+        elif self.agent_kind == "Intentional" and len(self.history) >= 3:
+            recent_activity = [h.get("activity", 0) for h in list(self.history)[-10:]]
+            if len(recent_activity) >= 3:
+                mean_activity = sum(recent_activity) / len(recent_activity)
+                current = recent_activity[-1]
+                if mean_activity > 0:
+                    goal_ratio = current / mean_activity
+                    effort_factor = max(0.5, min(2.0, 2.0 - goal_ratio))
+                    self.agency_capacity = self._base_agency_capacity * effort_factor
+                    self.state["_effort_factor"] = effort_factor
 
     def _act_by_primitive(self):
         """Dispatch through process primitives in sequence."""

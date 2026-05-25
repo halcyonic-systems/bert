@@ -804,6 +804,143 @@ def test_impeding_backpressure():
     return True, f"OK (activity={activity:.1f}, back_pressure={bp:.1f}, sum={activity+bp:.1f})"
 
 
+def test_composition_negative_feedback():
+    """Sensing + Inverting + Modulating in a loop should produce negative feedback:
+    system converges to a fixed point where output = input / (1 + input*k)."""
+    sensor = make_system("Sensor", "Sensing", agency_capacity=0.05)
+    inverter = make_system("Inverter", "Inverting", agency_capacity=0.5)
+    modulator = make_system("Modulator", "Modulating", agency_capacity=0.5)
+    systems = [sensor, inverter, modulator]
+    interactions = [
+        make_flow("PhysIn", "Source", "Modulator", "Energy", 10.0),
+        make_flow("ModToSensor", "Modulator", "Sensor", "Energy", 0.0),
+        make_flow("SenseSignal", "Sensor", "Inverter", "Message", 0.0),
+        make_flow("ErrorToMod", "Inverter", "Modulator", "Message", 0.0),
+        make_flow("Output", "Modulator", "Sink", "Energy", 0.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    outputs = []
+    for step in range(40):
+        m.step()
+        mod = [a for a in m.agents if a.display_name == "Modulator"][0]
+        outputs.append(mod.state.get("activity", 0))
+    late = outputs[30:40]
+    late_mean = sum(late) / len(late)
+    late_std = (sum((x - late_mean)**2 for x in late) / len(late)) ** 0.5
+    assert late_std < 1.0, f"Should stabilize: std={late_std:.2f}, values={[f'{x:.1f}' for x in late]}"
+    assert late_mean > 0, f"Should have positive output, got {late_mean:.2f}"
+    return True, f"OK (converged to ~{late_mean:.2f}, std={late_std:.3f})"
+
+
+def test_composition_sensing_copying_fanout():
+    """Sensing → Copying → two Modulators: one stimulus, two parallel control effects."""
+    sensor = make_system("Sensor", "Sensing", agency_capacity=0.8)
+    copier = make_system("Copier", "Copying", agency_capacity=0.5)
+    mod_a = make_system("ModA", "Modulating", agency_capacity=0.5)
+    mod_b = make_system("ModB", "Modulating", agency_capacity=0.5)
+    systems = [sensor, copier, mod_a, mod_b]
+    interactions = [
+        make_flow("PhysStimulus", "Source", "Sensor", "Energy", 5.0),
+        make_flow("Signal", "Sensor", "Copier", "Message", 0.0),
+        make_flow("CopyA", "Copier", "ModA", "Message", 0.0),
+        make_flow("CopyB", "Copier", "ModB", "Message", 0.0),
+        make_flow("PrimaryA", "SourceA", "ModA", "Energy", 8.0),
+        make_flow("PrimaryB", "SourceB", "ModB", "Energy", 8.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(20):
+        m.step()
+    mod_a_agent = [a for a in m.agents if a.display_name == "ModA"][0]
+    mod_b_agent = [a for a in m.agents if a.display_name == "ModB"][0]
+    act_a = mod_a_agent.state.get("activity", 0)
+    act_b = mod_b_agent.state.get("activity", 0)
+    assert act_a > 0, f"ModA should have activity, got {act_a}"
+    assert act_b > 0, f"ModB should have activity, got {act_b}"
+    assert abs(act_a - act_b) < 0.1, f"Both modulators should track same signal: A={act_a:.2f} B={act_b:.2f}"
+    return True, f"OK (ModA={act_a:.2f}, ModB={act_b:.2f} — parallel control from one stimulus)"
+
+
+def test_composition_buffering_smooths_perturbation():
+    """Buffer downstream of a direct input shock should smooth the transient."""
+    buffer = make_system("Tank", "Buffering", agency_capacity=0.5)
+    systems = [buffer]
+    interactions = [
+        make_flow("In", "Source", "Tank", "Material", 5.0),
+        make_flow("Out", "Tank", "Sink", "Material", 2.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    storages = []
+    outputs = []
+    for step in range(60):
+        m.step()
+        tank = [a for a in m.agents if a.display_name == "Tank"][0]
+        storages.append(tank.state.get("storage", 0))
+        outputs.append(tank.state.get("activity", 0))
+        if step == 29:
+            for f in tank.incoming_flows:
+                f["amount"] = 15.0
+    storage_pre = storages[29]
+    storage_post = storages[40]
+    output_std = (sum((x - sum(outputs[30:40])/10)**2 for x in outputs[30:40]) / 10) ** 0.5
+    assert storage_post > storage_pre, \
+        f"Storage should absorb shock: pre={storage_pre:.1f} post={storage_post:.1f}"
+    assert output_std < 2.0, f"Output should stay smooth despite input shock: std={output_std:.2f}"
+    return True, f"OK (storage absorbed shock: {storage_pre:.0f}→{storage_post:.0f}, output std={output_std:.2f})"
+
+
+def test_anticipatory_conditioning():
+    """Anticipatory agent should adjust agency_capacity based on activity trend prediction."""
+    sys_data = {
+        "bert_id": "test:Anticipator", "display_name": "Anticipator",
+        "archetype": "Agent", "time_constant": "Second", "system_level": 1,
+        "complexity_kind": "Atomic", "agent_kind": "Anticipatory",
+        "agency_capacity": 0.5, "primitives": ["Propelling"],
+    }
+    interactions = [make_flow("In", "Src", "Anticipator", "Energy", 5.0)]
+    sys_df = pd.DataFrame([sys_data])
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    agent = list(m.agents)[0]
+    for step in range(15):
+        m.step()
+        if step == 7:
+            for f in agent.incoming_flows:
+                f["amount"] = 10.0
+    base_cap = agent._base_agency_capacity
+    pf = agent.state.get("_prediction_factor", 1.0)
+    assert pf != 1.0, f"Anticipatory agent should predict rising trend after input change, got pf={pf}"
+    return True, f"OK (prediction_factor={pf:.3f}, agency_cap={agent.agency_capacity:.3f})"
+
+
+def test_intentional_conditioning():
+    """Intentional agent should adjust effort based on goal-relative performance."""
+    sys_data = {
+        "bert_id": "test:Intentional", "display_name": "Intentional",
+        "archetype": "Agent", "time_constant": "Second", "system_level": 1,
+        "complexity_kind": "Atomic", "agent_kind": "Intentional",
+        "agency_capacity": 0.8, "primitives": ["Propelling"],
+    }
+    interactions = [make_flow("In", "Src", "Intentional", "Energy", 5.0)]
+    sys_df = pd.DataFrame([sys_data])
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    agent = list(m.agents)[0]
+    for step in range(15):
+        m.step()
+        if step == 7:
+            for f in agent.incoming_flows:
+                f["amount"] = 2.0
+    ef = agent.state.get("_effort_factor", 1.0)
+    assert ef != 1.0, f"Intentional agent should adjust effort after input drop, got ef={ef}"
+    return True, f"OK (effort_factor={ef:.3f}, agency_cap={agent.agency_capacity:.3f})"
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -839,6 +976,11 @@ ALL_TESTS = [
     ("Buffering Temporal Lag", test_buffering_temporal_lag),
     ("Copying Non-Conservation", test_copying_non_conservation),
     ("Impeding Backpressure", test_impeding_backpressure),
+    ("Composition: Negative Feedback", test_composition_negative_feedback),
+    ("Composition: Sensing→Copying Fanout", test_composition_sensing_copying_fanout),
+    ("Composition: Buffer Smooths Perturbation", test_composition_buffering_smooths_perturbation),
+    ("Anticipatory H-Conditioning", test_anticipatory_conditioning),
+    ("Intentional H-Conditioning", test_intentional_conditioning),
 ]
 
 
