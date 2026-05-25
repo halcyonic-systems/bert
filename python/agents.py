@@ -282,6 +282,8 @@ class BertAgent(Agent):
         self.state["activity"] = self.state["throughput"] * self.agency_capacity
 
     def _produce_outputs(self):
+        """Two paths: Splitting/Copying write outputs in their T-functions;
+        all others propagate activity to outgoing flows here."""
         _SELF_WRITING = {"Splitting", "Copying"}
         if set(self.primitives) & _SELF_WRITING:
             return

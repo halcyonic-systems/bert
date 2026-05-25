@@ -578,6 +578,100 @@ def test_h_conditioned_buffering():
         return False, str(e)
 
 
+def test_v2_combining_with_perturbation():
+    """Combining-v2 with perturbation at step 50 should show non-trivial dynamics."""
+    import os, math as _math
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "test-combining-v2.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={50: 2.0})
+    observations = []
+    for step in range(100):
+        m.step()
+        flow_obs, _ = m.collect_all_observations()
+        observations.append(sum(o["amount"] for o in flow_obs))
+
+    for obs in flow_obs:
+        assert not _math.isnan(obs["amount"]), f"NaN in flow {obs['interaction_id']}"
+
+    pre = observations[40:49]
+    post = observations[55:65]
+    pre_mean = sum(pre) / len(pre)
+    post_mean = sum(post) / len(post)
+    assert abs(post_mean - pre_mean) > 0.01, \
+        f"Perturbation had no effect: pre={pre_mean:.3f} post={post_mean:.3f}"
+    return True, f"OK (pre={pre_mean:.2f}, post={post_mean:.2f})"
+
+
+def test_v2_splitting_with_perturbation():
+    """Splitting-v2 with perturbation at step 50 should show non-trivial dynamics."""
+    import os, math as _math
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "test-splitting-v2.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={50: 2.0})
+    observations = []
+    for step in range(100):
+        m.step()
+        flow_obs, _ = m.collect_all_observations()
+        observations.append(sum(o["amount"] for o in flow_obs))
+
+    for obs in flow_obs:
+        assert not _math.isnan(obs["amount"]), f"NaN in flow {obs['interaction_id']}"
+
+    pre = observations[40:49]
+    post = observations[55:65]
+    pre_mean = sum(pre) / len(pre)
+    post_mean = sum(post) / len(post)
+    assert abs(post_mean - pre_mean) > 0.01, \
+        f"Perturbation had no effect: pre={pre_mean:.3f} post={post_mean:.3f}"
+    return True, f"OK (pre={pre_mean:.2f}, post={post_mean:.2f})"
+
+
+def test_duplicate_id_detection():
+    """json_bridge should raise ValueError on duplicate IDs."""
+    import os, tempfile, json as _json
+    from json_bridge import read_model
+
+    model = {
+        "systems": [
+            {"info": {"id": "S0", "level": 0, "name": "Root", "description": ""},
+             "boundary": {"info": {"id": "B0", "level": 0, "name": "", "description": ""},
+                          "porosity": 0, "perceptive_fuzziness": 0, "interfaces": []},
+             "sources": [], "sinks": [], "complexity": "Complex"},
+            {"info": {"id": "S0", "level": 0, "name": "Dupe", "description": ""},
+             "boundary": {"info": {"id": "B1", "level": 0, "name": "", "description": ""},
+                          "porosity": 0, "perceptive_fuzziness": 0, "interfaces": []},
+             "sources": [], "sinks": [], "complexity": "Complex"},
+        ],
+        "interactions": [],
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        _json.dump(model, f)
+        tmp = f.name
+    try:
+        read_model(tmp)
+        return False, "Should have raised ValueError for duplicate S0"
+    except ValueError as e:
+        if "Duplicate" in str(e):
+            return True, f"OK ({e})"
+        return False, f"Wrong error: {e}"
+    finally:
+        os.unlink(tmp)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -604,6 +698,9 @@ ALL_TESTS = [
     ("Combining Ignores Message", test_combining_ignores_message),
     ("Inverting Ignores Physical", test_inverting_ignores_physical),
     ("H-Conditioned Buffering", test_h_conditioned_buffering),
+    ("V2 Combining With Perturbation", test_v2_combining_with_perturbation),
+    ("V2 Splitting With Perturbation", test_v2_splitting_with_perturbation),
+    ("Duplicate ID Detection", test_duplicate_id_detection),
 ]
 
 

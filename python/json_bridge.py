@@ -42,6 +42,11 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
         })
     systems_df = pd.DataFrame(sys_rows) if sys_rows else pd.DataFrame()
 
+    if not systems_df.empty:
+        dupes = systems_df[systems_df["bert_id"].duplicated(keep=False)]
+        if not dupes.empty:
+            raise ValueError(f"Duplicate system IDs: {dupes['bert_id'].unique().tolist()}")
+
     port_map = _build_port_map(model)
 
     ix_rows = []
@@ -69,5 +74,10 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             "sink_id": sink_id,
         })
     interactions_df = pd.DataFrame(ix_rows) if ix_rows else pd.DataFrame()
+
+    if not interactions_df.empty:
+        dupes = interactions_df[interactions_df["bert_id"].duplicated(keep=False)]
+        if not dupes.empty:
+            raise ValueError(f"Duplicate interaction IDs: {dupes['bert_id'].unique().tolist()}")
 
     return systems_df, interactions_df

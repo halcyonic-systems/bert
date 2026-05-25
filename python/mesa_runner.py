@@ -100,11 +100,19 @@ def run_json(args):
     status_path = os.path.join(tmpdir, f"{args.run_id}_status.json")
     results_path = os.path.join(tmpdir, f"{args.run_id}_results.json")
 
+    perturbations = {}
+    for p in getattr(args, 'perturbation', []):
+        step_str, mult_str = p.split(":")
+        perturbations[int(step_str)] = float(mult_str)
+    if perturbations:
+        progress(f"Perturbations scheduled: {perturbations}")
+
     progress(f"Initializing model (seed={args.seed})")
     model = BertModel(
         systems_df=systems_df,
         interactions_df=interactions_df,
         seed=args.seed,
+        perturbations=perturbations,
     )
 
     flow_timeseries = {}
@@ -212,6 +220,8 @@ def main():
     parser.add_argument("--host", default="localhost:1729", help="TypeDB host:port")
     parser.add_argument("--json-path", default=None, help="Path to BERT JSON model file (skips TypeDB)")
     parser.add_argument("--params", default=None, help="JSON dict of flow_id:amount overrides")
+    parser.add_argument("--perturbation", action="append", default=[],
+                        help="STEP:MULTIPLIER — scale source flows at given step (repeatable)")
     args = parser.parse_args()
 
     try:

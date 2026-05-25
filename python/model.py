@@ -37,11 +37,12 @@ class BertModel(Model):
     """
 
     def __init__(self, systems_df: pd.DataFrame, interactions_df: pd.DataFrame,
-                 seed: int = None):
+                 seed: int = None, perturbations: dict[int, float] | None = None):
         super().__init__(seed=seed)
 
         self.current_tick = 0
         self.interactions_df = interactions_df
+        self.perturbations = perturbations or {}
 
         self._create_agents(systems_df)
         self._build_flow_adjacency(interactions_df)
@@ -72,6 +73,7 @@ class BertModel(Model):
                 "usability": row.get("usability", ""),
                 "amount": float(row.get("amount", 0)),
                 "capacity": capacity,
+                "_source_id": row.get("source_id", ""),
             }
             src = self._agents_by_bert_id.get(row.get("source_id"))
             snk = self._agents_by_bert_id.get(row.get("sink_id"))
@@ -136,8 +138,19 @@ class BertModel(Model):
 
     def step(self):
         self.current_tick += 1
+        if self.current_tick in self.perturbations:
+            self._apply_perturbation(self.perturbations[self.current_tick])
         self.agents.shuffle_do("step")
         self.datacollector.collect(self)
+
+    def _apply_perturbation(self, multiplier: float):
+        for agent in self.agents:
+            for flow in agent.incoming_flows:
+                src_id = flow.get("_source_id", "")
+                if src_id not in self._agents_by_bert_id:
+                    flow["amount"] *= multiplier
+        logger.info("Perturbation at step %d: external source flows scaled by %.2f",
+                    self.current_tick, multiplier)
 
     def collect_all_observations(self) -> tuple[list[dict], list[dict]]:
         flow_obs = []
