@@ -3,7 +3,7 @@
 *How H (history) in the 8-tuple connects to knowledge accumulation and conditions T (transformation) during simulation.*
 
 **Status**: Theoretical foundation. Not yet implemented — H is currently a string field, never read during `_act()`. This document specifies what H should become.
-**Ties to**: GitHub issue for "H as computational state in simulation", Wednesday 2026-05-07 session Q2, `atomic-work-processes.md` (which primitives need H?)
+**Ties to**: GitHub issue for "H as computational state in simulation", Wednesday 2026-05-07 session Q2, `process-primitives.md` (which primitives need H?)
 **Originally written**: 2025. Updated 2026-05-03 to 8-tuple notation.
 
 **The key formula**: `T(t+1) = f(T(t), H(t), Input(t))` — transformations evolve based on accumulated history.

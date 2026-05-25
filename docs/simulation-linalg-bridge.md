@@ -2,7 +2,7 @@
 
 **Status**: Living spec. Primitive T functions (§ Process Primitives as Linear Maps) implemented in v0.4.0. State Panel dashboard shipped. Matrix construction, eigenvalue analysis, hierarchical stepping, and remaining dashboard panels are planned.
 
-**Ties to**: `atomic-work-processes.md` (primitive definitions), `h-element-theory.md` (history conditioning), `system-language-spec.md` §4 (execution mapping)
+**Ties to**: `process-primitives.md` (primitive definitions), `h-element-theory.md` (history conditioning), `system-language-spec.md` §4 (execution mapping)
 
 ## Purpose
 
@@ -291,7 +291,7 @@ When working on BERT simulation with Claude:
 - `bert/python/agents.py` — `_act()` methods: currently dispatched by archetype (Economy, Governance, Agent, Passive), not by primitive. Target: primitive-based dispatch defining T per primitive type
 - `bert/python/model.py` — `step()`: currently tick-increment + shuffled agent stepping. Target: parent-level block-structured T application with hierarchical Δt
 - `bert/docs/system-language-spec.md` §4 — Execution Mapping (10 subsections, v0.4.0)
-- `bert/docs/atomic-work-processes.md` — primitive definitions (T functions). 9 from Mobus Ch. 3 + Inverting from Ch. 4 = 10 total; Rust enum encodes 9 (Amplifying absent)
+- `bert/docs/process-primitives.md` — primitive definitions (T functions). 9 from Mobus Ch. 3 + Inverting from Ch. 4 = 10 total; Rust enum encodes 9 (Amplifying absent)
 - `bert/docs/h-element-theory.md` — H as computational state. Status: theoretical — H is currently a string field, never read during `_act()`
 - `bert/src/bevy_app/data_model/mod.rs` — ProcessPrimitive enum (9 variants), AgentModel.primitives field
 
