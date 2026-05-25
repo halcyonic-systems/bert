@@ -12,33 +12,14 @@
         "info": {
           "id": "Src-1.0",
           "level": -1,
-          "name": "Input A",
+          "name": "Input Source",
           "description": ""
         },
         "type": "Source",
         "transform": {
           "translation": [
             -520.0,
-            -150.0
-          ],
-          "rotation": -3.141592653589793
-        },
-        "equivalence": "",
-        "model": "",
-        "is_same_as_id": null
-      },
-      {
-        "info": {
-          "id": "Src-1.1",
-          "level": -1,
-          "name": "Input B",
-          "description": ""
-        },
-        "type": "Source",
-        "transform": {
-          "translation": [
-            -520.0,
-            150.0
+            0.0
           ],
           "rotation": -3.141592653589793
         },
@@ -52,7 +33,7 @@
         "info": {
           "id": "Snk-1.0",
           "level": -1,
-          "name": "Combined Output",
+          "name": "Output Sink",
           "description": ""
         },
         "type": "Sink",
@@ -74,8 +55,8 @@
       "info": {
         "id": "S0",
         "level": 0,
-        "name": "Combining Test v2",
-        "description": "Two Energy inputs combine into one output"
+        "name": "Buffer Test v2",
+        "description": "High demand vs low supply: conservation + storage budget"
       },
       "sources": [],
       "sinks": [],
@@ -100,22 +81,7 @@
             "info": {
               "id": "I0.50",
               "level": 1,
-              "name": "Port A",
-              "description": ""
-            },
-            "protocol": "",
-            "type": "Import",
-            "exports_to": [],
-            "receives_from": [
-              "Src-1.1"
-            ],
-            "angle": 2.5
-          },
-          {
-            "info": {
-              "id": "I0.51",
-              "level": 1,
-              "name": "Port B",
+              "name": "Input Port",
               "description": ""
             },
             "protocol": "",
@@ -124,11 +90,11 @@
             "receives_from": [
               "Src-1.0"
             ],
-            "angle": 3.8
+            "angle": 3.141592653589793
           },
           {
             "info": {
-              "id": "I0.52",
+              "id": "I0.51",
               "level": 1,
               "name": "Output Port",
               "description": ""
@@ -162,7 +128,7 @@
       "info": {
         "id": "C0.0",
         "level": 1,
-        "name": "Combiner",
+        "name": "Buffer",
         "description": ""
       },
       "sources": [],
@@ -199,7 +165,7 @@
         "kind": "Reactive",
         "agency_capacity": 0.5,
         "primitives": [
-          "Combining"
+          "Buffering"
         ]
       }
     },
@@ -207,7 +173,7 @@
       "info": {
         "id": "C0.50",
         "level": 1,
-        "name": "Port A",
+        "name": "Input Port",
         "description": ""
       },
       "sources": [],
@@ -249,7 +215,7 @@
       "info": {
         "id": "C0.51",
         "level": 1,
-        "name": "Port B",
+        "name": "Output Port",
         "description": ""
       },
       "sources": [],
@@ -279,48 +245,6 @@
           -1.72,
           0.0
         ],
-        "rotation": -3.1415925
-      },
-      "equivalence": "",
-      "history": "",
-      "transformation": "",
-      "member_autonomy": 1.0,
-      "time_constant": "Second"
-    },
-    {
-      "info": {
-        "id": "C0.52",
-        "level": 1,
-        "name": "Output Port",
-        "description": ""
-      },
-      "sources": [],
-      "sinks": [],
-      "parent": "S0",
-      "complexity": {
-        "Complex": {
-          "adaptable": false,
-          "evolveable": false
-        }
-      },
-      "boundary": {
-        "info": {
-          "id": "B0.52",
-          "level": 1,
-          "name": "",
-          "description": ""
-        },
-        "porosity": 0.0,
-        "perceptive_fuzziness": 0.0,
-        "interfaces": [],
-        "parent_interface": "I0.52"
-      },
-      "radius": 12.0,
-      "transform": {
-        "translation": [
-          -1.72,
-          0.0
-        ],
         "rotation": 0.0
       },
       "equivalence": "",
@@ -335,20 +259,20 @@
       "info": {
         "id": "F-1.0",
         "level": -1,
-        "name": "Stream A",
+        "name": "Input Flow",
         "description": ""
       },
       "substance": {
-        "sub_type": "Chemical",
-        "type": "Energy"
+        "sub_type": "Liquid",
+        "type": "Material"
       },
       "type": "Flow",
       "usability": "Resource",
-      "source": "Src-1.1",
+      "source": "Src-1.0",
       "source_interface": null,
       "sink": "S0",
       "sink_interface": "I0.50",
-      "amount": "3",
+      "amount": "10",
       "unit": "",
       "parameters": []
     },
@@ -356,41 +280,20 @@
       "info": {
         "id": "F-1.1",
         "level": -1,
-        "name": "Stream B",
+        "name": "Output Flow",
         "description": ""
       },
       "substance": {
-        "sub_type": "Chemical",
-        "type": "Energy"
-      },
-      "type": "Flow",
-      "usability": "Resource",
-      "source": "Src-1.0",
-      "source_interface": null,
-      "sink": "S0",
-      "sink_interface": "I0.51",
-      "amount": "1",
-      "unit": "",
-      "parameters": []
-    },
-    {
-      "info": {
-        "id": "F-1.2",
-        "level": -1,
-        "name": "Merged Output",
-        "description": ""
-      },
-      "substance": {
-        "sub_type": "Chemical",
-        "type": "Energy"
+        "sub_type": "Liquid",
+        "type": "Material"
       },
       "type": "Flow",
       "usability": "Product",
       "source": "S0",
-      "source_interface": "I0.52",
+      "source_interface": "I0.51",
       "sink": "Snk-1.0",
       "sink_interface": null,
-      "amount": "4",
+      "amount": "3",
       "unit": "",
       "parameters": []
     },
@@ -398,12 +301,12 @@
       "info": {
         "id": "F0.0",
         "level": 1,
-        "name": "A to Combiner",
+        "name": "In to Agent",
         "description": ""
       },
       "substance": {
-        "sub_type": "Chemical",
-        "type": "Energy"
+        "sub_type": "Liquid",
+        "type": "Material"
       },
       "type": "Flow",
       "usability": "Resource",
@@ -411,57 +314,32 @@
       "source_interface": null,
       "sink": "C0.0",
       "sink_interface": null,
-      "amount": "3",
+      "amount": "10",
       "unit": "",
       "parameters": [],
       "endpoint_offset": {
-        "start_angle": -0.6415926535897932,
-        "end_angle": 2.5
+        "start_angle": -1.2246467991473532e-16,
+        "end_angle": 3.141592653589793
       }
     },
     {
       "info": {
         "id": "F0.1",
         "level": 1,
-        "name": "B to Combiner",
+        "name": "Agent to Out",
         "description": ""
       },
       "substance": {
-        "sub_type": "Chemical",
-        "type": "Energy"
-      },
-      "type": "Flow",
-      "usability": "Resource",
-      "source": "C0.51",
-      "source_interface": null,
-      "sink": "C0.0",
-      "sink_interface": null,
-      "amount": "1",
-      "unit": "",
-      "parameters": [],
-      "endpoint_offset": {
-        "start_angle": 0.6584073464102066,
-        "end_angle": -2.483185307179587
-      }
-    },
-    {
-      "info": {
-        "id": "F0.2",
-        "level": 1,
-        "name": "Combiner to Out",
-        "description": ""
-      },
-      "substance": {
-        "sub_type": "Chemical",
-        "type": "Energy"
+        "sub_type": "Liquid",
+        "type": "Material"
       },
       "type": "Flow",
       "usability": "Product",
       "source": "C0.0",
       "source_interface": null,
-      "sink": "C0.52",
+      "sink": "C0.51",
       "sink_interface": null,
-      "amount": "4",
+      "amount": "3",
       "unit": "",
       "parameters": [],
       "endpoint_offset": {

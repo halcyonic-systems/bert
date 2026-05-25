@@ -672,6 +672,138 @@ def test_duplicate_id_detection():
         os.unlink(tmp)
 
 
+def test_combining_asymmetric_perturbation():
+    """Doubling ONE of two combining inputs should give 1.5x, not 2x."""
+    systems = [make_system("Combiner", "Combining")]
+    interactions = [
+        make_flow("A", "SrcA", "Combiner", "Energy", 4.0),
+        make_flow("B", "SrcB", "Combiner", "Energy", 4.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42, perturbations={})
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    pre_activity = agent.state.get("activity", 0)
+    assert abs(pre_activity - 8.0) < 0.1, f"Expected ~8.0, got {pre_activity}"
+    for f in agent.incoming_flows:
+        if "SrcA" in f.get("_source_id", ""):
+            f["amount"] = 8.0
+    m.step()
+    post_activity = agent.state.get("activity", 0)
+    ratio = post_activity / pre_activity if pre_activity else 0
+    assert 1.4 < ratio < 1.6, f"Expected ~1.5x ratio, got {ratio:.2f}x (pre={pre_activity}, post={post_activity})"
+    return True, f"OK (ratio={ratio:.2f}x, pre={pre_activity:.1f}, post={post_activity:.1f})"
+
+
+def test_modulating_bilinearity():
+    """Doubling BOTH inputs of Modulating should give 4x (bilinear), not 2x."""
+    systems = [make_system("Modulator", "Modulating")]
+    interactions = [
+        make_flow("Primary", "SrcP", "Modulator", "Energy", 5.0),
+        make_flow("Control", "SrcC", "Modulator", "Message", 1.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    baseline = agent.state.get("activity", 0)
+    assert baseline > 0, f"Baseline activity should be >0, got {baseline}"
+    for f in agent.incoming_flows:
+        f["amount"] *= 2.0
+    m.step()
+    doubled = agent.state.get("activity", 0)
+    ratio = doubled / baseline if baseline else 0
+    assert 3.5 < ratio < 4.5, f"Expected ~4x (bilinear), got {ratio:.2f}x"
+    return True, f"OK (ratio={ratio:.2f}x, baseline={baseline:.1f}, doubled={doubled:.1f})"
+
+
+def test_inverting_direction():
+    """Increasing Message input to Inverter should DECREASE output."""
+    systems = [make_system("Inverter", "Inverting")]
+    interactions = [
+        make_flow("In", "SrcMsg", "Inverter", "Message", 0.3),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    out_low = agent.state.get("activity", 0)
+    assert abs(out_low - 0.7) < 0.1, f"Expected ~0.7 (1.0-0.3), got {out_low}"
+    for f in agent.incoming_flows:
+        f["amount"] = 0.6
+    m.step()
+    out_high = agent.state.get("activity", 0)
+    assert out_high < out_low, f"Output should decrease: was {out_low}, now {out_high}"
+    return True, f"OK (input 0.3→output {out_low:.2f}, input 0.6→output {out_high:.2f})"
+
+
+def test_buffering_temporal_lag():
+    """Buffer should show lag: output rises gradually, not instantly with input."""
+    systems = [make_system("Buffer", "Buffering")]
+    interactions = [
+        make_flow("In", "Src", "Buffer", "Material", 10.0),
+        make_flow("Out", "Buffer", "Snk", "Material", 3.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    outputs = []
+    storages = []
+    for _ in range(20):
+        m.step()
+        agent = list(m.agents)[0]
+        outputs.append(agent.state.get("activity", 0))
+        storages.append(agent.state.get("storage", 0))
+    assert storages[-1] > storages[0], f"Storage should accumulate: start={storages[0]:.1f} end={storages[-1]:.1f}"
+    assert outputs[-1] <= 5.0, f"Output should be near demand (3), not near input (10): got {outputs[-1]:.1f}"
+    return True, f"OK (storage grew {storages[0]:.1f}→{storages[-1]:.1f}, output stable at {outputs[-1]:.1f})"
+
+
+def test_copying_non_conservation():
+    """Copying should violate conservation: sum of outputs > input."""
+    systems = [make_system("Copier", "Copying")]
+    interactions = [
+        make_flow("In", "Src", "Copier", "Message", 6.0),
+        make_flow("OutA", "Copier", "SnkA", "Message", 0.0, "Product"),
+        make_flow("OutB", "Copier", "SnkB", "Message", 0.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    total_out = sum(f.get("amount", 0) for f in agent.outgoing_flows)
+    total_in = sum(f.get("amount", 0) for f in agent.incoming_flows)
+    assert total_out > total_in, f"Copying should violate conservation: out={total_out} should > in={total_in}"
+    return True, f"OK (in={total_in:.1f}, out={total_out:.1f}, ratio={total_out/total_in:.1f}x — non-conservative)"
+
+
+def test_impeding_backpressure():
+    """Impeding should create measurable back_pressure state."""
+    systems = [make_system("Resistor", "Impeding", agency_capacity=0.3)]
+    interactions = [
+        make_flow("In", "Src", "Resistor", "Material", 10.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    bp = agent.state.get("back_pressure", 0)
+    activity = agent.state.get("activity", 0)
+    assert bp > 0, f"back_pressure should be >0, got {bp}"
+    assert abs(activity + bp - 10.0) < 0.1, f"activity + back_pressure should = input: {activity} + {bp} != 10.0"
+    return True, f"OK (activity={activity:.1f}, back_pressure={bp:.1f}, sum={activity+bp:.1f})"
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -701,6 +833,12 @@ ALL_TESTS = [
     ("V2 Combining With Perturbation", test_v2_combining_with_perturbation),
     ("V2 Splitting With Perturbation", test_v2_splitting_with_perturbation),
     ("Duplicate ID Detection", test_duplicate_id_detection),
+    ("Combining Asymmetric Perturbation", test_combining_asymmetric_perturbation),
+    ("Modulating Bilinearity", test_modulating_bilinearity),
+    ("Inverting Direction", test_inverting_direction),
+    ("Buffering Temporal Lag", test_buffering_temporal_lag),
+    ("Copying Non-Conservation", test_copying_non_conservation),
+    ("Impeding Backpressure", test_impeding_backpressure),
 ]
 
 
