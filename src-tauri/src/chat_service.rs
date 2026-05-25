@@ -198,8 +198,28 @@ pub async fn generate_model_from_conversation(
         return Ok(resp);
     }
 
-    // Fallback: local Ollama extraction + local Rust compile
+    // Fallback: local Ollama extraction + constraint check + retry + repair + compile
     let mut intermediate = extract_intermediate_from_conversation(&conversation).await?;
+
+    // Check-feedback-retry loop: give the LLM up to 2 retries to fix constraint violations
+    let max_retries = 2;
+    for attempt in 0..max_retries {
+        let failures = bert_generator_core::check(&intermediate);
+        if failures.is_empty() {
+            break;
+        }
+        let feedback = bert_generator_core::constraints::format_feedback(&failures);
+        eprintln!(
+            "[constraints] attempt {}: {} failure(s), retrying",
+            attempt + 1,
+            failures.len()
+        );
+        match retry_extraction_with_feedback(&conversation, &intermediate, &feedback).await {
+            Ok(retried) => intermediate = retried,
+            Err(_) => break,
+        }
+    }
+
     let repairs = repair_intermediate(&mut intermediate);
     let bert_json = compile_intermediate(&intermediate)?;
     Ok(GenerateModelResponse {
@@ -234,6 +254,42 @@ async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse,
         .unwrap_or_default();
 
     Ok(GenerateModelResponse { json_data, repairs })
+}
+
+async fn retry_extraction_with_feedback(
+    conversation: &str,
+    previous: &serde_json::Value,
+    feedback: &str,
+) -> Result<serde_json::Value, String> {
+    let ollama = Ollama::default();
+    let messages = vec![
+        ChatMessage::new(
+            MessageRole::User,
+            format!(
+                "Extract a systems model from this conversation. Output ONLY valid JSON.\n\nConversation:\n{conversation}"
+            ),
+        ),
+        ChatMessage::new(
+            MessageRole::Assistant,
+            serde_json::to_string(previous).unwrap_or_default(),
+        ),
+        ChatMessage::new(MessageRole::User, feedback.to_string()),
+    ];
+    let request = ChatMessageRequest::new(OLLAMA_MODEL.to_string(), messages);
+    let response = ollama
+        .send_chat_messages(request)
+        .await
+        .map_err(|e| format!("Retry extraction failed: {e}"))?;
+
+    let raw = response.message.content.trim().to_string();
+    let json_str = raw
+        .strip_prefix("```json")
+        .or_else(|| raw.strip_prefix("```"))
+        .unwrap_or(&raw);
+    let json_str = json_str.strip_suffix("```").unwrap_or(json_str).trim();
+
+    serde_json::from_str(json_str)
+        .map_err(|e| format!("Failed to parse retried JSON: {e}"))
 }
 
 fn repair_intermediate(spec: &mut serde_json::Value) -> Vec<String> {
