@@ -244,14 +244,61 @@ Processes uniquely contributed by Mobus's framework: **Amplifying** (energy conc
 
 ---
 
-## For BERT Simulation (Wednesday Session Context)
+## Verification Contract
 
-The key question: **does primitive type select step function?**
+Each primitive has a diagnostic perturbation test in `python/test_primitives.py` that proves its characteristic transfer function is correctly implemented. These tests are the executable specification — if a primitive's test passes, the T-function is correct in Mobus's sense.
 
-If yes, then `_act()` in Mesa agents dispatches based on primitive tag, not archetype. A Buffering subsystem accumulates; a Modulating subsystem applies control; a Sensing subsystem transduces substance types.
+### Individual Primitive Diagnostics
 
-Open design questions:
-- ~~**9 or 10?**~~ Resolved: 10. Inverting is distinct (single-channel vs Modulating's two-channel).
-- **Composite subsystems**: Mining = Combining + Propelling. Dispatch sequence or dominant primitive?
-- **H dependency by primitive**: Buffering is inherently stateful (stock = history). Sensing may need a signal window. Are any primitives purely Markovian?
-- **Substance constraints as type checks**: Copying is Message-only. Splitting conserves Material/Energy. Sensing transduces across types. These are compile-time or runtime invariants?
+| Primitive | Diagnostic Test | Expected Response | What It Proves |
+|---|---|---|---|
+| Buffering | Inflow >> demand, observe storage | Storage accumulates, output decoupled from input | Integrator (stateful, temporal lag) |
+| Combining | 2x ONE of two equal inputs | 1.5x total (not 2x) | Summation (linear, not passthrough) |
+| Splitting | 2x input, check outputs | Each output 2x, sum = input | Conservation (outputs sum to input) |
+| Propelling | 2x input | Output 2x at η level | Linear gain with efficiency |
+| Impeding | 2x input | activity + back_pressure = input | Energy balance (resistance creates backpressure) |
+| Sensing | 2x physical input | 2x Message output | Substance crossing (Energy/Material → Message) |
+| Modulating | 2x both inputs | **4x** output (not 2x) | Bilinearity (product of two inputs) |
+| Inverting | Increase Message input | Output **decreases** | Affine complement (moves opposite to input) |
+| Copying | Message input | Sum of outputs > input | Non-conservation (information replicates) |
+
+**Key invariant**: No two primitives produce the same perturbation response. The response shape IS the primitive's identity.
+
+### Composition Diagnostics
+
+| Composition | Primitives | Expected Behavior | What It Proves |
+|---|---|---|---|
+| Negative feedback | Sensing → Inverting → Modulating (loop) | Converges to fixed point (~7.50) | Feedback stabilization (the homeostat pattern) |
+| Information fanout | Sensing → Copying → 2× Modulating | Both modulators track same signal | One stimulus → parallel control (non-conservative broadcast) |
+| Shock absorption | Perturbation → Buffer | Storage absorbs shock, output stays smooth | Temporal decoupling (buffer IS the H dimension) |
+
+### H-Conditioning by Agent Kind
+
+| Agent Kind | H Usage | Observable | What It Proves |
+|---|---|---|---|
+| Reactive | None (stateless) | agency_capacity unchanged | Pure T(input) — no memory |
+| Anticipatory | Predicts activity trend | prediction_factor ≠ 1.0 after input change | T conditioned by H prediction |
+| Intentional | Tracks goal-relative performance | effort_factor adjusts when below mean | T modified to optimize toward goal |
+
+### Substance Type Enforcement
+
+Runtime enforcement in `PRIMITIVE_SUBSTANCE_VALID` (`model.py`). Compile-time enforcement in `SubstanceType` enum (`system_elements.rs`). Schema enforcement in TypeDB (`@values`).
+
+| Primitive | Energy | Material | Message | Rationale |
+|---|---|---|---|---|
+| Buffering | ✓ | ✓ | ✓ | Stores any substance |
+| Combining | ✓ | ✓ | ✗ | Physical confluence (mass/energy conservation) |
+| Splitting | ✓ | ✓ | ✗ | Physical distribution (conservation). Message splitting = Copying |
+| Propelling | ✓ | ✓ | ✓ | Transport with work (any substance) |
+| Impeding | ✓ | ✓ | ✓ | Resistance (any substance) |
+| Sensing | ✓ in | ✓ in | ✗ in / ✓ out | Transduction: physical → informational |
+| Modulating | ✓ primary | ✓ primary | ✓ control | Two-port: physical primary + Message control |
+| Inverting | ✗ | ✗ | ✓ | Informational complement only |
+| Copying | ✗ | ✗ | ✓ | Information replicates freely; physical cannot |
+
+## Implementation Notes
+
+- **Primitive type selects T-function**: `PRIMITIVE_T` dict in `agents.py` dispatches `_t_buffering`, `_t_combining`, etc.
+- **Composite subsystems**: dispatch each primitive in sequence via `_act_by_primitive()`
+- **`_produce_outputs()` two-path design**: Splitting/Copying write outputs in their T-functions; all others propagate activity to outgoing flows generically. Early return prevents double-writing.
+- **Conservation**: `_enforce_conservation()` clamps Energy/Material outflows to inflow budget. Message flows exempt (non-conservative by design).
