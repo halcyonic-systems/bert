@@ -325,5 +325,5 @@ cargo doc --no-deps --quiet
 
 - **Contributing guide**: `CONTRIBUTING.md` (root)
 - **Build & release**: `docs/BUILD.md`
-- **User documentation**: [bert.gitbook.io](https://bert.gitbook.io)
+- **User documentation**: [docs/README.md](README.md)
 - **Deep architecture**: `gitbook/for-developers/architecture/`
