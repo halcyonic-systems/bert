@@ -256,7 +256,19 @@ class BertAgent(Agent):
             return
         if "Buffering" in self.primitives:
             recent = [h.get("storage", 0) for h in list(self.history)[-10:]]
-            if len(recent) >= 2:
+            if len(recent) >= 3:
+                alpha = 0.3
+                smoothed = recent[0]
+                for val in recent[1:]:
+                    smoothed = alpha * val + (1 - alpha) * smoothed
+                trend = smoothed - recent[0]
+                prev_trend = (recent[-2] - recent[0]) if len(recent) >= 3 else trend
+                acceleration = trend - prev_trend
+                norm = max(abs(trend), 1.0)
+                base = 1.0 + 0.3 * (trend / norm) + 0.1 * (acceleration / max(abs(acceleration), 1.0))
+                self.state["_release_factor"] = max(0.5, min(1.5, base))
+                self.state["_storage_acceleration"] = acceleration
+            elif len(recent) >= 2:
                 trend = recent[-1] - recent[0]
                 norm = max(abs(trend), 1.0)
                 self.state["_release_factor"] = max(0.5, min(1.5, 1.0 + 0.3 * (trend / norm)))

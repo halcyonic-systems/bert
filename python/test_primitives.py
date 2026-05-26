@@ -941,6 +941,67 @@ def test_intentional_conditioning():
     return True, f"OK (effort_factor={ef:.3f}, agency_cap={agent.agency_capacity:.3f})"
 
 
+def test_system_level_history():
+    """BertModel.system_history should be populated and accessible from agents."""
+    systems = [make_system("Tank", "Buffering")]
+    interactions = [
+        make_flow("in", "Src", "Tank", substance="Energy", amount=10.0),
+        make_flow("out", "Tank", "Snk", substance="Energy", amount=3.0, usability="Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    model = BertModel(sys_df, int_df, seed=42)
+
+    for _ in range(20):
+        model.step()
+
+    assert len(model.system_history) == 20, \
+        f"system_history should have 20 entries, got {len(model.system_history)}"
+    last = model.system_history[-1]
+    assert "mean_activity" in last, "system_history entry missing mean_activity"
+    assert "total_throughput" in last, "system_history entry missing total_throughput"
+    assert "tick" in last, "system_history entry missing tick"
+    assert last["tick"] == 20, f"last tick should be 20, got {last['tick']}"
+    agent = list(model.agents)[0]
+    assert hasattr(agent.model, "system_history"), \
+        "agent should be able to access model.system_history"
+    return True, f"OK ({len(model.system_history)} entries, last tick={last['tick']})"
+
+
+def test_markovian_primitives():
+    """Non-Buffering primitives must produce identical output regardless of history length."""
+    markovian = ["Sensing", "Impeding", "Modulating", "Propelling"]
+    for prim_name in markovian:
+        systems = [make_system(prim_name, prim_name)]
+        if prim_name == "Modulating":
+            interactions = [
+                make_flow("primary", "Src", prim_name, substance="Energy", amount=10.0),
+                make_flow("control", "Ctrl", prim_name, substance="Message", amount=0.5),
+                make_flow("out", prim_name, "Snk", substance="Energy", usability="Product"),
+            ]
+        else:
+            interactions = [
+                make_flow("in", "Src", prim_name, substance="Energy", amount=10.0),
+                make_flow("out", prim_name, "Snk", substance="Energy", usability="Product"),
+            ]
+        sys_df = pd.DataFrame(systems)
+        int_df = pd.DataFrame(interactions)
+        m = BertModel(sys_df, int_df, seed=42)
+
+        for _ in range(5):
+            m.step()
+        activity_short = list(m.agents)[0].state.get("activity", 0.0)
+
+        m2 = BertModel(sys_df, int_df, seed=42)
+        for _ in range(50):
+            m2.step()
+        activity_long = list(m2.agents)[0].state.get("activity", 0.0)
+
+        assert abs(activity_short - activity_long) < 0.001, \
+            f"{prim_name} output differs with history length: short={activity_short:.4f} long={activity_long:.4f}"
+    return True, f"OK (all 4 Markovian primitives produce identical output regardless of history)"
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -981,6 +1042,8 @@ ALL_TESTS = [
     ("Composition: Buffer Smooths Perturbation", test_composition_buffering_smooths_perturbation),
     ("Anticipatory H-Conditioning", test_anticipatory_conditioning),
     ("Intentional H-Conditioning", test_intentional_conditioning),
+    ("System-Level History", test_system_level_history),
+    ("Markovian Primitives", test_markovian_primitives),
 ]
 
 

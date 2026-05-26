@@ -40,9 +40,11 @@ class BertModel(Model):
                  seed: int = None, perturbations: dict[int, float] | None = None):
         super().__init__(seed=seed)
 
+        from collections import deque
         self.current_tick = 0
         self.interactions_df = interactions_df
         self.perturbations = perturbations or {}
+        self.system_history = deque(maxlen=100)
 
         self._create_agents(systems_df)
         self._build_flow_adjacency(interactions_df)
@@ -141,7 +143,24 @@ class BertModel(Model):
         if self.current_tick in self.perturbations:
             self._apply_perturbation(self.perturbations[self.current_tick])
         self.agents.shuffle_do("step")
+        self._record_system_history()
         self.datacollector.collect(self)
+
+    def _record_system_history(self):
+        agents = list(self.agents)
+        if not agents:
+            return
+        activities = [a.state.get("activity", 0.0) for a in agents]
+        throughputs = [a.state.get("throughput", 0.0) for a in agents]
+        deficits = [a.state.get("conservation_deficit", 0.0) for a in agents]
+        n = len(agents)
+        self.system_history.append({
+            "tick": self.current_tick,
+            "mean_activity": sum(activities) / n,
+            "total_throughput": sum(throughputs),
+            "conservation_deficit_sum": sum(deficits),
+            "agent_count": n,
+        })
 
     def _apply_perturbation(self, multiplier: float):
         for agent in self.agents:

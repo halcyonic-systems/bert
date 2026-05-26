@@ -373,9 +373,38 @@ By recognizing that Mobus's History state H naturally embodies his knowledge con
 
 This framework shows how systems literally learn themselves into existence through the accumulation of structural knowledge in H, providing a thermodynamically grounded foundation for understanding learning, adaptation, and emergence in complex systems. The beauty lies in how the formal mathematical structure (8-tuple) perfectly supports the ontological concept (K = f(1/I)), creating a unified theory of learning systems that bridges physics, information theory, and systems science.
 
-## 10. Implementation Notes (2026-05-14)
+## 10. Implementation Notes (2026-05-26)
 
-**Status**: Buffering is the first H-conditioned primitive. Pattern is extensible to all 9.
+**Status**: Two-level H architecture. Primitive-level conditioning for Buffering only. Agent-kind conditioning (Anticipatory/Intentional) at the system level.
+
+### Design decision: where does H live?
+
+A deep dive into Mobus Ch. 3, 4, 6, 8, 11 (pre-validated 2026-05-24) produced a critical finding: **Mobus does NOT discuss H conditioning at the primitive level.** Process primitives are the recursion stopping condition — atomic, minimal internals. He says simple systems "may have a NULL H." H is a system-level concept in the 8-tuple, not a primitive-level concept.
+
+Three options were evaluated:
+
+| Option | Approach | Mobus fidelity | Outcome |
+|--------|----------|---------------|---------|
+| A | Extend H to all 9 primitives | Low — no textual warrant | Rejected |
+| B | System-level H only, all primitives Markovian | High | Partially adopted |
+| C | Buffering keeps H (warranted), others Markovian, agent-kind conditioning at system level | Highest | **Adopted** |
+
+**Why Option C**: Only Buffering has direct textual warrant — the stock IS the history; its T-function is inherently temporal (`dStorage/dt = inflow - outflow`). All other primitives are instantaneous transformations. When Mobus needs adaptive impedance or gain scheduling, he models it as *composition* — an impedance primitive governed by a sensing + modulating circuit, not as H-conditioning of the impeding primitive itself. See `process-primitives.md` §Composition Patterns for the canonical circuits.
+
+**Why not primitive-level H for others**: Candidate mechanisms were designed for Sensing (habituation/noise floor), Impeding (adaptive congestion), Modulating (gain scheduling), and Propelling (efficiency trend). All four have zero Mobus support. Each would make the primitive less "atomic" — adding internal state to what is supposed to be a recursion stopping condition. The correct Mobus architecture for adaptive behavior at the primitive level is composition, not H-conditioning.
+
+### The two-level architecture
+
+**Level 1 — Primitive H (Buffering only)**: The storage trend conditions the release factor. This is warranted because Buffering's T-function has persistent state (`storage` accumulates across ticks) while all other T-functions are Markovian (recompute from current inputs each step).
+
+**Level 2 — Agent-kind H**: Operates on the agent's activity history, independent of which primitives it runs:
+- **Reactive**: No H conditioning (stateless response)
+- **Anticipatory**: Predicts future input via activity trend, adjusts `agency_capacity` via `_prediction_factor`
+- **Intentional**: Tracks goal-relative performance, adjusts `agency_capacity` via `_effort_factor`
+
+These two levels compose: a Buffering agent with Anticipatory kind gets both the storage-trend release factor AND the activity-trend prediction factor. The primitive-level H adjusts *what* the primitive does (release rate); the agent-level H adjusts *how much* the agent can do (agency capacity).
+
+**Level 3 — System-level H (infrastructure)**: `BertModel.system_history` aggregates per-tick system-level observations (mean activity, total throughput, conservation deficit). Available to agents via `self.model.system_history` for future cross-agent conditioning. Not consumed by any agent in v1 — this is infrastructure for composition-based adaptive circuits.
 
 ### Hook point
 
@@ -383,14 +412,14 @@ This framework shows how systems literally learn themselves into existence throu
 
 ### Buffering conditioning
 
-Reads last 10 `storage` values from history. Computes trend (filling vs draining). Sets `state["_release_factor"]` ∈ [0.5, 1.5]:
-- Filling → factor > 1.0 → releases more than base demand (prevents over-accumulation)
-- Draining → factor < 1.0 → releases less than base demand (conserves remaining stock)
-
-Uses `_base_demand` (first-observed demand) as the scaling base to avoid compounding through the `_produce_outputs` → demand feedback loop.
+Reads storage values from history using exponential smoothing (recent snapshots weighted more heavily). Computes trend and acceleration (second derivative). Sets `state["_release_factor"]` ∈ [0.5, 1.5]:
+- Filling trend → factor > 1.0 → releases more than base demand (prevents over-accumulation)
+- Draining trend → factor < 1.0 → releases less than base demand (conserves remaining stock)
+- Acceleration modulates: accelerating fill pushes factor higher; decelerating drain moderates conservation
 
 ### Conventions
 
 - H-derived parameters are prefixed with `_` in the state dict (e.g., `_release_factor`, `_base_demand`) to distinguish them from direct observables
 - Window length is fixed at 10 steps for v1; adaptive window tied to `time_constant` is future work (see §8)
 - Trend normalization uses `max(abs(trend), 1.0)` to avoid division by zero and keep the factor bounded
+- Primitives other than Buffering are explicitly Markovian — this is a design decision, not an omission
