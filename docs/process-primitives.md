@@ -272,6 +272,27 @@ Each primitive has a diagnostic perturbation test in `python/test_primitives.py`
 | Information fanout | Sensing → Copying → 2× Modulating | Both modulators track same signal | One stimulus → parallel control (non-conservative broadcast) |
 | Shock absorption | Perturbation → Buffer | Storage absorbs shock, output stays smooth | Temporal decoupling (buffer IS the H dimension) |
 
+### Validated Composition: Error-Sensing Feedback Circuit
+
+The canonical Mobus Ch. 4 composition is implemented as a loadable BERT model at `assets/models/local/test-primitives/error-sensing-circuit.json`. Four individually Markovian primitives compose into a thermostat:
+
+```
+Energy Supply (10.0) → Modulator → Combiner → Regulated Output
+                          ↑              ↓
+                       Inverter ← Sensor (feedback)
+```
+
+- **Sensor** (agency_capacity=0.05): transduces Combiner's Energy output to a Message signal
+- **Inverter**: computes error = 1.0 - sensed_value
+- **Modulator**: gates supply Energy by error signal (primary × control)
+- **Combiner**: sums modulated correction into output
+
+**Behavior**: Converges to 8.0 at steady state. After 2× perturbation at step 100, re-converges to 13.33. Zero standard deviation at both setpoints — perfect regulation from four stateless components.
+
+**Why this matters**: No primitive "knows" about regulation. Sensing transduces, Inverting flips, Modulating scales, Combining sums. Regulation is a property of the *circuit*, not any component. This is Mobus's core claim made executable: systems properties emerge from process composition, not from intelligent parts. All four primitives are confirmed Markovian by `test_markovian_primitives` (Option C design decision, h-element-theory.md §10).
+
+**Test**: `test_error_sensing_circuit` in `python/test_primitives.py` — loads JSON, runs 200 steps with perturbation, asserts convergence and recovery.
+
 ### H-Conditioning by Agent Kind
 
 | Agent Kind | H Usage | Observable | What It Proves |

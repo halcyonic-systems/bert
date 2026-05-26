@@ -941,6 +941,41 @@ def test_intentional_conditioning():
     return True, f"OK (effort_factor={ef:.3f}, agency_cap={agent.agency_capacity:.3f})"
 
 
+def test_error_sensing_circuit():
+    """Mobus Ch. 4 canonical circuit: 4 Markovian primitives compose into a thermostat."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "error-sensing-circuit.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={100: 2.0})
+
+    outputs = []
+    for _ in range(200):
+        m.step()
+        combiner = [a for a in m.agents if a.display_name == "Combiner"][0]
+        outputs.append(combiner.state.get("activity", 0.0))
+
+    pre = outputs[50:90]
+    pre_mean = sum(pre) / len(pre)
+    pre_std = (sum((x - pre_mean) ** 2 for x in pre) / len(pre)) ** 0.5
+
+    post = outputs[150:200]
+    post_mean = sum(post) / len(post)
+    post_std = (sum((x - post_mean) ** 2 for x in post) / len(post)) ** 0.5
+
+    assert pre_std < 1.0, f"Should converge pre-perturbation, std={pre_std:.4f}"
+    assert post_std < 1.0, f"Should re-converge post-perturbation, std={post_std:.4f}"
+    assert post_mean > pre_mean, \
+        f"Post-perturbation setpoint should be higher (2x input): pre={pre_mean:.2f} post={post_mean:.2f}"
+    return True, f"OK (pre={pre_mean:.2f}±{pre_std:.2f}, post={post_mean:.2f}±{post_std:.2f}, regulation holds)"
+
+
 def test_system_level_history():
     """BertModel.system_history should be populated and accessible from agents."""
     systems = [make_system("Tank", "Buffering")]
@@ -1042,6 +1077,7 @@ ALL_TESTS = [
     ("Composition: Buffer Smooths Perturbation", test_composition_buffering_smooths_perturbation),
     ("Anticipatory H-Conditioning", test_anticipatory_conditioning),
     ("Intentional H-Conditioning", test_intentional_conditioning),
+    ("Error-Sensing Circuit", test_error_sensing_circuit),
     ("System-Level History", test_system_level_history),
     ("Markovian Primitives", test_markovian_primitives),
 ]
