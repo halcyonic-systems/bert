@@ -941,6 +941,86 @@ def test_intentional_conditioning():
     return True, f"OK (effort_factor={ef:.3f}, agency_cap={agent.agency_capacity:.3f})"
 
 
+def test_regulated_buffer():
+    """Regulated buffer circuit: Buffering + Sensing + Inverting + Modulating compose into level control."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "regulated-buffer.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={100: 2.0})
+
+    storages = []
+    for _ in range(200):
+        m.step()
+        buf = [a for a in m.agents if a.display_name == "Buffer"][0]
+        storages.append(buf.state.get("storage", 0.0))
+
+    pre_std = (sum((x - sum(storages[50:90])/40)**2 for x in storages[50:90]) / 40) ** 0.5
+    assert storages[-1] > 0, f"Buffer should accumulate storage, got {storages[-1]:.2f}"
+    assert pre_std < storages[-1] * 0.5, \
+        f"Storage should be more stable than wild, std={pre_std:.2f} vs storage={storages[-1]:.2f}"
+    return True, f"OK (final storage={storages[-1]:.0f}, pre-std={pre_std:.2f})"
+
+
+def test_energy_chain():
+    """Energy processing chain: Combining + Propelling + Splitting. Conservation with efficiency loss."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "energy-chain.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={100: 2.0})
+
+    outputs = []
+    for _ in range(200):
+        m.step()
+        splitter = [a for a in m.agents if a.display_name == "Splitter"][0]
+        outputs.append(splitter.state.get("activity", 0.0))
+
+    pre = sum(outputs[50:90]) / 40
+    post = sum(outputs[150:200]) / 50
+    assert post > pre, f"Perturbation should increase output: pre={pre:.2f} post={post:.2f}"
+    propeller = [a for a in m.agents if a.display_name == "Propeller"][0]
+    assert propeller.agency_capacity == 0.7, "Propeller efficiency should be 0.7"
+    return True, f"OK (pre={pre:.2f}, post={post:.2f}, η=0.7)"
+
+
+def test_info_broadcast():
+    """Information broadcast: Sensing + Copying + 2x Modulating. One signal controls two processes."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "info-broadcast.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42)
+
+    for _ in range(50):
+        m.step()
+    modA = [a for a in m.agents if a.display_name == "Modulator A"][0]
+    modB = [a for a in m.agents if a.display_name == "Modulator B"][0]
+
+    diff = abs(modA.state.get("activity", 0) - modB.state.get("activity", 0))
+    assert diff < 0.01, f"Both modulators should track same signal, diff={diff:.4f}"
+    assert modA.state.get("activity", 0) > 0, "Modulators should have non-zero activity"
+    return True, f"OK (ModA={modA.state['activity']:.2f}, ModB={modB.state['activity']:.2f}, synced)"
+
+
 def test_error_sensing_circuit():
     """Mobus Ch. 4 canonical circuit: 4 Markovian primitives compose into a thermostat."""
     import os
@@ -1077,6 +1157,9 @@ ALL_TESTS = [
     ("Composition: Buffer Smooths Perturbation", test_composition_buffering_smooths_perturbation),
     ("Anticipatory H-Conditioning", test_anticipatory_conditioning),
     ("Intentional H-Conditioning", test_intentional_conditioning),
+    ("Regulated Buffer Circuit", test_regulated_buffer),
+    ("Energy Processing Chain", test_energy_chain),
+    ("Information Broadcast", test_info_broadcast),
     ("Error-Sensing Circuit", test_error_sensing_circuit),
     ("System-Level History", test_system_level_history),
     ("Markovian Primitives", test_markovian_primitives),

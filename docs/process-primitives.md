@@ -293,6 +293,50 @@ Energy Supply (10.0) → Modulator → Combiner → Regulated Output
 
 **Test**: `test_error_sensing_circuit` in `python/test_primitives.py` — loads JSON, runs 200 steps with perturbation, asserts convergence and recovery.
 
+**Dynamic regimes by input energy**: At low input (10), smooth convergence. At medium (20), damped oscillation. At high (100), bang-bang limit cycle — the sensor saturates the Inverter's [0, 1] range, causing binary on/off switching. The fix: add a Buffer to the feedback loop for temporal smoothing, or reduce sensor gain.
+
+### Validated Composition: Regulated Buffer
+
+Mobus Fig. 4.17 inventory control pattern at `assets/models/local/test-primitives/regulated-buffer.json`. A Buffering primitive wrapped in a feedback regulation circuit:
+
+```
+Energy Supply → Valve (Modulating) → Buffer (Buffering) → Regulated Output
+                      ↑                       ↓
+                   Inverter ← Sensor (feedback on buffer level)
+```
+
+**What it proves**: Option C vindicated — you don't need H-conditioned primitives when a circuit around a dumb buffer does the job. The regulation mechanism is visible in the wiring rather than hidden inside the primitive.
+
+**Test**: `test_regulated_buffer` — loads JSON, runs 200 steps with perturbation, asserts storage accumulates and remains stable.
+
+### Validated Composition: Energy Processing Chain
+
+Mobus Ch. 3 production pipeline at `assets/models/local/test-primitives/energy-chain.json`:
+
+```
+Source A → Combiner → Propeller (η=0.7) → Splitter → Output A
+Source B →                                          → Output B
+```
+
+**What it proves**: Conservation through a chain with thermodynamic loss. Total output < total input by the Propeller's efficiency factor. Perturbation propagates proportionally (2× input → 2× output).
+
+**Test**: `test_energy_chain` — loads JSON, runs 200 steps with perturbation, asserts output increases proportionally.
+
+### Validated Composition: Information Broadcast
+
+Information processing pattern at `assets/models/local/test-primitives/info-broadcast.json`:
+
+```
+Physical Stimulus → Sensor → Copier → Modulator A → Output A
+                                    → Modulator B → Output B
+Independent Energy A → Modulator A (primary)
+Independent Energy B → Modulator B (primary)
+```
+
+**What it proves**: Information replicates without conservation. One sensed signal controls two independent energy flows simultaneously. Copying is non-conservative (outputs > input) — this is valid for Message substance only.
+
+**Test**: `test_info_broadcast` — loads JSON, runs 50 steps, asserts both modulators have identical activity (synchronized control).
+
 ### H-Conditioning by Agent Kind
 
 | Agent Kind | H Usage | Observable | What It Proves |
