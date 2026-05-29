@@ -271,6 +271,7 @@ Each primitive has a diagnostic perturbation test in `python/test_primitives.py`
 | Negative feedback | Sensing → Inverting → Modulating (loop) | Converges to fixed point (~7.50) | Feedback stabilization (the homeostat pattern) |
 | Information fanout | Sensing → Copying → 2× Modulating | Both modulators track same signal | One stimulus → parallel control (non-conservative broadcast) |
 | Shock absorption | Perturbation → Buffer | Storage absorbs shock, output stays smooth | Temporal decoupling (buffer IS the H dimension) |
+| Oscillation (limit cycle) | Buffering → Sensing → Inverting → Modulating (loop) | Sustained bounded oscillation (~11 turning points, amplitude ~7) | Integrator inside a negative-feedback loop → periodic dynamics emerge from composition |
 
 ### Validated Composition: Error-Sensing Feedback Circuit
 
@@ -295,6 +296,8 @@ Energy Supply (10.0) → Modulator → Combiner → Regulated Output
 
 **Dynamic regimes by input energy**: At low input (10), smooth convergence. At medium (20), damped oscillation. At high (100), bang-bang limit cycle — the sensor saturates the Inverter's [0, 1] range, causing binary on/off switching. The fix: add a Buffer to the feedback loop for temporal smoothing, or reduce sensor gain.
 
+Adding a Buffer to the loop is itself instructive: at *sufficient* loop gain the buffered negative-feedback loop does not merely smooth — its integration adds the phase lag that turns the converging fixed point into a **sustained limit cycle**. This is the Oscillator composition (`test_composition_oscillator`): Buffering → Sensing → Inverting → Modulating, producing bounded periodic dynamics with no hand-coded oscillator. It is the foundation the Lotka-Volterra / SIR demos (#76) stand on, where oscillation must likewise emerge from composition.
+
 ### Validated Composition: Regulated Buffer
 
 Mobus Fig. 4.17 inventory control pattern at `assets/models/local/test-primitives/regulated-buffer.json`. A Buffering primitive wrapped in a feedback regulation circuit:
@@ -308,6 +311,25 @@ Energy Supply → Valve (Modulating) → Buffer (Buffering) → Regulated Output
 **What it proves**: Option C vindicated — you don't need H-conditioned primitives when a circuit around a dumb buffer does the job. The regulation mechanism is visible in the wiring rather than hidden inside the primitive.
 
 **Test**: `test_regulated_buffer` — loads JSON, runs 200 steps with perturbation, asserts storage accumulates and remains stable.
+
+### Validated Composition: Oscillator (Limit Cycle)
+
+Loadable model at `assets/models/local/test-primitives/oscillator.json`. **Same topology as the Regulated Buffer** (Modulating + Buffering + Sensing + Inverting feedback loop) — what differs is the *tuning*:
+
+```
+Energy Supply → Modulator → Buffer → Oscillating Output
+                    ↑           ↓
+                 Inverter ← Sensor (feedback on buffer level)
+```
+
+- **Sensor** gain raised (0.05 → 0.2) and **buffer demand** raised (3 → 5) relative to the regulated buffer
+- The Buffer's integration adds the phase lag that turns the *converging fixed point* into a *sustained bounded limit cycle*
+
+**Behavior**: sustained oscillation of the buffer's output — ~15 turning points over 80 steps, amplitude ~8.4 — bounded by the Modulating `[0,2]` and Inverting `max(0, ·)` clamps. **The same circuit regulates or oscillates depending only on loop gain and demand** — regime is a property of the tuning, not the parts.
+
+**Why it matters**: this is oscillation-from-composition made loadable and demo-ready. It is the foundation the Lotka-Volterra / SIR demos (#76) stand on, where population/epidemic oscillation must likewise emerge from primitive composition.
+
+**Tests**: `test_composition_oscillator` (builds the loop in-code) and `test_oscillator` (loads `oscillator.json` via `json_bridge` and confirms the generated model reproduces the limit cycle). Spec: `oscillator-spec.json`.
 
 ### Validated Composition: Energy Processing Chain
 

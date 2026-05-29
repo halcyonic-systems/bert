@@ -1,8 +1,24 @@
 """
-Standalone test for BERT process primitive T functions.
-No TypeDB required — constructs DataFrames directly.
+Executable specification for BERT's simulation layer — the Mobus process primitives
+(`agents.py` T-functions) and their compositions, run on the `BertModel` engine (`model.py`).
+If a primitive's test passes, its T-function is correct in Mobus's sense; see the
+"Verification Contract" in `docs/process-primitives.md`, which this file backs.
 
-Usage: python test_primitives.py
+Two test modes:
+  1. In-code diagnostics — build the simulation directly with `make_system`/`make_flow`
+     (pandas DataFrames -> BertModel), no TypeDB and no JSON. Isolates the *dynamics*:
+     a failure means the physics is wrong, not the loader. Covers each primitive's
+     characteristic transfer function and the in-code composition circuits
+     (negative-feedback, fanout, buffer-smoothing, oscillator).
+  2. Model-loading tests — load real BERT WorldModel JSONs from
+     `assets/models/local/test-primitives/*.json` via `json_bridge.read_model` (the same
+     JSON -> DataFrame path the BERT app uses) and assert end-to-end dynamics. These verify
+     the generated, GUI-loadable circuits (error-sensing, regulated-buffer, energy-chain,
+     info-broadcast, oscillator). Their `*-spec.json` siblings are the generator inputs.
+
+Runs both as pytest (`pytest test_primitives.py`) and as a self-reporting script
+(`python test_primitives.py`, via the registration list near the bottom + the __main__ block).
+No TypeDB required in either mode.
 """
 
 import sys
@@ -894,6 +910,47 @@ def test_composition_buffering_smooths_perturbation():
     return True, f"OK (storage absorbed shock: {storage_pre:.0f}→{storage_post:.0f}, output std={output_std:.2f})"
 
 
+def test_composition_oscillator():
+    """Buffering integrator inside a negative-feedback loop produces sustained oscillation.
+    Source -> Modulator -> Tank(Buffer) -> Sensor -> Inverter -> (control) -> Modulator.
+    The Buffer's integration adds the phase lag that turns the *converging* negative-feedback
+    fixed point (cf. test_composition_negative_feedback) into a *bounded limit cycle*. The
+    Modulating [0,2] clamp and Inverting max(0, .) clamp bound it. Oscillation emerges purely
+    from primitive composition — no hand-coded oscillator."""
+    tank = make_system("Tank", "Buffering", agency_capacity=0.5)
+    sensor = make_system("Sensor", "Sensing", agency_capacity=0.2)
+    inverter = make_system("Inverter", "Inverting", agency_capacity=0.5)
+    modulator = make_system("Modulator", "Modulating", agency_capacity=1.0)
+    systems = [tank, sensor, inverter, modulator]
+    interactions = [
+        make_flow("In", "Source", "Modulator", "Energy", 10.0),
+        make_flow("ModToTank", "Modulator", "Tank", "Energy", 0.0),
+        make_flow("TankToSensor", "Tank", "Sensor", "Energy", 0.0),
+        make_flow("SenseSignal", "Sensor", "Inverter", "Message", 0.0),
+        make_flow("ErrorToMod", "Inverter", "Modulator", "Message", 0.0),
+        make_flow("Out", "Tank", "Sink", "Energy", 5.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    series = []
+    for _ in range(80):
+        m.step()
+        tank_agent = [a for a in m.agents if a.display_name == "Tank"][0]
+        series.append(tank_agent.state.get("activity", 0.0))
+    tail = series[30:]
+    turning_points = sum(
+        1 for i in range(1, len(tail) - 1)
+        if (tail[i] - tail[i - 1]) * (tail[i + 1] - tail[i]) < 0
+    )
+    amplitude = max(tail) - min(tail)
+    assert turning_points >= 6, \
+        f"Should sustain oscillation, got {turning_points} turning points: {[f'{x:.1f}' for x in tail[-12:]]}"
+    assert amplitude > 2.0, f"Oscillation should have meaningful amplitude, got {amplitude:.2f}"
+    assert max(series) < 50.0, f"Oscillation must stay bounded (limit cycle), peaked at {max(series):.1f}"
+    return True, f"OK (sustained limit cycle: {turning_points} turning points, amplitude {amplitude:.1f})"
+
+
 def test_anticipatory_conditioning():
     """Anticipatory agent should adjust agency_capacity based on activity trend prediction."""
     sys_data = {
@@ -966,6 +1023,43 @@ def test_regulated_buffer():
     assert pre_std < storages[-1] * 0.5, \
         f"Storage should be more stable than wild, std={pre_std:.2f} vs storage={storages[-1]:.2f}"
     return True, f"OK (final storage={storages[-1]:.0f}, pre-std={pre_std:.2f})"
+
+
+def test_oscillator():
+    """Oscillator circuit (loadable model): same topology as the regulated buffer, but tuned
+    (higher sensor gain, larger demand) so the Buffer's integration lag turns the converging
+    fixed point into a sustained bounded limit cycle. Sister to test_composition_oscillator —
+    that one builds the loop in-code; this one proves the generated, GUI-loadable
+    oscillator.json reproduces the same periodic dynamics through the json_bridge path."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "oscillator.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42)
+
+    series = []
+    for _ in range(80):
+        m.step()
+        buf = [a for a in m.agents if a.display_name == "Buffer"][0]
+        series.append(buf.state.get("activity", 0.0))
+
+    tail = series[30:]
+    turning_points = sum(
+        1 for i in range(1, len(tail) - 1)
+        if (tail[i] - tail[i - 1]) * (tail[i + 1] - tail[i]) < 0
+    )
+    amplitude = max(tail) - min(tail)
+    assert turning_points >= 6, \
+        f"Loaded oscillator should sustain oscillation, got {turning_points}: {[f'{x:.1f}' for x in tail[-12:]]}"
+    assert amplitude > 2.0, f"Oscillation should have meaningful amplitude, got {amplitude:.2f}"
+    assert max(series) < 50.0, f"Oscillation must stay bounded, peaked at {max(series):.1f}"
+    return True, f"OK (loaded limit cycle: {turning_points} turning points, amplitude {amplitude:.1f})"
 
 
 def test_energy_chain():
@@ -1155,9 +1249,11 @@ ALL_TESTS = [
     ("Composition: Negative Feedback", test_composition_negative_feedback),
     ("Composition: Sensing→Copying Fanout", test_composition_sensing_copying_fanout),
     ("Composition: Buffer Smooths Perturbation", test_composition_buffering_smooths_perturbation),
+    ("Composition: Oscillator (limit cycle)", test_composition_oscillator),
     ("Anticipatory H-Conditioning", test_anticipatory_conditioning),
     ("Intentional H-Conditioning", test_intentional_conditioning),
     ("Regulated Buffer Circuit", test_regulated_buffer),
+    ("Oscillator Circuit (loaded)", test_oscillator),
     ("Energy Processing Chain", test_energy_chain),
     ("Information Broadcast", test_info_broadcast),
     ("Error-Sensing Circuit", test_error_sensing_circuit),
