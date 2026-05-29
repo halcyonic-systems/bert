@@ -7,6 +7,7 @@ use wasm_bindgen_futures::JsFuture;
 
 use super::agent_table::AgentComparisonTable;
 use super::chart::LineChart;
+use super::flows_table::FlowsTable;
 use super::inputs_panel::InputsPanel;
 use super::types::{
     JsonPollParams, JsonResultsParams, LaunchParams, PollParams, ResultsParams, RunInfo, RunStatus,
@@ -413,6 +414,8 @@ pub fn SimPanel(
                 />
 
                 <AgentComparisonTable model_json=model_json />
+
+                <FlowsTable model_json=model_json />
 
                 // --- Expanded content: chart grid ---
                 <Show when=move || expanded.get()>
