@@ -240,6 +240,47 @@ class BertModel(Model):
                 total += f.get("amount", 0.0)
         return total
 
+    def classify_openness(self) -> dict:
+        """Classify the model as 'open' or 'closed' with respect to mass.
+
+        A system is *closed* when no Energy/Material flow crosses its boundary — every
+        mass flow runs agent↔agent. It is *open* when some mass flow has an external
+        (non-agent) source feeding it or an external sink draining it. Message flows and
+        observation taps are ignored (information isn't conserved; a tap carries no mass).
+
+        Closed ⟹ total mass is the invariant (`total_conserved_mass`). Open ⟹ internal
+        mass changes by net boundary flux (inflow − outflow); the conserved statement is
+        internal(t) = internal(0) + Σ inflow − Σ outflow.
+
+        This is a structural property (load-time, no simulation needed). An empty
+        environment with no boundary-crossing flows is not malformed — it is the
+        *signature* of a closed system.
+        """
+        agent_ids = set(self._agents_by_bert_id)
+        inflow_sources, outflow_sinks = set(), set()
+        if not self.interactions_df.empty:
+            for _, row in self.interactions_df.iterrows():
+                if row.get("interaction_type", "Flow") == "Force":
+                    continue
+                if row.get("substance_type") not in ("Energy", "Material"):
+                    continue
+                obs = row.get("observation", False)
+                if (obs == obs) and bool(obs):  # NaN-safe; skip observation taps
+                    continue
+                src, snk = row.get("source_id"), row.get("sink_id")
+                if src and src not in agent_ids:
+                    inflow_sources.add(src)
+                if snk and snk not in agent_ids:
+                    outflow_sinks.add(snk)
+        is_open = bool(inflow_sources or outflow_sinks)
+        return {
+            "class": "open" if is_open else "closed",
+            "boundary_inflow_sources": sorted(inflow_sources),
+            "boundary_outflow_sinks": sorted(outflow_sinks),
+            "invariant": "internal mass changes by net boundary flux"
+            if is_open else "total mass conserved (total_conserved_mass)",
+        }
+
     def collect_all_observations(self) -> tuple[list[dict], list[dict]]:
         flow_obs = []
         for _, row in self.interactions_df.iterrows():

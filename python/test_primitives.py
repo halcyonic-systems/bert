@@ -1446,6 +1446,37 @@ def test_open_sir():
         return False, str(e)
 
 
+def test_openness_classifier():
+    """classify_openness() distinguishes closed (no boundary-crossing mass flow) from
+    open (mass flow to/from an external entity) — structurally, without simulating."""
+    base = [
+        make_system("S", "Buffering"), make_system("I", "Buffering"),
+        make_system("R", "Buffering"), make_system("ISensor", "Sensing", agency_capacity=0.1),
+    ]
+    closed_ix = [
+        make_flow("infection", "S", "I", substance="Energy", amount=10.0),
+        make_flow("observe_I", "I", "ISensor", substance="Energy", amount=0.0, observation=True),
+        make_flow("control", "ISensor", "S", substance="Message", amount=0.0),
+        make_flow("recovery", "I", "R", substance="Energy", amount=1.0),
+    ]
+    open_ix = closed_ix + [make_flow("death", "R", "Mortality", substance="Energy", amount=0.5)]
+
+    closed = BertModel(pd.DataFrame(base), pd.DataFrame(closed_ix), seed=42,
+                       update_mode="synchronous").classify_openness()
+    opened = BertModel(pd.DataFrame(base), pd.DataFrame(open_ix), seed=42,
+                       update_mode="synchronous").classify_openness()
+    try:
+        assert closed["class"] == "closed", f"closed SIR misclassified: {closed}"
+        assert not closed["boundary_outflow_sinks"], "closed SIR should have no boundary sinks"
+        assert opened["class"] == "open", f"open SIR misclassified: {opened}"
+        assert "test:Mortality" in opened["boundary_outflow_sinks"], \
+            f"open SIR should name Mortality as a boundary sink: {opened}"
+        # the observation Energy tap (I->ISensor) must NOT make the closed model open
+        return True, f"OK (closed -> {closed['class']}, open -> {opened['class']} via {opened['boundary_outflow_sinks']})"
+    except AssertionError as e:
+        return False, str(e)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -1499,6 +1530,7 @@ ALL_TESTS = [
     ("Conservation Closed Loop (exact)", test_conservation_closed_loop),
     ("SIR Epidemic (conservative composition)", test_sir_epidemic),
     ("Open SIR (boundary flux, not conserved)", test_open_sir),
+    ("Openness Classifier (open vs closed)", test_openness_classifier),
 ]
 
 

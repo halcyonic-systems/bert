@@ -117,6 +117,15 @@ def run_json(args):
         update_mode=args.update_mode,
     )
 
+    cls = model.classify_openness()
+    if cls["class"] == "closed":
+        progress("Model is CLOSED w.r.t. mass — total mass should be conserved.")
+    else:
+        progress(
+            f"Model is OPEN w.r.t. mass — boundary inflow={cls['boundary_inflow_sources']}, "
+            f"outflow={cls['boundary_outflow_sinks']}; internal mass changes by net flux."
+        )
+
     flow_timeseries = {}
     sys_timeseries = {}
 
