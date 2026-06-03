@@ -27,6 +27,8 @@ pub struct LaunchParams {
     pub json_path: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub params: Option<HashMap<String, f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub update_mode: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

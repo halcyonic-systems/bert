@@ -55,14 +55,33 @@ TIME_CONSTANT_TICKS = {
 
 
 def _t_buffering(agent, state, incoming, outgoing):
-    """s(t+1) = s(t) + Σ(in) - Σ(out). Affine, persistent state."""
-    inflow = sum(f.get("amount", 0) for f in incoming)
-    demand = sum(f.get("amount", 0) for f in outgoing)
+    """s(t+1) = s(t) + Σ(physical in) - released. Affine, persistent state.
+
+    An optional Message control input regulates the release rate by a factor in
+    [0,1] — a regulated reservoir (valve). Because the regulated mass leaves storage
+    and goes directly down the outflow to the next stock, inter-stock transfer stays
+    conservative (no leaking gate node). This is Mobus's 'regulated reservoir is a
+    composition' realized as the buffer's own controlled outflow."""
+    inflow = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") != "Message"
+    )
+    controls = [
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Message"
+    ]
+    # Exclusion site 1/3: observation taps are non-draining level reads, not real
+    # outflows — they must not inflate demand (and so the cached _base_demand below).
+    demand = sum(
+        f.get("amount", 0) for f in outgoing if not f.get("observation", False)
+    )
     storage = state.get("storage", 0.0)
     storage += inflow
     if "_base_demand" not in state:
         state["_base_demand"] = demand
     adjusted = state["_base_demand"] * state.get("_release_factor", 1.0)
+    if controls:
+        adjusted *= max(0.0, min(1.0, sum(controls)))   # regulated release
     released = min(adjusted, storage)
     storage -= released
     state["storage"] = storage
@@ -106,18 +125,35 @@ def _t_impeding(agent, state, incoming, outgoing):
 
 
 def _t_sensing(agent, state, incoming, outgoing):
-    """signal = k * Σ(physical inputs). Crosses substance: Energy/Material -> Message."""
-    physical_in = sum(
-        f.get("amount", 0) for f in incoming
-        if f.get("substance_type") in ("Energy", "Material")
-    )
+    """signal = k * Σ(physical inputs). Crosses substance: Energy/Material -> Message.
+
+    An *observation* incoming flow is sensed as the source stock's level (read from
+    the model's frozen pre-tick snapshot), not as a flow amount — so observing a
+    stock never drains it (Mobus: sensing is 'very low power'). Non-observation flows
+    keep the original flow-amount behavior, so existing circuits are unchanged."""
     k = agent.agency_capacity
+    physical_in = 0.0
+    for f in incoming:
+        if f.get("substance_type") not in ("Energy", "Material"):
+            continue
+        if f.get("observation", False):
+            # Frozen level read; .get() because external (non-agent) sources have no
+            # snapshot entry, and {} in async mode -> reads 0.0 (observation is a
+            # synchronous-mode feature).
+            physical_in += agent.model._level_snapshot.get(f.get("_source_id", ""), 0.0)
+        else:
+            physical_in += f.get("amount", 0)
     state["signal"] = physical_in * k
     state["activity"] = state["signal"]
 
 
 def _t_modulating(agent, state, incoming, outgoing):
-    """out = primary * f(control). Bilinear (nonlinear). Two-input primitive."""
+    """out = primary * gate(control), gate in [0, 1]. Bilinear two-input primitive
+    that GATES (never amplifies) — the gate cannot exceed 1, so it can't manufacture
+    mass. Correct for gating a supply/source-fed flow by a control signal (the
+    unpassed fraction is simply not drawn from the supply). For genuine gain use
+    Amplifying; for conservative rate-coupled transfer between two stocks use a
+    control-regulated Buffer (regulated reservoir), not a gate between buffers."""
     primary = sum(
         f.get("amount", 0) for f in incoming
         if f.get("substance_type") != "Message"
@@ -126,9 +162,28 @@ def _t_modulating(agent, state, incoming, outgoing):
         f.get("amount", 0) for f in incoming
         if f.get("substance_type") == "Message"
     )
-    mod_factor = max(0.0, min(2.0, control))
-    state["activity"] = primary * mod_factor
+    gate = max(0.0, min(1.0, control))
+    state["activity"] = primary * gate
     state["control_signal"] = control
+
+
+def _t_amplifying(agent, state, incoming, outgoing):
+    """out = min(signal * gain, power_available). Adds metered power to a weak
+    modulated signal; the output energy is drawn from a power (Energy) input, so
+    gain never manufactures mass. Mobus Fig. 3.19 — distinct from Modulating
+    (which gates a flow) and from Propelling (which pushes without gain)."""
+    signal = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Message"
+    )
+    power_available = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Energy"
+    )
+    gain = 1.0 + 9.0 * agent.agency_capacity   # agency_capacity 0..1 -> gain 1..10
+    desired = signal * gain
+    state["activity"] = min(desired, power_available)
+    state["amplifier_gain"] = gain
 
 
 def _t_inverting(agent, state, incoming, outgoing):
@@ -160,6 +215,7 @@ PRIMITIVE_T = {
     "Impeding":   _t_impeding,
     "Sensing":    _t_sensing,
     "Modulating": _t_modulating,
+    "Amplifying": _t_amplifying,
     "Inverting":  _t_inverting,
     "Copying":    _t_copying,
 }
@@ -170,7 +226,7 @@ class BertAgent(Agent):
 
     def __init__(self, model, bert_id, display_name, archetype, time_constant,
                  complexity_kind, agent_kind=None, agency_capacity=None,
-                 primitives=None):
+                 primitives=None, initial_state=None):
         super().__init__(model)
         self.bert_id = bert_id
         self.display_name = display_name
@@ -193,6 +249,12 @@ class BertAgent(Agent):
         self.history = deque(maxlen=100)
 
         self._init_state()
+        # Apply schema-supported initial conditions (e.g. seed a stock's storage) on
+        # top of the archetype/primitive defaults. Numeric values only.
+        for k, v in (initial_state or {}).items():
+            f = _safe_float(v, None)
+            if f is not None:
+                self.state[k] = f
 
     def _init_state(self):
         """Initialize mutable state from graph properties."""
@@ -216,9 +278,26 @@ class BertAgent(Agent):
             return True
         return tick % self.step_interval == 0
 
+    def _is_conservative_buffer(self) -> bool:
+        """A Buffering agent in synchronous mode is a conservative-transfer stock:
+        it debits storage in _t_buffering and must emit exactly that debit, with no
+        capacity clamp, no conservation rescaling, and no release-factor wobble — so
+        stock-to-stock transfer is mass-exact (B4/B7)."""
+        return self.model.update_mode == "synchronous" and "Buffering" in self.primitives
+
     def step(self):
-        tick = self.model.current_tick
-        if not self.should_step(tick):
+        """Async tick: compute then commit inline. Byte-identical to the pre-split
+        single-method step — the two phases run back-to-back with no reordering."""
+        self.compute()
+        self.commit()
+
+    def compute(self):
+        """Phase 1 — read inputs, condition T, run the T-function. Writes only to
+        self.state, never to shared flow dicts. In synchronous mode every agent's
+        compute() runs before any commit(), so incoming-flow `amount` reads see last
+        tick's committed values (frozen). The should_step guard mirrors commit()'s
+        exactly (B6) so non-Second time-constants can't desync between phases."""
+        if not self.should_step(self.model.current_tick):
             return
         self._process_inputs()
         self._apply_forces()
@@ -227,6 +306,13 @@ class BertAgent(Agent):
             self._act_by_primitive()
         else:
             self._act()
+
+    def commit(self):
+        """Phase 2 — write activity to shared outgoing flows, enforce conservation,
+        record history. Split from compute() so synchronous mode can run all computes
+        first; the only methods here that touch shared dicts."""
+        if not self.should_step(self.model.current_tick):
+            return
         self._produce_outputs()
         self._enforce_conservation()
         self._record_history()
@@ -246,15 +332,52 @@ class BertAgent(Agent):
 
     def _condition_T(self):
         """Read H (history) to set conditioning parameters before T dispatch.
-        Implements Mobus's T(t+1) = f(T(t), H(t), Input(t)). Currently Buffering only."""
+        Implements Mobus's T(t+1) = f(T(t), H(t), Input(t)).
+
+        Reactive agents: no H conditioning (stateless response).
+        Anticipatory agents: H predicts future input, adjusts agency_capacity.
+        Intentional agents: H tracks goal progress, amplifies or dampens effort.
+        Buffering: H tracks storage trend, adjusts release factor."""
         if len(self.history) < 2:
             return
-        if "Buffering" in self.primitives:
+        # Conservative-transfer buffers hold release_factor at 1.0 (B7): the trend-based
+        # wobble below would distort the βSI / βRF transfer rate and can break "I unimodal".
+        if "Buffering" in self.primitives and not self._is_conservative_buffer():
             recent = [h.get("storage", 0) for h in list(self.history)[-10:]]
-            if len(recent) >= 2:
+            if len(recent) >= 3:
+                alpha = 0.3
+                smoothed = recent[0]
+                for val in recent[1:]:
+                    smoothed = alpha * val + (1 - alpha) * smoothed
+                trend = smoothed - recent[0]
+                prev_trend = (recent[-2] - recent[0]) if len(recent) >= 3 else trend
+                acceleration = trend - prev_trend
+                norm = max(abs(trend), 1.0)
+                base = 1.0 + 0.3 * (trend / norm) + 0.1 * (acceleration / max(abs(acceleration), 1.0))
+                self.state["_release_factor"] = max(0.5, min(1.5, base))
+                self.state["_storage_acceleration"] = acceleration
+            elif len(recent) >= 2:
                 trend = recent[-1] - recent[0]
                 norm = max(abs(trend), 1.0)
                 self.state["_release_factor"] = max(0.5, min(1.5, 1.0 + 0.3 * (trend / norm)))
+        if self.agent_kind == "Anticipatory" and len(self.history) >= 3:
+            recent_activity = [h.get("activity", 0) for h in list(self.history)[-5:]]
+            if len(recent_activity) >= 2:
+                trend = recent_activity[-1] - recent_activity[0]
+                norm = max(abs(recent_activity[-1]), 1.0)
+                prediction_factor = max(0.7, min(1.3, 1.0 + 0.2 * (trend / norm)))
+                self.agency_capacity = self._base_agency_capacity * prediction_factor
+                self.state["_prediction_factor"] = prediction_factor
+        elif self.agent_kind == "Intentional" and len(self.history) >= 3:
+            recent_activity = [h.get("activity", 0) for h in list(self.history)[-10:]]
+            if len(recent_activity) >= 3:
+                mean_activity = sum(recent_activity) / len(recent_activity)
+                current = recent_activity[-1]
+                if mean_activity > 0:
+                    goal_ratio = current / mean_activity
+                    effort_factor = max(0.5, min(2.0, 2.0 - goal_ratio))
+                    self.agency_capacity = self._base_agency_capacity * effort_factor
+                    self.state["_effort_factor"] = effort_factor
 
     def _act_by_primitive(self):
         """Dispatch through process primitives in sequence."""
@@ -282,25 +405,47 @@ class BertAgent(Agent):
         self.state["activity"] = self.state["throughput"] * self.agency_capacity
 
     def _produce_outputs(self):
+        """Two paths: Splitting/Copying write outputs in their T-functions;
+        all others propagate activity to outgoing flows here."""
         _SELF_WRITING = {"Splitting", "Copying"}
         if set(self.primitives) & _SELF_WRITING:
             return
         activity = self.state.get("activity", 0.0)
+        conservative = self._is_conservative_buffer()
         for flow in self.outgoing_flows:
-            flow["amount"] = min(activity, flow.get("capacity", float('inf')))
+            # Exclusion site 2/3: never write mass onto an observation tap — it
+            # mirrors a level, it does not carry the source's activity downstream.
+            if flow.get("observation", False):
+                continue
+            if conservative:
+                # Emit exactly the debited release (B4): T-debit == produce-emit, no
+                # capacity clamp to destroy mass the buffer already removed from storage.
+                flow["amount"] = activity
+            else:
+                flow["amount"] = min(activity, flow.get("capacity", float('inf')))
         for force in self.force_outputs:
             force["amount"] = activity
 
     def _enforce_conservation(self):
         """Post-step 1st/2nd Law: M/E outflows clamped to inflow budget. Message exempt."""
+        # Conservative buffers self-limit (released = min(adjusted, storage)) and emit
+        # exactly that debit, so this inflow-budget clamp is both redundant and harmful:
+        # storage already nets the release, so the clamp would see me_outflow > budget on
+        # a partly-pre-filled stock and wrongly rescale the real transfer (B4). Exempt them.
+        if self._is_conservative_buffer():
+            self.state["conservation_deficit"] = 0.0
+            return
         _CONSERVED = ("Energy", "Material")
         me_inflow = sum(
             f.get("amount", 0) for f in self.incoming_flows
             if f.get("substance_type") in _CONSERVED
         )
+        # Exclusion site 3/3 (easy to miss): an observation E/M tap counted here would
+        # inflate me_outflow and trigger spurious ratio-scaling of the REAL transfer
+        # flow below — silently breaking conservation. Exclude from sum AND scaling.
         me_outflow = sum(
             f.get("amount", 0) for f in self.outgoing_flows
-            if f.get("substance_type") in _CONSERVED
+            if f.get("substance_type") in _CONSERVED and not f.get("observation", False)
         )
         inflow_budget = me_inflow + self.state.get("storage", 0.0)
 
@@ -318,7 +463,7 @@ class BertAgent(Agent):
 
         ratio = inflow_budget / me_outflow
         for f in self.outgoing_flows:
-            if f.get("substance_type") in _CONSERVED:
+            if f.get("substance_type") in _CONSERVED and not f.get("observation", False):
                 f["amount"] *= ratio
 
     def collect_observations(self) -> list[dict]:
@@ -433,4 +578,5 @@ def agent_from_row(model, row: dict) -> BertAgent:
         agent_kind=row.get("agent_kind"),
         agency_capacity=row.get("agency_capacity"),
         primitives=row.get("primitives"),
+        initial_state=row.get("initial_state"),
     )

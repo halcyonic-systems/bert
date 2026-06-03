@@ -117,7 +117,7 @@ BERT uses a layered architecture:
 | Data Model | Core types and persistence | `src/bevy_app/components/`, `data_model/` |
 | Desktop | Native app wrapper | `src-tauri/` |
 
-For deeper architectural details, see [gitbook/for-developers/architecture/](gitbook/for-developers/architecture/).
+For deeper architectural details, see [docs/CLAUDE.md](docs/CLAUDE.md).
 
 ## Exploration Branches
 

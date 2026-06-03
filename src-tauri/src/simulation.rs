@@ -15,6 +15,10 @@ pub struct LaunchParams {
     pub json_path: Option<String>,
     #[serde(default)]
     pub params: Option<HashMap<String, f64>>,
+    /// "async" (default) for regulation circuits, "synchronous" for mass-conserving
+    /// compartmental models (SIR, conservative transfer). Passed to mesa_runner.
+    #[serde(default)]
+    pub update_mode: Option<String>,
 }
 
 fn resolve_model_path(python_dir: &std::path::Path, model_name: &str) -> Option<String> {
@@ -75,7 +79,11 @@ pub async fn launch_simulation(params: LaunchParams) -> Result<typedb_reader::Ru
     cmd.arg(runner.to_string_lossy().as_ref())
         .args(["--seed", &seed.to_string()])
         .args(["--steps", &params.steps.to_string()])
-        .args(["--run-id", &run_id]);
+        .args(["--run-id", &run_id])
+        .args([
+            "--update-mode",
+            params.update_mode.as_deref().unwrap_or("async"),
+        ]);
 
     if let Some(ref json_path) = params.json_path {
         cmd.args(["--json-path", json_path]);

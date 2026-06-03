@@ -1,0 +1,215 @@
+{
+  "environment": {
+    "info": {
+      "description": "",
+      "id": "E-1",
+      "level": -1,
+      "name": ""
+    },
+    "sinks": [
+      {
+        "equivalence": "",
+        "info": {
+          "description": "Primary output sink",
+          "id": "Snk-1.0",
+          "level": -1,
+          "name": "Output"
+        },
+        "is_same_as_id": null,
+        "model": "",
+        "transform": {
+          "rotation": 0.0,
+          "translation": [
+            520.0,
+            0.0
+          ]
+        },
+        "type": "Sink"
+      }
+    ],
+    "sources": [
+      {
+        "equivalence": "",
+        "info": {
+          "description": "Primary input source",
+          "id": "Src-1.0",
+          "level": -1,
+          "name": "Input"
+        },
+        "is_same_as_id": null,
+        "model": "",
+        "transform": {
+          "rotation": -3.141592653589793,
+          "translation": [
+            -520.0,
+            0.0
+          ]
+        },
+        "type": "Source"
+      }
+    ]
+  },
+  "hidden_entities": [],
+  "interactions": [
+    {
+      "amount": "1",
+      "info": {
+        "description": "",
+        "id": "F-1.0",
+        "level": -1,
+        "name": "Input Flow"
+      },
+      "parameters": [],
+      "sink": "S0",
+      "sink_interface": "I0.0",
+      "source": "Src-1.0",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Data",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "1",
+      "info": {
+        "description": "",
+        "id": "F-1.1",
+        "level": -1,
+        "name": "Output Flow"
+      },
+      "parameters": [],
+      "sink": "Snk-1.0",
+      "sink_interface": null,
+      "source": "S0",
+      "source_interface": "I0.1",
+      "substance": {
+        "sub_type": "Data",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Product"
+    }
+  ],
+  "systems": [
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0",
+          "level": 0,
+          "name": ""
+        },
+        "interfaces": [
+          {
+            "angle": 3.141592653589793,
+            "exports_to": [],
+            "info": {
+              "description": "",
+              "id": "I0.0",
+              "level": 1,
+              "name": "Input Port"
+            },
+            "protocol": "",
+            "receives_from": [
+              "Src-1.0"
+            ],
+            "type": "Import"
+          },
+          {
+            "angle": 0.0,
+            "exports_to": [
+              "Snk-1.0"
+            ],
+            "info": {
+              "description": "",
+              "id": "I0.1",
+              "level": 1,
+              "name": "Output Port"
+            },
+            "protocol": "",
+            "receives_from": [],
+            "type": "Export"
+          }
+        ],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": true
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "A blank system ready for modeling",
+        "id": "S0",
+        "level": 0,
+        "name": "New System"
+      },
+      "member_autonomy": 1.0,
+      "parent": "E-1",
+      "radius": 300.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          0.0
+        ]
+      },
+      "transformation": ""
+    },
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.0",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Main processing subsystem",
+        "id": "C0.0",
+        "level": 1,
+        "name": "Core"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          0.0
+        ]
+      },
+      "transformation": ""
+    }
+  ],
+  "version": 1
+}

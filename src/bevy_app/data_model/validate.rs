@@ -1,3 +1,7 @@
+//! BERT validator 2 of 3 — pre-render, structural (operates on a loaded `WorldModel`; errors block load).
+//! Siblings: `general-systems-reasoner/core/src/constraints.rs` (generation-time, spec `Value`),
+//! `bert/tools/bert-typedb/src/validate.rs` (pre-transpile). See the bert-dev skill "Validators".
+
 use super::*;
 use std::collections::{HashMap, HashSet};
 
@@ -83,6 +87,48 @@ pub fn validate(model: &WorldModel) -> ValidationResult {
     check_s0_interface_processors(model, &mut issues);
 
     ValidationResult { issues }
+}
+
+/// Classify a model as open or closed *with respect to mass*, returning a short
+/// human-readable note for the UI (shown as a non-blocking toast on load).
+///
+/// Closed = no Energy/Material flow crosses the boundary (every mass flow runs
+/// system↔system); open = some mass flow has an external `Source` or `Sink` endpoint.
+/// Message flows are ignored (information is not conserved). An empty environment is
+/// the *signature* of a closed system, not a defect — so instead of staying silent on
+/// such a model, the loader names the regime and its conservation invariant.
+pub fn classify_openness(model: &WorldModel) -> String {
+    use crate::{InteractionType, SubstanceType};
+
+    let mut inflows: Vec<String> = Vec::new();
+    let mut outflows: Vec<String> = Vec::new();
+    for ix in &model.interactions {
+        if matches!(ix.ty, InteractionType::Force) {
+            continue;
+        }
+        if !matches!(
+            ix.substance.ty,
+            SubstanceType::Energy | SubstanceType::Material
+        ) {
+            continue;
+        }
+        if ix.source.ty == IdType::Source {
+            inflows.push(ix.info.name.clone());
+        }
+        if ix.sink.ty == IdType::Sink {
+            outflows.push(ix.info.name.clone());
+        }
+    }
+
+    if inflows.is_empty() && outflows.is_empty() {
+        "Closed system (mass): no Energy/Material flow crosses the boundary — total mass is conserved.".to_string()
+    } else {
+        format!(
+            "Open system (mass): mass crosses the boundary (in: [{}], out: [{}]) — internal mass changes by net flux.",
+            inflows.join(", "),
+            outflows.join(", "),
+        )
+    }
 }
 
 fn serialize_id(id: &Id) -> String {

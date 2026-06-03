@@ -1,0 +1,662 @@
+{
+  "environment": {
+    "info": {
+      "description": "",
+      "id": "E-1",
+      "level": -1,
+      "name": ""
+    },
+    "sinks": [
+      {
+        "equivalence": "",
+        "info": {
+          "description": "Periodically varying energy output from the buffer",
+          "id": "Snk-1.0",
+          "level": -1,
+          "name": "Oscillating Output"
+        },
+        "is_same_as_id": null,
+        "model": "",
+        "transform": {
+          "rotation": 0.0,
+          "translation": [
+            520.0,
+            -150.0
+          ]
+        },
+        "type": "Sink"
+      },
+      {
+        "equivalence": "",
+        "info": {
+          "description": "Dissipated energy from loop overhead",
+          "id": "Snk-1.1",
+          "level": -1,
+          "name": "Waste Heat"
+        },
+        "is_same_as_id": null,
+        "model": "",
+        "transform": {
+          "rotation": 0.0,
+          "translation": [
+            520.0,
+            150.0
+          ]
+        },
+        "type": "Sink"
+      }
+    ],
+    "sources": [
+      {
+        "equivalence": "",
+        "info": {
+          "description": "Constant energy input to the oscillator loop",
+          "id": "Src-1.0",
+          "level": -1,
+          "name": "Energy Supply"
+        },
+        "is_same_as_id": null,
+        "model": "",
+        "transform": {
+          "rotation": -3.141592653589793,
+          "translation": [
+            -520.0,
+            0.0
+          ]
+        },
+        "type": "Source"
+      }
+    ]
+  },
+  "hidden_entities": [],
+  "interactions": [
+    {
+      "amount": "10",
+      "info": {
+        "description": "",
+        "id": "F-1.0",
+        "level": -1,
+        "name": "Energy Supply"
+      },
+      "parameters": [],
+      "sink": "S0",
+      "sink_interface": "I0.50",
+      "source": "Src-1.0",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "5",
+      "info": {
+        "description": "",
+        "id": "F-1.1",
+        "level": -1,
+        "name": "Oscillating Energy"
+      },
+      "parameters": [],
+      "sink": "Snk-1.0",
+      "sink_interface": null,
+      "source": "S0",
+      "source_interface": "I0.51",
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Product"
+    },
+    {
+      "amount": "1",
+      "info": {
+        "description": "",
+        "id": "F-1.2",
+        "level": -1,
+        "name": "Waste Heat"
+      },
+      "parameters": [],
+      "sink": "Snk-1.1",
+      "sink_interface": null,
+      "source": "S0",
+      "source_interface": "I0.0",
+      "substance": {
+        "sub_type": "Thermal",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Waste"
+    },
+    {
+      "amount": 10,
+      "endpoint_offset": {
+        "end_angle": 2.6516353273360647,
+        "start_angle": -0.4899573262537284
+      },
+      "info": {
+        "description": "Routes incoming flow from Energy Input to Modulator",
+        "id": "F0.0",
+        "level": 1,
+        "name": "Energy Input routing"
+      },
+      "parameters": [],
+      "sink": "C0.0",
+      "sink_interface": null,
+      "source": "C0.50",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": 5,
+      "endpoint_offset": {
+        "end_angle": 2.814035773361839,
+        "start_angle": -0.32755688022795426
+      },
+      "info": {
+        "description": "Routes outgoing flow from Buffer to Oscillating Output",
+        "id": "F0.1",
+        "level": 1,
+        "name": "Oscillating Output routing"
+      },
+      "parameters": [],
+      "sink": "C0.51",
+      "sink_interface": null,
+      "source": "C0.1",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "1",
+      "endpoint_offset": {
+        "end_angle": -0.7853981633974483,
+        "start_angle": 2.356194490192345
+      },
+      "info": {
+        "description": "",
+        "id": "F0.2",
+        "level": 1,
+        "name": "Gated Inflow"
+      },
+      "parameters": [],
+      "sink": "C0.1",
+      "sink_interface": null,
+      "source": "C0.0",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "1",
+      "endpoint_offset": {
+        "end_angle": 3.141592653589793,
+        "start_angle": 0.0
+      },
+      "info": {
+        "description": "",
+        "id": "F0.3",
+        "level": 1,
+        "name": "Level Feedback"
+      },
+      "parameters": [],
+      "sink": "C0.2",
+      "sink_interface": null,
+      "source": "C0.1",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "1",
+      "endpoint_offset": {
+        "end_angle": -0.7853981633974483,
+        "start_angle": 2.356194490192345
+      },
+      "info": {
+        "description": "",
+        "id": "F0.4",
+        "level": 1,
+        "name": "Sensed Level"
+      },
+      "parameters": [],
+      "sink": "C0.3",
+      "sink_interface": null,
+      "source": "C0.2",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Sensed Level",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "1",
+      "endpoint_offset": {
+        "end_angle": 1.5707963267948966,
+        "start_angle": -1.5707963267948966
+      },
+      "info": {
+        "description": "",
+        "id": "F0.5",
+        "level": 1,
+        "name": "Error Signal"
+      },
+      "parameters": [],
+      "sink": "C0.0",
+      "sink_interface": null,
+      "source": "C0.3",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Error Signal",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    }
+  ],
+  "systems": [
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0",
+          "level": 0,
+          "name": ""
+        },
+        "interfaces": [
+          {
+            "angle": 3.141592653589793,
+            "exports_to": [],
+            "info": {
+              "description": "",
+              "id": "I0.50",
+              "level": 1,
+              "name": "Energy Input"
+            },
+            "protocol": "",
+            "receives_from": [
+              "Src-1.0"
+            ],
+            "type": "Import"
+          },
+          {
+            "angle": -0.5,
+            "exports_to": [
+              "Snk-1.0"
+            ],
+            "info": {
+              "description": "",
+              "id": "I0.51",
+              "level": 1,
+              "name": "Oscillating Output"
+            },
+            "protocol": "",
+            "receives_from": [],
+            "type": "Export"
+          },
+          {
+            "angle": 0.5,
+            "exports_to": [
+              "Snk-1.1"
+            ],
+            "info": {
+              "description": "",
+              "id": "I0.0",
+              "level": 1,
+              "name": "Heat Dissipation"
+            },
+            "protocol": "",
+            "receives_from": [],
+            "type": "Export"
+          }
+        ],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": true
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Buffering integrator inside a negative-feedback loop (Modulating + Buffering + Sensing + Inverting). Same topology as the Regulated Buffer, but tuned so the buffer's integration adds the phase lag that turns the converging fixed point into a sustained bounded limit cycle. Demonstrates periodic dynamics emerging purely from primitive composition \u2014 the foundation the Lotka-Volterra / SIR demos (#76) stand on.",
+        "id": "S0",
+        "level": 0,
+        "name": "Oscillator Circuit"
+      },
+      "member_autonomy": 1.0,
+      "parent": "E-1",
+      "radius": 300.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          0.0
+        ]
+      },
+      "transformation": ""
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.0",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Gates energy inflow by the inverted error signal; loop gain element",
+        "id": "C0.0",
+        "level": 1,
+        "name": "Modulator"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          -160.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 1.0,
+        "primitives": [
+          "Modulating"
+        ]
+      }
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.1",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Integrates gated inflow; its storage lag is the phase delay that drives oscillation",
+        "id": "C0.1",
+        "level": 1,
+        "name": "Buffer"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          -160.0,
+          0.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ]
+      }
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.2",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Transduces buffer level to a message signal with moderate gain (tuned high enough to overshoot)",
+        "id": "C0.2",
+        "level": 1,
+        "name": "Sensor"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          160.0,
+          0.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.2,
+        "primitives": [
+          "Sensing"
+        ]
+      }
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.3",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Computes error = max - sensed level, closing the negative-feedback loop",
+        "id": "C0.3",
+        "level": 1,
+        "name": "Inverter"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          160.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Inverting"
+        ]
+      }
+    },
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.50",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": "I0.50",
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Mediates incoming flow at the Energy Input interface",
+        "id": "C0.50",
+        "level": 1,
+        "name": "Energy Input"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 12.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": -3.1415925,
+        "translation": [
+          -1.72,
+          0.0
+        ]
+      },
+      "transformation": ""
+    },
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.51",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": "I0.51",
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Mediates outgoing flow at the Oscillating Output interface",
+        "id": "C0.51",
+        "level": 1,
+        "name": "Oscillating Output"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 12.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          -1.72,
+          0.0
+        ]
+      },
+      "transformation": ""
+    }
+  ],
+  "version": 1
+}

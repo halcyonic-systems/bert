@@ -58,7 +58,7 @@ attribute agent_kind value string
 attribute agency_capacity value double;
 attribute process_primitive value string
     @values("Combining", "Splitting", "Buffering", "Impeding", "Propelling",
-            "Copying", "Sensing", "Modulating", "Inverting");
+            "Copying", "Sensing", "Modulating", "Amplifying", "Inverting");
 attribute cognitive_param_name value string;
 attribute cognitive_param_value value double;
 

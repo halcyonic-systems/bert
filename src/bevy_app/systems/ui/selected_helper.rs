@@ -87,18 +87,59 @@ pub fn spawn_selected_interface(
 pub fn spawn_selected_flow(
     mut commands: Commands,
     curve_query: Query<
-        (Entity, &FlowCurve, &PickSelection, &NestingLevel),
+        (
+            Entity,
+            &FlowCurve,
+            Option<&FlowEndpointOffset>,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+            &PickSelection,
+            &NestingLevel,
+        ),
         (
             Changed<PickSelection>,
             Without<SelectedHighlightHelperAdded>,
         ),
     >,
+    subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
+    parent_query: Query<&ChildOf>,
+    global_transform_query: Query<&GlobalTransform>,
     zoom: Res<Zoom>,
 ) {
-    for (selected_entity, flow_curve, selection, nesting_level) in &curve_query {
+    for (entity, flow_curve, offset, start_conn, end_conn, selection, nesting_level) in
+        &curve_query
+    {
         if selection.is_selected {
+            let mut adjusted_curve =
+                crate::bevy_app::systems::ui::flow::compute_adjusted_curve(
+                    flow_curve,
+                    offset,
+                    start_conn,
+                    end_conn,
+                    &subsystem_query,
+                    **zoom,
+                );
+
+            if let Some(offset) = offset {
+                if let Ok(parent) = parent_query.get(entity) {
+                    if let Ok(parent_gt) = global_transform_query.get(parent.parent()) {
+                        let parent_inv = parent_gt.affine().inverse();
+                        if offset.start_angle.is_some() {
+                            adjusted_curve.start = parent_inv
+                                .transform_point3(adjusted_curve.start.extend(0.0))
+                                .truncate();
+                        }
+                        if offset.end_angle.is_some() {
+                            adjusted_curve.end = parent_inv
+                                .transform_point3(adjusted_curve.end.extend(0.0))
+                                .truncate();
+                        }
+                    }
+                }
+            }
+
             let mut curve_shape = create_flow_curve_shape(
-                flow_curve,
+                &adjusted_curve,
                 NestingLevel::compute_scale(**nesting_level, **zoom),
             );
             curve_shape.stroke = Some(Stroke::new(Color::WHITE, FLOW_SELECTED_INNER_LINE_WIDTH));
@@ -108,7 +149,7 @@ pub fn spawn_selected_flow(
                 .id();
 
             commands
-                .entity(selected_entity)
+                .entity(entity)
                 .add_child(helper_entity)
                 .insert(SelectedHighlightHelperAdded { helper_entity });
         }
@@ -153,22 +194,61 @@ pub fn spawn_selected_external_entity(
 
 pub fn update_selected_flow_curve(
     flow_curve_query: Query<
-        (&FlowCurve, &SelectedHighlightHelperAdded, &NestingLevel),
-        Changed<FlowCurve>,
+        (
+            Entity,
+            &FlowCurve,
+            Option<&FlowEndpointOffset>,
+            Option<&FlowStartConnection>,
+            Option<&FlowEndConnection>,
+            &SelectedHighlightHelperAdded,
+            &NestingLevel,
+        ),
+        Or<(Changed<FlowCurve>, Changed<FlowEndpointOffset>)>,
     >,
+    subsystem_query: Query<(&GlobalTransform, &crate::bevy_app::components::System)>,
+    parent_query: Query<&ChildOf>,
+    global_transform_query: Query<&GlobalTransform>,
     mut selected_query: Query<&mut Shape>,
     zoom: Res<Zoom>,
 ) {
-    for (flow_curve, helper, nesting_level) in &flow_curve_query {
+    for (entity, flow_curve, offset, start_conn, end_conn, helper, nesting_level) in
+        &flow_curve_query
+    {
+        let mut adjusted_curve = crate::bevy_app::systems::ui::flow::compute_adjusted_curve(
+            flow_curve,
+            offset,
+            start_conn,
+            end_conn,
+            &subsystem_query,
+            **zoom,
+        );
+
+        if let Some(offset) = offset {
+            if let Ok(parent) = parent_query.get(entity) {
+                if let Ok(parent_gt) = global_transform_query.get(parent.parent()) {
+                    let parent_inv = parent_gt.affine().inverse();
+                    if offset.start_angle.is_some() {
+                        adjusted_curve.start = parent_inv
+                            .transform_point3(adjusted_curve.start.extend(0.0))
+                            .truncate();
+                    }
+                    if offset.end_angle.is_some() {
+                        adjusted_curve.end = parent_inv
+                            .transform_point3(adjusted_curve.end.extend(0.0))
+                            .truncate();
+                    }
+                }
+            }
+        }
+
         let mut shape = selected_query
             .get_mut(helper.helper_entity)
             .expect("Helper entity should exist");
         let curve_shape = create_flow_curve_shape(
-            flow_curve,
+            &adjusted_curve,
             NestingLevel::compute_scale(**nesting_level, **zoom),
         );
 
-        // Update path while preserving stroke settings
         shape.path = curve_shape.path;
     }
 }

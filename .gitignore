@@ -58,3 +58,4 @@ src-tauri/generated:*
 
 # Local models (personal experiments, not shipped)
 assets/models/local/
+.aider*

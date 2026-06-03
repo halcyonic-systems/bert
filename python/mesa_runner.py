@@ -51,11 +51,12 @@ def run(args):
     write_simulation_run(driver, args.db, args.run_id, args.model_name,
                          args.seed, args.steps)
 
-    progress(f"Initializing model (seed={args.seed})")
+    progress(f"Initializing model (seed={args.seed}, update_mode={args.update_mode})")
     model = BertModel(
         systems_df=systems_df,
         interactions_df=interactions_df,
         seed=args.seed,
+        update_mode=args.update_mode,
     )
 
     progress(f"Running {args.steps} steps")
@@ -100,12 +101,30 @@ def run_json(args):
     status_path = os.path.join(tmpdir, f"{args.run_id}_status.json")
     results_path = os.path.join(tmpdir, f"{args.run_id}_results.json")
 
-    progress(f"Initializing model (seed={args.seed})")
+    perturbations = {}
+    for p in getattr(args, 'perturbation', []):
+        step_str, mult_str = p.split(":")
+        perturbations[int(step_str)] = float(mult_str)
+    if perturbations:
+        progress(f"Perturbations scheduled: {perturbations}")
+
+    progress(f"Initializing model (seed={args.seed}, update_mode={args.update_mode})")
     model = BertModel(
         systems_df=systems_df,
         interactions_df=interactions_df,
         seed=args.seed,
+        perturbations=perturbations,
+        update_mode=args.update_mode,
     )
+
+    cls = model.classify_openness()
+    if cls["class"] == "closed":
+        progress("Model is CLOSED w.r.t. mass — total mass should be conserved.")
+    else:
+        progress(
+            f"Model is OPEN w.r.t. mass — boundary inflow={cls['boundary_inflow_sources']}, "
+            f"outflow={cls['boundary_outflow_sinks']}; internal mass changes by net flux."
+        )
 
     flow_timeseries = {}
     sys_timeseries = {}
@@ -212,6 +231,11 @@ def main():
     parser.add_argument("--host", default="localhost:1729", help="TypeDB host:port")
     parser.add_argument("--json-path", default=None, help="Path to BERT JSON model file (skips TypeDB)")
     parser.add_argument("--params", default=None, help="JSON dict of flow_id:amount overrides")
+    parser.add_argument("--perturbation", action="append", default=[],
+                        help="STEP:MULTIPLIER — scale source flows at given step (repeatable)")
+    parser.add_argument("--update-mode", default="async", choices=["async", "synchronous"],
+                        help="async (default): shuffled push-based regulation circuits. "
+                             "synchronous: two-phase mass-conserving transfer (SIR, Lotka-Volterra).")
     args = parser.parse_args()
 
     try:

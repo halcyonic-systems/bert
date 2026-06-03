@@ -1,0 +1,35 @@
+{
+  "system": {
+    "name": "Oscillator Circuit",
+    "description": "Buffering integrator inside a negative-feedback loop (Modulating + Buffering + Sensing + Inverting). Same topology as the Regulated Buffer, but tuned so the buffer's integration adds the phase lag that turns the converging fixed point into a sustained bounded limit cycle. Demonstrates periodic dynamics emerging purely from primitive composition — the foundation the Lotka-Volterra / SIR demos (#76) stand on."
+  },
+  "sources": [
+    {"name": "Energy Supply", "description": "Constant energy input to the oscillator loop"}
+  ],
+  "sinks": [
+    {"name": "Oscillating Output", "description": "Periodically varying energy output from the buffer"},
+    {"name": "Waste Heat", "description": "Dissipated energy from loop overhead"}
+  ],
+  "subsystems": [
+    {"name": "Modulator", "description": "Gates energy inflow by the inverted error signal; loop gain element", "archetype": "Agent", "primitives": ["Modulating"]},
+    {"name": "Buffer", "description": "Integrates gated inflow; its storage lag is the phase delay that drives oscillation", "archetype": "Agent", "primitives": ["Buffering"]},
+    {"name": "Sensor", "description": "Transduces buffer level to a message signal with moderate gain (tuned high enough to overshoot)", "archetype": "Agent", "primitives": ["Sensing"]},
+    {"name": "Inverter", "description": "Computes error = max - sensed level, closing the negative-feedback loop", "archetype": "Agent", "primitives": ["Inverting"]}
+  ],
+  "routing_table": [
+    {"interface": "Energy Input", "type": "Import", "connected_to": "Energy Supply", "has_processor": true, "target_subsystem": "Modulator"},
+    {"interface": "Oscillating Output", "type": "Export", "connected_to": "Oscillating Output", "has_processor": true, "target_subsystem": "Buffer"},
+    {"interface": "Heat Dissipation", "type": "Export", "connected_to": "Waste Heat", "has_processor": false}
+  ],
+  "external_flows": [
+    {"name": "Energy Supply", "interface": "Energy Input", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource", "amount": 10},
+    {"name": "Oscillating Energy", "interface": "Oscillating Output", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Product", "amount": 5},
+    {"name": "Waste Heat", "interface": "Heat Dissipation", "substance": {"type": "Energy", "sub_type": "Thermal"}, "usability": "Waste", "amount": 1}
+  ],
+  "internal_flows": [
+    {"name": "Gated Inflow", "source": "Modulator", "sink": "Buffer", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource"},
+    {"name": "Level Feedback", "source": "Buffer", "sink": "Sensor", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource"},
+    {"name": "Sensed Level", "source": "Sensor", "sink": "Inverter", "substance": {"type": "Message", "sub_type": "Signal"}, "usability": "Resource"},
+    {"name": "Error Signal", "source": "Inverter", "sink": "Modulator", "substance": {"type": "Message", "sub_type": "Signal"}, "usability": "Resource"}
+  ]
+}

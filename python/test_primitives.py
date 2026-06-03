@@ -1,8 +1,24 @@
 """
-Standalone test for BERT process primitive T functions.
-No TypeDB required — constructs DataFrames directly.
+Executable specification for BERT's simulation layer — the Mobus process primitives
+(`agents.py` T-functions) and their compositions, run on the `BertModel` engine (`model.py`).
+If a primitive's test passes, its T-function is correct in Mobus's sense; see the
+"Verification Contract" in `docs/process-primitives.md`, which this file backs.
 
-Usage: python test_primitives.py
+Two test modes:
+  1. In-code diagnostics — build the simulation directly with `make_system`/`make_flow`
+     (pandas DataFrames -> BertModel), no TypeDB and no JSON. Isolates the *dynamics*:
+     a failure means the physics is wrong, not the loader. Covers each primitive's
+     characteristic transfer function and the in-code composition circuits
+     (negative-feedback, fanout, buffer-smoothing, oscillator).
+  2. Model-loading tests — load real BERT WorldModel JSONs from
+     `assets/models/local/test-primitives/*.json` via `json_bridge.read_model` (the same
+     JSON -> DataFrame path the BERT app uses) and assert end-to-end dynamics. These verify
+     the generated, GUI-loadable circuits (error-sensing, regulated-buffer, energy-chain,
+     info-broadcast, oscillator). Their `*-spec.json` siblings are the generator inputs.
+
+Runs both as pytest (`pytest test_primitives.py`) and as a self-reporting script
+(`python test_primitives.py`, via the registration list near the bottom + the __main__ block).
+No TypeDB required in either mode.
 """
 
 import sys
@@ -26,7 +42,8 @@ def make_system(name, primitive, agency_capacity=0.5):
     }
 
 
-def make_flow(fid, src, snk, substance="Energy", amount=10.0, usability="Resource"):
+def make_flow(fid, src, snk, substance="Energy", amount=10.0, usability="Resource",
+              observation=False):
     return {
         "bert_id": f"test:{fid}",
         "display_name": fid,
@@ -36,6 +53,7 @@ def make_flow(fid, src, snk, substance="Energy", amount=10.0, usability="Resourc
         "amount": amount,
         "source_id": f"test:{src}",
         "sink_id": f"test:{snk}",
+        "observation": observation,
     }
 
 
@@ -578,6 +596,887 @@ def test_h_conditioned_buffering():
         return False, str(e)
 
 
+def test_v2_combining_with_perturbation():
+    """Combining-v2 with perturbation at step 50 should show non-trivial dynamics."""
+    import os, math as _math
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "test-combining-v2.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={50: 2.0})
+    observations = []
+    for step in range(100):
+        m.step()
+        flow_obs, _ = m.collect_all_observations()
+        observations.append(sum(o["amount"] for o in flow_obs))
+
+    for obs in flow_obs:
+        assert not _math.isnan(obs["amount"]), f"NaN in flow {obs['interaction_id']}"
+
+    pre = observations[40:49]
+    post = observations[55:65]
+    pre_mean = sum(pre) / len(pre)
+    post_mean = sum(post) / len(post)
+    assert abs(post_mean - pre_mean) > 0.01, \
+        f"Perturbation had no effect: pre={pre_mean:.3f} post={post_mean:.3f}"
+    return True, f"OK (pre={pre_mean:.2f}, post={post_mean:.2f})"
+
+
+def test_v2_splitting_with_perturbation():
+    """Splitting-v2 with perturbation at step 50 should show non-trivial dynamics."""
+    import os, math as _math
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "test-splitting-v2.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={50: 2.0})
+    observations = []
+    for step in range(100):
+        m.step()
+        flow_obs, _ = m.collect_all_observations()
+        observations.append(sum(o["amount"] for o in flow_obs))
+
+    for obs in flow_obs:
+        assert not _math.isnan(obs["amount"]), f"NaN in flow {obs['interaction_id']}"
+
+    pre = observations[40:49]
+    post = observations[55:65]
+    pre_mean = sum(pre) / len(pre)
+    post_mean = sum(post) / len(post)
+    assert abs(post_mean - pre_mean) > 0.01, \
+        f"Perturbation had no effect: pre={pre_mean:.3f} post={post_mean:.3f}"
+    return True, f"OK (pre={pre_mean:.2f}, post={post_mean:.2f})"
+
+
+def test_duplicate_id_detection():
+    """json_bridge should raise ValueError on duplicate IDs."""
+    import os, tempfile, json as _json
+    from json_bridge import read_model
+
+    model = {
+        "systems": [
+            {"info": {"id": "S0", "level": 0, "name": "Root", "description": ""},
+             "boundary": {"info": {"id": "B0", "level": 0, "name": "", "description": ""},
+                          "porosity": 0, "perceptive_fuzziness": 0, "interfaces": []},
+             "sources": [], "sinks": [], "complexity": "Complex"},
+            {"info": {"id": "S0", "level": 0, "name": "Dupe", "description": ""},
+             "boundary": {"info": {"id": "B1", "level": 0, "name": "", "description": ""},
+                          "porosity": 0, "perceptive_fuzziness": 0, "interfaces": []},
+             "sources": [], "sinks": [], "complexity": "Complex"},
+        ],
+        "interactions": [],
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        _json.dump(model, f)
+        tmp = f.name
+    try:
+        read_model(tmp)
+        return False, "Should have raised ValueError for duplicate S0"
+    except ValueError as e:
+        if "Duplicate" in str(e):
+            return True, f"OK ({e})"
+        return False, f"Wrong error: {e}"
+    finally:
+        os.unlink(tmp)
+
+
+def test_combining_asymmetric_perturbation():
+    """Doubling ONE of two combining inputs should give 1.5x, not 2x."""
+    systems = [make_system("Combiner", "Combining")]
+    interactions = [
+        make_flow("A", "SrcA", "Combiner", "Energy", 4.0),
+        make_flow("B", "SrcB", "Combiner", "Energy", 4.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42, perturbations={})
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    pre_activity = agent.state.get("activity", 0)
+    assert abs(pre_activity - 8.0) < 0.1, f"Expected ~8.0, got {pre_activity}"
+    for f in agent.incoming_flows:
+        if "SrcA" in f.get("_source_id", ""):
+            f["amount"] = 8.0
+    m.step()
+    post_activity = agent.state.get("activity", 0)
+    ratio = post_activity / pre_activity if pre_activity else 0
+    assert 1.4 < ratio < 1.6, f"Expected ~1.5x ratio, got {ratio:.2f}x (pre={pre_activity}, post={post_activity})"
+    return True, f"OK (ratio={ratio:.2f}x, pre={pre_activity:.1f}, post={post_activity:.1f})"
+
+
+def test_modulating_bilinearity():
+    """Doubling BOTH inputs of Modulating should give 4x (bilinear), not 2x.
+    Baseline control 0.4 so the doubled control (0.8) stays inside the conservative
+    [0,1] gate — bilinearity holds while mass stays bounded by the primary."""
+    systems = [make_system("Modulator", "Modulating")]
+    interactions = [
+        make_flow("Primary", "SrcP", "Modulator", "Energy", 5.0),
+        make_flow("Control", "SrcC", "Modulator", "Message", 0.4),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    baseline = agent.state.get("activity", 0)
+    assert baseline > 0, f"Baseline activity should be >0, got {baseline}"
+    for f in agent.incoming_flows:
+        f["amount"] *= 2.0
+    m.step()
+    doubled = agent.state.get("activity", 0)
+    ratio = doubled / baseline if baseline else 0
+    assert 3.5 < ratio < 4.5, f"Expected ~4x (bilinear), got {ratio:.2f}x"
+    return True, f"OK (ratio={ratio:.2f}x, baseline={baseline:.1f}, doubled={doubled:.1f})"
+
+
+def test_amplifying():
+    """Amplifying adds metered power to a weak signal: out = gain*signal when power
+    is ample, but capped by available power (conservation — cannot amplify beyond the
+    power source). Mobus Fig. 3.19, distinct from Modulating (gates a flow)."""
+    # Ample power: gain (agency 0.5 -> 5.5) * signal 2.0 = 11.0, power 100 not binding
+    sys_a = [make_system("Amplifier", "Amplifying", agency_capacity=0.5)]
+    int_a = [
+        make_flow("signal", "SrcSig", "Amplifier", "Message", 2.0),
+        make_flow("power", "SrcPwr", "Amplifier", "Energy", 100.0),
+        make_flow("out", "Amplifier", "Snk", "Energy", usability="Product"),
+    ]
+    m = BertModel(pd.DataFrame(sys_a), pd.DataFrame(int_a), seed=42)
+    for _ in range(10):
+        m.step()
+    out_ample = list(m.agents)[0].state.get("activity", 0.0)
+    assert abs(out_ample - 11.0) < 0.5, f"Ample power: expect ~11 (5.5x2), got {out_ample:.2f}"
+
+    # Power-limited: same gain/signal but only 5.0 power -> output capped at 5.0
+    sys_b = [make_system("Amplifier", "Amplifying", agency_capacity=0.5)]
+    int_b = [
+        make_flow("signal", "SrcSig", "Amplifier", "Message", 2.0),
+        make_flow("power", "SrcPwr", "Amplifier", "Energy", 5.0),
+        make_flow("out", "Amplifier", "Snk", "Energy", usability="Product"),
+    ]
+    m2 = BertModel(pd.DataFrame(sys_b), pd.DataFrame(int_b), seed=42)
+    for _ in range(10):
+        m2.step()
+    out_limited = list(m2.agents)[0].state.get("activity", 0.0)
+    assert abs(out_limited - 5.0) < 0.5, f"Power-limited: output capped at power 5.0, got {out_limited:.2f}"
+    assert out_limited < out_ample, "Limited power must reduce output below the ample case"
+    return True, f"OK (ample={out_ample:.1f}=5.5x2, power-limited={out_limited:.1f} capped at source)"
+
+
+def test_inverting_direction():
+    """Increasing Message input to Inverter should DECREASE output."""
+    systems = [make_system("Inverter", "Inverting")]
+    interactions = [
+        make_flow("In", "SrcMsg", "Inverter", "Message", 0.3),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    out_low = agent.state.get("activity", 0)
+    assert abs(out_low - 0.7) < 0.1, f"Expected ~0.7 (1.0-0.3), got {out_low}"
+    for f in agent.incoming_flows:
+        f["amount"] = 0.6
+    m.step()
+    out_high = agent.state.get("activity", 0)
+    assert out_high < out_low, f"Output should decrease: was {out_low}, now {out_high}"
+    return True, f"OK (input 0.3→output {out_low:.2f}, input 0.6→output {out_high:.2f})"
+
+
+def test_buffering_temporal_lag():
+    """Buffer should show lag: output rises gradually, not instantly with input."""
+    systems = [make_system("Buffer", "Buffering")]
+    interactions = [
+        make_flow("In", "Src", "Buffer", "Material", 10.0),
+        make_flow("Out", "Buffer", "Snk", "Material", 3.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    outputs = []
+    storages = []
+    for _ in range(20):
+        m.step()
+        agent = list(m.agents)[0]
+        outputs.append(agent.state.get("activity", 0))
+        storages.append(agent.state.get("storage", 0))
+    assert storages[-1] > storages[0], f"Storage should accumulate: start={storages[0]:.1f} end={storages[-1]:.1f}"
+    assert outputs[-1] <= 5.0, f"Output should be near demand (3), not near input (10): got {outputs[-1]:.1f}"
+    return True, f"OK (storage grew {storages[0]:.1f}→{storages[-1]:.1f}, output stable at {outputs[-1]:.1f})"
+
+
+def test_copying_non_conservation():
+    """Copying should violate conservation: sum of outputs > input."""
+    systems = [make_system("Copier", "Copying")]
+    interactions = [
+        make_flow("In", "Src", "Copier", "Message", 6.0),
+        make_flow("OutA", "Copier", "SnkA", "Message", 0.0, "Product"),
+        make_flow("OutB", "Copier", "SnkB", "Message", 0.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    total_out = sum(f.get("amount", 0) for f in agent.outgoing_flows)
+    total_in = sum(f.get("amount", 0) for f in agent.incoming_flows)
+    assert total_out > total_in, f"Copying should violate conservation: out={total_out} should > in={total_in}"
+    return True, f"OK (in={total_in:.1f}, out={total_out:.1f}, ratio={total_out/total_in:.1f}x — non-conservative)"
+
+
+def test_impeding_backpressure():
+    """Impeding should create measurable back_pressure state."""
+    systems = [make_system("Resistor", "Impeding", agency_capacity=0.3)]
+    interactions = [
+        make_flow("In", "Src", "Resistor", "Material", 10.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(10):
+        m.step()
+    agent = list(m.agents)[0]
+    bp = agent.state.get("back_pressure", 0)
+    activity = agent.state.get("activity", 0)
+    assert bp > 0, f"back_pressure should be >0, got {bp}"
+    assert abs(activity + bp - 10.0) < 0.1, f"activity + back_pressure should = input: {activity} + {bp} != 10.0"
+    return True, f"OK (activity={activity:.1f}, back_pressure={bp:.1f}, sum={activity+bp:.1f})"
+
+
+def test_composition_negative_feedback():
+    """Sensing + Inverting + Modulating in a loop should produce negative feedback:
+    system converges to a fixed point where output = input / (1 + input*k)."""
+    sensor = make_system("Sensor", "Sensing", agency_capacity=0.05)
+    inverter = make_system("Inverter", "Inverting", agency_capacity=0.5)
+    modulator = make_system("Modulator", "Modulating", agency_capacity=0.5)
+    systems = [sensor, inverter, modulator]
+    interactions = [
+        make_flow("PhysIn", "Source", "Modulator", "Energy", 10.0),
+        make_flow("ModToSensor", "Modulator", "Sensor", "Energy", 0.0),
+        make_flow("SenseSignal", "Sensor", "Inverter", "Message", 0.0),
+        make_flow("ErrorToMod", "Inverter", "Modulator", "Message", 0.0),
+        make_flow("Output", "Modulator", "Sink", "Energy", 0.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    outputs = []
+    for step in range(40):
+        m.step()
+        mod = [a for a in m.agents if a.display_name == "Modulator"][0]
+        outputs.append(mod.state.get("activity", 0))
+    late = outputs[30:40]
+    late_mean = sum(late) / len(late)
+    late_std = (sum((x - late_mean)**2 for x in late) / len(late)) ** 0.5
+    assert late_std < 1.0, f"Should stabilize: std={late_std:.2f}, values={[f'{x:.1f}' for x in late]}"
+    assert late_mean > 0, f"Should have positive output, got {late_mean:.2f}"
+    return True, f"OK (converged to ~{late_mean:.2f}, std={late_std:.3f})"
+
+
+def test_composition_sensing_copying_fanout():
+    """Sensing → Copying → two Modulators: one stimulus, two parallel control effects."""
+    sensor = make_system("Sensor", "Sensing", agency_capacity=0.8)
+    copier = make_system("Copier", "Copying", agency_capacity=0.5)
+    mod_a = make_system("ModA", "Modulating", agency_capacity=0.5)
+    mod_b = make_system("ModB", "Modulating", agency_capacity=0.5)
+    systems = [sensor, copier, mod_a, mod_b]
+    interactions = [
+        make_flow("PhysStimulus", "Source", "Sensor", "Energy", 5.0),
+        make_flow("Signal", "Sensor", "Copier", "Message", 0.0),
+        make_flow("CopyA", "Copier", "ModA", "Message", 0.0),
+        make_flow("CopyB", "Copier", "ModB", "Message", 0.0),
+        make_flow("PrimaryA", "SourceA", "ModA", "Energy", 8.0),
+        make_flow("PrimaryB", "SourceB", "ModB", "Energy", 8.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    for _ in range(20):
+        m.step()
+    mod_a_agent = [a for a in m.agents if a.display_name == "ModA"][0]
+    mod_b_agent = [a for a in m.agents if a.display_name == "ModB"][0]
+    act_a = mod_a_agent.state.get("activity", 0)
+    act_b = mod_b_agent.state.get("activity", 0)
+    assert act_a > 0, f"ModA should have activity, got {act_a}"
+    assert act_b > 0, f"ModB should have activity, got {act_b}"
+    assert abs(act_a - act_b) < 0.1, f"Both modulators should track same signal: A={act_a:.2f} B={act_b:.2f}"
+    return True, f"OK (ModA={act_a:.2f}, ModB={act_b:.2f} — parallel control from one stimulus)"
+
+
+def test_composition_buffering_smooths_perturbation():
+    """Buffer downstream of a direct input shock should smooth the transient."""
+    buffer = make_system("Tank", "Buffering", agency_capacity=0.5)
+    systems = [buffer]
+    interactions = [
+        make_flow("In", "Source", "Tank", "Material", 5.0),
+        make_flow("Out", "Tank", "Sink", "Material", 2.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    storages = []
+    outputs = []
+    for step in range(60):
+        m.step()
+        tank = [a for a in m.agents if a.display_name == "Tank"][0]
+        storages.append(tank.state.get("storage", 0))
+        outputs.append(tank.state.get("activity", 0))
+        if step == 29:
+            for f in tank.incoming_flows:
+                f["amount"] = 15.0
+    storage_pre = storages[29]
+    storage_post = storages[40]
+    output_std = (sum((x - sum(outputs[30:40])/10)**2 for x in outputs[30:40]) / 10) ** 0.5
+    assert storage_post > storage_pre, \
+        f"Storage should absorb shock: pre={storage_pre:.1f} post={storage_post:.1f}"
+    assert output_std < 2.0, f"Output should stay smooth despite input shock: std={output_std:.2f}"
+    return True, f"OK (storage absorbed shock: {storage_pre:.0f}→{storage_post:.0f}, output std={output_std:.2f})"
+
+
+def test_composition_oscillator():
+    """Buffering integrator inside a negative-feedback loop produces sustained oscillation.
+    Source -> Modulator -> Tank(Buffer) -> Sensor -> Inverter -> (control) -> Modulator.
+    The Buffer's integration adds the phase lag that turns the *converging* negative-feedback
+    fixed point (cf. test_composition_negative_feedback) into a *bounded limit cycle*. The
+    Modulating [0,2] clamp and Inverting max(0, .) clamp bound it. Oscillation emerges purely
+    from primitive composition — no hand-coded oscillator."""
+    tank = make_system("Tank", "Buffering", agency_capacity=0.5)
+    sensor = make_system("Sensor", "Sensing", agency_capacity=0.2)
+    inverter = make_system("Inverter", "Inverting", agency_capacity=0.5)
+    modulator = make_system("Modulator", "Modulating", agency_capacity=1.0)
+    systems = [tank, sensor, inverter, modulator]
+    interactions = [
+        make_flow("In", "Source", "Modulator", "Energy", 10.0),
+        make_flow("ModToTank", "Modulator", "Tank", "Energy", 0.0),
+        make_flow("TankToSensor", "Tank", "Sensor", "Energy", 0.0),
+        make_flow("SenseSignal", "Sensor", "Inverter", "Message", 0.0),
+        make_flow("ErrorToMod", "Inverter", "Modulator", "Message", 0.0),
+        make_flow("Out", "Tank", "Sink", "Energy", 5.0, "Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    series = []
+    for _ in range(80):
+        m.step()
+        tank_agent = [a for a in m.agents if a.display_name == "Tank"][0]
+        series.append(tank_agent.state.get("activity", 0.0))
+    tail = series[30:]
+    turning_points = sum(
+        1 for i in range(1, len(tail) - 1)
+        if (tail[i] - tail[i - 1]) * (tail[i + 1] - tail[i]) < 0
+    )
+    amplitude = max(tail) - min(tail)
+    assert turning_points >= 6, \
+        f"Should sustain oscillation, got {turning_points} turning points: {[f'{x:.1f}' for x in tail[-12:]]}"
+    assert amplitude > 2.0, f"Oscillation should have meaningful amplitude, got {amplitude:.2f}"
+    assert max(series) < 50.0, f"Oscillation must stay bounded (limit cycle), peaked at {max(series):.1f}"
+    return True, f"OK (sustained limit cycle: {turning_points} turning points, amplitude {amplitude:.1f})"
+
+
+def test_anticipatory_conditioning():
+    """Anticipatory agent should adjust agency_capacity based on activity trend prediction."""
+    sys_data = {
+        "bert_id": "test:Anticipator", "display_name": "Anticipator",
+        "archetype": "Agent", "time_constant": "Second", "system_level": 1,
+        "complexity_kind": "Atomic", "agent_kind": "Anticipatory",
+        "agency_capacity": 0.5, "primitives": ["Propelling"],
+    }
+    interactions = [make_flow("In", "Src", "Anticipator", "Energy", 5.0)]
+    sys_df = pd.DataFrame([sys_data])
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    agent = list(m.agents)[0]
+    for step in range(15):
+        m.step()
+        if step == 7:
+            for f in agent.incoming_flows:
+                f["amount"] = 10.0
+    base_cap = agent._base_agency_capacity
+    pf = agent.state.get("_prediction_factor", 1.0)
+    assert pf != 1.0, f"Anticipatory agent should predict rising trend after input change, got pf={pf}"
+    return True, f"OK (prediction_factor={pf:.3f}, agency_cap={agent.agency_capacity:.3f})"
+
+
+def test_intentional_conditioning():
+    """Intentional agent should adjust effort based on goal-relative performance."""
+    sys_data = {
+        "bert_id": "test:Intentional", "display_name": "Intentional",
+        "archetype": "Agent", "time_constant": "Second", "system_level": 1,
+        "complexity_kind": "Atomic", "agent_kind": "Intentional",
+        "agency_capacity": 0.8, "primitives": ["Propelling"],
+    }
+    interactions = [make_flow("In", "Src", "Intentional", "Energy", 5.0)]
+    sys_df = pd.DataFrame([sys_data])
+    int_df = pd.DataFrame(interactions)
+    m = BertModel(sys_df, int_df, seed=42)
+    agent = list(m.agents)[0]
+    for step in range(15):
+        m.step()
+        if step == 7:
+            for f in agent.incoming_flows:
+                f["amount"] = 2.0
+    ef = agent.state.get("_effort_factor", 1.0)
+    assert ef != 1.0, f"Intentional agent should adjust effort after input drop, got ef={ef}"
+    return True, f"OK (effort_factor={ef:.3f}, agency_cap={agent.agency_capacity:.3f})"
+
+
+def test_regulated_buffer():
+    """Regulated buffer circuit: Buffering + Sensing + Inverting + Modulating compose into level control."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "regulated-buffer.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={100: 2.0})
+
+    storages = []
+    for _ in range(200):
+        m.step()
+        buf = [a for a in m.agents if a.display_name == "Buffer"][0]
+        storages.append(buf.state.get("storage", 0.0))
+
+    pre_std = (sum((x - sum(storages[50:90])/40)**2 for x in storages[50:90]) / 40) ** 0.5
+    assert storages[-1] > 0, f"Buffer should accumulate storage, got {storages[-1]:.2f}"
+    assert pre_std < storages[-1] * 0.5, \
+        f"Storage should be more stable than wild, std={pre_std:.2f} vs storage={storages[-1]:.2f}"
+    return True, f"OK (final storage={storages[-1]:.0f}, pre-std={pre_std:.2f})"
+
+
+def test_oscillator():
+    """Oscillator circuit (loadable model): same topology as the regulated buffer, but tuned
+    (higher sensor gain, larger demand) so the Buffer's integration lag turns the converging
+    fixed point into a sustained bounded limit cycle. Sister to test_composition_oscillator —
+    that one builds the loop in-code; this one proves the generated, GUI-loadable
+    oscillator.json reproduces the same periodic dynamics through the json_bridge path."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "oscillator.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42)
+
+    series = []
+    for _ in range(80):
+        m.step()
+        buf = [a for a in m.agents if a.display_name == "Buffer"][0]
+        series.append(buf.state.get("activity", 0.0))
+
+    tail = series[30:]
+    turning_points = sum(
+        1 for i in range(1, len(tail) - 1)
+        if (tail[i] - tail[i - 1]) * (tail[i + 1] - tail[i]) < 0
+    )
+    amplitude = max(tail) - min(tail)
+    assert turning_points >= 6, \
+        f"Loaded oscillator should sustain oscillation, got {turning_points}: {[f'{x:.1f}' for x in tail[-12:]]}"
+    assert amplitude > 2.0, f"Oscillation should have meaningful amplitude, got {amplitude:.2f}"
+    assert max(series) < 50.0, f"Oscillation must stay bounded, peaked at {max(series):.1f}"
+    return True, f"OK (loaded limit cycle: {turning_points} turning points, amplitude {amplitude:.1f})"
+
+
+def test_energy_chain():
+    """Energy processing chain: Combining + Propelling + Splitting. Conservation with efficiency loss."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "energy-chain.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={100: 2.0})
+
+    outputs = []
+    for _ in range(200):
+        m.step()
+        splitter = [a for a in m.agents if a.display_name == "Splitter"][0]
+        outputs.append(splitter.state.get("activity", 0.0))
+
+    pre = sum(outputs[50:90]) / 40
+    post = sum(outputs[150:200]) / 50
+    assert post > pre, f"Perturbation should increase output: pre={pre:.2f} post={post:.2f}"
+    propeller = [a for a in m.agents if a.display_name == "Propeller"][0]
+    assert propeller.agency_capacity == 0.7, "Propeller efficiency should be 0.7"
+    return True, f"OK (pre={pre:.2f}, post={post:.2f}, η=0.7)"
+
+
+def test_info_broadcast():
+    """Information broadcast: Sensing + Copying + 2x Modulating. One signal controls two processes."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "info-broadcast.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42)
+
+    for _ in range(50):
+        m.step()
+    modA = [a for a in m.agents if a.display_name == "Modulator A"][0]
+    modB = [a for a in m.agents if a.display_name == "Modulator B"][0]
+
+    diff = abs(modA.state.get("activity", 0) - modB.state.get("activity", 0))
+    assert diff < 0.01, f"Both modulators should track same signal, diff={diff:.4f}"
+    assert modA.state.get("activity", 0) > 0, "Modulators should have non-zero activity"
+    return True, f"OK (ModA={modA.state['activity']:.2f}, ModB={modB.state['activity']:.2f}, synced)"
+
+
+def test_error_sensing_circuit():
+    """Mobus Ch. 4 canonical circuit: 4 Markovian primitives compose into a thermostat."""
+    import os
+    from json_bridge import read_model
+
+    fpath = os.path.join(os.path.dirname(__file__),
+                         "..", "assets", "models", "local", "test-primitives",
+                         "error-sensing-circuit.json")
+    if not os.path.exists(fpath):
+        return True, "SKIP (file not found)"
+
+    systems_df, interactions_df = read_model(fpath)
+    m = BertModel(systems_df, interactions_df, seed=42, perturbations={100: 2.0})
+
+    outputs = []
+    for _ in range(200):
+        m.step()
+        combiner = [a for a in m.agents if a.display_name == "Combiner"][0]
+        outputs.append(combiner.state.get("activity", 0.0))
+
+    pre = outputs[50:90]
+    pre_mean = sum(pre) / len(pre)
+    pre_std = (sum((x - pre_mean) ** 2 for x in pre) / len(pre)) ** 0.5
+
+    post = outputs[150:200]
+    post_mean = sum(post) / len(post)
+    post_std = (sum((x - post_mean) ** 2 for x in post) / len(post)) ** 0.5
+
+    assert pre_std < 1.0, f"Should converge pre-perturbation, std={pre_std:.4f}"
+    assert post_std < 1.0, f"Should re-converge post-perturbation, std={post_std:.4f}"
+    assert post_mean > pre_mean, \
+        f"Post-perturbation setpoint should be higher (2x input): pre={pre_mean:.2f} post={post_mean:.2f}"
+    return True, f"OK (pre={pre_mean:.2f}±{pre_std:.2f}, post={post_mean:.2f}±{post_std:.2f}, regulation holds)"
+
+
+def test_system_level_history():
+    """BertModel.system_history should be populated and accessible from agents."""
+    systems = [make_system("Tank", "Buffering")]
+    interactions = [
+        make_flow("in", "Src", "Tank", substance="Energy", amount=10.0),
+        make_flow("out", "Tank", "Snk", substance="Energy", amount=3.0, usability="Product"),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    model = BertModel(sys_df, int_df, seed=42)
+
+    for _ in range(20):
+        model.step()
+
+    assert len(model.system_history) == 20, \
+        f"system_history should have 20 entries, got {len(model.system_history)}"
+    last = model.system_history[-1]
+    assert "mean_activity" in last, "system_history entry missing mean_activity"
+    assert "total_throughput" in last, "system_history entry missing total_throughput"
+    assert "tick" in last, "system_history entry missing tick"
+    assert last["tick"] == 20, f"last tick should be 20, got {last['tick']}"
+    agent = list(model.agents)[0]
+    assert hasattr(agent.model, "system_history"), \
+        "agent should be able to access model.system_history"
+    return True, f"OK ({len(model.system_history)} entries, last tick={last['tick']})"
+
+
+def test_markovian_primitives():
+    """Non-Buffering primitives must produce identical output regardless of history length."""
+    markovian = ["Sensing", "Impeding", "Modulating", "Propelling", "Amplifying"]
+    for prim_name in markovian:
+        systems = [make_system(prim_name, prim_name)]
+        if prim_name == "Modulating":
+            interactions = [
+                make_flow("primary", "Src", prim_name, substance="Energy", amount=10.0),
+                make_flow("control", "Ctrl", prim_name, substance="Message", amount=0.5),
+                make_flow("out", prim_name, "Snk", substance="Energy", usability="Product"),
+            ]
+        elif prim_name == "Amplifying":
+            interactions = [
+                make_flow("signal", "Src", prim_name, substance="Message", amount=2.0),
+                make_flow("power", "Pwr", prim_name, substance="Energy", amount=100.0),
+                make_flow("out", prim_name, "Snk", substance="Energy", usability="Product"),
+            ]
+        else:
+            interactions = [
+                make_flow("in", "Src", prim_name, substance="Energy", amount=10.0),
+                make_flow("out", prim_name, "Snk", substance="Energy", usability="Product"),
+            ]
+        sys_df = pd.DataFrame(systems)
+        int_df = pd.DataFrame(interactions)
+        m = BertModel(sys_df, int_df, seed=42)
+
+        for _ in range(5):
+            m.step()
+        activity_short = list(m.agents)[0].state.get("activity", 0.0)
+
+        m2 = BertModel(sys_df, int_df, seed=42)
+        for _ in range(50):
+            m2.step()
+        activity_long = list(m2.agents)[0].state.get("activity", 0.0)
+
+        assert abs(activity_short - activity_long) < 0.001, \
+            f"{prim_name} output differs with history length: short={activity_short:.4f} long={activity_long:.4f}"
+    return True, f"OK (all {len(markovian)} Markovian primitives produce identical output regardless of history)"
+
+
+# ---------------------------------------------------------------------------
+# Conservation engine (synchronous update mode + observation flows)
+# ---------------------------------------------------------------------------
+
+
+def test_observation_nondraining():
+    """An observation flow reads a stock's level without draining it. The probe
+    senses the frozen pre-tick level; the stock's storage is untouched by the read."""
+    systems = [
+        make_system("Stock", "Buffering"),
+        make_system("Probe", "Sensing", agency_capacity=1.0),
+    ]
+    interactions = [
+        make_flow("obs", "Stock", "Probe", substance="Energy", observation=True),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    model = BertModel(sys_df, int_df, seed=42, update_mode="synchronous")
+    agents = {a.bert_id: a for a in model.agents}
+    stock, probe = agents["test:Stock"], agents["test:Probe"]
+    stock.state["storage"] = 100.0
+
+    for _ in range(10):
+        model.step()
+
+    try:
+        assert abs(stock.state["storage"] - 100.0) < 1e-9, \
+            f"observation must not drain the stock, got {stock.state['storage']}"
+        assert abs(probe.state["signal"] - 100.0) < 1e-9, \
+            f"probe should sense level 100.0, got {probe.state['signal']}"
+        return True, f"OK (level held at {stock.state['storage']:.1f}, sensed {probe.state['signal']:.1f})"
+    except AssertionError as e:
+        return False, str(e)
+
+
+def test_conservation_closed_loop():
+    """Closed S->I->R transfer chain in synchronous mode: no external source or sink,
+    so total mass (storage + in-flight flow) must be invariant to machine epsilon, and
+    no conservative buffer may ever report a deficit. This is the exactness gate."""
+    systems = [
+        make_system("S", "Buffering"),
+        make_system("I", "Buffering"),
+        make_system("R", "Buffering"),
+    ]
+    interactions = [
+        make_flow("s_to_i", "S", "I", substance="Energy", amount=5.0),
+        make_flow("i_to_r", "I", "R", substance="Energy", amount=5.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    # perturbations={} — perturbations inject/remove external mass, incompatible with
+    # the closed-loop invariant.
+    model = BertModel(sys_df, int_df, seed=42, update_mode="synchronous", perturbations={})
+    agents = {a.bert_id: a for a in model.agents}
+    agents["test:S"].state["storage"] = 100.0
+
+    m0 = model.total_conserved_mass()
+    try:
+        for t in range(60):
+            model.step()
+            drift = abs(model.total_conserved_mass() - m0)
+            assert drift < 1e-9, f"mass drift {drift:.3e} at tick {t + 1} (epsilon gate)"
+            for a in model.agents:
+                deficit = a.state.get("conservation_deficit", 0.0)
+                assert deficit == 0.0, \
+                    f"{a.bert_id} conservation_deficit={deficit} at tick {t + 1}"
+        final = {bid: round(a.state["storage"], 3) for bid, a in agents.items()}
+        return True, f"OK (mass {m0:.1f} exact over 60 ticks; final storage {final})"
+    except AssertionError as e:
+        return False, str(e)
+
+
+def test_sir_epidemic():
+    """SIR epidemic as a conservative primitive composition (synchronous mode).
+
+    S, I, R are Buffering stocks. An ISensor reads I's level through an OBSERVATION
+    flow (non-draining) and feeds a Message control into S; S's regulated release is
+    the infection transfer S->I (gated by sensed I, drawn from S). I releases to R at
+    a constant recovery rate. Emergent epidemic curve from pure wiring, mass-exact.
+
+    Onset: the sensor->control->infection path is two synchronous ticks, so I shows a
+    brief onset transient before the outbreak; the curve is assessed after it."""
+    k = 0.1          # sensor gain (beta proxy)
+    base_S = 10.0    # max infection transfer rate (S's _base_demand)
+    base_I = 1.0     # recovery rate (I's _base_demand)
+    systems = [
+        make_system("S", "Buffering"),
+        make_system("I", "Buffering"),
+        make_system("R", "Buffering"),
+        make_system("ISensor", "Sensing", agency_capacity=k),
+    ]
+    interactions = [
+        make_flow("infection", "S", "I", substance="Energy", amount=base_S),
+        make_flow("observe_I", "I", "ISensor", substance="Energy", amount=0.0, observation=True),
+        make_flow("control", "ISensor", "S", substance="Message", amount=0.0),
+        make_flow("recovery", "I", "R", substance="Energy", amount=base_I),
+    ]
+    model = BertModel(pd.DataFrame(systems), pd.DataFrame(interactions),
+                      seed=42, update_mode="synchronous", perturbations={})
+    agents = {a.bert_id: a for a in model.agents}
+    agents["test:S"].state["storage"] = 100.0
+    agents["test:I"].state["storage"] = 5.0
+    agents["test:R"].state["storage"] = 0.0
+
+    m0 = model.total_conserved_mass()
+    S, I, R = [], [], []
+    try:
+        for t in range(160):
+            model.step()
+            assert abs(model.total_conserved_mass() - m0) < 1e-9, \
+                f"mass not conserved at tick {t + 1}"
+            S.append(agents["test:S"].state["storage"])
+            I.append(agents["test:I"].state["storage"])
+            R.append(agents["test:R"].state["storage"])
+
+        assert all(S[i] >= S[i + 1] - 1e-9 for i in range(len(S) - 1)), "S must be monotone decreasing"
+        assert all(R[i] <= R[i + 1] + 1e-9 for i in range(len(R) - 1)), "R must be monotone increasing"
+
+        onset = 2  # two-tick synchronous signal delay
+        series = I[onset:]
+        peak = max(series)
+        pk = series.index(peak)
+        assert peak > 10 * 5.0, f"no clear outbreak, peak I={peak:.1f}"
+        assert 0 < pk < len(series) - 2, f"peak not interior (idx {pk})"
+        assert all(series[i] <= series[i + 1] + 1e-9 for i in range(pk)), "I must rise to a single peak"
+        assert all(series[i] >= series[i + 1] - 1e-9 for i in range(pk, len(series) - 1)), \
+            "I must decline after the peak"
+        return True, (f"OK (mass {m0:.0f} exact; I peak {peak:.0f} at tick {pk + onset + 1}, "
+                      f"S {S[0]:.0f}->{S[-1]:.0f}, R {R[0]:.0f}->{R[-1]:.0f})")
+    except AssertionError as e:
+        return False, str(e)
+
+
+def test_open_sir():
+    """OPEN counterpart to test_sir_epidemic: identical S->I->R topology, but Recovered
+    drains to an external Mortality sink. Mass crosses the boundary, so internal mass is
+    NOT conserved — it obeys the exact open-system balance internal(t) = internal(0) -
+    cumulative deaths. This is the open/closed contrast: closed -> total invariant;
+    open -> internal change exactly equals net boundary flux."""
+    systems = [
+        make_system("S", "Buffering"),
+        make_system("I", "Buffering"),
+        make_system("R", "Buffering"),
+        make_system("ISensor", "Sensing", agency_capacity=0.1),
+    ]
+    interactions = [
+        make_flow("infection", "S", "I", substance="Energy", amount=10.0),
+        make_flow("observe_I", "I", "ISensor", substance="Energy", amount=0.0, observation=True),
+        make_flow("control", "ISensor", "S", substance="Message", amount=0.0),
+        make_flow("recovery", "I", "R", substance="Energy", amount=1.0),
+        # boundary outflow: Recovered -> external Mortality (sink is not an agent)
+        make_flow("death", "R", "Mortality", substance="Energy", amount=0.5, usability="Waste"),
+    ]
+    model = BertModel(pd.DataFrame(systems), pd.DataFrame(interactions),
+                      seed=42, update_mode="synchronous", perturbations={})
+    agents = {a.bert_id: a for a in model.agents}
+    agents["test:S"].state["storage"] = 100.0
+    agents["test:I"].state["storage"] = 5.0
+
+    def out_amount(fid):
+        for a in model.agents:
+            for f in a.outgoing_flows:
+                if f["bert_id"] == f"test:{fid}":
+                    return f.get("amount", 0.0)
+        return 0.0
+
+    def internal_mass():  # storage + internal (agent<->agent) in-flight; excludes boundary death flow
+        s = sum(a.state.get("storage", 0.0) for a in model.agents)
+        return s + out_amount("infection") + out_amount("recovery")
+
+    im0 = internal_mass()
+    cum_deaths = 0.0
+    worst_balance = 0.0
+    I = []
+    try:
+        for _ in range(200):
+            model.step()
+            cum_deaths += out_amount("death")
+            worst_balance = max(worst_balance, abs(internal_mass() - (im0 - cum_deaths)))
+            I.append(agents["test:I"].state["storage"])
+
+        assert worst_balance < 1e-9, f"open-system balance violated by {worst_balance:.2e}"
+        assert cum_deaths > 0, "no mass left via the boundary — not actually open"
+        assert internal_mass() < im0 - 1e-9, "internal mass should decrease (mass exits)"
+        peak = max(I)
+        assert peak > 10 * 5.0 and I[-1] < peak, "expected an epidemic peak then decline"
+        return True, (f"OK (open: internal {im0:.0f}->{internal_mass():.0f}, "
+                      f"{cum_deaths:.0f} exited as deaths, balance exact to {worst_balance:.0e})")
+    except AssertionError as e:
+        return False, str(e)
+
+
+def test_openness_classifier():
+    """classify_openness() distinguishes closed (no boundary-crossing mass flow) from
+    open (mass flow to/from an external entity) — structurally, without simulating."""
+    base = [
+        make_system("S", "Buffering"), make_system("I", "Buffering"),
+        make_system("R", "Buffering"), make_system("ISensor", "Sensing", agency_capacity=0.1),
+    ]
+    closed_ix = [
+        make_flow("infection", "S", "I", substance="Energy", amount=10.0),
+        make_flow("observe_I", "I", "ISensor", substance="Energy", amount=0.0, observation=True),
+        make_flow("control", "ISensor", "S", substance="Message", amount=0.0),
+        make_flow("recovery", "I", "R", substance="Energy", amount=1.0),
+    ]
+    open_ix = closed_ix + [make_flow("death", "R", "Mortality", substance="Energy", amount=0.5)]
+
+    closed = BertModel(pd.DataFrame(base), pd.DataFrame(closed_ix), seed=42,
+                       update_mode="synchronous").classify_openness()
+    opened = BertModel(pd.DataFrame(base), pd.DataFrame(open_ix), seed=42,
+                       update_mode="synchronous").classify_openness()
+    try:
+        assert closed["class"] == "closed", f"closed SIR misclassified: {closed}"
+        assert not closed["boundary_outflow_sinks"], "closed SIR should have no boundary sinks"
+        assert opened["class"] == "open", f"open SIR misclassified: {opened}"
+        assert "test:Mortality" in opened["boundary_outflow_sinks"], \
+            f"open SIR should name Mortality as a boundary sink: {opened}"
+        # the observation Energy tap (I->ISensor) must NOT make the closed model open
+        return True, f"OK (closed -> {closed['class']}, open -> {opened['class']} via {opened['boundary_outflow_sinks']})"
+    except AssertionError as e:
+        return False, str(e)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -604,6 +1503,34 @@ ALL_TESTS = [
     ("Combining Ignores Message", test_combining_ignores_message),
     ("Inverting Ignores Physical", test_inverting_ignores_physical),
     ("H-Conditioned Buffering", test_h_conditioned_buffering),
+    ("V2 Combining With Perturbation", test_v2_combining_with_perturbation),
+    ("V2 Splitting With Perturbation", test_v2_splitting_with_perturbation),
+    ("Duplicate ID Detection", test_duplicate_id_detection),
+    ("Combining Asymmetric Perturbation", test_combining_asymmetric_perturbation),
+    ("Modulating Bilinearity", test_modulating_bilinearity),
+    ("Amplifying Metered Power", test_amplifying),
+    ("Inverting Direction", test_inverting_direction),
+    ("Buffering Temporal Lag", test_buffering_temporal_lag),
+    ("Copying Non-Conservation", test_copying_non_conservation),
+    ("Impeding Backpressure", test_impeding_backpressure),
+    ("Composition: Negative Feedback", test_composition_negative_feedback),
+    ("Composition: Sensing→Copying Fanout", test_composition_sensing_copying_fanout),
+    ("Composition: Buffer Smooths Perturbation", test_composition_buffering_smooths_perturbation),
+    ("Composition: Oscillator (limit cycle)", test_composition_oscillator),
+    ("Anticipatory H-Conditioning", test_anticipatory_conditioning),
+    ("Intentional H-Conditioning", test_intentional_conditioning),
+    ("Regulated Buffer Circuit", test_regulated_buffer),
+    ("Oscillator Circuit (loaded)", test_oscillator),
+    ("Energy Processing Chain", test_energy_chain),
+    ("Information Broadcast", test_info_broadcast),
+    ("Error-Sensing Circuit", test_error_sensing_circuit),
+    ("System-Level History", test_system_level_history),
+    ("Markovian Primitives", test_markovian_primitives),
+    ("Observation Non-Draining", test_observation_nondraining),
+    ("Conservation Closed Loop (exact)", test_conservation_closed_loop),
+    ("SIR Epidemic (conservative composition)", test_sir_epidemic),
+    ("Open SIR (boundary flux, not conserved)", test_open_sir),
+    ("Openness Classifier (open vs closed)", test_openness_classifier),
 ]
 
 

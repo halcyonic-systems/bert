@@ -5,8 +5,8 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
 mod chat_service;
-pub mod generator;
-pub mod intermediate;
+pub use bert_generator_core::generator;
+pub use bert_generator_core::intermediate;
 mod simulation;
 mod typedb_reader;
 
@@ -75,6 +75,61 @@ fn load_file(_app_handle: AppHandle, pb: PathBuf) -> Result<FileData, String> {
     })
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct LocalModelInfo {
+    name: String,
+    path: String,
+    modified: u64,
+}
+
+#[tauri::command]
+async fn check_ollama_status() -> bool {
+    match reqwest::Client::new()
+        .get("http://localhost:11434/api/tags")
+        .timeout(std::time::Duration::from_secs(2))
+        .send()
+        .await
+    {
+        Ok(resp) => resp.status().is_success(),
+        Err(_) => false,
+    }
+}
+
+#[tauri::command]
+fn list_local_models() -> Vec<LocalModelInfo> {
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    let local_dir = project_root.join("assets/models/local");
+    let mut models = Vec::new();
+
+    if let Ok(entries) = std::fs::read_dir(&local_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("json") {
+                let name = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+                    .replace('_', " ");
+                let modified = entry
+                    .metadata()
+                    .ok()
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0);
+                models.push(LocalModelInfo {
+                    name,
+                    path: path.to_str().unwrap_or("").to_string(),
+                    modified,
+                });
+            }
+        }
+    }
+
+    models.sort_by(|a, b| b.modified.cmp(&a.modified));
+    models
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -86,6 +141,8 @@ pub fn run() {
             save_with_dialog,
             pick_file,
             load_file,
+            check_ollama_status,
+            list_local_models,
             chat_service::chat_with_model,
             chat_service::generate_model_from_conversation,
             simulation::launch_simulation,

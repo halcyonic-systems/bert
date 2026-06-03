@@ -39,8 +39,16 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             "agent_kind": agent["kind"] if agent else None,
             "agency_capacity": agent["agency_capacity"] if agent else None,
             "primitives": agent["primitives"] if agent and "primitives" in agent else [],
+            # Schema-supported initial conditions (AgentModel.initial_state), e.g.
+            # {"storage": 100.0} to seed a stock. Applied after _init_state in agents.py.
+            "initial_state": agent.get("initial_state", {}) if agent else {},
         })
     systems_df = pd.DataFrame(sys_rows) if sys_rows else pd.DataFrame()
+
+    if not systems_df.empty:
+        dupes = systems_df[systems_df["bert_id"].duplicated(keep=False)]
+        if not dupes.empty:
+            raise ValueError(f"Duplicate system IDs: {dupes['bert_id'].unique().tolist()}")
 
     port_map = _build_port_map(model)
 
@@ -58,6 +66,15 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
         if source_iface and source_iface in port_map:
             source_id = port_map[source_iface]
 
+        # Observation flag rides on interaction.parameters as a
+        # {name:"observation", value:"true"} entry (the WorldModel Parameter shape).
+        # Carrying it here keeps the engine change Python-only — no Rust enum / schema
+        # touch — since parameters already round-trip through the Rust loader.
+        observation = any(
+            p.get("name") == "observation" and str(p.get("value", "")).lower() == "true"
+            for p in ix.get("parameters", [])
+        )
+
         ix_rows.append({
             "bert_id": info["id"],
             "display_name": info["name"],
@@ -67,7 +84,13 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             "amount": float(ix.get("amount", "0")),
             "source_id": source_id,
             "sink_id": sink_id,
+            "observation": observation,
         })
     interactions_df = pd.DataFrame(ix_rows) if ix_rows else pd.DataFrame()
+
+    if not interactions_df.empty:
+        dupes = interactions_df[interactions_df["bert_id"].duplicated(keep=False)]
+        if not dupes.empty:
+            raise ValueError(f"Duplicate interaction IDs: {dupes['bert_id'].unique().tolist()}")
 
     return systems_df, interactions_df

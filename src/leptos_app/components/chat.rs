@@ -65,6 +65,8 @@ struct GenerateArgs {
 #[derive(Deserialize, Clone, Debug)]
 struct GenerateResponse {
     json_data: String,
+    #[serde(default)]
+    repairs: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -149,6 +151,9 @@ pub fn ChatPanel(
                     "generate_model_from_conversation", &args,
                 ).await {
                     Ok(resp) => {
+                        if !resp.repairs.is_empty() {
+                            web_sys::console::log_1(&format!("Model repairs: {:?}", resp.repairs).into());
+                        }
                         on_model_generated.run(resp.json_data.into_bytes());
                         let rid = next_id.get_untracked();
                         set_next_id.set(rid + 1);
@@ -286,6 +291,9 @@ pub fn ChatPanel(
             .await
             {
                 Ok(resp) => {
+                    if !resp.repairs.is_empty() {
+                        web_sys::console::log_1(&format!("Model repairs: {:?}", resp.repairs).into());
+                    }
                     on_model_generated.run(resp.json_data.into_bytes());
                 }
                 Err(e) => {

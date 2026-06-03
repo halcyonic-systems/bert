@@ -1,0 +1,28 @@
+{
+  "system": {
+    "name": "Open SIR Epidemic",
+    "description": "The OPEN counterpart to sir-epidemic: identical compartment topology (S->I->R with non-draining I-Sensor control), but Recovered drains to an external Mortality sink across the system boundary. Because mass crosses the boundary, the model is NOT closed: internal mass (compartment storage + internal in-flight) is no longer invariant, but obeys the exact open-system balance internal(t) = internal(0) - cumulative deaths. Contrast with sir-epidemic.json (closed, total mass conserved to machine epsilon). Demonstrates BERT reasoning about open vs. closed systems. Synchronous update mode; seed storages via initial_state (S=100, I=5, R=0)."
+  },
+  "sources": [],
+  "sinks": [
+    {"name": "Mortality", "description": "External sink: recovered individuals exit the population (death). The boundary outflow that makes this system open."}
+  ],
+  "subsystems": [
+    {"name": "Susceptible", "description": "Susceptible population stock; drained by infection", "archetype": "Agent", "primitives": ["Buffering"], "initial_state": {"storage": 100.0}},
+    {"name": "Infected", "description": "Infected population stock; gains from infection, loses to recovery", "archetype": "Agent", "primitives": ["Buffering"], "initial_state": {"storage": 5.0}},
+    {"name": "Recovered", "description": "Recovered population stock; gains from recovery, drains across the boundary to Mortality", "archetype": "Agent", "primitives": ["Buffering"], "initial_state": {"storage": 0.0}},
+    {"name": "I-Sensor", "description": "Senses the Infected level (non-draining) and emits the infection-rate control signal", "archetype": "Agent", "primitives": ["Sensing"], "agency_capacity": 0.1}
+  ],
+  "routing_table": [
+    {"interface": "Mortality Outflow", "type": "Export", "connected_to": "Mortality", "has_processor": true, "target_subsystem": "Recovered"}
+  ],
+  "external_flows": [
+    {"name": "Death", "interface": "Mortality Outflow", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Waste", "amount": 0.5}
+  ],
+  "internal_flows": [
+    {"name": "Infection", "source": "Susceptible", "sink": "Infected", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource", "amount": 10},
+    {"name": "Observe Infected", "source": "Infected", "sink": "I-Sensor", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource", "amount": 0, "parameters": [{"name": "observation", "value": "true", "unit": ""}]},
+    {"name": "Infection Control", "source": "I-Sensor", "sink": "Susceptible", "substance": {"type": "Message", "sub_type": "Signal"}, "usability": "Resource", "amount": 0},
+    {"name": "Recovery", "source": "Infected", "sink": "Recovered", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource", "amount": 1}
+  ]
+}

@@ -1,0 +1,499 @@
+{
+  "environment": {
+    "info": {
+      "description": "",
+      "id": "E-1",
+      "level": -1,
+      "name": ""
+    },
+    "sinks": [
+      {
+        "equivalence": "",
+        "info": {
+          "description": "External sink: recovered individuals exit the population (death). The boundary outflow that makes this system open.",
+          "id": "Snk-1.0",
+          "level": -1,
+          "name": "Mortality"
+        },
+        "is_same_as_id": null,
+        "model": "",
+        "transform": {
+          "rotation": 0.0,
+          "translation": [
+            520.0,
+            0.0
+          ]
+        },
+        "type": "Sink"
+      }
+    ],
+    "sources": []
+  },
+  "hidden_entities": [],
+  "interactions": [
+    {
+      "amount": "0.5",
+      "info": {
+        "description": "",
+        "id": "F-1.0",
+        "level": -1,
+        "name": "Death"
+      },
+      "parameters": [],
+      "sink": "Snk-1.0",
+      "sink_interface": null,
+      "source": "C0.50",
+      "source_interface": "I0.50",
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Waste"
+    },
+    {
+      "amount": "0.5",
+      "endpoint_offset": {
+        "end_angle": 3.141592653589793,
+        "start_angle": 0.0
+      },
+      "info": {
+        "description": "Routes outgoing flow from Recovered to Mortality Outflow",
+        "id": "F0.0",
+        "level": 1,
+        "name": "Mortality Outflow routing"
+      },
+      "parameters": [],
+      "sink": "C0.50",
+      "sink_interface": null,
+      "source": "C0.2",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "10",
+      "endpoint_offset": {
+        "end_angle": -0.7853981633974483,
+        "start_angle": 2.356194490192345
+      },
+      "info": {
+        "description": "",
+        "id": "F0.1",
+        "level": 1,
+        "name": "Infection"
+      },
+      "parameters": [],
+      "sink": "C0.1",
+      "sink_interface": null,
+      "source": "C0.0",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "0",
+      "endpoint_offset": {
+        "end_angle": -2.356194490192345,
+        "start_angle": 0.7853981633974483
+      },
+      "info": {
+        "description": "",
+        "id": "F0.2",
+        "level": 1,
+        "name": "Observe Infected"
+      },
+      "parameters": [
+        {
+          "name": "observation",
+          "unit": "",
+          "value": "true"
+        }
+      ],
+      "sink": "C0.3",
+      "sink_interface": null,
+      "source": "C0.1",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "0",
+      "endpoint_offset": {
+        "end_angle": 1.5707963267948966,
+        "start_angle": -1.5707963267948966
+      },
+      "info": {
+        "description": "",
+        "id": "F0.3",
+        "level": 1,
+        "name": "Infection Control"
+      },
+      "parameters": [],
+      "sink": "C0.0",
+      "sink_interface": null,
+      "source": "C0.3",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Signal",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
+      "amount": "1",
+      "endpoint_offset": {
+        "end_angle": 3.141592653589793,
+        "start_angle": 0.0
+      },
+      "info": {
+        "description": "",
+        "id": "F0.4",
+        "level": 1,
+        "name": "Recovery"
+      },
+      "parameters": [],
+      "sink": "C0.2",
+      "sink_interface": null,
+      "source": "C0.1",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    }
+  ],
+  "systems": [
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0",
+          "level": 0,
+          "name": ""
+        },
+        "interfaces": [
+          {
+            "angle": 0.0,
+            "exports_to": [
+              "Snk-1.0"
+            ],
+            "info": {
+              "description": "",
+              "id": "I0.50",
+              "level": 1,
+              "name": "Mortality Outflow"
+            },
+            "protocol": "",
+            "receives_from": [],
+            "type": "Export"
+          }
+        ],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": true
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "The OPEN counterpart to sir-epidemic: identical compartment topology (S->I->R with non-draining I-Sensor control), but Recovered drains to an external Mortality sink across the system boundary. Because mass crosses the boundary, the model is NOT closed: internal mass (compartment storage + internal in-flight) is no longer invariant, but obeys the exact open-system balance internal(t) = internal(0) - cumulative deaths. Contrast with sir-epidemic.json (closed, total mass conserved to machine epsilon). Demonstrates BERT reasoning about open vs. closed systems. Synchronous update mode; seed storages via initial_state (S=100, I=5, R=0).",
+        "id": "S0",
+        "level": 0,
+        "name": "Open SIR Epidemic"
+      },
+      "member_autonomy": 1.0,
+      "parent": "E-1",
+      "radius": 300.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          0.0
+        ]
+      },
+      "transformation": ""
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.0",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Susceptible population stock; drained by infection",
+        "id": "C0.0",
+        "level": 1,
+        "name": "Susceptible"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          -160.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ],
+        "initial_state": {
+          "storage": 100.0
+        }
+      }
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.1",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Infected population stock; gains from infection, loses to recovery",
+        "id": "C0.1",
+        "level": 1,
+        "name": "Infected"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          -160.0,
+          0.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ],
+        "initial_state": {
+          "storage": 5.0
+        }
+      }
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.2",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Recovered population stock; gains from recovery, drains across the boundary to Mortality",
+        "id": "C0.2",
+        "level": 1,
+        "name": "Recovered"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          160.0,
+          0.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ],
+        "initial_state": {
+          "storage": 0.0
+        }
+      }
+    },
+    {
+      "archetype": "Agent",
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.3",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": null,
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Senses the Infected level (non-draining) and emits the infection-rate control signal",
+        "id": "C0.3",
+        "level": 1,
+        "name": "I-Sensor"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 42.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          0.0,
+          160.0
+        ]
+      },
+      "transformation": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.1,
+        "primitives": [
+          "Sensing"
+        ]
+      }
+    },
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.50",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": "I0.50",
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Mediates outgoing flow at the Mortality Outflow interface",
+        "id": "C0.50",
+        "level": 1,
+        "name": "Mortality Outflow"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 12.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          -1.72,
+          0.0
+        ]
+      },
+      "transformation": ""
+    }
+  ],
+  "version": 1
+}

@@ -5,7 +5,7 @@
 
 A visual toolkit for modeling systems as flows of energy, material, and information across boundaries. Built on the systems science framework of [George Mobus](https://faculty.washington.edu/gmobus/).
 
-[Try it](https://bert.systems) · [Docs](https://bert.gitbook.io) · [Download](https://github.com/halcyonic-systems/bert/releases)
+[Try it](https://bert.systems) · [Docs](docs/README.md) · [Download](https://github.com/halcyonic-systems/bert/releases)
 
 ![BERT Screenshot](assets/screenshot.png)
 
@@ -57,7 +57,7 @@ For the formal schema, see the [Schema Reference](docs/bert-schema-reference.md)
 
 | Resource | What it covers |
 |----------|---------------|
-| [User Guide](https://bert.gitbook.io) | Getting started, tutorials |
+| [Getting Started](docs/getting-started.md) | Install, first model, controls |
 | [Schema Reference](docs/bert-schema-reference.md) | JSON format, validation layers, ID conventions |
 | [System Language Spec](docs/system-language-spec.md) | Formal system modeling language |
 | [TypeDB Schema](docs/bert-typedb-schema.md) | Graph projection and query patterns |

@@ -93,10 +93,14 @@ pub fn drag_external_entity(
             let parent_system = system_query
                 .get(subsystem.parent_system)
                 .expect("Parent system has to exist");
+            // An external entity lives in the environment, OUTSIDE the system boundary,
+            // so clamp it to at least the boundary radius from center (min, not max).
+            // (drag_subsystem uses clamp_length_max — subsystems stay inside the parent;
+            // external sources/sinks are the opposite case.)
             transform.translation = transform
                 .translation
                 .truncate()
-                .clamp_length_max(parent_system.radius * **zoom)
+                .clamp_length_min(parent_system.radius * **zoom)
                 .extend(transform.translation.z);
         }
     }

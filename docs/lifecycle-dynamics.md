@@ -1,7 +1,7 @@
 # Mathematical Approach for System Lifecycle Dynamics
 
 **Status**: Post-v0.4 theory. Depends on process primitive step logic + H being implemented first. Lifecycle phases (Origination → Dissolution) are what you'd observe once simulation produces meaningful steps — not the current priority.
-**Ties to**: `h-element-theory.md` (H conditioning enables lifecycle observation), `atomic-work-processes.md` (primitive T functions are what execute during each phase)
+**Ties to**: `h-element-theory.md` (H conditioning enables lifecycle observation), `process-primitives.md` (primitive T functions are what execute during each phase)
 
 **Note on ΔB (boundary dynamics)**: Boundary properties like porosity are currently static (set at model creation). In simulation, they should be *derived* from interface state — a boundary with three high-throughput interfaces and one impeding interface has different effective permeability than one with all impeding interfaces. This is the simulation-relevant insight from an earlier `B = ⟨g, P⟩` exploration (Feb 2025) that proposed boundaries as emergent from interface properties. The specific formalism was not adopted (the Lean `BoundaryComplete` proof and SL spec handle boundary *definition* more cleanly), but the *dynamics* implication stands: ΔB should be computed from interface evolution during simulation, not assigned statically.
 

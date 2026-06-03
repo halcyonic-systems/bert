@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "environment": {
+    "info": {
+      "id": "E-1",
+      "level": -1,
+      "name": "",
+      "description": ""
+    },
+    "sources": [
+      {
+        "info": {
+          "id": "Src-1.0",
+          "level": -1,
+          "name": "Input Source",
+          "description": ""
+        },
+        "type": "Source",
+        "transform": {
+          "translation": [
+            -520.0,
+            0.0
+          ],
+          "rotation": -3.141592653589793
+        },
+        "equivalence": "",
+        "model": "",
+        "is_same_as_id": null
+      }
+    ],
+    "sinks": [
+      {
+        "info": {
+          "id": "Snk-1.0",
+          "level": -1,
+          "name": "Output Sink",
+          "description": ""
+        },
+        "type": "Sink",
+        "transform": {
+          "translation": [
+            520.0,
+            0.0
+          ],
+          "rotation": 0.0
+        },
+        "equivalence": "",
+        "model": "",
+        "is_same_as_id": null
+      }
+    ]
+  },
+  "systems": [
+    {
+      "info": {
+        "id": "S0",
+        "level": 0,
+        "name": "Inverting Test v2",
+        "description": "Message input: inverter produces complement signal"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "E-1",
+      "complexity": {
+        "Complex": {
+          "adaptable": true,
+          "evolveable": true
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0",
+          "level": 0,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [
+          {
+            "info": {
+              "id": "I0.50",
+              "level": 1,
+              "name": "Input Port",
+              "description": ""
+            },
+            "protocol": "",
+            "type": "Import",
+            "exports_to": [],
+            "receives_from": [
+              "Src-1.0"
+            ],
+            "angle": 3.141592653589793
+          },
+          {
+            "info": {
+              "id": "I0.51",
+              "level": 1,
+              "name": "Output Port",
+              "description": ""
+            },
+            "protocol": "",
+            "type": "Export",
+            "exports_to": [
+              "Snk-1.0"
+            ],
+            "receives_from": [],
+            "angle": 0.0
+          }
+        ],
+        "parent_interface": null
+      },
+      "radius": 300.0,
+      "transform": {
+        "translation": [
+          0.0,
+          0.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "Second"
+    },
+    {
+      "info": {
+        "id": "C0.0",
+        "level": 1,
+        "name": "Inverter",
+        "description": ""
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.0",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 42.0,
+      "transform": {
+        "translation": [
+          0.0,
+          0.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "Second",
+      "archetype": "Agent",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Inverting"
+        ]
+      }
+    },
+    {
+      "info": {
+        "id": "C0.50",
+        "level": 1,
+        "name": "Input Port",
+        "description": ""
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0.50",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": "I0.50"
+      },
+      "radius": 12.0,
+      "transform": {
+        "translation": [
+          -1.72,
+          0.0
+        ],
+        "rotation": -3.1415925
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "Second"
+    },
+    {
+      "info": {
+        "id": "C0.51",
+        "level": 1,
+        "name": "Output Port",
+        "description": ""
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0.51",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": "I0.51"
+      },
+      "radius": 12.0,
+      "transform": {
+        "translation": [
+          -1.72,
+          0.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "Second"
+    }
+  ],
+  "interactions": [
+    {
+      "info": {
+        "id": "F-1.0",
+        "level": -1,
+        "name": "Input Flow",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "Signal",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Resource",
+      "source": "Src-1.0",
+      "source_interface": null,
+      "sink": "S0",
+      "sink_interface": "I0.50",
+      "amount": "0.3",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F-1.1",
+        "level": -1,
+        "name": "Output Flow",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "Signal",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "S0",
+      "source_interface": "I0.51",
+      "sink": "Snk-1.0",
+      "sink_interface": null,
+      "amount": "0.3",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.0",
+        "level": 1,
+        "name": "In to Agent",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "Signal",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Resource",
+      "source": "C0.50",
+      "source_interface": null,
+      "sink": "C0.0",
+      "sink_interface": null,
+      "amount": "0.3",
+      "unit": "",
+      "parameters": [],
+      "endpoint_offset": {
+        "start_angle": -1.2246467991473532e-16,
+        "end_angle": 3.141592653589793
+      }
+    },
+    {
+      "info": {
+        "id": "F0.1",
+        "level": 1,
+        "name": "Agent to Out",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "Signal",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.0",
+      "source_interface": null,
+      "sink": "C0.51",
+      "sink_interface": null,
+      "amount": "0.3",
+      "unit": "",
+      "parameters": [],
+      "endpoint_offset": {
+        "start_angle": 0.0,
+        "end_angle": 3.141592653589793
+      }
+    }
+  ],
+  "hidden_entities": []
+}

@@ -7,18 +7,29 @@
       <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
         <polygon points="0 0, 8 3, 0 6" fill="var(--accent)" opacity="0.7" />
       </marker>
+      <marker id="ah-energy" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#D97706" opacity="0.7" />
+      </marker>
+      <marker id="ah-material" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#059669" opacity="0.7" />
+      </marker>
       <marker id="ah-dim" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
         <polygon points="0 0, 6 2.5, 0 5" fill="var(--accent)" opacity="0.4" />
       </marker>
     </defs>
 
-    <!-- Source -->
-    <rect x="10" y="115" width="80" height="40" rx="4" fill="none" stroke="var(--ink)" stroke-width="1.2" opacity="0.3" />
-    <text x="50" y="140" text-anchor="middle" font-family="Inter" font-size="11" fill="var(--ink)" opacity="0.5">Source</text>
+    <!-- Environment background -->
+    <rect x="2" y="2" width="696" height="276" rx="12" fill="none" stroke="var(--ink)" stroke-width="0.8" stroke-dasharray="8 4" opacity="0.12" />
+    <text x="350" y="20" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--ink)" opacity="0.2" letter-spacing="0.1em">ENVIRONMENT</text>
 
-    <!-- Source → A -->
-    <line x1="90" y1="135" x2="178" y2="135" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ah)" opacity="0.45" />
-    <text class="flow-label" x="134" y="127" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--accent)" style="display: none;">Energy</text>
+    <!-- Source (external entity) -->
+    <rect x="10" y="115" width="80" height="40" rx="4" fill="none" stroke="var(--ink)" stroke-width="1.2" opacity="0.3" />
+    <text x="50" y="137" text-anchor="middle" font-family="Inter" font-size="11" fill="var(--ink)" opacity="0.5">Source</text>
+    <text x="50" y="149" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="var(--ink)" opacity="0.2">external</text>
+
+    <!-- Source → A flow -->
+    <line id="flow-sa" x1="90" y1="135" x2="178" y2="135" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ah)" opacity="0.45" />
+    <text class="flow-label" x="134" y="125" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#D97706" style="display: none;">Energy</text>
 
     <!-- Entity A -->
     <g id="entity-a" class="cursor-pointer" role="button" tabindex="0" aria-label="Advance diagram">
@@ -27,34 +38,74 @@
       <text id="ea-sublabel" x="255" y="150" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--ink)" opacity="0.25">bounded</text>
     </g>
 
-    <!-- Decomposed (stage 2) -->
-    <g id="decomposed" style="display: none;">
-      <circle cx="255" cy="135" r="68" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.4" />
-      <circle cx="232" cy="112" r="24" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
-      <text x="232" y="109" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="var(--ink)">Sub A.1</text>
-      <text x="232" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--accent)">T</text>
-      <circle cx="278" cy="158" r="24" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
-      <text x="278" y="155" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="var(--ink)">Sub A.2</text>
-      <text x="278" y="168" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--accent)">H</text>
-      <line x1="248" y1="128" x2="264" y2="144" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ah-dim)" opacity="0.5" />
+    <!-- Interface markers on Entity A boundary (hidden until Stage 1) -->
+    <g id="interfaces-a" style="display: none;">
+      <!-- Import interface (left, where Source flow enters) -->
+      <circle cx="187" cy="135" r="4" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <circle cx="187" cy="135" r="1.5" fill="var(--accent)" />
+      <!-- Export interface (right, where A→B flow exits) -->
+      <circle cx="323" cy="135" r="4" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <circle cx="323" cy="135" r="1.5" fill="var(--accent)" />
     </g>
 
-    <!-- A → B -->
-    <line x1="323" y1="135" x2="388" y2="135" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ah)" opacity="0.45" />
-    <text class="flow-label" x="355" y="127" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--accent)" style="display: none;">Message</text>
+    <!-- A → B flow -->
+    <line id="flow-ab" x1="323" y1="135" x2="388" y2="135" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ah)" opacity="0.45" />
+    <text class="flow-label" x="355" y="125" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--accent)" style="display: none;">Message</text>
 
     <!-- Entity B -->
-    <circle cx="455" cy="135" r="58" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.5" />
+    <circle id="eb-circle" cx="455" cy="135" r="58" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.5" />
     <text x="455" y="132" text-anchor="middle" font-family="Cormorant Garamond" font-size="17" font-style="italic" fill="var(--ink)">Entity B</text>
     <text x="455" y="150" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--ink)" opacity="0.25">bounded</text>
 
-    <!-- B → Sink -->
-    <line x1="513" y1="135" x2="598" y2="135" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ah)" opacity="0.45" />
-    <text class="flow-label" x="555" y="127" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--accent)" style="display: none;">Product</text>
+    <!-- Interface markers on Entity B boundary (hidden until Stage 1) -->
+    <g id="interfaces-b" style="display: none;">
+      <!-- Import interface (left) -->
+      <circle cx="397" cy="135" r="4" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <circle cx="397" cy="135" r="1.5" fill="var(--accent)" />
+      <!-- Export interface (right) -->
+      <circle cx="513" cy="135" r="4" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <circle cx="513" cy="135" r="1.5" fill="var(--accent)" />
+    </g>
 
-    <!-- Sink -->
+    <!-- Feedback flow B → A (hidden until Stage 1) -->
+    <g id="feedback-flow" style="display: none;">
+      <path d="M 435 193 Q 355 230 275 193" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ah-dim)" opacity="0.35" />
+      <text x="355" y="228" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--accent)" opacity="0.6">Feedback</text>
+    </g>
+
+    <!-- B → Sink flow -->
+    <line id="flow-bs" x1="513" y1="135" x2="598" y2="135" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ah)" opacity="0.45" />
+    <text class="flow-label" x="555" y="125" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#059669" style="display: none;">Material</text>
+
+    <!-- Sink (external entity) -->
     <rect x="600" y="115" width="80" height="40" rx="4" fill="none" stroke="var(--ink)" stroke-width="1.2" opacity="0.3" />
-    <text x="640" y="140" text-anchor="middle" font-family="Inter" font-size="11" fill="var(--ink)" opacity="0.5">Sink</text>
+    <text x="640" y="137" text-anchor="middle" font-family="Inter" font-size="11" fill="var(--ink)" opacity="0.5">Sink</text>
+    <text x="640" y="149" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="var(--ink)" opacity="0.2">external</text>
+
+    <!-- Decomposed Entity A (Stage 2) -->
+    <g id="decomposed" style="display: none;">
+      <circle cx="255" cy="135" r="68" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.4" />
+
+      <!-- Interface markers on decomposed boundary -->
+      <circle cx="187" cy="135" r="4" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <circle cx="187" cy="135" r="1.5" fill="#D97706" />
+      <circle cx="323" cy="135" r="4" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <circle cx="323" cy="135" r="1.5" fill="var(--accent)" />
+
+      <!-- Sub A.1 -->
+      <circle cx="232" cy="112" r="24" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <text x="232" y="109" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="var(--ink)">Transform</text>
+      <text x="232" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--accent)" opacity="0.6">process</text>
+
+      <!-- Sub A.2 -->
+      <circle cx="278" cy="158" r="24" fill="var(--card-bg)" stroke="var(--ink)" stroke-width="1.2" />
+      <text x="278" y="155" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="var(--ink)">Store</text>
+      <text x="278" y="168" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--accent)" opacity="0.6">state</text>
+
+      <!-- Internal flow with label -->
+      <line x1="248" y1="128" x2="264" y2="144" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ah-dim)" opacity="0.5" />
+      <text x="268" y="132" font-family="JetBrains Mono" font-size="7" fill="var(--accent)" opacity="0.5">Message</text>
+    </g>
   </svg>
 
   <!-- Stepper -->
@@ -74,11 +125,18 @@
   let stage = 0;
   const labels = ['Define entities', 'Type the flows', 'Decompose recursively'];
   setTimeout(() => document.querySelector('.dot-pulse')?.classList.remove('dot-pulse'), 3000);
+
   const circle = document.getElementById('ea-circle')!;
   const eaLabel = document.getElementById('ea-label')!;
   const eaSub = document.getElementById('ea-sublabel')!;
   const decomposed = document.getElementById('decomposed')!;
   const flowLabels = document.querySelectorAll('.flow-label');
+  const interfacesA = document.getElementById('interfaces-a')!;
+  const interfacesB = document.getElementById('interfaces-b')!;
+  const feedbackFlow = document.getElementById('feedback-flow')!;
+  const flowSA = document.getElementById('flow-sa')!;
+  const flowAB = document.getElementById('flow-ab')!;
+  const flowBS = document.getElementById('flow-bs')!;
   const stepLabel = document.getElementById('stepper-label')!;
   const dots = document.querySelectorAll('.stepper-dot');
 
@@ -90,10 +148,28 @@
       (d as HTMLElement).style.opacity = i === s ? '1' : '0.15';
     });
 
-    // Stage 0: just entities
+    // Stage 0: just entities and plain flows
     flowLabels.forEach(l => (l as SVGElement).style.display = s >= 1 ? '' : 'none');
+    interfacesA.style.display = s >= 1 && s < 2 ? '' : 'none';
+    interfacesB.style.display = s >= 1 ? '' : 'none';
+    feedbackFlow.style.display = s >= 1 ? '' : 'none';
 
-    // Stage 2: decompose
+    // Color flows by substance type in Stage 1+
+    if (s >= 1) {
+      flowSA.setAttribute('stroke', '#D97706');
+      flowSA.setAttribute('marker-end', 'url(#ah-energy)');
+      flowAB.setAttribute('stroke', 'var(--accent)');
+      flowBS.setAttribute('stroke', '#059669');
+      flowBS.setAttribute('marker-end', 'url(#ah-material)');
+    } else {
+      flowSA.setAttribute('stroke', 'var(--accent)');
+      flowSA.setAttribute('marker-end', 'url(#ah)');
+      flowAB.setAttribute('stroke', 'var(--accent)');
+      flowBS.setAttribute('stroke', 'var(--accent)');
+      flowBS.setAttribute('marker-end', 'url(#ah)');
+    }
+
+    // Stage 2: decompose Entity A
     if (s >= 2) {
       circle.setAttribute('stroke-dasharray', '5 3');
       circle.style.opacity = '0.4';
