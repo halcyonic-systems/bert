@@ -1289,6 +1289,43 @@ def test_observation_nondraining():
         return False, str(e)
 
 
+def test_conservation_closed_loop():
+    """Closed S->I->R transfer chain in synchronous mode: no external source or sink,
+    so total mass (storage + in-flight flow) must be invariant to machine epsilon, and
+    no conservative buffer may ever report a deficit. This is the exactness gate."""
+    systems = [
+        make_system("S", "Buffering"),
+        make_system("I", "Buffering"),
+        make_system("R", "Buffering"),
+    ]
+    interactions = [
+        make_flow("s_to_i", "S", "I", substance="Energy", amount=5.0),
+        make_flow("i_to_r", "I", "R", substance="Energy", amount=5.0),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    # perturbations={} — perturbations inject/remove external mass, incompatible with
+    # the closed-loop invariant.
+    model = BertModel(sys_df, int_df, seed=42, update_mode="synchronous", perturbations={})
+    agents = {a.bert_id: a for a in model.agents}
+    agents["test:S"].state["storage"] = 100.0
+
+    m0 = model.total_conserved_mass()
+    try:
+        for t in range(60):
+            model.step()
+            drift = abs(model.total_conserved_mass() - m0)
+            assert drift < 1e-9, f"mass drift {drift:.3e} at tick {t + 1} (epsilon gate)"
+            for a in model.agents:
+                deficit = a.state.get("conservation_deficit", 0.0)
+                assert deficit == 0.0, \
+                    f"{a.bert_id} conservation_deficit={deficit} at tick {t + 1}"
+        final = {bid: round(a.state["storage"], 3) for bid, a in agents.items()}
+        return True, f"OK (mass {m0:.1f} exact over 60 ticks; final storage {final})"
+    except AssertionError as e:
+        return False, str(e)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -1339,6 +1376,7 @@ ALL_TESTS = [
     ("System-Level History", test_system_level_history),
     ("Markovian Primitives", test_markovian_primitives),
     ("Observation Non-Draining", test_observation_nondraining),
+    ("Conservation Closed Loop (exact)", test_conservation_closed_loop),
 ]
 
 

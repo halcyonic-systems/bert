@@ -272,6 +272,13 @@ class BertAgent(Agent):
             return True
         return tick % self.step_interval == 0
 
+    def _is_conservative_buffer(self) -> bool:
+        """A Buffering agent in synchronous mode is a conservative-transfer stock:
+        it debits storage in _t_buffering and must emit exactly that debit, with no
+        capacity clamp, no conservation rescaling, and no release-factor wobble — so
+        stock-to-stock transfer is mass-exact (B4/B7)."""
+        return self.model.update_mode == "synchronous" and "Buffering" in self.primitives
+
     def step(self):
         """Async tick: compute then commit inline. Byte-identical to the pre-split
         single-method step — the two phases run back-to-back with no reordering."""
@@ -327,7 +334,9 @@ class BertAgent(Agent):
         Buffering: H tracks storage trend, adjusts release factor."""
         if len(self.history) < 2:
             return
-        if "Buffering" in self.primitives:
+        # Conservative-transfer buffers hold release_factor at 1.0 (B7): the trend-based
+        # wobble below would distort the βSI / βRF transfer rate and can break "I unimodal".
+        if "Buffering" in self.primitives and not self._is_conservative_buffer():
             recent = [h.get("storage", 0) for h in list(self.history)[-10:]]
             if len(recent) >= 3:
                 alpha = 0.3
@@ -396,17 +405,30 @@ class BertAgent(Agent):
         if set(self.primitives) & _SELF_WRITING:
             return
         activity = self.state.get("activity", 0.0)
+        conservative = self._is_conservative_buffer()
         for flow in self.outgoing_flows:
             # Exclusion site 2/3: never write mass onto an observation tap — it
             # mirrors a level, it does not carry the source's activity downstream.
             if flow.get("observation", False):
                 continue
-            flow["amount"] = min(activity, flow.get("capacity", float('inf')))
+            if conservative:
+                # Emit exactly the debited release (B4): T-debit == produce-emit, no
+                # capacity clamp to destroy mass the buffer already removed from storage.
+                flow["amount"] = activity
+            else:
+                flow["amount"] = min(activity, flow.get("capacity", float('inf')))
         for force in self.force_outputs:
             force["amount"] = activity
 
     def _enforce_conservation(self):
         """Post-step 1st/2nd Law: M/E outflows clamped to inflow budget. Message exempt."""
+        # Conservative buffers self-limit (released = min(adjusted, storage)) and emit
+        # exactly that debit, so this inflow-budget clamp is both redundant and harmful:
+        # storage already nets the release, so the clamp would see me_outflow > budget on
+        # a partly-pre-filled stock and wrongly rescale the real transfer (B4). Exempt them.
+        if self._is_conservative_buffer():
+            self.state["conservation_deficit"] = 0.0
+            return
         _CONSERVED = ("Energy", "Material")
         me_inflow = sum(
             f.get("amount", 0) for f in self.incoming_flows

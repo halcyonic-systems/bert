@@ -218,6 +218,28 @@ class BertModel(Model):
         logger.info("Perturbation at step %d: external source flows scaled by %.2f",
                     self.current_tick, multiplier)
 
+    def total_conserved_mass(self) -> float:
+        """Σ buffer storage + Σ in-flight transfer-flow amount (Energy/Material only,
+        observation taps excluded, each flow dict counted once).
+
+        In synchronous transfer one tick's released mass sits 'on the wire' (in the
+        flow amount) between the source's debit and the sink's credit, so storage
+        alone is not conserved tick-to-tick — this sum is. The closed-loop test asserts
+        it holds to 1e-9 every tick."""
+        total = sum(a.state.get("storage", 0.0) for a in self.agents)
+        seen = set()
+        for a in self.agents:
+            for f in a.outgoing_flows:
+                if f.get("observation", False):
+                    continue
+                if f.get("substance_type") not in ("Energy", "Material"):
+                    continue
+                if id(f) in seen:
+                    continue
+                seen.add(id(f))
+                total += f.get("amount", 0.0)
+        return total
+
     def collect_all_observations(self) -> tuple[list[dict], list[dict]]:
         flow_obs = []
         for _, row in self.interactions_df.iterrows():
