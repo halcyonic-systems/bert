@@ -42,8 +42,8 @@
       "parameters": [],
       "sink": "Snk-1.0",
       "sink_interface": null,
-      "source": "C0.2",
-      "source_interface": null,
+      "source": "C0.50",
+      "source_interface": "I0.50",
       "substance": {
         "sub_type": "Kinetic",
         "type": "Energy"
@@ -53,6 +53,31 @@
       "usability": "Waste"
     },
     {
+      "amount": "0.5",
+      "endpoint_offset": {
+        "end_angle": 3.141592653589793,
+        "start_angle": 0.0
+      },
+      "info": {
+        "description": "Routes outgoing flow from Recovered to Mortality Outflow",
+        "id": "F0.0",
+        "level": 1,
+        "name": "Mortality Outflow routing"
+      },
+      "parameters": [],
+      "sink": "C0.50",
+      "sink_interface": null,
+      "source": "C0.2",
+      "source_interface": null,
+      "substance": {
+        "sub_type": "Kinetic",
+        "type": "Energy"
+      },
+      "type": "Flow",
+      "unit": "",
+      "usability": "Resource"
+    },
+    {
       "amount": "10",
       "endpoint_offset": {
         "end_angle": -0.7853981633974483,
@@ -60,7 +85,7 @@
       },
       "info": {
         "description": "",
-        "id": "F0.0",
+        "id": "F0.1",
         "level": 1,
         "name": "Infection"
       },
@@ -85,7 +110,7 @@
       },
       "info": {
         "description": "",
-        "id": "F0.1",
+        "id": "F0.2",
         "level": 1,
         "name": "Observe Infected"
       },
@@ -116,7 +141,7 @@
       },
       "info": {
         "description": "",
-        "id": "F0.2",
+        "id": "F0.3",
         "level": 1,
         "name": "Infection Control"
       },
@@ -141,7 +166,7 @@
       },
       "info": {
         "description": "",
-        "id": "F0.3",
+        "id": "F0.4",
         "level": 1,
         "name": "Recovery"
       },
@@ -176,7 +201,7 @@
             ],
             "info": {
               "description": "",
-              "id": "I0.0",
+              "id": "I0.50",
               "level": 1,
               "name": "Mortality Outflow"
             },
@@ -426,6 +451,48 @@
           "Sensing"
         ]
       }
+    },
+    {
+      "boundary": {
+        "info": {
+          "description": "",
+          "id": "B0.50",
+          "level": 1,
+          "name": ""
+        },
+        "interfaces": [],
+        "parent_interface": "I0.50",
+        "perceptive_fuzziness": 0.0,
+        "porosity": 0.0
+      },
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "equivalence": "",
+      "history": "",
+      "info": {
+        "description": "Mediates outgoing flow at the Mortality Outflow interface",
+        "id": "C0.50",
+        "level": 1,
+        "name": "Mortality Outflow"
+      },
+      "member_autonomy": 1.0,
+      "parent": "S0",
+      "radius": 12.0,
+      "sinks": [],
+      "sources": [],
+      "time_constant": "Second",
+      "transform": {
+        "rotation": 0.0,
+        "translation": [
+          -1.72,
+          0.0
+        ]
+      },
+      "transformation": ""
     }
   ],
   "version": 1

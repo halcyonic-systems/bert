@@ -14,7 +14,7 @@
     {"name": "I-Sensor", "description": "Senses the Infected level (non-draining) and emits the infection-rate control signal", "archetype": "Agent", "primitives": ["Sensing"], "agency_capacity": 0.1}
   ],
   "routing_table": [
-    {"interface": "Mortality Outflow", "type": "Export", "connected_to": "Mortality", "has_processor": false, "target_subsystem": "Recovered"}
+    {"interface": "Mortality Outflow", "type": "Export", "connected_to": "Mortality", "has_processor": true, "target_subsystem": "Recovered"}
   ],
   "external_flows": [
     {"name": "Death", "interface": "Mortality Outflow", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Waste", "amount": 0.5}

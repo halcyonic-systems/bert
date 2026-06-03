@@ -31,27 +31,39 @@ def main(spec_path):
             agent["initial_state"] = ss["initial_state"]
         s["agent"] = agent
 
-    # Repoint export boundary flows to originate from their target subsystem. The
-    # generator attaches has_processor:false exports to the root system; for the sim
-    # the boundary outflow must leave the actual compartment (e.g. Recovered -> sink).
-    name_to_id = {s["info"]["name"]: s["info"]["id"] for s in model.get("systems", [])}
-    iface_target = {  # routing interface name -> target subsystem name
-        r["interface"]: r.get("target_subsystem")
-        for r in spec.get("routing_table", []) if r.get("target_subsystem")
+    # Wire export boundary flows through their interface processor (has_processor:true).
+    # The generator produces the valid BERT structure — root boundary interface,
+    # an interface-processor subsystem claiming it (parent_interface), a routing flow
+    # target_subsystem -> processor, and the external flow root -> sink referencing the
+    # interface. Two post-process touches make it *simulate* the same boundary outflow:
+    #   1. the external flow originates from the processor (processor -> sink), so the
+    #      processor relays the drained mass out (instead of root, which is no agent);
+    #   2. the routing flow (target_subsystem -> processor) carries the export rate, so
+    #      the source compartment actually drains at that rate.
+    # This keeps the interface referenced + processor-claimed (no orphan-interface or
+    # missing-processor warnings) while the sim drains the compartment across the boundary.
+    interfaces = next((s for s in model["systems"] if s["info"]["level"] == 0),
+                      {"boundary": {"interfaces": []}})["boundary"]["interfaces"]
+    iface_id_by_name = {itf["info"]["name"]: itf["info"]["id"] for itf in interfaces}
+    proc_id_by_iface = {  # interface id -> processor subsystem id that claims it
+        s["boundary"]["parent_interface"]: s["info"]["id"]
+        for s in model["systems"] if s.get("boundary", {}).get("parent_interface")
     }
-    ext_target = {  # external-flow name -> target subsystem name (via its interface)
-        ef["name"]: iface_target.get(ef.get("interface"))
-        for ef in spec.get("external_flows", [])
-    }
-    ext_amount = {ef["name"]: ef.get("amount") for ef in spec.get("external_flows", [])}
-    for ix in model.get("interactions", []):
-        nm = ix["info"]["name"]
-        tgt = ext_target.get(nm)
-        if tgt and tgt in name_to_id:
-            ix["source"] = name_to_id[tgt]
-            ix["source_interface"] = None
-            if ext_amount.get(nm) is not None:
-                ix["amount"] = str(ext_amount[nm])
+    for ef in spec.get("external_flows", []):
+        iface_id = iface_id_by_name.get(ef.get("interface"))
+        proc_id = proc_id_by_iface.get(iface_id)
+        if not proc_id:
+            continue
+        rate = ef.get("amount")
+        for ix in model["interactions"]:
+            # routing flow into the processor: carry the export rate so the source drains
+            if ix["sink"] == proc_id and rate is not None:
+                ix["amount"] = str(rate)
+            # the external flow: emit from the processor out to the sink
+            if ix["info"]["name"] == ef["name"]:
+                ix["source"] = proc_id
+                if rate is not None:
+                    ix["amount"] = str(rate)
 
     out_path = spec_path.replace("-spec.json", ".json")
     json.dump(model, open(out_path, "w"), indent=2)
