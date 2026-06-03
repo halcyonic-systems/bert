@@ -1,5 +1,9 @@
 //! Pre-insert validation of BERT `WorldModel`s.
 //!
+//! BERT validator 3 of 3 — pre-transpile. Siblings:
+//! `general-systems-reasoner/core/src/constraints.rs` (generation-time, spec `Value`),
+//! `bert/src/bevy_app/data_model/validate.rs` (pre-render). See the bert-dev skill "Validators".
+//!
 //! Runs before the transpiler emits any TypeQL. Catches:
 //!
 //! - Controlled-vocabulary violations that would fail TypeDB `@values`

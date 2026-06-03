@@ -1,3 +1,7 @@
+//! BERT validator 2 of 3 — pre-render, structural (operates on a loaded `WorldModel`; errors block load).
+//! Siblings: `general-systems-reasoner/core/src/constraints.rs` (generation-time, spec `Value`),
+//! `bert/tools/bert-typedb/src/validate.rs` (pre-transpile). See the bert-dev skill "Validators".
+
 use super::*;
 use std::collections::{HashMap, HashSet};
 
