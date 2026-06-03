@@ -70,7 +70,11 @@ def _t_buffering(agent, state, incoming, outgoing):
         f.get("amount", 0) for f in incoming
         if f.get("substance_type") == "Message"
     ]
-    demand = sum(f.get("amount", 0) for f in outgoing)
+    # Exclusion site 1/3: observation taps are non-draining level reads, not real
+    # outflows — they must not inflate demand (and so the cached _base_demand below).
+    demand = sum(
+        f.get("amount", 0) for f in outgoing if not f.get("observation", False)
+    )
     storage = state.get("storage", 0.0)
     storage += inflow
     if "_base_demand" not in state:
@@ -121,12 +125,24 @@ def _t_impeding(agent, state, incoming, outgoing):
 
 
 def _t_sensing(agent, state, incoming, outgoing):
-    """signal = k * Σ(physical inputs). Crosses substance: Energy/Material -> Message."""
-    physical_in = sum(
-        f.get("amount", 0) for f in incoming
-        if f.get("substance_type") in ("Energy", "Material")
-    )
+    """signal = k * Σ(physical inputs). Crosses substance: Energy/Material -> Message.
+
+    An *observation* incoming flow is sensed as the source stock's level (read from
+    the model's frozen pre-tick snapshot), not as a flow amount — so observing a
+    stock never drains it (Mobus: sensing is 'very low power'). Non-observation flows
+    keep the original flow-amount behavior, so existing circuits are unchanged."""
     k = agent.agency_capacity
+    physical_in = 0.0
+    for f in incoming:
+        if f.get("substance_type") not in ("Energy", "Material"):
+            continue
+        if f.get("observation", False):
+            # Frozen level read; .get() because external (non-agent) sources have no
+            # snapshot entry, and {} in async mode -> reads 0.0 (observation is a
+            # synchronous-mode feature).
+            physical_in += agent.model._level_snapshot.get(f.get("_source_id", ""), 0.0)
+        else:
+            physical_in += f.get("amount", 0)
     state["signal"] = physical_in * k
     state["activity"] = state["signal"]
 
@@ -257,8 +273,18 @@ class BertAgent(Agent):
         return tick % self.step_interval == 0
 
     def step(self):
-        tick = self.model.current_tick
-        if not self.should_step(tick):
+        """Async tick: compute then commit inline. Byte-identical to the pre-split
+        single-method step — the two phases run back-to-back with no reordering."""
+        self.compute()
+        self.commit()
+
+    def compute(self):
+        """Phase 1 — read inputs, condition T, run the T-function. Writes only to
+        self.state, never to shared flow dicts. In synchronous mode every agent's
+        compute() runs before any commit(), so incoming-flow `amount` reads see last
+        tick's committed values (frozen). The should_step guard mirrors commit()'s
+        exactly (B6) so non-Second time-constants can't desync between phases."""
+        if not self.should_step(self.model.current_tick):
             return
         self._process_inputs()
         self._apply_forces()
@@ -267,6 +293,13 @@ class BertAgent(Agent):
             self._act_by_primitive()
         else:
             self._act()
+
+    def commit(self):
+        """Phase 2 — write activity to shared outgoing flows, enforce conservation,
+        record history. Split from compute() so synchronous mode can run all computes
+        first; the only methods here that touch shared dicts."""
+        if not self.should_step(self.model.current_tick):
+            return
         self._produce_outputs()
         self._enforce_conservation()
         self._record_history()
@@ -364,6 +397,10 @@ class BertAgent(Agent):
             return
         activity = self.state.get("activity", 0.0)
         for flow in self.outgoing_flows:
+            # Exclusion site 2/3: never write mass onto an observation tap — it
+            # mirrors a level, it does not carry the source's activity downstream.
+            if flow.get("observation", False):
+                continue
             flow["amount"] = min(activity, flow.get("capacity", float('inf')))
         for force in self.force_outputs:
             force["amount"] = activity
@@ -375,9 +412,12 @@ class BertAgent(Agent):
             f.get("amount", 0) for f in self.incoming_flows
             if f.get("substance_type") in _CONSERVED
         )
+        # Exclusion site 3/3 (easy to miss): an observation E/M tap counted here would
+        # inflate me_outflow and trigger spurious ratio-scaling of the REAL transfer
+        # flow below — silently breaking conservation. Exclude from sum AND scaling.
         me_outflow = sum(
             f.get("amount", 0) for f in self.outgoing_flows
-            if f.get("substance_type") in _CONSERVED
+            if f.get("substance_type") in _CONSERVED and not f.get("observation", False)
         )
         inflow_budget = me_inflow + self.state.get("storage", 0.0)
 
@@ -395,7 +435,7 @@ class BertAgent(Agent):
 
         ratio = inflow_budget / me_outflow
         for f in self.outgoing_flows:
-            if f.get("substance_type") in _CONSERVED:
+            if f.get("substance_type") in _CONSERVED and not f.get("observation", False):
                 f["amount"] *= ratio
 
     def collect_observations(self) -> list[dict]:

@@ -63,6 +63,15 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
         if source_iface and source_iface in port_map:
             source_id = port_map[source_iface]
 
+        # Observation flag rides on interaction.parameters as a
+        # {name:"observation", value:"true"} entry (the WorldModel Parameter shape).
+        # Carrying it here keeps the engine change Python-only — no Rust enum / schema
+        # touch — since parameters already round-trip through the Rust loader.
+        observation = any(
+            p.get("name") == "observation" and str(p.get("value", "")).lower() == "true"
+            for p in ix.get("parameters", [])
+        )
+
         ix_rows.append({
             "bert_id": info["id"],
             "display_name": info["name"],
@@ -72,6 +81,7 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             "amount": float(ix.get("amount", "0")),
             "source_id": source_id,
             "sink_id": sink_id,
+            "observation": observation,
         })
     interactions_df = pd.DataFrame(ix_rows) if ix_rows else pd.DataFrame()
 

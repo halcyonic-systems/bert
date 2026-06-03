@@ -38,7 +38,8 @@ class BertModel(Model):
     """
 
     def __init__(self, systems_df: pd.DataFrame, interactions_df: pd.DataFrame,
-                 seed: int = None, perturbations: dict[int, float] | None = None):
+                 seed: int = None, perturbations: dict[int, float] | None = None,
+                 update_mode: str = "async"):
         super().__init__(seed=seed)
 
         from collections import deque
@@ -46,6 +47,14 @@ class BertModel(Model):
         self.interactions_df = interactions_df
         self.perturbations = perturbations or {}
         self.system_history = deque(maxlen=100)
+        # "async" (default): push-based, shuffled, correct for regulation circuits.
+        # "synchronous": two-phase compute->commit, order-independent, exact mass
+        # conservation for stock-to-stock transfer (SIR, Lotka-Volterra).
+        self.update_mode = update_mode
+        # Pre-tick storage levels, frozen at the top of each synchronous step for
+        # observation flows to read. Initialized unconditionally so the async path
+        # and any observation read can .get() it without an AttributeError (B5).
+        self._level_snapshot = {}
 
         self._create_agents(systems_df)
         self._build_flow_adjacency(interactions_df)
@@ -70,6 +79,8 @@ class BertModel(Model):
                 continue
             raw_cap = row.get("capacity")
             capacity = float(raw_cap) if raw_cap is not None else float('inf')
+            raw_obs = row.get("observation", False)
+            _obs = bool(raw_obs) if raw_obs == raw_obs else False  # NaN != NaN -> False
             flow_info = {
                 "bert_id": row["bert_id"],
                 "substance_type": row.get("substance_type", ""),
@@ -77,9 +88,20 @@ class BertModel(Model):
                 "amount": float(row.get("amount", 0)),
                 "capacity": capacity,
                 "_source_id": row.get("source_id", ""),
+                # Observation tap (carried on interaction.parameters observation:true,
+                # parsed in json_bridge): a non-draining level read. Set on EVERY flow
+                # so downstream code can read flow["observation"] unambiguously.
+                # _obs is NaN-safe: pandas fills absent keys with NaN when a model mixes
+                # rows with and without the column, and bool(NaN) is True in Python.
+                "observation": _obs,
             }
             src = self._agents_by_bert_id.get(row.get("source_id"))
             snk = self._agents_by_bert_id.get(row.get("sink_id"))
+            if flow_info["observation"] and (src is None or "Buffering" not in (src.primitives or [])):
+                logger.warning(
+                    "Observation flow %s does not originate from a Buffering agent; "
+                    "its level-snapshot read will be 0.0", row.get("bert_id", "?"),
+                )
             if src:
                 src.outgoing_flows.append(flow_info)
             if snk:
@@ -143,9 +165,33 @@ class BertModel(Model):
         self.current_tick += 1
         if self.current_tick in self.perturbations:
             self._apply_perturbation(self.perturbations[self.current_tick])
-        self.agents.shuffle_do("step")
+        if self.update_mode == "synchronous":
+            self._step_synchronous()
+        else:
+            self.agents.shuffle_do("step")
         self._record_system_history()
         self.datacollector.collect(self)
+
+    def _step_synchronous(self):
+        """Order-independent two-phase tick for conservative compartmental models.
+
+        1. Snapshot pre-tick storage levels (observation flows read these, never the
+           live flow amount, so sensing a stock can't drain it).
+        2. Every agent's compute() — reads incoming flow amounts that are still last
+           tick's committed values (no agent has written yet), runs T-functions into
+           self.state only.
+        3. Every agent's commit() — writes activity to shared outgoing flows.
+
+        No shuffle: when no compute() reads another agent's fresh write, agent order
+        cannot affect the result. One tick's transferred mass is "on the wire" and
+        credited to the sink at T+1, so the ledger is exact."""
+        self._level_snapshot = {
+            a.bert_id: a.state.get("storage", 0.0) for a in self.agents
+        }
+        for a in self.agents:
+            a.compute()
+        for a in self.agents:
+            a.commit()
 
     def _record_system_history(self):
         agents = list(self.agents)

@@ -42,7 +42,8 @@ def make_system(name, primitive, agency_capacity=0.5):
     }
 
 
-def make_flow(fid, src, snk, substance="Energy", amount=10.0, usability="Resource"):
+def make_flow(fid, src, snk, substance="Energy", amount=10.0, usability="Resource",
+              observation=False):
     return {
         "bert_id": f"test:{fid}",
         "display_name": fid,
@@ -52,6 +53,7 @@ def make_flow(fid, src, snk, substance="Energy", amount=10.0, usability="Resourc
         "amount": amount,
         "source_id": f"test:{src}",
         "sink_id": f"test:{snk}",
+        "observation": observation,
     }
 
 
@@ -1252,6 +1254,41 @@ def test_markovian_primitives():
     return True, f"OK (all {len(markovian)} Markovian primitives produce identical output regardless of history)"
 
 
+# ---------------------------------------------------------------------------
+# Conservation engine (synchronous update mode + observation flows)
+# ---------------------------------------------------------------------------
+
+
+def test_observation_nondraining():
+    """An observation flow reads a stock's level without draining it. The probe
+    senses the frozen pre-tick level; the stock's storage is untouched by the read."""
+    systems = [
+        make_system("Stock", "Buffering"),
+        make_system("Probe", "Sensing", agency_capacity=1.0),
+    ]
+    interactions = [
+        make_flow("obs", "Stock", "Probe", substance="Energy", observation=True),
+    ]
+    sys_df = pd.DataFrame(systems)
+    int_df = pd.DataFrame(interactions)
+    model = BertModel(sys_df, int_df, seed=42, update_mode="synchronous")
+    agents = {a.bert_id: a for a in model.agents}
+    stock, probe = agents["test:Stock"], agents["test:Probe"]
+    stock.state["storage"] = 100.0
+
+    for _ in range(10):
+        model.step()
+
+    try:
+        assert abs(stock.state["storage"] - 100.0) < 1e-9, \
+            f"observation must not drain the stock, got {stock.state['storage']}"
+        assert abs(probe.state["signal"] - 100.0) < 1e-9, \
+            f"probe should sense level 100.0, got {probe.state['signal']}"
+        return True, f"OK (level held at {stock.state['storage']:.1f}, sensed {probe.state['signal']:.1f})"
+    except AssertionError as e:
+        return False, str(e)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -1301,6 +1338,7 @@ ALL_TESTS = [
     ("Error-Sensing Circuit", test_error_sensing_circuit),
     ("System-Level History", test_system_level_history),
     ("Markovian Primitives", test_markovian_primitives),
+    ("Observation Non-Draining", test_observation_nondraining),
 ]
 
 
