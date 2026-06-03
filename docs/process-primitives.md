@@ -331,6 +331,77 @@ Energy Supply → Modulator → Buffer → Oscillating Output
 
 **Tests**: `test_composition_oscillator` (builds the loop in-code) and `test_oscillator` (loads `oscillator.json` via `json_bridge` and confirms the generated model reproduces the limit cycle). Spec: `oscillator-spec.json`.
 
+## Update Modes: Async (Regulation) vs Synchronous (Conservation)
+
+The Mesa engine runs in one of two update modes, selected per model by
+`BertModel(update_mode=...)` (default `"async"`); thread it through the runner with
+`mesa_runner.py --update-mode synchronous`.
+
+- **async** — `agents.shuffle_do("step")`: push-based, read-not-consumed, random order.
+  Correct for **signal/regulation circuits** (oscillator, error-sensing): the things
+  above all use it, and it is the validated default.
+- **synchronous** — two-phase, order-independent: a pre-tick **level snapshot**, then
+  every agent's `compute()` (T-functions read flow amounts still frozen at last tick's
+  committed values), then every agent's `commit()` (shared flow writes). Required for
+  **exact mass conservation** in stock-to-stock transfer. One tick's transferred mass
+  sits "on the wire" (in the flow amount) between the source's debit and the sink's
+  credit, so `BertModel.total_conserved_mass()` (= Σ storage + Σ in-flight transfer
+  amount) is invariant to machine epsilon, not Σ storage alone.
+
+These are genuinely different update semantics, not a flag hack: regulation wants the
+shuffled push; conservation wants the synchronized ledger. Existing async circuits are
+untouched (byte-identical step split).
+
+**Observation flows** — a Sensor reading a stock's *level* without draining it (Mobus:
+sensing is "very low power"). Carried on `interaction.parameters` as `observation:true`
+(parsed in `json_bridge`; **not** a new `usability` value — that would break the Rust
+serde enum and TypeDB `@values`). An observation tap is excluded from buffer demand,
+`_produce_outputs`, and `_enforce_conservation`; `_t_sensing` reads the frozen snapshot
+level instead of the flow amount. Test: `test_observation_nondraining`.
+
+**Conservative buffers** — a Buffering agent in synchronous mode emits exactly its
+debited release (no capacity clamp), is exempt from `_enforce_conservation` rescaling
+(it self-limits via `min(adjusted, storage)`), and holds `release_factor` at 1.0 (no
+trend wobble to distort the transfer rate). This makes mass-exactness structural.
+Gate: `test_conservation_closed_loop` — a closed S→I→R chain holds total mass exact to
+1e-9 over 60 ticks with zero per-tick deficit.
+
+### Validated Composition: SIR Epidemic (Conservative Compartmental)
+
+Loadable model at `assets/models/local/test-primitives/sir-epidemic.json` (spec
+`sir-epidemic-spec.json`, compiled via `compile_spec.py`). Synchronous mode.
+
+```
+Susceptible ──infection──▶ Infected ──recovery──▶ Recovered
+     ▲                        │
+  control (Message)      observe (non-draining level read)
+     └──── I-Sensor ◀─────────┘
+```
+
+The I-Sensor reads the Infected level through an **observation flow** and feeds a
+Message control into Susceptible; S's regulated release is the infection transfer S→I
+(gated by sensed I, drawn from S), and I releases to R at a constant recovery rate.
+Seed storages via `agent.initial_state` (S=100, I=5, R=0).
+
+**What it proves**: an epidemic curve — S monotone down, I a single peak, R monotone up
+— emerges entirely from primitive wiring with **mass conserved to 1e-9**, no custom
+agent code. A brief two-tick onset transient reflects the synchronous sensor→control→
+infection signal path. **Test**: `test_sir_epidemic`.
+
+### On Two-Buffer Lotka-Volterra (honest result)
+
+A predator-prey pair was attempted as a conservative two-buffer composition (predation =
+Prey's release gated by an observation read of Predator level; predator death to a sink).
+It does **not** sustain a limit cycle: in a strictly mass-conserving discrete engine the
+Buffering primitive supplies no self-proportional prey-growth (αPrey) term, so once
+predation crashes the prey it cannot rebound — the system collapses to prey=0 rather than
+cycling (consistent with discrete-time predator-prey instability). This is a real finding
+about conservative discretization, not a bug. The **canonical sustained-oscillation
+exemplar remains the Oscillator limit cycle above** (`test_composition_oscillator` /
+`test_oscillator`). Together, SIR (epidemic threshold) and the Oscillator (limit cycle)
+give two qualitatively different emergent behaviors from the same primitive toolkit —
+the #76 goal.
+
 ### Validated Composition: Energy Processing Chain
 
 Mobus Ch. 3 production pipeline at `assets/models/local/test-primitives/energy-chain.json`:
@@ -387,5 +458,6 @@ Runtime enforcement in `PRIMITIVE_SUBSTANCE_VALID` (`model.py`). Compile-time en
 
 - **Primitive type selects T-function**: `PRIMITIVE_T` dict in `agents.py` dispatches `_t_buffering`, `_t_combining`, etc.
 - **Composite subsystems**: dispatch each primitive in sequence via `_act_by_primitive()`
-- **`_produce_outputs()` two-path design**: Splitting/Copying write outputs in their T-functions; all others propagate activity to outgoing flows generically. Early return prevents double-writing.
-- **Conservation**: `_enforce_conservation()` clamps Energy/Material outflows to inflow budget. Message flows exempt (non-conservative by design).
+- **`_produce_outputs()` two-path design**: Splitting/Copying write outputs in their T-functions; all others propagate activity to outgoing flows generically. Early return prevents double-writing. Observation taps are skipped; conservative buffers (synchronous mode) emit exactly `activity` with no capacity clamp.
+- **Conservation**: `_enforce_conservation()` clamps Energy/Material outflows to inflow budget; Message and observation flows exempt. Conservative buffers are exempt entirely (they self-limit and emit their exact debit). Closed-system exactness is asserted via `BertModel.total_conserved_mass()`.
+- **Update modes**: `BertAgent.step()` = `compute()` + `commit()`. Async runs them inline per agent (shuffled); synchronous (`BertModel._step_synchronous`) snapshots levels, runs all computes, then all commits. See "Update Modes" above.

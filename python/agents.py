@@ -226,7 +226,7 @@ class BertAgent(Agent):
 
     def __init__(self, model, bert_id, display_name, archetype, time_constant,
                  complexity_kind, agent_kind=None, agency_capacity=None,
-                 primitives=None):
+                 primitives=None, initial_state=None):
         super().__init__(model)
         self.bert_id = bert_id
         self.display_name = display_name
@@ -249,6 +249,12 @@ class BertAgent(Agent):
         self.history = deque(maxlen=100)
 
         self._init_state()
+        # Apply schema-supported initial conditions (e.g. seed a stock's storage) on
+        # top of the archetype/primitive defaults. Numeric values only.
+        for k, v in (initial_state or {}).items():
+            f = _safe_float(v, None)
+            if f is not None:
+                self.state[k] = f
 
     def _init_state(self):
         """Initialize mutable state from graph properties."""
@@ -572,4 +578,5 @@ def agent_from_row(model, row: dict) -> BertAgent:
         agent_kind=row.get("agent_kind"),
         agency_capacity=row.get("agency_capacity"),
         primitives=row.get("primitives"),
+        initial_state=row.get("initial_state"),
     )

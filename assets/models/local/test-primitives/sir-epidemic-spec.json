@@ -1,0 +1,22 @@
+{
+  "system": {
+    "name": "SIR Epidemic",
+    "description": "Compartmental epidemic as a conservative primitive composition (Mobus process primitives, synchronous update mode). Susceptible, Infected, Recovered are Buffering stocks. An I-Sensor reads the Infected level through a non-draining observation flow and feeds a Message control into Susceptible; S's regulated release is the infection transfer S->I (gated by sensed I, drawn from S). Infected releases to Recovered at a constant recovery rate. The epidemic curve emerges entirely from the wiring; mass is conserved to machine epsilon. Seed storages via initial_state (S=100, I=5, R=0) and run with --update-mode synchronous."
+  },
+  "sources": [],
+  "sinks": [],
+  "subsystems": [
+    {"name": "Susceptible", "description": "Susceptible population stock; drained by infection", "archetype": "Agent", "primitives": ["Buffering"], "initial_state": {"storage": 100.0}},
+    {"name": "Infected", "description": "Infected population stock; gains from infection, loses to recovery", "archetype": "Agent", "primitives": ["Buffering"], "initial_state": {"storage": 5.0}},
+    {"name": "Recovered", "description": "Recovered population stock; terminal, monotonically increasing", "archetype": "Agent", "primitives": ["Buffering"], "initial_state": {"storage": 0.0}},
+    {"name": "I-Sensor", "description": "Senses the Infected level (non-draining) and emits the infection-rate control signal", "archetype": "Agent", "primitives": ["Sensing"], "agency_capacity": 0.1}
+  ],
+  "routing_table": [],
+  "external_flows": [],
+  "internal_flows": [
+    {"name": "Infection", "source": "Susceptible", "sink": "Infected", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource", "amount": 10},
+    {"name": "Observe Infected", "source": "Infected", "sink": "I-Sensor", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource", "amount": 0, "parameters": [{"name": "observation", "value": "true", "unit": ""}]},
+    {"name": "Infection Control", "source": "I-Sensor", "sink": "Susceptible", "substance": {"type": "Message", "sub_type": "Signal"}, "usability": "Resource", "amount": 0},
+    {"name": "Recovery", "source": "Infected", "sink": "Recovered", "substance": {"type": "Energy", "sub_type": "Kinetic"}, "usability": "Resource", "amount": 1}
+  ]
+}

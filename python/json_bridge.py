@@ -39,6 +39,9 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             "agent_kind": agent["kind"] if agent else None,
             "agency_capacity": agent["agency_capacity"] if agent else None,
             "primitives": agent["primitives"] if agent and "primitives" in agent else [],
+            # Schema-supported initial conditions (AgentModel.initial_state), e.g.
+            # {"storage": 100.0} to seed a stock. Applied after _init_state in agents.py.
+            "initial_state": agent.get("initial_state", {}) if agent else {},
         })
     systems_df = pd.DataFrame(sys_rows) if sys_rows else pd.DataFrame()
 
