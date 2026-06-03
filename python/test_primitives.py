@@ -1326,6 +1326,67 @@ def test_conservation_closed_loop():
         return False, str(e)
 
 
+def test_sir_epidemic():
+    """SIR epidemic as a conservative primitive composition (synchronous mode).
+
+    S, I, R are Buffering stocks. An ISensor reads I's level through an OBSERVATION
+    flow (non-draining) and feeds a Message control into S; S's regulated release is
+    the infection transfer S->I (gated by sensed I, drawn from S). I releases to R at
+    a constant recovery rate. Emergent epidemic curve from pure wiring, mass-exact.
+
+    Onset: the sensor->control->infection path is two synchronous ticks, so I shows a
+    brief onset transient before the outbreak; the curve is assessed after it."""
+    k = 0.1          # sensor gain (beta proxy)
+    base_S = 10.0    # max infection transfer rate (S's _base_demand)
+    base_I = 1.0     # recovery rate (I's _base_demand)
+    systems = [
+        make_system("S", "Buffering"),
+        make_system("I", "Buffering"),
+        make_system("R", "Buffering"),
+        make_system("ISensor", "Sensing", agency_capacity=k),
+    ]
+    interactions = [
+        make_flow("infection", "S", "I", substance="Energy", amount=base_S),
+        make_flow("observe_I", "I", "ISensor", substance="Energy", amount=0.0, observation=True),
+        make_flow("control", "ISensor", "S", substance="Message", amount=0.0),
+        make_flow("recovery", "I", "R", substance="Energy", amount=base_I),
+    ]
+    model = BertModel(pd.DataFrame(systems), pd.DataFrame(interactions),
+                      seed=42, update_mode="synchronous", perturbations={})
+    agents = {a.bert_id: a for a in model.agents}
+    agents["test:S"].state["storage"] = 100.0
+    agents["test:I"].state["storage"] = 5.0
+    agents["test:R"].state["storage"] = 0.0
+
+    m0 = model.total_conserved_mass()
+    S, I, R = [], [], []
+    try:
+        for t in range(160):
+            model.step()
+            assert abs(model.total_conserved_mass() - m0) < 1e-9, \
+                f"mass not conserved at tick {t + 1}"
+            S.append(agents["test:S"].state["storage"])
+            I.append(agents["test:I"].state["storage"])
+            R.append(agents["test:R"].state["storage"])
+
+        assert all(S[i] >= S[i + 1] - 1e-9 for i in range(len(S) - 1)), "S must be monotone decreasing"
+        assert all(R[i] <= R[i + 1] + 1e-9 for i in range(len(R) - 1)), "R must be monotone increasing"
+
+        onset = 2  # two-tick synchronous signal delay
+        series = I[onset:]
+        peak = max(series)
+        pk = series.index(peak)
+        assert peak > 10 * 5.0, f"no clear outbreak, peak I={peak:.1f}"
+        assert 0 < pk < len(series) - 2, f"peak not interior (idx {pk})"
+        assert all(series[i] <= series[i + 1] + 1e-9 for i in range(pk)), "I must rise to a single peak"
+        assert all(series[i] >= series[i + 1] - 1e-9 for i in range(pk, len(series) - 1)), \
+            "I must decline after the peak"
+        return True, (f"OK (mass {m0:.0f} exact; I peak {peak:.0f} at tick {pk + onset + 1}, "
+                      f"S {S[0]:.0f}->{S[-1]:.0f}, R {R[0]:.0f}->{R[-1]:.0f})")
+    except AssertionError as e:
+        return False, str(e)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -1377,6 +1438,7 @@ ALL_TESTS = [
     ("Markovian Primitives", test_markovian_primitives),
     ("Observation Non-Draining", test_observation_nondraining),
     ("Conservation Closed Loop (exact)", test_conservation_closed_loop),
+    ("SIR Epidemic (conservative composition)", test_sir_epidemic),
 ]
 
 
