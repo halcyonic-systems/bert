@@ -6,7 +6,7 @@ mod tree;
 mod use_file_dialog;
 
 use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
-use crate::bevy_app::data_model::validate::{validate, Severity, ValidationIssue};
+use crate::bevy_app::data_model::validate::{classify_openness, validate, Severity, ValidationIssue};
 use crate::bevy_app::{
     init_bevy_app, DetachMarkerLabelEvent, ExternalEntityFilter, ExternalEntityQuery,
     InteractionQuery, InterfaceQuery, IsSameAsIdQuery, SelectedHighlightHelperAdded,
@@ -126,6 +126,8 @@ pub fn App() -> impl IntoView {
         let set_loaded_file_path = set_loaded_file_path;
         let set_model_json_context = set_model_json_context;
         let set_app_mode = set_app_mode;
+        let set_toast_message = set_toast_message;
+        let set_toast_visible = set_toast_visible;
         move |_| {
             if let Some(crate::leptos_app::use_file_dialog::UseFile { path, data }) =
                 file_dialog_signal.get()
@@ -160,6 +162,10 @@ pub fn App() -> impl IntoView {
                         let mn = mn.rsplit('/').next().unwrap_or(mn);
                         set_loaded_model_name.set(mn.to_string());
                         set_app_mode.set(AppMode::Editing);
+
+                        // Non-blocking open/closed-with-respect-to-mass classification.
+                        set_toast_message.set(classify_openness(&world_model));
+                        set_toast_visible.set(true);
 
                         let result = validate(&world_model);
                         if result.is_clean() {
