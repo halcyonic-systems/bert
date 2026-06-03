@@ -21,6 +21,21 @@ mode + a new flow type so the 48 existing green tests are untouched.
 
 Python-only. No Rust changes (the Amplifying enum/schema already shipped).
 
+> **Architecture review applied (2026-06-02).** A bert-architecture review found the
+> first draft NO-GO and corrected it; this version incorporates the fixes. Full review:
+> `halcyonic/operations/sessions/2026-06-02/references/conservation-redesign-arch-review.md`.
+> The decisive correction: **observation is carried on a `parameters` flag, NOT a new
+> `usability` value** — `usability:"Observation"` hard-fails the Rust serde loader
+> (closed enum) and the TypeDB `@values` constraint, and headless Python tests would
+> stay green while the model is silently unloadable in the app.
+
+## Step 0 (do before any code) — observation carrier decision
+Mark observation taps with `interaction.parameters` carrying `observation: true` (round-trips
+through the existing parameters plumbing, `load.rs:173`; renders as a normal flow; zero Rust/
+schema change). At Python build (`_build_flow_adjacency`) set `flow_info["observation"] = bool(...)`
+on **every** flow so downstream code reads `flow.get("observation", False)` unambiguously. Do NOT
+add a `usability` value.
+
 ---
 
 ## The three additive changes
@@ -32,18 +47,19 @@ Python-only. No Rust changes (the Amplifying enum/schema already shipped).
   1. **Snapshot** observable state: `self._level_snapshot = {a.bert_id: a.state.get("storage", 0.0) for a in self.agents}` — frozen pre-tick levels for observation flows.
   2. **Compute phase** (order-independent): every agent runs everything *except* writing shared flow amounts — i.e. `_process_inputs → _apply_forces → _condition_T → _act_by_primitive/_act`. Reads of incoming flow `amount` are automatically frozen because no agent has written outputs yet this tick.
   3. **Commit phase**: every agent runs `_produce_outputs → _enforce_conservation → _record_history`.
-- Implementation: split `BertAgent.step()` into `compute()` and `commit()`. Keep `step()` as `self.compute(); self.commit()` so the async path is identical. In sync mode `model.step()` calls all `compute()` then all `commit()`.
+- Implementation: split `BertAgent.step()` into `compute()` and `commit()`. Keep `step()` as `self.compute(); self.commit()` so the async path is byte-identical (verify; gate step 1). In sync mode `model.step()` calls all `compute()` then all `commit()`, then `_record_system_history` + `datacollector.collect` once (after commit, same as async).
+- **Phase membership (review-corrected):** compute = `_process_inputs, _apply_forces, _condition_T, _act_*`; commit = `_produce_outputs, _enforce_conservation, _record_history`. The `should_step`/`step_interval` skip guard MUST gate **both** phases identically (else non-`Second` time-constants desync — the suite won't catch it, all test models are `Second`). Initialize `self._level_snapshot = {}` in `__init__` unconditionally.
+- **Forces & self-writing T-funcs (review B2):** forces use the same shared-dict aliasing (written in commit, read in compute) → sync makes forces always 1-tick-delayed. `_t_splitting`/`_t_copying` write `flow["amount"]` *in compute*, violating frozen-reads. **Conservative models must contain zero Force interactions and no Splitting/Copying** — assert this at build; document the delayed-force semantics.
 - *Files:* `model.py` (`step`, `__init__`), `agents.py` (`BertAgent.step/compute/commit`).
 - *Conservation property:* a transfer S→I debits S in S's compute (storage -= released, frozen inputs) and credits I from the flow amount S committed **last** tick. Each `released_T` lands in I exactly once at T+1; one tick's mass is "on the wire" and accounted. No double-read, no order dependence → exact.
 
 ### B. Observation flows (non-draining level reads)
-New flow semantics so a Sensor can read a stock's level without draining it (Mobus:
-sensing is "very low power"). A flow with `usability == "Observation"`:
-- At model build (`_build_flow_adjacency`, model.py): tag `flow_info["observation"] = True`. The **source** must not treat it as a mass outflow.
-- `_t_buffering` demand + `_produce_outputs`: **exclude** observation outflows from `_base_demand` and from mass-writing (skip them in the outflow loop).
-- `_t_sensing` (agents.py): for observation incoming flows, read `agent.model._level_snapshot[flow["_source_id"]]` (the frozen pre-tick level) instead of `flow["amount"]`; scale by `agency_capacity`. Regular (non-observation) sensor flows keep current flow-amount behavior — **existing circuits unchanged**.
-- *Why a snapshot:* makes the level read order-independent in sync mode (and harmless in async).
-- *Files:* `model.py` (`_build_flow_adjacency`, snapshot), `agents.py` (`_t_sensing`, `_t_buffering`, `_produce_outputs`), `schema.tql` + `json_bridge.py` (allow `"Observation"` usability), `model.py` `PRIMITIVE_SUBSTANCE_VALID` (Sensing already takes E/M).
+A Sensor reads a stock's level without draining it (Mobus: sensing is "very low power").
+Carrier = the `parameters` flag from Step 0, **not** a usability value.
+- At model build (`_build_flow_adjacency`): `flow_info["observation"] = bool(params.get("observation"))` on every flow. Source must not treat observation outflows as mass outflows.
+- **Three exclusion sites** (review B3 — `_enforce_conservation` is the easily-missed third): exclude observation outflows from (1) `_t_buffering`'s cached `_base_demand` (at capture time, first step), (2) `_produce_outputs` mass-writing loop, and (3) `_enforce_conservation`'s `me_outflow` sum **and** its scaling loop. Missing (3) lets an observation E/M flow inflate `me_outflow`, firing spurious `ratio` scaling on the real transfer → conservation broken.
+- `_t_sensing`: for observation incoming flows read `agent.model._level_snapshot.get(flow["_source_id"], 0.0)` (frozen pre-tick level) instead of `flow["amount"]`, scaled by `agency_capacity`; use `.get` (external sources aren't agents). Build-time-warn if an observation source isn't a Buffering agent. Non-observation sensor flows keep current behavior — **existing circuits unchanged** (predicate must be `flow.get("observation", False)`, never `flow["observation"]`).
+- *Files:* `model.py` (`_build_flow_adjacency`, `_level_snapshot`, `__init__` init), `agents.py` (`_t_sensing`, `_t_buffering`, `_produce_outputs`, `_enforce_conservation`). **No schema.tql / no json_bridge usability / no Rust change.**
 
 ### C. (Defensive, optional) outflow-split for multiple physical outflows
 Only needed if a conservative model has a buffer with >1 *mass* outflow. The new
@@ -67,8 +83,11 @@ weight) instead of copying; Message outflows still copy. Audit async models firs
 - `Prey, Predator`: Buffering, synchronous. Prey growth = regulated inflow; predation = Prey's regulated release controlled by an Observation read of Predator level (βRF); Predator death = regulated release to a sink; Predator gain fed by the predation transfer.
 - `test_lotka_volterra`: bounded sustained oscillation (turning points ≥ 6, bounded), prey-leads-predator phase lag. With sync determinism the cycle should be cleaner than async; if two-buffer still won't sustain, the single-buffer oscillator remains the documented fallback (`process-primitives.md:330`).
 
+### Conservative-buffer rules (review B4/B7 — make exactness structural, not emergent)
+A buffer participating in conservative transfer must: (1) have **infinite capacity** on its transfer outflow (no `min(activity, capacity)` clamp destroying debited mass), (2) emit **exactly** `state["activity"]` (T-debit and `_produce_outputs`-emit identical), (3) be **exempt from `_enforce_conservation` scaling**, and (4) bypass `_condition_T`'s `release_factor` wobble (which would distort the βSI/βRF rate and could violate "I unimodal"). Implement as a `conservative=True` buffer flag (or derive from `update_mode=="synchronous"`).
+
 ### Conservation invariant
-`BertModel.total_conserved_mass()` = Σ buffer storage + Σ in-flight transfer-flow `amount` (M/E, exclude observation flows, dedup by `id()`). `test_conservation_closed_loop` (sync): closed S→I→R, drift < 0.1% over 200 ticks.
+`BertModel.total_conserved_mass()` = Σ buffer storage + Σ in-flight transfer-flow `amount` (M/E, **exclude observation flows**, dedup by `id()`). `test_conservation_closed_loop` (sync, **`perturbations={}`** — perturbations inject/remove mass and are incompatible with the invariant): closed S→I→R, assert per-tick `conservation_deficit == 0` on every buffer **and** `abs(total_conserved_mass(t) - total_conserved_mass(0)) < 1e-9`. Exact means epsilon-exact; a 0.1% tolerance is a tell that leaks remain.
 
 ---
 
@@ -76,12 +95,12 @@ weight) instead of copying; Message outflows still copy. Audit async models firs
 
 1. **Split `step()` → `compute()`/`commit()`**, async path calls both inline. Run suite → expect 48/48 unchanged (pure refactor).
 2. **Add `update_mode` + synchronous two-phase** `model.step()` + level snapshot. No model uses it yet → 48/48 unchanged.
-3. **Observation flows**: build-time tagging, buffer demand/produce exclusion, `_t_sensing` snapshot read, schema/json_bridge `"Observation"`. No existing flow uses it → 48/48 unchanged. Add a focused `test_observation_nondraining` (buffer level read leaves storage intact).
-4. **`test_conservation_closed_loop`** (sync, gated S→I→R via regulated Buffering + observation) → prove < 0.1% drift. This is the gate: do not proceed until exact.
-5. **SIR** model + `test_sir_epidemic` (headless: in-code build + mesa_runner on generated JSON).
+3. **Observation flows** (`parameters` carrier, Step 0): build-time tagging, the **three** exclusion sites (demand, produce, `_enforce_conservation`), `_t_sensing` snapshot read with `.get`. No existing flow has the flag → re-run suite, **48/48 unchanged** (hard gate). Add `test_observation_nondraining` (buffer level read leaves storage intact).
+4. **`test_conservation_closed_loop`** (sync, `perturbations={}`, conservative buffers, inf-capacity transfers): assert per-tick `conservation_deficit==0` **and** `< 1e-9` total-mass drift. **Epsilon-exact gate — do not proceed until exact.**
+5. **SIR** model + `test_sir_epidemic` (headless: in-code build + mesa_runner). **Thread `--update-mode` through `mesa_runner.run_json` → `BertModel.__init__`** (`mesa_runner.py:111` currently drops it) here, not at step 8.
 6. **LV** model + `test_lotka_volterra` (honest; fallback documented).
 7. **Docs**: update `process-primitives.md` (synchronous mode, observation flows, the two validated conservative compositions). Regenerate `*-spec.json` + compiled JSON in `assets/models/local/test-primitives/`.
-8. **UI pass** (last): load `sir-epidemic.json` / `lotka-volterra.json` in the Tauri app for Sayama screenshots. Sim launch panel must pass `update_mode` through `mesa_runner.py` args → `src-tauri/src/simulation.rs` (add `--update-mode`, default async) + the Leptos launch panel. *Small Rust/UI touch — only the arg passthrough, not the engine.*
+8. **UI pass** (last): load `sir-epidemic.json` / `lotka-volterra.json` in the Tauri app for Sayama screenshots. With the `parameters` carrier the models **load and render normally** (no serde/schema break). Panel passes `update_mode` → `src-tauri/src/simulation.rs` (`--update-mode`, default async) + the Leptos launch panel. *Small Rust/UI touch — arg passthrough only.*
 
 ## Verify (headless-first)
 ```
@@ -93,7 +112,7 @@ cd bert/python
 
 ## Risk register
 - **Sync changes dynamics of any model that opts in** — mitigated: only NEW models use sync; existing stay async. The dynamics question is empirical (re-tune in headless Python before UI).
-- **Observation flow as a new usability** must round-trip through json_bridge + TypeDB schema + the generator. Verify the spec→generate→load path emits/keeps `usability:"Observation"`.
+- **Observation carrier** = `parameters` flag (resolved): verify the spec→generate→load path preserves `parameters.observation` (it does for `parameters`, `load.rs:173`). Do NOT use a `usability` value — that hard-fails the Rust serde enum + TypeDB `@values`.
 - **Two-buffer LV may still not cycle** even with exact conservation (discrete-time predator-prey can damp) — single-buffer oscillator fallback, labeled honestly.
 - **`compute()/commit()` split must not change async results** — step 1 is a pure refactor; assert byte-identical suite output before adding sync.
 - **mesa_runner / Tauri arg passthrough** is the only Rust/UI touch; keep `--update-mode` defaulted to async so nothing else changes.
