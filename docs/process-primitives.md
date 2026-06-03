@@ -388,6 +388,13 @@ Seed storages via `agent.initial_state` (S=100, I=5, R=0).
 agent code. A brief two-tick onset transient reflects the synchronous sensor→control→
 infection signal path. **Test**: `test_sir_epidemic`.
 
+**Emergent epidemic threshold**: sweeping the infection gain `k` (the I-Sensor gain, a β
+proxy) with `python/sweep_sir.py` reveals a sharp R₀=1 bifurcation at `k ≈ 0.0077` — below
+it the seed infecteds recover before spreading (attack rate a few %), above it the epidemic
+burns through the whole pool (100%). The transition is a <7% change in `k`. Figure:
+`docs/sir-threshold.png`. The threshold is *emergent from the composition*, not coded — the
+same wiring contains or explodes depending only on one gain crossing a critical value.
+
 ### On Two-Buffer Lotka-Volterra (honest result)
 
 A predator-prey pair was attempted as a conservative two-buffer composition (predation =
