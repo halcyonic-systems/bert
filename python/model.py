@@ -23,6 +23,7 @@ PRIMITIVE_SUBSTANCE_VALID = {
     "Impeding":   {"Energy", "Material", "Message"},
     "Sensing":    {"Energy", "Material"},
     "Modulating": {"Energy", "Material", "Message"},
+    "Amplifying": {"Energy", "Message"},
     "Inverting":  {"Message"},
     "Copying":    {"Message"},
 }

@@ -714,11 +714,13 @@ def test_combining_asymmetric_perturbation():
 
 
 def test_modulating_bilinearity():
-    """Doubling BOTH inputs of Modulating should give 4x (bilinear), not 2x."""
+    """Doubling BOTH inputs of Modulating should give 4x (bilinear), not 2x.
+    Baseline control 0.4 so the doubled control (0.8) stays inside the conservative
+    [0,1] gate — bilinearity holds while mass stays bounded by the primary."""
     systems = [make_system("Modulator", "Modulating")]
     interactions = [
         make_flow("Primary", "SrcP", "Modulator", "Energy", 5.0),
-        make_flow("Control", "SrcC", "Modulator", "Message", 1.0),
+        make_flow("Control", "SrcC", "Modulator", "Message", 0.4),
     ]
     sys_df = pd.DataFrame(systems)
     int_df = pd.DataFrame(interactions)
@@ -735,6 +737,39 @@ def test_modulating_bilinearity():
     ratio = doubled / baseline if baseline else 0
     assert 3.5 < ratio < 4.5, f"Expected ~4x (bilinear), got {ratio:.2f}x"
     return True, f"OK (ratio={ratio:.2f}x, baseline={baseline:.1f}, doubled={doubled:.1f})"
+
+
+def test_amplifying():
+    """Amplifying adds metered power to a weak signal: out = gain*signal when power
+    is ample, but capped by available power (conservation — cannot amplify beyond the
+    power source). Mobus Fig. 3.19, distinct from Modulating (gates a flow)."""
+    # Ample power: gain (agency 0.5 -> 5.5) * signal 2.0 = 11.0, power 100 not binding
+    sys_a = [make_system("Amplifier", "Amplifying", agency_capacity=0.5)]
+    int_a = [
+        make_flow("signal", "SrcSig", "Amplifier", "Message", 2.0),
+        make_flow("power", "SrcPwr", "Amplifier", "Energy", 100.0),
+        make_flow("out", "Amplifier", "Snk", "Energy", usability="Product"),
+    ]
+    m = BertModel(pd.DataFrame(sys_a), pd.DataFrame(int_a), seed=42)
+    for _ in range(10):
+        m.step()
+    out_ample = list(m.agents)[0].state.get("activity", 0.0)
+    assert abs(out_ample - 11.0) < 0.5, f"Ample power: expect ~11 (5.5x2), got {out_ample:.2f}"
+
+    # Power-limited: same gain/signal but only 5.0 power -> output capped at 5.0
+    sys_b = [make_system("Amplifier", "Amplifying", agency_capacity=0.5)]
+    int_b = [
+        make_flow("signal", "SrcSig", "Amplifier", "Message", 2.0),
+        make_flow("power", "SrcPwr", "Amplifier", "Energy", 5.0),
+        make_flow("out", "Amplifier", "Snk", "Energy", usability="Product"),
+    ]
+    m2 = BertModel(pd.DataFrame(sys_b), pd.DataFrame(int_b), seed=42)
+    for _ in range(10):
+        m2.step()
+    out_limited = list(m2.agents)[0].state.get("activity", 0.0)
+    assert abs(out_limited - 5.0) < 0.5, f"Power-limited: output capped at power 5.0, got {out_limited:.2f}"
+    assert out_limited < out_ample, "Limited power must reduce output below the ample case"
+    return True, f"OK (ample={out_ample:.1f}=5.5x2, power-limited={out_limited:.1f} capped at source)"
 
 
 def test_inverting_direction():
@@ -1179,13 +1214,19 @@ def test_system_level_history():
 
 def test_markovian_primitives():
     """Non-Buffering primitives must produce identical output regardless of history length."""
-    markovian = ["Sensing", "Impeding", "Modulating", "Propelling"]
+    markovian = ["Sensing", "Impeding", "Modulating", "Propelling", "Amplifying"]
     for prim_name in markovian:
         systems = [make_system(prim_name, prim_name)]
         if prim_name == "Modulating":
             interactions = [
                 make_flow("primary", "Src", prim_name, substance="Energy", amount=10.0),
                 make_flow("control", "Ctrl", prim_name, substance="Message", amount=0.5),
+                make_flow("out", prim_name, "Snk", substance="Energy", usability="Product"),
+            ]
+        elif prim_name == "Amplifying":
+            interactions = [
+                make_flow("signal", "Src", prim_name, substance="Message", amount=2.0),
+                make_flow("power", "Pwr", prim_name, substance="Energy", amount=100.0),
                 make_flow("out", prim_name, "Snk", substance="Energy", usability="Product"),
             ]
         else:
@@ -1208,7 +1249,7 @@ def test_markovian_primitives():
 
         assert abs(activity_short - activity_long) < 0.001, \
             f"{prim_name} output differs with history length: short={activity_short:.4f} long={activity_long:.4f}"
-    return True, f"OK (all 4 Markovian primitives produce identical output regardless of history)"
+    return True, f"OK (all {len(markovian)} Markovian primitives produce identical output regardless of history)"
 
 
 ALL_TESTS = [
@@ -1242,6 +1283,7 @@ ALL_TESTS = [
     ("Duplicate ID Detection", test_duplicate_id_detection),
     ("Combining Asymmetric Perturbation", test_combining_asymmetric_perturbation),
     ("Modulating Bilinearity", test_modulating_bilinearity),
+    ("Amplifying Metered Power", test_amplifying),
     ("Inverting Direction", test_inverting_direction),
     ("Buffering Temporal Lag", test_buffering_temporal_lag),
     ("Copying Non-Conservation", test_copying_non_conservation),

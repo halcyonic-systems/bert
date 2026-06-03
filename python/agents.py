@@ -55,14 +55,29 @@ TIME_CONSTANT_TICKS = {
 
 
 def _t_buffering(agent, state, incoming, outgoing):
-    """s(t+1) = s(t) + Σ(in) - Σ(out). Affine, persistent state."""
-    inflow = sum(f.get("amount", 0) for f in incoming)
+    """s(t+1) = s(t) + Σ(physical in) - released. Affine, persistent state.
+
+    An optional Message control input regulates the release rate by a factor in
+    [0,1] — a regulated reservoir (valve). Because the regulated mass leaves storage
+    and goes directly down the outflow to the next stock, inter-stock transfer stays
+    conservative (no leaking gate node). This is Mobus's 'regulated reservoir is a
+    composition' realized as the buffer's own controlled outflow."""
+    inflow = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") != "Message"
+    )
+    controls = [
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Message"
+    ]
     demand = sum(f.get("amount", 0) for f in outgoing)
     storage = state.get("storage", 0.0)
     storage += inflow
     if "_base_demand" not in state:
         state["_base_demand"] = demand
     adjusted = state["_base_demand"] * state.get("_release_factor", 1.0)
+    if controls:
+        adjusted *= max(0.0, min(1.0, sum(controls)))   # regulated release
     released = min(adjusted, storage)
     storage -= released
     state["storage"] = storage
@@ -117,7 +132,12 @@ def _t_sensing(agent, state, incoming, outgoing):
 
 
 def _t_modulating(agent, state, incoming, outgoing):
-    """out = primary * f(control). Bilinear (nonlinear). Two-input primitive."""
+    """out = primary * gate(control), gate in [0, 1]. Bilinear two-input primitive
+    that GATES (never amplifies) — the gate cannot exceed 1, so it can't manufacture
+    mass. Correct for gating a supply/source-fed flow by a control signal (the
+    unpassed fraction is simply not drawn from the supply). For genuine gain use
+    Amplifying; for conservative rate-coupled transfer between two stocks use a
+    control-regulated Buffer (regulated reservoir), not a gate between buffers."""
     primary = sum(
         f.get("amount", 0) for f in incoming
         if f.get("substance_type") != "Message"
@@ -126,9 +146,28 @@ def _t_modulating(agent, state, incoming, outgoing):
         f.get("amount", 0) for f in incoming
         if f.get("substance_type") == "Message"
     )
-    mod_factor = max(0.0, min(2.0, control))
-    state["activity"] = primary * mod_factor
+    gate = max(0.0, min(1.0, control))
+    state["activity"] = primary * gate
     state["control_signal"] = control
+
+
+def _t_amplifying(agent, state, incoming, outgoing):
+    """out = min(signal * gain, power_available). Adds metered power to a weak
+    modulated signal; the output energy is drawn from a power (Energy) input, so
+    gain never manufactures mass. Mobus Fig. 3.19 — distinct from Modulating
+    (which gates a flow) and from Propelling (which pushes without gain)."""
+    signal = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Message"
+    )
+    power_available = sum(
+        f.get("amount", 0) for f in incoming
+        if f.get("substance_type") == "Energy"
+    )
+    gain = 1.0 + 9.0 * agent.agency_capacity   # agency_capacity 0..1 -> gain 1..10
+    desired = signal * gain
+    state["activity"] = min(desired, power_available)
+    state["amplifier_gain"] = gain
 
 
 def _t_inverting(agent, state, incoming, outgoing):
@@ -160,6 +199,7 @@ PRIMITIVE_T = {
     "Impeding":   _t_impeding,
     "Sensing":    _t_sensing,
     "Modulating": _t_modulating,
+    "Amplifying": _t_amplifying,
     "Inverting":  _t_inverting,
     "Copying":    _t_copying,
 }

@@ -611,6 +611,7 @@ pub enum ProcessPrimitive {
     Copying,
     Sensing,
     Modulating,
+    Amplifying,
     Inverting,
 }
 
