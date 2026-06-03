@@ -137,6 +137,22 @@ pub fn SimPanel(
             leptos::logging::log!("Launching simulation for model '{}'...", mn);
             let ip = input_params.get_untracked();
             let has_model_name = !mn.is_empty();
+            // Auto-select synchronous (mass-conserving) mode for models that use
+            // observation flows; regulation circuits stay on the async default.
+            let update_mode = mj
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
+                .and_then(|v| v["interactions"].as_array().map(|ixs| {
+                    ixs.iter().any(|ix| {
+                        ix["parameters"].as_array().is_some_and(|ps| {
+                            ps.iter().any(|p| {
+                                p["name"].as_str() == Some("observation")
+                                    && p["value"].as_str() == Some("true")
+                            })
+                        })
+                    })
+                }))
+                .map(|has_obs| if has_obs { "synchronous" } else { "async" }.to_string());
             let params = LaunchParams {
                 seed,
                 steps,
@@ -144,6 +160,7 @@ pub fn SimPanel(
                 model_name: mn,
                 json_path: jp,
                 params: if ip.is_empty() { None } else { Some(ip) },
+                update_mode,
             };
 
             let launch_result =
