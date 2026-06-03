@@ -1387,6 +1387,65 @@ def test_sir_epidemic():
         return False, str(e)
 
 
+def test_open_sir():
+    """OPEN counterpart to test_sir_epidemic: identical S->I->R topology, but Recovered
+    drains to an external Mortality sink. Mass crosses the boundary, so internal mass is
+    NOT conserved — it obeys the exact open-system balance internal(t) = internal(0) -
+    cumulative deaths. This is the open/closed contrast: closed -> total invariant;
+    open -> internal change exactly equals net boundary flux."""
+    systems = [
+        make_system("S", "Buffering"),
+        make_system("I", "Buffering"),
+        make_system("R", "Buffering"),
+        make_system("ISensor", "Sensing", agency_capacity=0.1),
+    ]
+    interactions = [
+        make_flow("infection", "S", "I", substance="Energy", amount=10.0),
+        make_flow("observe_I", "I", "ISensor", substance="Energy", amount=0.0, observation=True),
+        make_flow("control", "ISensor", "S", substance="Message", amount=0.0),
+        make_flow("recovery", "I", "R", substance="Energy", amount=1.0),
+        # boundary outflow: Recovered -> external Mortality (sink is not an agent)
+        make_flow("death", "R", "Mortality", substance="Energy", amount=0.5, usability="Waste"),
+    ]
+    model = BertModel(pd.DataFrame(systems), pd.DataFrame(interactions),
+                      seed=42, update_mode="synchronous", perturbations={})
+    agents = {a.bert_id: a for a in model.agents}
+    agents["test:S"].state["storage"] = 100.0
+    agents["test:I"].state["storage"] = 5.0
+
+    def out_amount(fid):
+        for a in model.agents:
+            for f in a.outgoing_flows:
+                if f["bert_id"] == f"test:{fid}":
+                    return f.get("amount", 0.0)
+        return 0.0
+
+    def internal_mass():  # storage + internal (agent<->agent) in-flight; excludes boundary death flow
+        s = sum(a.state.get("storage", 0.0) for a in model.agents)
+        return s + out_amount("infection") + out_amount("recovery")
+
+    im0 = internal_mass()
+    cum_deaths = 0.0
+    worst_balance = 0.0
+    I = []
+    try:
+        for _ in range(200):
+            model.step()
+            cum_deaths += out_amount("death")
+            worst_balance = max(worst_balance, abs(internal_mass() - (im0 - cum_deaths)))
+            I.append(agents["test:I"].state["storage"])
+
+        assert worst_balance < 1e-9, f"open-system balance violated by {worst_balance:.2e}"
+        assert cum_deaths > 0, "no mass left via the boundary — not actually open"
+        assert internal_mass() < im0 - 1e-9, "internal mass should decrease (mass exits)"
+        peak = max(I)
+        assert peak > 10 * 5.0 and I[-1] < peak, "expected an epidemic peak then decline"
+        return True, (f"OK (open: internal {im0:.0f}->{internal_mass():.0f}, "
+                      f"{cum_deaths:.0f} exited as deaths, balance exact to {worst_balance:.0e})")
+    except AssertionError as e:
+        return False, str(e)
+
+
 ALL_TESTS = [
     ("Buffering",  test_buffering),
     ("Combining",  test_combining),
@@ -1439,6 +1498,7 @@ ALL_TESTS = [
     ("Observation Non-Draining", test_observation_nondraining),
     ("Conservation Closed Loop (exact)", test_conservation_closed_loop),
     ("SIR Epidemic (conservative composition)", test_sir_epidemic),
+    ("Open SIR (boundary flux, not conserved)", test_open_sir),
 ]
 
 
