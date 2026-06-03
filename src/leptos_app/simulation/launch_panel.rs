@@ -142,16 +142,18 @@ pub fn SimPanel(
             let update_mode = mj
                 .as_ref()
                 .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
-                .and_then(|v| v["interactions"].as_array().map(|ixs| {
-                    ixs.iter().any(|ix| {
-                        ix["parameters"].as_array().is_some_and(|ps| {
-                            ps.iter().any(|p| {
-                                p["name"].as_str() == Some("observation")
-                                    && p["value"].as_str() == Some("true")
+                .and_then(|v| {
+                    v["interactions"].as_array().map(|ixs| {
+                        ixs.iter().any(|ix| {
+                            ix["parameters"].as_array().is_some_and(|ps| {
+                                ps.iter().any(|p| {
+                                    p["name"].as_str() == Some("observation")
+                                        && p["value"].as_str() == Some("true")
+                                })
                             })
                         })
                     })
-                }))
+                })
                 .map(|has_obs| if has_obs { "synchronous" } else { "async" }.to_string());
             let params = LaunchParams {
                 seed,

@@ -80,7 +80,10 @@ pub async fn launch_simulation(params: LaunchParams) -> Result<typedb_reader::Ru
         .args(["--seed", &seed.to_string()])
         .args(["--steps", &params.steps.to_string()])
         .args(["--run-id", &run_id])
-        .args(["--update-mode", params.update_mode.as_deref().unwrap_or("async")]);
+        .args([
+            "--update-mode",
+            params.update_mode.as_deref().unwrap_or("async"),
+        ]);
 
     if let Some(ref json_path) = params.json_path {
         cmd.args(["--json-path", json_path]);

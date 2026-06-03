@@ -106,7 +106,10 @@ pub fn classify_openness(model: &WorldModel) -> String {
         if matches!(ix.ty, InteractionType::Force) {
             continue;
         }
-        if !matches!(ix.substance.ty, SubstanceType::Energy | SubstanceType::Material) {
+        if !matches!(
+            ix.substance.ty,
+            SubstanceType::Energy | SubstanceType::Material
+        ) {
             continue;
         }
         if ix.source.ty == IdType::Source {
