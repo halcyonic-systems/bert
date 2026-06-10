@@ -373,6 +373,34 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                         .color(SECONDARY)
                         .monospace(),
                 );
+                // Conservation ledger — headline placement, next to the clock.
+                // Green = every unit of physical mass accounted; amber = leak
+                // (or a mid-run stock edit moved the baseline).
+                if app.circuit.tick > 0 {
+                    let c = &app.circuit;
+                    let baseline: f32 = c.nodes.iter().map(|n| n.initial_storage).sum();
+                    let residual = c.balance();
+                    let ok = residual.abs() <= 0.01 * (c.emitted + baseline).max(1.0);
+                    let label = if ok {
+                        RichText::new("⚖ conserved").color(GREEN)
+                    } else {
+                        RichText::new(format!("⚖ off by {residual:+.2}")).color(theme::AMBER)
+                    };
+                    ui.label(label).on_hover_text(format!(
+                        "emitted {:.2} + initial stocks {:.2}  =  stored {:.2} + sunk {:.2} \
+                         + in flight {:.2} + dissipated {:.2}  (residual {:+.3})\n\
+                         Dissipation = friction, valve shed, amp power, sensing, mismatches, \
+                         dead ends — each intended and counted.\n\
+                         Edited a stock mid-run? That moves the baseline — Reset re-balances.",
+                        c.emitted,
+                        baseline,
+                        c.stored(),
+                        c.sunk,
+                        c.in_flight(),
+                        c.dissipated,
+                        residual,
+                    ));
+                }
                 ui.toggle_value(&mut app.show_charts, "📈 Charts");
                 let mut load: Option<usize> = None;
                 ui.menu_button("Examples ▾", |ui| {
@@ -494,37 +522,6 @@ fn status_bar(app: &App, ctx: &egui::Context) {
                 dot(ui, GREEN);
                 ui.label(RichText::new(&app.status).color(SECONDARY).small());
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    // Conservation ledger — live. Green = every unit of
-                    // physical mass accounted; amber = leak (or a mid-run
-                    // stock edit moved the baseline).
-                    if app.circuit.tick > 0 {
-                        let c = &app.circuit;
-                        let baseline: f32 = c.nodes.iter().map(|n| n.initial_storage).sum();
-                        let residual = c.balance();
-                        let ok = residual.abs() <= 0.01 * (c.emitted + baseline).max(1.0);
-                        let label = if ok {
-                            RichText::new("⚖ conserved").color(GREEN).small()
-                        } else {
-                            RichText::new(format!("⚖ off by {residual:+.2}"))
-                                .color(theme::AMBER)
-                                .small()
-                        };
-                        ui.label(label).on_hover_text(format!(
-                            "emitted {:.2} + initial stocks {:.2}  =  stored {:.2} + sunk {:.2} \
-                             + in flight {:.2} + dissipated {:.2}  (residual {:+.3})\n\
-                             Dissipation = friction, valve shed, amp power, sensing, mismatches, \
-                             dead ends — each intended and counted.\n\
-                             Edited a stock mid-run? That moves the baseline — Reset re-balances.",
-                            c.emitted,
-                            baseline,
-                            c.stored(),
-                            c.sunk,
-                            c.in_flight(),
-                            c.dissipated,
-                            residual,
-                        ));
-                        ui.add_space(8.0);
-                    }
                     let mismatches = app.circuit.substance_mismatches();
                     let underpowered = app.circuit.underpowered_amplifiers();
                     let inert = app.circuit.inert_gradient_wires();
