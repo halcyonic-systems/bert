@@ -178,6 +178,7 @@ pub fn locality_pill(ui: &mut egui::Ui, local: bool) {
 }
 
 /// Standard content card.
+#[allow(dead_code)]
 pub fn card() -> egui::Frame {
     egui::Frame::new()
         .fill(PAPER)
@@ -236,4 +237,26 @@ pub fn hover_row(
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
     response
+}
+
+/// Canvas empty state for bert-compose.
+pub fn empty_state_inline(ui: &mut egui::Ui) {
+    ui.add_space(ui.available_height() * 0.30);
+    ui.vertical_centered(|ui| {
+        ui.label(RichText::new("⚒").color(HAIRLINE).size(44.0));
+        ui.add_space(4.0);
+        ui.label(
+            RichText::new("Build a system from work processes")
+                .color(PRIMARY)
+                .family(semibold())
+                .size(14.0),
+        );
+        ui.add_space(2.0);
+        ui.label(
+            RichText::new("Add primitives from the palette, wire ◦ → component, press Run — \
+                           flows move, stocks fill, feedback regulates.")
+                .color(SECONDARY)
+                .size(12.0),
+        );
+    });
 }

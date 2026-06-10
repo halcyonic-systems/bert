@@ -1,37 +1,39 @@
-//! bert-compose — compositional creation over the bert-core kernel.
+//! bert-compose — touch the system: drag process primitives, wire them, and
+//! watch matter, energy, and information actually flow.
 //!
-//! The issue #75 spike ("LEGO with proofs"): pick two models, bind outputs to
-//! inputs, and compose. The algebra is the proven one — composition is
-//! unconditional, bound external pairs become internal bonds, everything
-//! unbound provably survives across the new boundary
-//! (systems-science-foundations, Systems/Mobus/Composition.lean).
+//! Issue #75's creation experience at its most minimal: the bricks are
+//! Mobus's atomic work processes (transfer functions ported from BERT's
+//! verified python/agents.py), the wiring is composition (unconditional, by
+//! theorem), the stocks hold state — and Save emits ordinary BERT JSON.
 //!
-//! Pure kernel surface: depends on bert-core only — no Bevy, no Leptos, no
-//! Tauri. The composite saves as ordinary BERT JSON and opens in the editor.
+//! No error states exist by construction: every wiring action produces a
+//! valid system.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod compose;
+mod circuit;
+mod export;
 mod theme;
 
-use bert_core::validate::{validate, Severity, ValidationResult};
-use bert_core::WorldModel;
-use compose::{compose, suggest_bindings, Binding, Emergence};
+use bert_core::SubstanceType;
+use circuit::{Circuit, Node, NodeKind, Wire, PALETTE};
 use eframe::egui;
-use egui::RichText;
+use egui::{pos2, vec2, Color32, Pos2, RichText, Sense, Stroke};
 use theme::{
-    card, dot, pill, primary_button, section_header, semibold, ACCENT, ACCENT_SOFT, GOLD, GREEN,
-    GREEN_SOFT, PRIMARY, RED, SECONDARY,
+    dot, pill, primary_button, section_header, semibold, ACCENT, ACCENT_SOFT, GOLD, GREEN,
+    GREEN_SOFT, HAIRLINE, PAPER, PRIMARY, RED, SECONDARY,
 };
 
-/// Bundled example models, embedded so the .app needs no filesystem layout.
-const EXAMPLES: &[(&str, &str)] = &[
-    ("bitcoin", include_str!("../../assets/models/examples/bitcoin.json")),
-    ("ethereum", include_str!("../../assets/models/examples/ethereum.json")),
-    ("cosmos-hub", include_str!("../../assets/models/examples/cosmos-hub.json")),
-    ("solana", include_str!("../../assets/models/examples/solana.json")),
-    ("llm", include_str!("../../assets/models/examples/llm.json")),
-];
+// BERT substance colors (message lifted to accent for visibility on cream).
+fn substance_color(s: SubstanceType) -> Color32 {
+    match s {
+        SubstanceType::Energy => Color32::from_rgb(181, 27, 27),
+        SubstanceType::Material => Color32::from_rgb(120, 120, 126),
+        SubstanceType::Message => ACCENT,
+    }
+}
+
+const NODE_R: f32 = 27.0;
 
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
@@ -45,79 +47,62 @@ fn main() -> eframe::Result<()> {
 }
 
 struct App {
-    models: Vec<(String, WorldModel)>,
-    a_idx: usize,
-    b_idx: usize,
-    /// Suggested bindings with an enabled toggle each.
-    bindings: Vec<(Binding, bool)>,
-    composite: Option<(WorldModel, Emergence, ValidationResult)>,
-    composite_name: String,
+    circuit: Circuit,
+    name: String,
+    selected: Option<usize>,
+    /// Wire in progress: source node index.
+    pending_wire: Option<usize>,
+    running: bool,
+    ticks_per_sec: f32,
+    last_tick_at: f64,
+    next_n: usize,
     status: String,
 }
 
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         theme::apply(&cc.egui_ctx);
-        let models: Vec<(String, WorldModel)> = EXAMPLES
-            .iter()
-            .filter_map(|(name, json)| {
-                serde_json::from_str(json).ok().map(|m| (name.to_string(), m))
-            })
-            .collect();
-        let mut app = Self {
-            models,
-            a_idx: 0,
-            b_idx: 1,
-            bindings: Vec::new(),
-            composite: None,
-            composite_name: String::new(),
-            status: "pick two models, review the suggested bindings, compose".to_string(),
-        };
-        app.refresh_suggestions();
-        app
+        Self {
+            circuit: Circuit::default(),
+            name: "My System".to_string(),
+            selected: None,
+            pending_wire: None,
+            running: false,
+            ticks_per_sec: 4.0,
+            last_tick_at: 0.0,
+            next_n: 1,
+            status: "add primitives from the palette, wire ◦ → node, press Run".to_string(),
+        }
     }
 
-    fn a(&self) -> &WorldModel {
-        &self.models[self.a_idx].1
+    fn add_node(&mut self, kind: NodeKind, canvas_center: Pos2) {
+        let i = self.circuit.nodes.len();
+        let jitter = vec2(((i % 5) as f32 - 2.0) * 70.0, ((i / 5) as f32 - 1.0) * 80.0);
+        self.circuit.nodes.push(Node::new(kind, self.next_n, canvas_center + jitter));
+        self.next_n += 1;
+        self.selected = Some(i);
     }
 
-    fn b(&self) -> &WorldModel {
-        &self.models[self.b_idx].1
-    }
-
-    fn refresh_suggestions(&mut self) {
-        self.bindings =
-            suggest_bindings(self.a(), self.b()).into_iter().map(|b| (b, true)).collect();
-        self.composite = None;
-        self.composite_name =
-            format!("{} × {}", self.models[self.a_idx].0, self.models[self.b_idx].0);
-    }
-
-    fn run_compose(&mut self) {
-        let enabled: Vec<Binding> =
-            self.bindings.iter().filter(|(_, on)| *on).map(|(b, _)| b.clone()).collect();
-        let (composite, emergence) = compose(self.a(), self.b(), &enabled, &self.composite_name);
-        let result = validate(&composite);
-        let errors = result.issues.iter().filter(|i| i.severity == Severity::Error).count();
-        self.status = if errors == 0 {
-            format!(
-                "composed: {} bond(s) emerged, {} externals internalized, {} survive · validates clean",
-                emergence.internal_bonds.len(),
-                emergence.internalized.len(),
-                emergence.surviving.len()
-            )
-        } else {
-            format!("composed with {errors} validation error(s) — see verdict")
-        };
-        self.composite = Some((composite, emergence, result));
+    fn delete_node(&mut self, i: usize) {
+        self.circuit.nodes.remove(i);
+        self.circuit.wires.retain(|w| w.from != i && w.to != i);
+        for w in &mut self.circuit.wires {
+            if w.from > i {
+                w.from -= 1;
+            }
+            if w.to > i {
+                w.to -= 1;
+            }
+        }
+        self.selected = None;
+        self.pending_wire = None;
     }
 
     fn save(&mut self) {
-        let Some((composite, ..)) = &self.composite else { return };
+        let model = export::to_world_model(&self.circuit, &self.name);
         let home = std::env::var("HOME").unwrap_or_default();
-        let fname = self.composite_name.replace(" × ", "-x-").replace(' ', "-");
-        let path = format!("{home}/Desktop/{fname}.json");
-        match serde_json::to_string_pretty(composite)
+        let path = format!("{home}/Desktop/{}.json", self.name.replace(' ', "-"));
+        match serde_json::to_string_pretty(&model)
             .map_err(|e| e.to_string())
             .and_then(|s| std::fs::write(&path, s).map_err(|e| e.to_string()))
         {
@@ -125,51 +110,28 @@ impl App {
             Err(e) => self.status = format!("save failed: {e}"),
         }
     }
-
-    /// Display data for a binding: (sink ⇒ source, direction, substance).
-    fn binding_label(&self, b: &Binding) -> (String, String, String) {
-        let (out_m, in_m, dir) = if b.a_to_b {
-            (
-                self.a(),
-                self.b(),
-                format!("{} → {}", self.models[self.a_idx].0, self.models[self.b_idx].0),
-            )
-        } else {
-            (
-                self.b(),
-                self.a(),
-                format!("{} → {}", self.models[self.b_idx].0, self.models[self.a_idx].0),
-            )
-        };
-        let sink = out_m
-            .environment
-            .sinks
-            .get(b.sink_idx)
-            .map(|e| e.info.name.clone())
-            .unwrap_or_default();
-        let source = in_m
-            .environment
-            .sources
-            .get(b.source_idx)
-            .map(|e| e.info.name.clone())
-            .unwrap_or_default();
-        let substance = out_m
-            .environment
-            .sinks
-            .get(b.sink_idx)
-            .and_then(|e| out_m.interactions.iter().find(|f| f.sink == e.info.id))
-            .map(|f| format!("{:?}", f.substance.ty))
-            .unwrap_or_default();
-        (format!("{sink} ⇒ {source}"), dir, substance)
-    }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Clock.
+        if self.running {
+            let now = ctx.input(|i| i.time);
+            if now - self.last_tick_at >= 1.0 / self.ticks_per_sec as f64 {
+                self.circuit.step();
+                self.last_tick_at = now;
+            }
+            ctx.request_repaint();
+        }
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.pending_wire = None;
+        }
+
         top_bar(self, ctx);
         status_bar(self, ctx);
-        model_sidebar(self, ctx);
-        workbench(self, ctx);
+        palette_panel(self, ctx);
+        inspector_panel(self, ctx);
+        canvas(self, ctx);
     }
 }
 
@@ -177,7 +139,7 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
     egui::TopBottomPanel::top("top")
         .frame(
             egui::Frame::new()
-                .fill(theme::PAPER)
+                .fill(PAPER)
                 .inner_margin(egui::Margin { left: 14, right: 14, top: 10, bottom: 10 }),
         )
         .show(ctx, |ui| {
@@ -185,24 +147,33 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                 ui.label(RichText::new("BERT").color(PRIMARY).family(semibold()).size(15.0));
                 ui.add_space(-4.0);
                 ui.label(RichText::new("COMPOSE").color(SECONDARY).size(15.0));
+                ui.add_space(10.0);
+                ui.add(
+                    egui::TextEdit::singleline(&mut app.name)
+                        .desired_width(180.0)
+                        .margin(egui::Margin::symmetric(8, 4)),
+                );
                 ui.add_space(8.0);
+                let run_label = if app.running { "Pause" } else { "Run" };
+                if ui.add(primary_button(run_label)).clicked() {
+                    app.running = !app.running;
+                }
+                if ui.button("Reset").clicked() {
+                    app.circuit.reset();
+                }
+                ui.add(
+                    egui::Slider::new(&mut app.ticks_per_sec, 1.0..=20.0)
+                        .text("ticks/s")
+                        .fixed_decimals(0),
+                );
                 ui.label(
-                    RichText::new("LEGO with proofs — composition is unconditional")
+                    RichText::new(format!("t = {}", app.circuit.tick))
                         .color(SECONDARY)
-                        .size(11.0)
-                        .italics(),
+                        .monospace(),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let can_save = app.composite.is_some();
-                    if ui
-                        .add_enabled(can_save, primary_button("Save composite"))
-                        .on_hover_text("write BERT JSON to ~/Desktop — opens in the editor")
-                        .clicked()
-                    {
+                    if ui.add(primary_button("Save as BERT model")).clicked() {
                         app.save();
-                    }
-                    if ui.add(primary_button("Compose")).clicked() {
-                        app.run_compose();
                     }
                 });
             });
@@ -213,240 +184,323 @@ fn status_bar(app: &App, ctx: &egui::Context) {
     egui::TopBottomPanel::bottom("status")
         .frame(
             egui::Frame::new()
-                .fill(theme::PAPER)
+                .fill(PAPER)
                 .inner_margin(egui::Margin { left: 14, right: 14, top: 5, bottom: 5 }),
         )
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
-                let ok = app
-                    .composite
-                    .as_ref()
-                    .map(|(_, _, r)| !r.issues.iter().any(|i| i.severity == Severity::Error))
-                    .unwrap_or(true);
-                dot(ui, if ok { GREEN } else { RED });
+                dot(ui, GREEN);
                 ui.label(RichText::new(&app.status).color(SECONDARY).small());
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(
-                        RichText::new("algebra: Systems/Mobus/Composition.lean · machine-verified")
-                            .color(SECONDARY)
-                            .small(),
+                        RichText::new(format!(
+                            "{} components · {} bonds · diversity {} · always valid — composition is unconditional",
+                            app.circuit.nodes.len(),
+                            app.circuit.wires.len(),
+                            app.circuit.diversity(),
+                        ))
+                        .color(SECONDARY)
+                        .small(),
                     );
                 });
             });
         });
 }
 
-fn model_sidebar(app: &mut App, ctx: &egui::Context) {
-    egui::SidePanel::left("models")
+fn palette_panel(app: &mut App, ctx: &egui::Context) {
+    egui::SidePanel::left("palette")
         .resizable(false)
-        .exact_width(230.0)
+        .exact_width(168.0)
         .frame(egui::Frame::new().fill(theme::CREAM).inner_margin(egui::Margin::same(10)))
         .show(ctx, |ui| {
-            let mut changed = false;
-            for (label, idx) in [("SYSTEM A", 0usize), ("SYSTEM B", 1usize)] {
-                section_header(ui, label);
-                ui.add_space(2.0);
-                let mut new_sel = if idx == 0 { app.a_idx } else { app.b_idx };
-                let current = app.models[new_sel].0.clone();
-                egui::ComboBox::from_id_salt(("model", idx))
-                    .width(200.0)
-                    .selected_text(RichText::new(current).size(12.5))
-                    .show_ui(ui, |ui| {
-                        for (i, (name, _)) in app.models.iter().enumerate() {
-                            if ui.selectable_value(&mut new_sel, i, name).changed() {
-                                changed = true;
-                            }
-                        }
-                    });
-                if idx == 0 {
-                    app.a_idx = new_sel;
-                } else {
-                    app.b_idx = new_sel;
-                }
-                let m = &app.models[new_sel].1;
-                ui.add_space(2.0);
-                ui.label(
-                    RichText::new(format!(
-                        "{} systems · {} flows · {} in / {} out",
-                        m.systems.len(),
-                        m.interactions.len(),
-                        m.environment.sources.len(),
-                        m.environment.sinks.len(),
-                    ))
-                    .color(SECONDARY)
-                    .small(),
-                );
-                ui.add_space(10.0);
-            }
-            if changed {
-                app.refresh_suggestions();
-            }
-
-            section_header(ui, "HOW IT WORKS");
+            section_header(ui, "PRIMITIVES");
             ui.add_space(2.0);
             ui.label(
-                RichText::new(
-                    "Bind an output of one system to an input of the other. Each bound \
-                     pair becomes an internal bond; both externals are internalized. \
-                     Everything unbound survives to the composite's environment — \
-                     guaranteed by bipartite_edge_classification.",
-                )
-                .color(SECONDARY)
-                .size(11.0),
+                RichText::new("click to add, drag on canvas").color(SECONDARY).small(),
             );
+            ui.add_space(6.0);
+            let center = pos2(560.0, 380.0);
+            for kind in PALETTE {
+                let hover = match kind {
+                    NodeKind::Source => "environment input — emits its rate every tick",
+                    NodeKind::Sink => "environment output — accumulates what arrives",
+                    NodeKind::Process(p) => match format!("{p:?}").as_str() {
+                        "Buffering" => "conservative stock — the system's state lives here",
+                        "Combining" => "merges physical inflows (Σ)",
+                        "Splitting" => "fans out, conserving Material/Energy",
+                        "Amplifying" => "signal × gain, bounded by metered Energy — no free mass",
+                        "Modulating" => "control Message gates a physical flow (valve, ≤1)",
+                        "Sensing" => "reads physical flow, emits Message — crosses substance",
+                        "Inverting" => "1 − signal (the controller for negative feedback)",
+                        "Copying" => "replicates Message — information copies, matter doesn't",
+                        "Propelling" => "pushes flow at efficiency η",
+                        "Impeding" => "resists flow (1 − impedance)",
+                        _ => "",
+                    },
+                };
+                if ui
+                    .add_sized([146.0, 24.0], egui::Button::new(RichText::new(kind.label()).size(12.0)))
+                    .on_hover_text(hover)
+                    .clicked()
+                {
+                    app.add_node(*kind, center);
+                }
+            }
         });
 }
 
-fn workbench(app: &mut App, ctx: &egui::Context) {
-    egui::CentralPanel::default()
-        .frame(egui::Frame::new().fill(theme::CREAM).inner_margin(egui::Margin::same(12)))
+fn inspector_panel(app: &mut App, ctx: &egui::Context) {
+    egui::SidePanel::right("inspector")
+        .resizable(false)
+        .exact_width(200.0)
+        .frame(egui::Frame::new().fill(theme::CREAM).inner_margin(egui::Margin::same(10)))
         .show(ctx, |ui| {
-            egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    section_header(ui, "BINDINGS");
-                    ui.label(
-                        RichText::new("outputs wired to inputs — substance types must agree")
-                            .color(SECONDARY)
-                            .small(),
-                    );
-                });
-                ui.add_space(4.0);
-                if app.bindings.is_empty() {
-                    ui.label(
-                        RichText::new(
-                            "no substance-compatible sink/source pairs between these two — \
-                             composing yields a disjoint union under a new root (still valid: \
-                             composition is unconditional)",
-                        )
-                        .color(SECONDARY)
-                        .italics()
-                        .size(12.0),
-                    );
-                }
-                let labels: Vec<_> =
-                    app.bindings.iter().map(|(b, _)| app.binding_label(b)).collect();
-                for (i, (label, dir, substance)) in labels.iter().enumerate() {
-                    let on = &mut app.bindings[i].1;
-                    ui.horizontal(|ui| {
-                        ui.checkbox(on, "");
-                        ui.label(
-                            RichText::new(label)
-                                .color(if *on { PRIMARY } else { SECONDARY })
-                                .size(13.0),
-                        );
-                        pill(ui, substance, ACCENT, ACCENT_SOFT);
-                        ui.label(RichText::new(dir).color(SECONDARY).small());
-                    });
-                }
-
-                if let Some((composite, emergence, result)) = &app.composite {
-                    ui.add_space(14.0);
-                    render_verdict(ui, composite, emergence, result);
-                }
-            });
-        });
-}
-
-fn render_verdict(
-    ui: &mut egui::Ui,
-    composite: &WorldModel,
-    emergence: &Emergence,
-    result: &ValidationResult,
-) {
-    let errors: Vec<_> = result.issues.iter().filter(|i| i.severity == Severity::Error).collect();
-    card()
-        .stroke(egui::Stroke::new(1.2, if errors.is_empty() { GOLD } else { RED }))
-        .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                section_header(ui, "WHAT EMERGED");
+            section_header(ui, "INSPECTOR");
+            ui.add_space(4.0);
+            let Some(i) = app.selected else {
                 ui.label(
-                    RichText::new(&composite.systems[0].info.name)
-                        .color(PRIMARY)
-                        .family(semibold())
-                        .size(14.0),
+                    RichText::new("select a component").color(SECONDARY).small().italics(),
                 );
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if errors.is_empty() {
-                        pill(ui, "validates clean", GREEN, GREEN_SOFT);
-                    } else {
-                        pill(ui, &format!("{} errors", errors.len()), egui::Color32::WHITE, RED);
-                    }
-                    pill(
-                        ui,
-                        &format!("{} systems", composite.systems.len()),
-                        SECONDARY,
-                        theme::HOVER,
-                    );
-                });
-            });
-            ui.add_space(6.0);
-
-            for bond in &emergence.internal_bonds {
-                ui.horizontal(|ui| {
-                    dot(ui, GREEN);
-                    ui.label(RichText::new(bond).color(PRIMARY).size(12.5));
-                });
+                return;
+            };
+            if i >= app.circuit.nodes.len() {
+                app.selected = None;
+                return;
             }
-            if emergence.internal_bonds.is_empty() {
-                ui.label(RichText::new("no new bonds — disjoint union").color(SECONDARY).small());
-            }
-            ui.add_space(6.0);
-            ui.horizontal(|ui| {
-                pill(
-                    ui,
-                    &format!("{} externals internalized", emergence.internalized.len()),
-                    ACCENT,
-                    ACCENT_SOFT,
-                );
-                pill(
-                    ui,
-                    &format!("{} boundary flows survive", emergence.surviving.len()),
-                    SECONDARY,
-                    theme::HOVER,
-                );
-            });
-            if !emergence.surviving.is_empty() {
-                ui.add_space(2.0);
-                ui.label(
-                    RichText::new(format!("surviving: {}", emergence.surviving.join(" · ")))
-                        .color(SECONDARY)
-                        .size(11.0),
-                );
-            }
-            for issue in errors.iter().take(6) {
-                ui.label(
-                    RichText::new(format!("✗ {} — {}", issue.location, issue.message))
-                        .color(RED)
-                        .size(11.5),
+            let is_buffer = matches!(
+                app.circuit.nodes[i].kind,
+                NodeKind::Process(bert_core::ProcessPrimitive::Buffering)
+            );
+            let is_source = app.circuit.nodes[i].kind == NodeKind::Source;
+            let node = &mut app.circuit.nodes[i];
+            ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(170.0));
+            ui.add_space(4.0);
+            let label = if is_source { "rate / tick" } else { "agency 0–1" };
+            let max = if is_source { 10.0 } else { 1.0 };
+            ui.add(egui::Slider::new(&mut node.param, 0.0..=max).text(label));
+            if is_buffer {
+                ui.add(
+                    egui::Slider::new(&mut node.release_rate, 0.0..=10.0).text("release / tick"),
                 );
             }
             ui.add_space(4.0);
-            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("emits").color(SECONDARY).small());
+                for s in
+                    [SubstanceType::Energy, SubstanceType::Material, SubstanceType::Message]
+                {
+                    let sel = node.out_substance == s;
+                    if ui
+                        .selectable_label(sel, RichText::new(format!("{s:?}")).size(10.5))
+                        .clicked()
+                    {
+                        node.out_substance = s;
+                    }
+                }
+            });
+            ui.add_space(6.0);
             ui.label(
-                RichText::new(
-                    "every move above is licensed: bound pairs reclassified internal, survivors \
-                     cross the new boundary — bipartite_edge_classification, \
-                     Systems/Mobus/Composition.lean (machine-verified; composition unconditional)",
-                )
+                RichText::new(format!(
+                    "activity {:.2}{}",
+                    node.activity,
+                    if is_buffer { format!(" · stored {:.2}", node.storage) } else { String::new() }
+                ))
                 .color(SECONDARY)
-                .size(10.5)
-                .italics(),
+                .monospace(),
             );
-        });
+            ui.add_space(8.0);
+            if ui.button(RichText::new("✕ delete").color(RED).size(11.5)).clicked() {
+                app.delete_node(i);
+                return;
+            }
 
-    ui.add_space(10.0);
-    section_header(ui, "COMPOSITE STRUCTURE");
-    ui.add_space(2.0);
-    for sys in &composite.systems {
-        let depth = sys.info.id.indices.len().saturating_sub(1);
-        ui.horizontal(|ui| {
-            ui.add_space(12.0 * depth as f32);
-            ui.label(
-                RichText::new(if depth == 0 { "▣" } else { "▢" })
-                    .color(if depth == 0 { GOLD } else { ACCENT })
-                    .small(),
-            );
-            ui.label(RichText::new(&sys.info.name).color(PRIMARY).size(12.0));
+            // Wires touching this node, removable.
+            ui.add_space(10.0);
+            section_header(ui, "BONDS");
+            ui.add_space(2.0);
+            let mut remove: Option<usize> = None;
+            for (k, w) in app.circuit.wires.iter().enumerate() {
+                if w.from != i && w.to != i {
+                    continue;
+                }
+                ui.horizontal(|ui| {
+                    if ui.small_button("✕").clicked() {
+                        remove = Some(k);
+                    }
+                    ui.label(
+                        RichText::new(format!(
+                            "{} → {}",
+                            app.circuit.nodes[w.from].name, app.circuit.nodes[w.to].name
+                        ))
+                        .color(PRIMARY)
+                        .size(11.0),
+                    );
+                });
+            }
+            if let Some(k) = remove {
+                app.circuit.wires.remove(k);
+            }
         });
-    }
+}
+
+fn canvas(app: &mut App, ctx: &egui::Context) {
+    egui::CentralPanel::default()
+        .frame(egui::Frame::new().fill(theme::CREAM))
+        .show(ctx, |ui| {
+            if app.circuit.nodes.is_empty() {
+                theme::empty_state_inline(ui);
+                return;
+            }
+            let painter = ui.painter();
+            let time = ui.input(|i| i.time) as f32;
+
+            // Wires first (under nodes).
+            for (k, wire) in app.circuit.wires.iter().enumerate() {
+                let a = app.circuit.nodes[wire.from].pos;
+                let b = app.circuit.nodes[wire.to].pos;
+                let substance = app.circuit.wire_substance(wire);
+                let color = substance_color(substance);
+                let dir = (b - a).normalized();
+                let (a_edge, b_edge) = (a + dir * NODE_R, b - dir * (NODE_R + 4.0));
+                painter.line_segment([a_edge, b_edge], Stroke::new(1.6, color));
+                // arrowhead
+                let n = vec2(-dir.y, dir.x);
+                painter.line_segment([b_edge, b_edge - dir * 7.0 + n * 4.0], Stroke::new(1.6, color));
+                painter.line_segment([b_edge, b_edge - dir * 7.0 - n * 4.0], Stroke::new(1.6, color));
+                // live amount + moving pulse
+                let amount = {
+                    let sender = &app.circuit.nodes[wire.from];
+                    sender.activity
+                };
+                let mid = a_edge + (b_edge - a_edge) * 0.5;
+                painter.text(
+                    mid + vec2(0.0, -10.0),
+                    egui::Align2::CENTER_CENTER,
+                    format!("{amount:.1}"),
+                    egui::FontId::monospace(9.5),
+                    if amount > 0.005 { color } else { HAIRLINE },
+                );
+                if app.running && amount > 0.005 {
+                    let t = (time * 0.7 + k as f32 * 0.37).fract();
+                    let p = a_edge + (b_edge - a_edge) * t;
+                    painter.circle_filled(p, 3.0, color);
+                }
+            }
+
+            // Nodes.
+            let mut clicked_body: Option<usize> = None;
+            let mut clicked_port: Option<usize> = None;
+            for i in 0..app.circuit.nodes.len() {
+                let pos = app.circuit.nodes[i].pos;
+                let rect = egui::Rect::from_center_size(pos, vec2(NODE_R * 2.0, NODE_R * 2.0));
+                let resp = ui.interact(rect, ui.id().with(("node", i)), Sense::click_and_drag());
+                if resp.dragged() {
+                    app.circuit.nodes[i].pos += resp.drag_delta();
+                }
+                if resp.clicked() {
+                    clicked_body = Some(i);
+                }
+                // Out-port handle.
+                let port = pos + vec2(NODE_R + 7.0, 0.0);
+                let port_rect = egui::Rect::from_center_size(port, vec2(14.0, 14.0));
+                let port_resp =
+                    ui.interact(port_rect, ui.id().with(("port", i)), Sense::click());
+                if port_resp.clicked() {
+                    clicked_port = Some(i);
+                }
+
+                let node = &app.circuit.nodes[i];
+                let painter = ui.painter();
+                let (ring, ring_w) = if app.pending_wire == Some(i) {
+                    (GOLD, 2.2)
+                } else if app.selected == Some(i) {
+                    (ACCENT, 2.0)
+                } else {
+                    (HAIRLINE, 1.2)
+                };
+                let fill = match node.kind {
+                    NodeKind::Source => GREEN_SOFT,
+                    NodeKind::Sink => ACCENT_SOFT,
+                    _ => PAPER,
+                };
+                painter.circle(pos, NODE_R, fill, Stroke::new(ring_w, ring));
+                // Buffer fill bar: state made visible.
+                if matches!(
+                    node.kind,
+                    NodeKind::Process(bert_core::ProcessPrimitive::Buffering)
+                ) {
+                    let frac = (node.storage / 10.0).clamp(0.0, 1.0);
+                    let bar = egui::Rect::from_min_size(
+                        pos + vec2(-16.0, 12.0 - 24.0 * frac),
+                        vec2(5.0, 24.0 * frac),
+                    );
+                    painter.rect_filled(bar, 2.0, GOLD);
+                    painter.rect_stroke(
+                        egui::Rect::from_min_size(pos + vec2(-16.0, -12.0), vec2(5.0, 24.0)),
+                        2.0,
+                        Stroke::new(1.0, HAIRLINE),
+                        egui::StrokeKind::Inside,
+                    );
+                }
+                let short: String = node.kind.label().chars().take(7).collect();
+                painter.text(
+                    pos + vec2(2.0, -3.0),
+                    egui::Align2::CENTER_CENTER,
+                    short,
+                    egui::FontId::new(9.5, semibold()),
+                    PRIMARY,
+                );
+                painter.text(
+                    pos + vec2(2.0, 8.0),
+                    egui::Align2::CENTER_CENTER,
+                    format!("{:.1}", node.activity),
+                    egui::FontId::monospace(9.0),
+                    SECONDARY,
+                );
+                painter.text(
+                    pos + vec2(0.0, NODE_R + 10.0),
+                    egui::Align2::CENTER_CENTER,
+                    &node.name,
+                    egui::FontId::proportional(10.0),
+                    SECONDARY,
+                );
+                // port
+                let port_color = if port_resp.hovered() { GOLD } else { substance_color(node.out_substance) };
+                painter.circle(port, 5.0, PAPER, Stroke::new(1.6, port_color));
+            }
+
+            // Wiring interaction: port starts, body completes.
+            if let Some(i) = clicked_port {
+                app.pending_wire = Some(i);
+                app.status = format!(
+                    "wiring from {} — click a target component (esc cancels)",
+                    app.circuit.nodes[i].name
+                );
+            } else if let Some(i) = clicked_body {
+                if let Some(from) = app.pending_wire.take() {
+                    if from != i && !app.circuit.wires.contains(&Wire { from, to: i }) {
+                        app.circuit.wires.push(Wire { from, to: i });
+                        app.status = format!(
+                            "bond: {} → {} (internalized — both endpoints inside)",
+                            app.circuit.nodes[from].name, app.circuit.nodes[i].name
+                        );
+                    }
+                } else {
+                    app.selected = Some(i);
+                }
+            }
+
+            // Pending wire follows the pointer.
+            if let Some(from) = app.pending_wire {
+                if let Some(p) = ui.ctx().pointer_latest_pos() {
+                    ui.painter().line_segment(
+                        [app.circuit.nodes[from].pos, p],
+                        Stroke::new(1.2, GOLD),
+                    );
+                }
+                ui.ctx().request_repaint();
+            }
+
+            let _ = pill; // theme helpers kept for parity
+        });
 }

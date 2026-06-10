@@ -528,7 +528,8 @@ impl SmartParameter {
 // - [`crate::bevy_app::components`]: Live ECS components that this module serializes
 
 
-use glam::Vec2;
+pub use glam::Vec2;
+pub use rust_decimal;
 use rust_decimal::Decimal;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
