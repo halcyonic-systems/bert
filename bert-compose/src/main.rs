@@ -11,6 +11,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod askhal;
 mod circuit;
 mod docs;
 mod examples;
@@ -63,6 +64,11 @@ struct App {
     show_charts: bool,
     /// Which metric the plots track: 0 activity, 1 storage, 2 cumulative total.
     chart_metric: usize,
+    // — Ask hal (sovereign in-app analysis) —
+    hal_model: String,
+    hal_rx: Option<std::sync::mpsc::Receiver<Result<String, String>>>,
+    hal_answer: Option<String>,
+    hal_busy: bool,
 }
 
 impl App {
@@ -80,7 +86,18 @@ impl App {
             status: "add primitives from the palette, wire ◦ → node, press Run".to_string(),
             show_charts: true,
             chart_metric: 0,
+            hal_model: "llama3".to_string(),
+            hal_rx: None,
+            hal_answer: None,
+            hal_busy: false,
         }
+    }
+
+    fn ask_hal(&mut self) {
+        self.write_latest(); // make sure the digest is current
+        self.hal_busy = true;
+        self.hal_answer = None;
+        self.hal_rx = Some(askhal::ask(self.run_summary(), self.hal_model.clone()));
     }
 
     fn load_example(&mut self, ex: &examples::Example) {
@@ -244,7 +261,22 @@ impl eframe::App for App {
             self.pending_wire = None;
         }
 
+        // Collect hal's answer when it arrives.
+        if let Some(rx) = &self.hal_rx {
+            if let Ok(res) = rx.try_recv() {
+                self.hal_busy = false;
+                self.hal_rx = None;
+                match res {
+                    Ok(a) => self.hal_answer = Some(a),
+                    Err(e) => self.hal_answer = Some(e),
+                }
+            } else {
+                ctx.request_repaint_after(std::time::Duration::from_millis(150));
+            }
+        }
+
         top_bar(self, ctx);
+        hal_window(self, ctx);
         status_bar(self, ctx);
         palette_panel(self, ctx);
         inspector_panel(self, ctx);
@@ -320,6 +352,29 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                     if ui.add(primary_button("Save as BERT model")).clicked() {
                         app.save();
                     }
+                    // Ask hal — sovereign in-app analysis of the run.
+                    let can_ask = !app.circuit.history.is_empty() && !app.hal_busy;
+                    let label = if app.hal_busy { "hal thinking…" } else { "✦ Ask hal" };
+                    if ui
+                        .add_enabled(can_ask, primary_button(label))
+                        .on_hover_text("analyze this run with a local model — nothing leaves your machine")
+                        .clicked()
+                    {
+                        app.ask_hal();
+                    }
+                    egui::ComboBox::from_id_salt("hal-model")
+                        .width(118.0)
+                        .selected_text(RichText::new(&app.hal_model).small())
+                        .show_ui(ui, |ui| {
+                            for m in askhal::MODELS {
+                                let tag = if askhal::is_local(m) { "local" } else { "cloud" };
+                                ui.selectable_value(
+                                    &mut app.hal_model,
+                                    m.to_string(),
+                                    format!("{m}  ·  {tag}"),
+                                );
+                            }
+                        });
                     if ui
                         .add_enabled(
                             !app.circuit.history.is_empty(),
@@ -333,6 +388,56 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                 });
             });
         });
+}
+
+/// hal's reading of the run — a floating, closable card.
+fn hal_window(app: &mut App, ctx: &egui::Context) {
+    if app.hal_answer.is_none() && !app.hal_busy {
+        return;
+    }
+    let mut open = true;
+    egui::Window::new(format!("✦ hal reads your system  ·  {}", app.hal_model))
+        .id(egui::Id::new("hal-window"))
+        .open(&mut open)
+        .default_width(420.0)
+        .default_pos([300.0, 130.0])
+        .show(ctx, |ui| {
+            if app.hal_busy {
+                ui.horizontal(|ui| {
+                    ui.spinner();
+                    ui.label(
+                        RichText::new(format!("{} is reading the run…", app.hal_model))
+                            .color(SECONDARY),
+                    );
+                });
+                return;
+            }
+            if let Some(answer) = &app.hal_answer {
+                egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
+                    ui.label(RichText::new(answer).color(PRIMARY).size(13.0));
+                });
+                ui.add_space(6.0);
+                ui.horizontal(|ui| {
+                    let local = askhal::is_local(&app.hal_model);
+                    dot(ui, if local { GREEN } else { theme::AMBER });
+                    ui.label(
+                        RichText::new(if local {
+                            "answered locally — nothing left your machine"
+                        } else {
+                            "answered by a cloud model"
+                        })
+                        .color(SECONDARY)
+                        .small(),
+                    );
+                    if ui.small_button("ask again").clicked() {
+                        app.ask_hal();
+                    }
+                });
+            }
+        });
+    if !open {
+        app.hal_answer = None;
+    }
 }
 
 fn status_bar(app: &App, ctx: &egui::Context) {
