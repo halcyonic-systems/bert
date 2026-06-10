@@ -109,6 +109,9 @@ pub struct Circuit {
     pub nodes: Vec<Node>,
     pub wires: Vec<Wire>,
     pub tick: u64,
+    /// Per-tick data rows: [tick, n0.activity, n0.storage, n0.total, n1…].
+    /// Cleared on Reset or when the topology changes mid-recording.
+    pub history: Vec<Vec<f32>>,
 }
 
 impl Circuit {
@@ -119,6 +122,7 @@ impl Circuit {
             n.total = 0.0;
         }
         self.tick = 0;
+        self.history.clear();
     }
 
     /// Substance carried by a wire = the sender's output substance.
@@ -234,6 +238,36 @@ impl Circuit {
             node.total += sink_add[i];
         }
         self.tick += 1;
+
+        // Record the tick. A topology change invalidates prior columns.
+        let width = 1 + self.nodes.len() * 3;
+        if self.history.last().map(|r| r.len()) != Some(width) {
+            self.history.clear();
+        }
+        let mut row = Vec::with_capacity(width);
+        row.push(self.tick as f32);
+        for node in &self.nodes {
+            row.push(node.activity);
+            row.push(node.storage);
+            row.push(node.total);
+        }
+        self.history.push(row);
+    }
+
+    /// The recorded run as CSV: tick, then activity/storage/total per node.
+    pub fn csv(&self) -> String {
+        let mut out = String::from("tick");
+        for node in &self.nodes {
+            let name = node.name.replace(',', " ");
+            out.push_str(&format!(",{name}.activity,{name}.storage,{name}.total"));
+        }
+        out.push('\n');
+        for row in &self.history {
+            let cells: Vec<String> = row.iter().map(|v| format!("{v}")).collect();
+            out.push_str(&cells.join(","));
+            out.push('\n');
+        }
+        out
     }
 
     /// SameKind (Systems/Core/Complexity.lean): two components are the same
@@ -350,6 +384,25 @@ mod tests {
         }
         // desired = 1.0 * 10 = 10, but only 2.5 energy available
         assert!((c.nodes[2].activity - 2.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn csv_records_every_tick() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 2.0;
+        c.wires.push(Wire { from: 0, to: 1 });
+        for _ in 0..3 {
+            c.step();
+        }
+        let csv = c.csv();
+        let lines: Vec<&str> = csv.lines().collect();
+        assert_eq!(lines.len(), 4, "header + 3 ticks");
+        assert!(lines[0].starts_with("tick,"));
+        assert!(lines[0].contains(".activity"));
+        c.reset();
+        assert!(c.history.is_empty(), "reset clears the recording");
     }
 
     #[test]

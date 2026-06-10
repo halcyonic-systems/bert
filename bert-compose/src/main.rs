@@ -98,6 +98,19 @@ impl App {
         self.pending_wire = None;
     }
 
+    fn export_csv(&mut self) {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let path =
+            format!("{home}/Desktop/{}-data.csv", self.name.replace(' ', "-"));
+        match std::fs::write(&path, self.circuit.csv()) {
+            Ok(()) => {
+                self.status =
+                    format!("wrote {} ticks to {path}", self.circuit.history.len())
+            }
+            Err(e) => self.status = format!("csv export failed: {e}"),
+        }
+    }
+
     fn save(&mut self) {
         let model = export::to_world_model(&self.circuit, &self.name);
         let home = std::env::var("HOME").unwrap_or_default();
@@ -158,6 +171,13 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                 if ui.add(primary_button(run_label)).clicked() {
                     app.running = !app.running;
                 }
+                if ui
+                    .add_enabled(!app.running, egui::Button::new("Step"))
+                    .on_hover_text("advance exactly one tick")
+                    .clicked()
+                {
+                    app.circuit.step();
+                }
                 if ui.button("Reset").clicked() {
                     app.circuit.reset();
                 }
@@ -174,6 +194,16 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.add(primary_button("Save as BERT model")).clicked() {
                         app.save();
+                    }
+                    if ui
+                        .add_enabled(
+                            !app.circuit.history.is_empty(),
+                            egui::Button::new("Export CSV"),
+                        )
+                        .on_hover_text("write the recorded run (per-tick data) to ~/Desktop")
+                        .clicked()
+                    {
+                        app.export_csv();
                     }
                 });
             });
