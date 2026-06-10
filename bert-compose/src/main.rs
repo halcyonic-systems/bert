@@ -12,6 +12,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod circuit;
+mod docs;
+mod examples;
 mod export;
 mod glyph;
 mod theme;
@@ -81,6 +83,16 @@ impl App {
         }
     }
 
+    fn load_example(&mut self, ex: &examples::Example) {
+        self.circuit = (ex.build)();
+        self.name = ex.name.to_string();
+        self.next_n = self.circuit.nodes.len() + 1;
+        self.selected = None;
+        self.pending_wire = None;
+        self.running = false;
+        self.status = format!("loaded \"{}\" — {} · press Run", ex.name, ex.blurb);
+    }
+
     fn add_node(&mut self, kind: NodeKind, canvas_center: Pos2) {
         let i = self.circuit.nodes.len();
         let jitter = vec2(((i % 5) as f32 - 2.0) * 70.0, ((i / 5) as f32 - 1.0) * 80.0);
@@ -125,11 +137,78 @@ impl App {
         );
         match std::fs::write(&path, self.circuit.csv()) {
             Ok(()) => {
+                self.write_latest();
                 self.status =
-                    format!("wrote {} ticks to {path}", self.circuit.history.len())
+                    format!("wrote {} ticks to {path} (+ ~/.bert-compose/latest)", self.circuit.history.len())
             }
             Err(e) => self.status = format!("csv export failed: {e}"),
         }
+    }
+
+    /// The "latest run" contract: a fixed location Claude Code / any agent can
+    /// read without being told a filename. Written on every Run-pause and
+    /// export. So "analyze my latest run" always resolves.
+    fn write_latest(&self) {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let dir = format!("{home}/.bert-compose");
+        if std::fs::create_dir_all(&dir).is_err() {
+            return;
+        }
+        let _ = std::fs::write(format!("{dir}/latest.csv"), self.circuit.csv());
+        let model = export::to_world_model(&self.circuit, &self.name);
+        if let Ok(j) = serde_json::to_string_pretty(&model) {
+            let _ = std::fs::write(format!("{dir}/latest.json"), j);
+        }
+        let _ = std::fs::write(format!("{dir}/latest.md"), self.run_summary());
+    }
+
+    /// A compact human/LLM-readable digest of the current run.
+    fn run_summary(&self) -> String {
+        let c = &self.circuit;
+        let mut s = format!(
+            "# {} — bert-compose run\n\n{} components, {} bonds, {} ticks, diversity {}.\n\n## Components\n",
+            self.name,
+            c.nodes.len(),
+            c.wires.len(),
+            c.history.len(),
+            c.diversity(),
+        );
+        for node in &c.nodes {
+            s.push_str(&format!(
+                "- {} ({}): activity {:.2}{}\n",
+                node.name,
+                node.kind.label(),
+                node.activity,
+                if node.storage.abs() > 1e-6 {
+                    format!(", stored {:.2}", node.storage)
+                } else if node.total.abs() > 1e-6 {
+                    format!(", total {:.2}", node.total)
+                } else {
+                    String::new()
+                },
+            ));
+        }
+        s.push_str("\n## Wiring\n");
+        for w in &c.wires {
+            s.push_str(&format!(
+                "- {} → {} ({:?})\n",
+                c.nodes[w.from].name,
+                c.nodes[w.to].name,
+                c.wire_substance(w),
+            ));
+        }
+        let mm = c.substance_mismatches();
+        if !mm.is_empty() {
+            s.push_str("\n## Warnings\n");
+            for (i, wants, got) in mm {
+                s.push_str(&format!(
+                    "- {} consumes {wants:?} but is fed {got:?} (flow ignored)\n",
+                    c.nodes[i].name
+                ));
+            }
+        }
+        s.push_str("\nFull per-tick data: latest.csv. Model: latest.json.\n");
+        s
     }
 
     fn save(&mut self) {
@@ -196,6 +275,9 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                 let run_label = if app.running { "Pause" } else { "Run" };
                 if ui.add(primary_button(run_label)).clicked() {
                     app.running = !app.running;
+                    if !app.running {
+                        app.write_latest(); // pausing publishes the run
+                    }
                 }
                 if ui
                     .add_enabled(!app.running, egui::Button::new("Step"))
@@ -218,6 +300,22 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                         .monospace(),
                 );
                 ui.toggle_value(&mut app.show_charts, "📈 Charts");
+                let mut load: Option<usize> = None;
+                ui.menu_button("Examples ▾", |ui| {
+                    for (i, ex) in examples::EXAMPLES.iter().enumerate() {
+                        if ui
+                            .add(egui::Button::new(ex.name))
+                            .on_hover_text(ex.blurb)
+                            .clicked()
+                        {
+                            load = Some(i);
+                            ui.close_menu();
+                        }
+                    }
+                });
+                if let Some(i) = load {
+                    app.load_example(&examples::EXAMPLES[i]);
+                }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.add(primary_button("Save as BERT model")).clicked() {
                         app.save();
@@ -328,6 +426,13 @@ fn palette_panel(app: &mut App, ctx: &egui::Context) {
         });
 }
 
+/// A label : value row for the teaching card.
+fn learn_row(ui: &mut egui::Ui, label: &str, value: &str) {
+    ui.add_space(3.0);
+    ui.label(RichText::new(label).color(SECONDARY).size(10.0));
+    ui.label(RichText::new(value).color(PRIMARY).size(11.0));
+}
+
 fn inspector_panel(app: &mut App, ctx: &egui::Context) {
     egui::SidePanel::right("inspector")
         .resizable(false)
@@ -399,6 +504,31 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
                 app.delete_node(i);
                 return;
             }
+
+            // Teaching card — plain English first, details on demand.
+            ui.add_space(10.0);
+            let kind = app.circuit.nodes[i].kind;
+            let d = docs::doc(kind);
+            ui.label(RichText::new(d.plain).color(PRIMARY).size(12.0));
+            ui.add_space(2.0);
+            ui.label(RichText::new(format!("e.g. {}", d.everyday)).color(SECONDARY).size(11.0).italics());
+            egui::CollapsingHeader::new(RichText::new("how it works").color(SECONDARY).size(11.0))
+                .id_salt("learn")
+                .show(ui, |ui| {
+                    learn_row(ui, "rule", d.math);
+                    learn_row(ui, "substance", d.substance);
+                    learn_row(ui, "theory", d.theory);
+                    ui.add_space(2.0);
+                    ui.label(RichText::new("transfer function").color(SECONDARY).size(10.0));
+                    egui::Frame::new()
+                        .fill(theme::INPUT_BG)
+                        .stroke(egui::Stroke::new(1.0, HAIRLINE))
+                        .corner_radius(egui::CornerRadius::same(6))
+                        .inner_margin(egui::Margin::same(7))
+                        .show(ui, |ui| {
+                            ui.label(RichText::new(d.code).monospace().size(10.5).color(PRIMARY));
+                        });
+                });
 
             // Wires touching this node, removable.
             ui.add_space(10.0);

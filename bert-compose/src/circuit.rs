@@ -52,16 +52,22 @@ impl NodeKind {
     /// vanishes without explanation.
     pub fn consumes(&self, s: SubstanceType) -> bool {
         use ProcessPrimitive::*;
+        let physical = s != SubstanceType::Message;
         match self {
             // Message-only signal processors: copying/inverting matter would
             // counterfeit it.
             NodeKind::Process(Copying | Inverting) => s == SubstanceType::Message,
             // Sensing reads physical flow (Energy/Material), crosses to Message.
-            NodeKind::Process(Sensing) => s != SubstanceType::Message,
+            NodeKind::Process(Sensing) => physical,
             // Amplifying needs a Message signal and Energy power — Material is
             // dead weight to it.
             NodeKind::Process(Amplifying) => s != SubstanceType::Material,
-            // Everything else moves whatever it's given.
+            // You SPLIT matter (divide a conserved quantity) and COMBINE matter;
+            // information isn't divided, it's copied — so these are physical-only.
+            NodeKind::Process(Splitting | Combining) => physical,
+            // Buffering (stock + optional Message gate), Modulating (physical
+            // primary + Message control), Propelling/Impeding (move anything),
+            // Source/Sink: take what they're given.
             _ => true,
         }
     }
@@ -465,6 +471,13 @@ mod tests {
         amp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
         amp.wires.push(Wire { from: 0, to: 1 });
         assert_eq!(amp.substance_mismatches().len(), 1, "Material -> Amplifying flagged");
+        // Splitting fed Message is flagged (you split matter, you copy info).
+        let mut sp = Circuit::default();
+        sp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Copying)));
+        sp.nodes[0].out_substance = SubstanceType::Message;
+        sp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        sp.wires.push(Wire { from: 0, to: 1 });
+        assert_eq!(sp.substance_mismatches().len(), 1, "Message -> Splitting flagged");
         // Setting the source to emit Message clears it.
         c.nodes[0].out_substance = SubstanceType::Message;
         assert!(c.substance_mismatches().is_empty());
