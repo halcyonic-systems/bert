@@ -198,7 +198,11 @@ impl App {
         }
         self.harvest_declared();
         self.next_n = self.circuit.nodes.len() + 1;
-        self.selected = None;
+        // Select a representative node of the stamp (the first process brick)
+        // so the inspector shows a card immediately — same feedback a primitive
+        // click gives. Without this, stamping left the inspector empty.
+        self.selected = (base..self.circuit.nodes.len())
+            .find(|&j| matches!(self.circuit.nodes[j].kind, NodeKind::Process(_)));
         self.pending_wire = None;
         self.running = false;
         self.status = format!(

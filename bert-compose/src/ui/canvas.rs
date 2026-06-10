@@ -19,18 +19,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 }
                 return;
             }
-            // Pan: drag empty canvas to move the whole diagram. A background
-            // interact spans the canvas; node interacts (added later, so on
-            // top) win on their own rects, leaving empty-space drags to pan.
+            // Pan: drag empty canvas to move the whole diagram. The background
+            // senses DRAG ONLY — never clicks — so it can't steal a node's
+            // click (that bug ate node selection). Node interacts (added
+            // later, on top) win their own drags; empty-space drags pan.
             let canvas_rect = ui.max_rect();
             app.canvas_origin = canvas_rect.min;
-            let bg = ui.interact(canvas_rect, ui.id().with("canvas_bg"), Sense::click_and_drag());
+            let bg = ui.interact(canvas_rect, ui.id().with("canvas_bg"), Sense::drag());
             if bg.dragged() {
                 app.pan += bg.drag_delta();
-            }
-            if bg.clicked() {
-                app.selected = None;
-                app.pending_wire = None;
             }
             let pan = app.pan;
             let painter = ui.painter();
@@ -236,6 +233,19 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     }
                 } else {
                     app.selected = Some(i);
+                }
+            } else {
+                // A click that landed on empty canvas (not a node or port)
+                // deselects — computed here, after node hits are known, so it
+                // never fights node selection.
+                let clicked_empty = ui.input(|i| i.pointer.primary_clicked())
+                    && ui
+                        .ctx()
+                        .pointer_interact_pos()
+                        .is_some_and(|p| canvas_rect.contains(p));
+                if clicked_empty {
+                    app.selected = None;
+                    app.pending_wire = None;
                 }
             }
 
