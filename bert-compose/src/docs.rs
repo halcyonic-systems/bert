@@ -41,12 +41,12 @@ pub fn doc(kind: NodeKind) -> Doc {
         },
         NodeKind::Process(p) => match p {
             Buffering => Doc {
-                plain: "A store. It holds what flows in and releases at its own rate — the system's memory.",
+                plain: "A store. It holds what flows in and releases at its own rate — the system's memory. A capacity bounds it: above the ceiling it overflows.",
                 everyday: "A savings account, a reservoir, a warehouse, a population.",
-                math: "stock += inflow;  out = min(stock, rate · gate)",
-                substance: "holds matter or energy; an optional information input can throttle the release (a valve).",
-                theory: "Mobus Ch.3 — the conservative reservoir. The ONLY primitive that carries state. All persistence in a system lives in buffers.",
-                code: "storage += inflow;\nreleased = min(storage, rate * gate);\nstorage -= released",
+                math: "stock += inflow;  out = min(stock, rate · gate);  stock ≤ capacity",
+                substance: "holds matter or energy; an optional information input can throttle the release (a valve). Capacity 0 = unbounded.",
+                theory: "Mobus Ch.3 — the conservative reservoir, the ONLY primitive that carries state. Containers have a capacity (Ch.4); overflow is waste (Fig 3.17).",
+                code: "storage += inflow;\nreleased = min(storage, rate * gate);\nstorage -= released;\nif cap > 0 { storage = min(storage, cap) } // overflow → dissipated",
             },
             Combining => Doc {
                 plain: "Merges several inflows into one.",

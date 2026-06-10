@@ -45,6 +45,9 @@
 //!   by the amber ⚠ and counted here.
 //! - **Dead ends** — activity with no pushed outwire evaporates next tick;
 //!   surfaced by `dead_ends()` and counted.
+//! - **Overflow** — a bounded buffer (capacity > 0) clamps its stock at the
+//!   ceiling; the excess overflows and the ledger charges it (a tank running
+//!   over). The clamp alone does the accounting — see the Buffering arm.
 //!
 //! Message is information: copied, gated, manufactured (Inverting) — never
 //! conserved, never in the ledger.
@@ -220,6 +223,12 @@ pub struct Node {
     /// Buffer starting stock — the "this system HAS a quantity" assertion.
     /// Exported as AgentModel.initial_state{"storage"} (what Mesa seeds).
     pub initial_storage: f32,
+    /// Buffer maximum capacity (Mobus 2022 Ch.4: "containers have capacity
+    /// attributes, a variable"). `0.0` = unbounded (the default). When the
+    /// stock would exceed it, the excess overflows — a tank running over —
+    /// and is accounted as dissipated automatically by the conservation
+    /// ledger (clamping `storage` makes the per-node rule charge the overflow).
+    pub capacity: f32,
     /// Provenance: the Troncale process this node was stamped from (a
     /// `ladder::Rung` name), or `None` if hand-placed. Pure UI hint — lets the
     /// inspector show "this is part of a Feedback process" alongside the
@@ -241,6 +250,7 @@ impl Node {
             param: if kind == NodeKind::Source { 1.0 } else { 0.5 },
             release_rate: 1.0,
             initial_storage: 0.0,
+            capacity: 0.0, // unbounded
             process: None,
             storage: 0.0,
             activity: 0.0,
@@ -559,6 +569,14 @@ impl Circuit {
                             0.0
                         };
                         storage -= released;
+                        // Capacity: a bounded tank overflows. Clamping the
+                        // stock here makes the conservation ledger's per-node
+                        // rule charge the overflow as dissipated by itself
+                        // (dissipated = in − out − Δstorage, and Δstorage is
+                        // now the clamped change). 0.0 = unbounded.
+                        if node.capacity > 0.0 && storage > node.capacity {
+                            storage = node.capacity;
+                        }
                         next_storage[i] = storage;
                         released
                     }
@@ -1400,6 +1418,42 @@ mod tests {
         let m = v.substance_mismatches();
         assert_eq!(m.len(), 1, "votes (Message) into a Splitter is flagged");
         assert_eq!(m[0].2.name, "votes", "the warning speaks the human name");
+    }
+
+    /// Capacity: a bounded buffer fed faster than it releases fills to the
+    /// ceiling and then overflows — the stock clamps at capacity and the
+    /// excess is dissipated, conservation holding every tick. (Mobus Ch.4
+    /// container capacity; overflow = Fig 3.17 waste.)
+    #[test]
+    fn capacity_clamps_and_overflow_is_dissipated() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes[0].param = 3.0; // inflow 3/tick
+        c.nodes[1].capacity = 5.0; // ceiling
+        c.nodes[1].release_rate = 0.0; // no outlet — it just fills
+        c.wires.push(Wire::new(0, 1));
+        for _ in 0..20 {
+            c.step();
+            assert_balanced(&c, "capacity overflow");
+        }
+        assert!(
+            (c.nodes[1].storage - 5.0).abs() < 1e-4,
+            "stock clamps at capacity, got {}",
+            c.nodes[1].storage
+        );
+        assert!(c.dissipated > 0.0, "the overflow is charged as dissipated");
+        // Unbounded (capacity 0) keeps filling past 5 — the default is ∞.
+        let mut u = Circuit::default();
+        u.nodes.push(node(NodeKind::Source));
+        u.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        u.nodes[0].param = 3.0;
+        u.nodes[1].release_rate = 0.0;
+        u.wires.push(Wire::new(0, 1));
+        for _ in 0..20 {
+            u.step();
+        }
+        assert!(u.nodes[1].storage > 5.0, "capacity 0 is unbounded: {}", u.nodes[1].storage);
     }
 
     #[test]

@@ -30,7 +30,7 @@ The Lean DESIGN note is load-bearing for *this tool's design*: **T, H, Δt are p
 
 - **Faithful:** the primitives (Figs 3.18–3.19), conservation/waste heat (Fig 3.17), the substance trichotomy, the error-sensing homeostat (Fig 4.12: sensing → inverter → modulator → comparator, computing reference − measured), composition as ontogenic linkage of work processes (Ch. 4 Fig 4.12).
 - **Ours (extensions):** the lenses (presentation functors over the same model), the named-substance dictionary, the conservation chart, the gradient flow-mode (grounded separately in Mobus Ch. 4 "fields are generalized flows").
-- **Known gaps (roadmap, [bert#87](https://github.com/halcyonic-systems/bert/issues/87)):** the push model has **no back-pressure**, yet Mobus's *Impeding is defined with* back-pressure — so a throttled valve sheds blocked flow instead of backing it up (this is why a budget can appear to "lose" money). Plus stock **capacity**, explicit **setpoint/reference**, **maintenance energy** (Fig 3.17's upkeep cost), and Buffering **time-constant** smoothing. **Threshold** is a candidate too but is neuroscience, *not* Mobus — don't attribute it to him.
+- **Known gaps (roadmap, [bert#87](https://github.com/halcyonic-systems/bert/issues/87)):** the push model has **no back-pressure**, yet Mobus's *Impeding is defined with* back-pressure — so a throttled valve sheds blocked flow instead of backing it up (this is why a budget can appear to "lose" money). Plus explicit **setpoint/reference**, **maintenance energy** (Fig 3.17's upkeep cost), and Buffering **time-constant** smoothing. **Threshold** is a candidate too but is neuroscience, *not* Mobus — don't attribute it to him.
 
 ## Don't
 

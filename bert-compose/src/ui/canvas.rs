@@ -162,7 +162,14 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     node.kind,
                     NodeKind::Process(bert_core::ProcessPrimitive::Buffering)
                 ) {
-                    let frac = (node.storage / node.initial_storage.max(10.0)).clamp(0.0, 1.0);
+                    // Fill fraction relative to capacity if bounded, else the
+                    // initial stock (a sensible visual scale).
+                    let full = if node.capacity > 0.0 {
+                        node.capacity
+                    } else {
+                        node.initial_storage.max(10.0)
+                    };
+                    let frac = (node.storage / full).clamp(0.0, 1.0);
                     let h = glyph::R * 1.6;
                     let inner = egui::Rect::from_center_size(
                         pos + vec2(0.0, 2.0 + h * 0.5 * (1.0 - frac)),

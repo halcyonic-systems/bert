@@ -141,13 +141,17 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                         kind: AgentKind::Reactive,
                         agency_capacity: node.param,
                         primitives: vec![primitive],
-                        // Compose knob with no canonical home; rides in the
+                        // Compose knobs with no canonical home ride in the
                         // extensible params so the round-trip is lossless.
                         cognitive_params: if primitive == ProcessPrimitive::Buffering {
-                            HashMap::from([(
+                            let mut p = HashMap::from([(
                                 "release_rate".to_string(),
                                 node.release_rate as f64,
-                            )])
+                            )]);
+                            if node.capacity > 0.0 {
+                                p.insert("capacity".to_string(), node.capacity as f64);
+                            }
+                            p
                         } else {
                             HashMap::new()
                         },
@@ -293,6 +297,9 @@ pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
         if let Some(&r) = agent.cognitive_params.get("release_rate") {
             node.release_rate = r as f32;
         }
+        if let Some(&cap) = agent.cognitive_params.get("capacity") {
+            node.capacity = cap as f32;
+        }
         ids.push((sys.info.id.clone(), c.nodes.len()));
         c.nodes.push(node);
     }
@@ -417,6 +424,7 @@ mod tests {
         c.nodes[1].initial_storage = 12.0;
         c.nodes[1].storage = 12.0;
         c.nodes[1].release_rate = 1.4;
+        c.nodes[1].capacity = 20.0;
         c.nodes[1].out_substance = DeclaredSubstance::named(
             "water",
             bert_core::SubstanceType::Material,
@@ -437,6 +445,7 @@ mod tests {
         let tank = r.nodes.iter().find(|n| n.name == "Tank").expect("name survives");
         assert_eq!(tank.initial_storage, 12.0);
         assert_eq!(tank.release_rate, 1.4, "release rate survives via cognitive_params");
+        assert_eq!(tank.capacity, 20.0, "capacity survives via cognitive_params");
         assert_eq!(tank.out_substance.name, "water");
         assert_eq!(tank.out_substance.unit, "L");
         let grad = r.wires.iter().find(|w| w.mode == FlowMode::Gradient).expect("mode survives");

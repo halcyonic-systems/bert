@@ -63,6 +63,19 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 if resp.changed() {
                     node.storage = node.initial_storage; // immediate, touchable
                 }
+                // Capacity: the tank's ceiling. 0 = unbounded (∞); above it,
+                // the stock overflows and the excess is dissipated.
+                ui.add(
+                    egui::Slider::new(&mut node.capacity, 0.0..=50.0)
+                        .text("capacity")
+                        .custom_formatter(|v, _| {
+                            if v < 0.5 { "∞".to_owned() } else { format!("{v:.0}") }
+                        }),
+                )
+                .on_hover_text(
+                    "the tank's ceiling — above it the stock overflows (excess \
+                     dissipated). 0 = unbounded. Mobus: containers have a capacity.",
+                );
             }
             ui.add_space(4.0);
             ui.label(RichText::new("emits").color(SECONDARY).small());
