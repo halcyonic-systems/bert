@@ -98,10 +98,25 @@ impl App {
         self.pending_wire = None;
     }
 
+    /// First free path: name.ext, name-1.ext, name-2.ext, …
+    fn unique_path(dir: &str, stem: &str, ext: &str) -> String {
+        let candidate = format!("{dir}/{stem}.{ext}");
+        if !std::path::Path::new(&candidate).exists() {
+            return candidate;
+        }
+        (1..)
+            .map(|n| format!("{dir}/{stem}-{n}.{ext}"))
+            .find(|p| !std::path::Path::new(p).exists())
+            .unwrap()
+    }
+
     fn export_csv(&mut self) {
         let home = std::env::var("HOME").unwrap_or_default();
-        let path =
-            format!("{home}/Desktop/{}-data.csv", self.name.replace(' ', "-"));
+        let path = Self::unique_path(
+            &format!("{home}/Desktop"),
+            &format!("{}-data", self.name.replace(' ', "-")),
+            "csv",
+        );
         match std::fs::write(&path, self.circuit.csv()) {
             Ok(()) => {
                 self.status =
@@ -114,7 +129,11 @@ impl App {
     fn save(&mut self) {
         let model = export::to_world_model(&self.circuit, &self.name);
         let home = std::env::var("HOME").unwrap_or_default();
-        let path = format!("{home}/Desktop/{}.json", self.name.replace(' ', "-"));
+        let path = Self::unique_path(
+            &format!("{home}/Desktop"),
+            &self.name.replace(' ', "-"),
+            "json",
+        );
         match serde_json::to_string_pretty(&model)
             .map_err(|e| e.to_string())
             .and_then(|s| std::fs::write(&path, s).map_err(|e| e.to_string()))
