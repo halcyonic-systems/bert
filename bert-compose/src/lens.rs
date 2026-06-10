@@ -1,8 +1,9 @@
 //! Lens packs — presentation functors over a circuit. A lens renames the
 //! primitives in domain vocabulary; it touches NOTHING in the dynamics or the
-//! JSON. The SAME model reads as a governance mechanism, a neural circuit, a
-//! crypto protocol, or an Odum energy diagram — the isomorphism (#81, K≅2)
-//! displayed rather than asserted. When the categorical layer (#65) lands
+//! JSON. The SAME model reads as a political-economy mechanism, a neuromorphic
+//! circuit, a protocol, or an Odum energy diagram — the lenses mirror the
+//! halcyonic.systems domain pillars. The isomorphism (#81, K≅2) is displayed
+//! rather than asserted. When the categorical layer (#65) lands
 //! these become *checked* functors; today they are honest renamings.
 //!
 //! Boundary discipline: a lens is pure display. Run the homeostat under all

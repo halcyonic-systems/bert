@@ -101,10 +101,12 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 head(ui, "THE LENS", Color32::from_rgb(146, 100, 156));
                 ui.label(
                     RichText::new(
-                        "The same model reads across domains. Switch the 🔍 lens and \
-                         a thermostat becomes a quorum, a synapse, a difficulty \
-                         adjustment — same dynamics, four readings. The common core, \
-                         made visible.",
+                        "The same model reads across the Halcyonic domains — Political \
+                         Economy, Neuromorphics, Protocol Science, Ecology. Switch the \
+                         🔍 lens and a thermostat becomes a quorum, a neuron, a \
+                         difficulty adjustment — same dynamics, four readings. The \
+                         common core, made visible. (Try the domain examples — each \
+                         opens in its own lens.)",
                     )
                     .color(SECONDARY)
                     .size(12.0),

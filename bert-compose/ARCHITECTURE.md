@@ -50,7 +50,8 @@ The property tests in `circuit.rs` build hundreds of random circuits and assert 
 
 - **`ladder.rs`** — Troncale's systems processes as primitive circuits, the single source of truth shared by the palette macros (you *stamp* a process and its bricks appear) and the sweep tests. A `Rung` carries the builder plus its provenance, sweep bucket, and whether it's palette-stampable.
 - **`examples.rs`** — the friendly on-ramp library (leaky bucket, thermostat, battery, the universal homeostat…).
-- **`lens.rs`** — four domain vocabularies (Governance/Neuro/Crypto/Ecology) + the Systems identity, each a 12-name relabeling over the primitive slots. A lens is **pure presentation**: it never enters `circuit.rs`, which is asserted by the lens-invariance test (the universal homeostat's CSV is byte-identical under every lens).
+- **`lens.rs`** — four domain vocabularies aligned to the halcyonic.systems pillars (Political Economy / Neuromorphics / Protocol Science / Ecology) + the Systems identity, each a 12-name relabeling (plus per-slot glosses) over the primitive slots. A lens is **pure presentation**: it never enters `circuit.rs`, which is asserted by the lens-invariance test (the universal homeostat's CSV is byte-identical under every lens).
+- **`examples.rs`** — categorized to mirror the pillars: Foundations (concepts, neutral lens), the four domain examples (each loads in its lens), and the cross-domain Universal homeostat. A leaky bucket is never relabeled with crypto words — lenses apply only where they mean something.
 - **`docs.rs`** — per-primitive teaching cards (plain English → math → substance → theory → transfer function).
 
 ## IO — `export.rs`

@@ -15,10 +15,11 @@ cargo run --release            # dev
 
 - **Add primitives** from the left palette (Buffering, Modulating, Sensing, Splitting, …) and wire `◦ → component`.
 - **Stamp systems processes** — Troncale's patterns (Feedback, Oscillation, Networks, Potential Fields) drop their *primitive circuit* onto the canvas. They're not new atoms; you watch the process emerge from the bricks.
+- **Load examples** organized to mirror halcyonic.systems: **Foundations** (the FLOWS/BONDS/FEEDBACK concepts, neutral lens), then domain-native examples for **Political Economy / Neuromorphics / Protocol Science / Ecology** (each opens in its own lens), then the cross-domain **Universal homeostat**.
 - **Run / Step / Reset**, watch live flow on the wires and charts (`egui_plot`).
 - **Read the conservation badge** (⚖, by the clock): green means every unit of physical mass is accounted. Hover it for the full ledger.
 - **Name substances** in human terms (money, water, votes) over the conserved kinds — built for social scientists, not just engineers.
-- **Switch lenses** (🔍) — the same model reads as governance, neuro, crypto, or ecology. Same dynamics, four readings.
+- **Switch lenses** (🔍) — the same model reads across the Halcyonic domain pillars: Political Economy, Neuromorphics, Protocol Science, Ecology. Same dynamics, four readings.
 - **Save / Load** — round-trips through ordinary BERT JSON (drag a `.json` onto the window, too).
 - **Ask hal** — sovereign in-app analysis of a run via the local hal stack; nothing leaves your machine.
 

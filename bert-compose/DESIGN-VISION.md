@@ -42,8 +42,9 @@ emission). The parameter space becomes something you *play* like an
 instrument, not a form you fill.
 
 ### 4. The lens switch — one model, every domain (nobody else has this)
-The killer differentiator, straight from K≅2. A **lens selector** (Neutral /
-Gov / Crypto / Neuro / Ecology) that *renames and re-skins* the same running
+The killer differentiator, straight from K≅2. A **lens selector** aligned to
+the halcyonic.systems pillars (Systems / Political Economy / Neuromorphics /
+Protocol Science / Ecology) that *renames and re-skins* the same running
 circuit without touching its dynamics: Sensing→"monitor"/"oracle"/"receptor",
 Buffering→"registry"/"mempool"/"membrane". Switch lenses mid-run and watch the
 *same regulation* become a quorum throttle, a difficulty adjustment, a

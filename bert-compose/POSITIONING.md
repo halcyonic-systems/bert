@@ -13,7 +13,7 @@ No single competitor is **all** of these at once; that combination is the positi
 1. **GST/ontology-grounded** — primitives are Mobus work processes, not equation glyphs; the model is a typed entity structure, not a rate-equation soup.
 2. **Conservation-faithful by construction** — a per-tick ledger makes mass accounting hold structurally, so a curve is evidence, not decoration. (Other tools leave conservation to the modeler.)
 3. **Tactile for non-engineers** — plain-English cards, relatable substances, drag-and-drop; a governance researcher can enjoy the first five minutes.
-4. **Cross-domain via lenses** — the same model reads as governance / neuro / crypto / ecology, the isomorphism displayed and machine-checked (identical CSV under every lens).
+4. **Cross-domain via lenses** — the same model reads across the Halcyonic domain pillars (Political Economy / Neuromorphics / Protocol Science / Ecology), the isomorphism displayed and machine-checked (identical CSV under every lens). Examples and lenses mirror halcyonic.systems' own structure — so the tool *is* the pillars, made runnable.
 5. **Exports to a typed knowledge graph** — BERT JSON → TypeDB → Mesa, so a model is a knowledge artifact, not just a simulation file.
 
 ## The landscape, by category
