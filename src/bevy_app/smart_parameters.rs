@@ -5,61 +5,14 @@
 
 use crate::SubstanceType;
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 
-/// Enhanced parameter value supporting multiple data types (Cliff's framework)
-#[derive(Clone, Debug, Reflect, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ParameterValue {
-    /// Numeric parameter with unit (traditional quantified measurements)
-    Numeric { value: String, unit: String },
-    /// Ordinal parameter with total ordering (high/medium/low)
-    Ordinal { level: String, options: Vec<String> },
-    /// Categorical parameter with discrete options (solid/liquid/gas)
-    Categorical { value: String, options: Vec<String> },
-    /// Boolean parameter with custom labels (active/inactive)
-    Boolean {
-        value: bool,
-        true_label: String,
-        false_label: String,
-    },
-}
+// ── Kernel contract types, extracted to bert-core ────────────────────────────
+pub use bert_core::{ParameterSuggestion, ParameterType, ParameterValue, SmartParameter};
 
-/// Smart parameter with enhanced type system
-#[derive(Clone, Debug, Reflect, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SmartParameter {
-    /// Unique identifier for this parameter (excluded from serialization)
-    #[serde(skip)]
-    #[reflect(ignore)]
-    pub id: Uuid,
-    /// Human-readable parameter name
-    pub name: String,
-    /// Parameter value with type information
-    pub value: ParameterValue,
-}
 
-/// Parameter suggestion for autocomplete and intelligent input
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ParameterSuggestion {
-    /// Display name shown to user
-    pub display_name: String,
-    /// Parameter type for this suggestion
-    pub parameter_type: ParameterType,
-    /// Search terms for fuzzy matching
-    pub search_terms: Vec<String>,
-    /// Default parameter value template
-    pub default_value: ParameterValue,
-}
 
-/// Parameter type classification
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Reflect)]
-pub enum ParameterType {
-    Numeric,
-    Ordinal,
-    Categorical,
-    Boolean,
-}
+
 
 /// Static database providing context-aware parameter suggestions
 #[derive(Debug, Clone)]
@@ -469,32 +422,13 @@ impl SmartParameterDatabase {
     }
 }
 
+
 impl Default for SmartParameterDatabase {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SmartParameter {
-    /// Create new smart parameter with generated ID
-    pub fn new(name: String, value: ParameterValue) -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            name,
-            value,
-        }
-    }
-
-    /// Get parameter type from value
-    pub fn parameter_type(&self) -> ParameterType {
-        match &self.value {
-            ParameterValue::Numeric { .. } => ParameterType::Numeric,
-            ParameterValue::Ordinal { .. } => ParameterType::Ordinal,
-            ParameterValue::Categorical { .. } => ParameterType::Categorical,
-            ParameterValue::Boolean { .. } => ParameterType::Boolean,
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

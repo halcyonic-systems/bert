@@ -1438,11 +1438,10 @@ fn transform2d_from_entity(
     entity: Entity,
     transform_query: &Query<(&Transform, &InitialPosition)>,
 ) -> Option<Transform2d> {
-    Some(Transform2d::from(
-        transform_query
-            .get(entity)
-            .expect("System should have transforms"),
-    ))
+    let (transform, initial_position) = transform_query
+        .get(entity)
+        .expect("System should have transforms");
+    Some(Transform2d::from_components(transform, initial_position))
 }
 
 fn info_from_entity(

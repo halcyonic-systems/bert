@@ -47,15 +47,6 @@ impl std::fmt::Display for ComplexityLevel {
     }
 }
 
-impl std::fmt::Display for AgentKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AgentKind::Reactive => write!(f, "Reactive"),
-            AgentKind::Anticipatory => write!(f, "Anticipatory"),
-            AgentKind::Intentional => write!(f, "Intentional"),
-        }
-    }
-}
 
 impl From<&Complexity> for ComplexityLevel {
     fn from(c: &Complexity) -> Self {

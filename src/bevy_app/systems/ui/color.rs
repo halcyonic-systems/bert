@@ -1,5 +1,6 @@
 //! This file holds the systems that control the color of system elements.
 use crate::bevy_app::components::{
+    HcgsArchetypeExt, SubstanceTypeExt,
     Connection, CreateButton, Flow, HasFlowOtherEndButton, TargetTypeConnection,
 };
 use crate::bevy_app::constants::theme::*;

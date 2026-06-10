@@ -36,11 +36,7 @@
 use crate::bevy_app::data_model::Complexity;
 
 use bevy::prelude::*;
-use enum_iterator::Sequence;
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
-use std::fmt::Formatter;
-use uuid::Uuid;
 
 /// Defines the fundamental types of system elements in the System Language framework.
 ///
@@ -447,105 +443,159 @@ pub struct Flow {
     pub smart_parameters: Vec<crate::bevy_app::smart_parameters::SmartParameter>,
 }
 
-/// Represents a user-defined parameter that provides additional context for flow interactions.
-///
-/// Parameters allow users to specify custom attributes that characterize the nature,
-/// constraints, or properties of substance flows between system elements.
-///
-/// # Usage Patterns
-///
-/// Parameters are commonly used to specify:
-/// - Physical properties (temperature, pressure, voltage)
-/// - Quality measures (purity, efficiency, reliability)
-/// - Constraints (maximum flow rate, acceptable ranges)
-/// - Contextual information (source location, processing requirements)
-///
-/// # Serialization
-///
-/// The `id` field is automatically generated and excluded from serialization to ensure
-/// consistent parameter identification across save/load cycles.
-///
-/// # Examples
-///
-/// ```rust
-/// use bert::Parameter;
-///
-/// // Create a temperature parameter for an energy flow
-/// let temperature = Parameter {
-///     id: uuid::Uuid::new_v4(), // Auto-generated
-///     name: "Temperature".to_string(),
-///     value: "350".to_string(),
-///     unit: "Celsius".to_string(),
-/// };
-///
-/// // Create a flow rate constraint for material flow
-/// let flow_rate = Parameter {
-///     id: uuid::Uuid::new_v4(),
-///     name: "Max Flow Rate".to_string(),
-///     value: "50".to_string(),
-///     unit: "kg/min".to_string(),
-/// };
-/// ```
-///
-/// # See Also
-///
-/// - [`Flow`]: Contains a vector of parameters to characterize interactions
-#[derive(Clone, Debug, Reflect, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Parameter {
-    /// Unique identifier for this parameter (excluded from serialization).
-    ///
-    /// Automatically generated to distinguish parameters even when they have
-    /// identical names or values. Used internally for parameter management.
-    #[serde(skip)]
-    #[reflect(ignore)]
-    pub id: Uuid,
 
-    /// Human-readable name describing what this parameter represents.
-    ///
-    /// Should be descriptive and follow consistent naming conventions
-    /// within the context of the containing flow.
-    pub name: String,
 
-    /// The parameter's value as a string representation.
-    ///
-    /// Stored as string to accommodate various data types (numeric, text, boolean)
-    /// while maintaining flexibility for user input and display.
-    pub value: String,
 
-    /// Unit of measurement for the parameter value.
-    ///
-    /// Should follow standard unit conventions (SI units preferred) to ensure
-    /// consistency and enable proper analysis of system interactions.
-    #[serde(default = "String::new")]
-    pub unit: String,
+
+
+// ── Kernel contract types, extracted to bert-core ────────────────────────────
+// The data enums below are part of the serialized model contract and now live
+// in the bert-core kernel crate. Re-exported here so existing paths
+// (`components::SubstanceType`, glob imports) keep working unchanged.
+pub use bert_core::{HcgsArchetype, InteractionType, InteractionUsability, Parameter, SubstanceType};
+
+/// Bevy-coupled view helpers for the kernel's [`SubstanceType`] — inherent
+/// methods can't live outside the defining crate, so they're an extension
+/// trait here. In scope wherever `components::*` is glob-imported.
+pub trait SubstanceTypeExt {
+    fn flow_color(&self) -> Color;
+    fn interface_color(&self) -> Color;
+    fn to_rgb_string(&self) -> String;
+    fn to_rgb_string_default(&self) -> String;
+    fn flow_color_default(&self) -> Color;
+    fn interface_color_default(&self) -> Color;
 }
 
-impl Default for Parameter {
-    fn default() -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            name: "".to_string(),
-            value: "".to_string(),
-            unit: "".to_string(),
+impl SubstanceTypeExt for SubstanceType {
+    /// Returns the color used for visual representation of flows of this substance type.
+    ///
+    /// Uses the original BERT colors regardless of background theme.
+    ///
+    /// # Returns
+    ///
+    /// A [`Color`] value appropriate for rendering flow connections in the diagram.
+    /// Colors are chosen to provide intuitive visual distinction between substance types.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bert::SubstanceType;
+    /// use bevy::prelude::Color;
+    ///
+    /// let energy_color = SubstanceType::Energy.flow_color();
+    /// let material_color = SubstanceType::Material.flow_color();
+    ///
+    /// // Colors are different for each substance type
+    /// assert_ne!(energy_color, material_color);
+    /// ```
+    fn flow_color(&self) -> Color {
+        match self {
+            SubstanceType::Energy => Color::srgb_u8(181, 27, 27), // Deep red for energy
+            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5), // Medium gray for material
+            SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75), // Light gray for information
         }
+    }
+
+    /// Returns the color used for visual representation of interfaces handling this substance type.
+    ///
+    /// Interface colors are typically lighter variants of the corresponding flow colors
+    /// to provide visual consistency while maintaining distinction between flows and boundaries.
+    ///
+    /// # Returns
+    ///
+    /// A [`Color`] value appropriate for rendering interface boundaries in the diagram.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bert::SubstanceType;
+    ///
+    /// let energy_interface = SubstanceType::Energy.interface_color();
+    /// let energy_flow = SubstanceType::Energy.flow_color();
+    ///
+    /// // Interface colors are related but distinct from flow colors
+    /// assert_ne!(energy_interface, energy_flow);
+    /// ```
+    fn interface_color(&self) -> Color {
+        match self {
+            SubstanceType::Energy => Color::srgb_u8(233, 182, 178), // Light red for energy interfaces
+            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5), // Medium gray for material interfaces
+            SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75), // Light gray for message interfaces
+        }
+    }
+
+    /// Converts the flow color to an RGB string representation for web/CSS usage.
+    ///
+    /// # Returns
+    ///
+    /// A string in the format "rgb(r, g, b)" where r, g, b are integers 0-255.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bert::SubstanceType;
+    ///
+    /// let energy_rgb = SubstanceType::Energy.to_rgb_string();
+    /// assert!(energy_rgb.starts_with("rgb("));
+    /// assert!(energy_rgb.ends_with(")"));
+    /// ```
+    fn to_rgb_string(&self) -> String {
+        let srgb = self.flow_color().to_srgba();
+        let r = srgb.red;
+        let g = srgb.green;
+        let b = srgb.blue;
+        format!("rgb({}, {}, {})", r * 255.0, g * 255.0, b * 255.0)
+    }
+
+    /// Convenience method for frontend usage - same as to_rgb_string().
+    ///
+    /// # Returns
+    ///
+    /// A string in the format "rgb(r, g, b)".
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bert::SubstanceType;
+    ///
+    /// let energy_rgb = SubstanceType::Energy.to_rgb_string_default();
+    /// assert!(energy_rgb.starts_with("rgb("));
+    /// ```
+    fn to_rgb_string_default(&self) -> String {
+        self.to_rgb_string()
+    }
+
+    /// Convenience method for getting flow color - same as flow_color().
+    ///
+    /// # Returns
+    ///
+    /// A [`Color`] value.
+    fn flow_color_default(&self) -> Color {
+        self.flow_color()
+    }
+
+    /// Convenience method for getting interface color - same as interface_color().
+    ///
+    /// # Returns
+    ///
+    /// A [`Color`] value.
+    fn interface_color_default(&self) -> Color {
+        self.interface_color()
     }
 }
 
-/// Corresponds to the System Language Interaction types.
-#[derive(
-    Copy, Clone, Debug, Reflect, PartialEq, Eq, Hash, Default, Serialize, Deserialize, Sequence,
-)]
-pub enum InteractionType {
-    #[default]
-    Flow,
-    Force,
+/// Bevy-coupled view helper for the kernel's [`HcgsArchetype`].
+pub trait HcgsArchetypeExt {
+    fn stroke_color(&self) -> Color;
 }
 
-impl core::fmt::Display for InteractionType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl HcgsArchetypeExt for HcgsArchetype {
+    fn stroke_color(&self) -> Color {
         match self {
-            InteractionType::Flow => write!(f, "Flow"),
-            InteractionType::Force => write!(f, "Force"),
+            HcgsArchetype::Unspecified => Color::BLACK,
+            HcgsArchetype::Governance => Color::srgb_u8(59, 130, 246), // Blue-500
+            HcgsArchetype::Economy => Color::srgb_u8(34, 197, 94),     // Green-500
+            HcgsArchetype::Agent => Color::srgb_u8(249, 115, 22),      // Orange-500
         }
     }
 }
@@ -651,417 +701,14 @@ impl InterfaceSubsystem {
     }
 }
 
-/// Categorizes flow interactions based on their utility and directional nature in System Language.
-///
-/// This enumeration implements the System Language classification of interactions
-/// based on their value and directional flow relative to system boundaries.
-///
-/// # System Language Theory
-///
-/// Interactions are classified along two dimensions:
-/// - **Utility**: Whether the interaction provides value (useful) or reduces it (harmful)
-/// - **Direction**: Whether the interaction flows into the system (import) or out of it (export)
-///
-/// This creates four fundamental interaction types that capture all possible
-/// system-environment exchanges.
-///
-/// # Classification Matrix
-///
-/// | Direction | Useful | Harmful |
-/// |-----------|--------|---------|
-/// | Import    | Resource | Disruption |
-/// | Export    | Product | Waste |
-///
-/// # Examples
-///
-/// ```rust
-/// use bert::InteractionUsability;
-///
-/// // Check if an interaction is beneficial to the system
-/// let resource = InteractionUsability::Resource;
-/// assert!(resource.is_useful());
-/// assert!(resource.is_import());
-///
-/// let waste = InteractionUsability::Waste;
-/// assert!(!waste.is_useful());
-/// assert!(waste.is_export());
-/// ```
-///
-/// # See Also
-///
-/// - [`Flow`]: Uses this enum to classify interaction types
-/// - [`SubstanceType`]: Defines what flows through the interaction
-#[derive(Serialize, Deserialize, Sequence, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
-pub enum InteractionUsability {
-    /// Useful input that enhances system capabilities or provides needed materials/energy.
-    ///
-    /// Resources are beneficial imports that the system requires for proper functioning.
-    /// Examples: raw materials, energy supply, information inputs, human expertise.
-    Resource,
 
-    /// Harmful input that degrades system performance or introduces unwanted effects.
-    ///
-    /// Disruptions are negative imports that interfere with system operations.
-    /// Examples: noise, contamination, system attacks, resource shortages.
-    Disruption,
 
-    /// Useful output that fulfills the system's intended purpose or provides value.
-    ///
-    /// Products are beneficial exports that represent successful system transformation.
-    /// Examples: manufactured goods, processed information, services, value creation.
-    Product,
 
-    /// Harmful output that represents unwanted byproducts or system inefficiency.
-    ///
-    /// Waste represents negative exports that may require management or disposal.
-    /// Examples: pollution, heat loss, defective products, information leakage.
-    Waste,
-}
 
-impl InteractionUsability {
-    /// Determines if this interaction type provides value to the system.
-    ///
-    /// # Returns
-    ///
-    /// `true` for [`Resource`](Self::Resource) and [`Product`](Self::Product),
-    /// `false` for [`Disruption`](Self::Disruption) and [`Waste`](Self::Waste).
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bert::InteractionUsability;
-    ///
-    /// assert!(InteractionUsability::Resource.is_useful());
-    /// assert!(InteractionUsability::Product.is_useful());
-    /// assert!(!InteractionUsability::Disruption.is_useful());
-    /// assert!(!InteractionUsability::Waste.is_useful());
-    /// ```
-    #[inline(always)]
-    pub fn is_useful(&self) -> bool {
-        matches!(self, Self::Resource | Self::Product)
-    }
 
-    /// Determines if this interaction flows out of the system (export direction).
-    ///
-    /// # Returns
-    ///
-    /// `true` for [`Product`](Self::Product) and [`Waste`](Self::Waste),
-    /// `false` for [`Resource`](Self::Resource) and [`Disruption`](Self::Disruption).
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bert::InteractionUsability;
-    ///
-    /// assert!(InteractionUsability::Product.is_export());
-    /// assert!(InteractionUsability::Waste.is_export());
-    /// assert!(!InteractionUsability::Resource.is_export());
-    /// assert!(!InteractionUsability::Disruption.is_export());
-    /// ```
-    #[inline(always)]
-    pub fn is_export(&self) -> bool {
-        matches!(self, Self::Product | Self::Waste)
-    }
 
-    /// Determines if this interaction flows into the system (import direction).
-    ///
-    /// # Returns
-    ///
-    /// `true` for [`Resource`](Self::Resource) and [`Disruption`](Self::Disruption),
-    /// `false` for [`Product`](Self::Product) and [`Waste`](Self::Waste).
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bert::InteractionUsability;
-    ///
-    /// assert!(InteractionUsability::Resource.is_import());
-    /// assert!(InteractionUsability::Disruption.is_import());
-    /// assert!(!InteractionUsability::Product.is_import());
-    /// assert!(!InteractionUsability::Waste.is_import());
-    /// ```
-    #[inline(always)]
-    pub fn is_import(&self) -> bool {
-        !self.is_export()
-    }
-}
 
-impl core::fmt::Display for InteractionUsability {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InteractionUsability::Resource => write!(f, "Resource"),
-            InteractionUsability::Disruption => write!(f, "Disruption"),
-            InteractionUsability::Product => write!(f, "Product"),
-            InteractionUsability::Waste => write!(f, "Waste"),
-        }
-    }
-}
 
-/// Defines the fundamental types of substances that can flow between system elements.
-///
-/// The System Language recognizes three primary categories of substances that can
-/// be exchanged across system boundaries, each with distinct properties and behaviors.
-///
-/// # System Language Foundation
-///
-/// These substance types represent the fundamental forms of exchange in complex systems:
-/// - **Energy**: The capacity to do work or create change
-/// - **Material**: Physical matter or tangible resources
-/// - **Message**: Information, data, or symbolic content
-///
-/// # Visual Coding
-///
-/// Each substance type has associated colors for visual distinction in the interface:
-/// - Energy: Red tones (representing power and transformation)
-/// - Material: Gray tones (representing physical matter)
-/// - Message: Light gray tones (representing information flow)
-///
-/// # Examples
-///
-/// ```rust
-/// use bert::{SubstanceType, Theme};
-/// use bevy::prelude::Color;
-///
-/// // Different substance types for modeling flows
-/// let electricity = SubstanceType::Energy;
-/// let raw_materials = SubstanceType::Material;
-/// let control_signals = SubstanceType::Message;
-///
-/// // Each type has distinct visual representation
-/// assert_ne!(electricity.flow_color(Theme::Normal), raw_materials.flow_color(Theme::Normal));
-/// assert_ne!(electricity.interface_color(Theme::Normal), control_signals.interface_color(Theme::Normal));
-/// ```
-///
-/// # See Also
-///
-/// - [`Flow`]: Uses substance types to categorize interactions
-/// - [`InteractionUsability`]: Defines the directional and utility aspects of flows
-#[derive(
-    Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash,
-)]
-pub enum SubstanceType {
-    /// Energy flows representing power, work capacity, or transformative potential.
-    ///
-    /// Examples: electrical power, thermal energy, mechanical work, chemical potential,
-    /// kinetic energy, or any form of energy transfer between system components.
-    #[default]
-    Energy,
-
-    /// Material flows representing physical matter or tangible resources.
-    ///
-    /// Examples: raw materials, manufactured components, fluids, gases, solid objects,
-    /// or any physical substance that moves between system elements.
-    Material,
-
-    /// Information flows representing data, signals, or symbolic content.
-    ///
-    /// Examples: control signals, data transmissions, communication protocols,
-    /// sensor readings, commands, or any form of information exchange.
-    Message,
-}
-
-/// HCGS (Hierarchical Cybernetic Governance System) archetype classification.
-///
-/// Classifies subsystems according to their functional role in a complex adaptive system,
-/// based on the Mobus framework from "Systems Science: Theory, Analysis, Modeling, and Design" (2022).
-///
-/// # Archetype Definitions
-///
-/// - **Governance**: Policy, rules, coordination, and control mechanisms
-/// - **Economy**: Resource allocation, production, and value flows
-/// - **Agent**: Active actors that make decisions and take actions
-/// - **Unspecified**: Default classification for subsystems not yet categorized
-///
-/// # Visual Representation
-///
-/// Each archetype has a distinct stroke color for visual identification:
-/// - Governance: Blue (#3B82F6)
-/// - Economy: Green (#22C55E)
-/// - Agent: Orange (#F97316)
-/// - Unspecified: Black (default)
-#[derive(
-    Copy, Clone, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash,
-)]
-pub enum HcgsArchetype {
-    /// Default classification for subsystems not yet categorized.
-    #[default]
-    Unspecified,
-
-    /// Governance subsystems: policy, rules, coordination, control mechanisms.
-    ///
-    /// Examples: consensus protocols, voting mechanisms, access control,
-    /// rule enforcement, coordination layers.
-    Governance,
-
-    /// Economy subsystems: resource allocation, production, value flows.
-    ///
-    /// Examples: token economics, fee markets, resource pools,
-    /// transaction processing, value transfer mechanisms.
-    Economy,
-
-    /// Agent subsystems: active actors that make decisions and take actions.
-    ///
-    /// Examples: validators, miners, users, smart contracts,
-    /// autonomous processes, decision-making entities.
-    Agent,
-}
-
-impl HcgsArchetype {
-    /// Returns the stroke color for visual representation of this archetype.
-    ///
-    /// Colors follow Tailwind CSS conventions for consistency:
-    /// - Governance: Blue-500 (#3B82F6)
-    /// - Economy: Green-500 (#22C55E)
-    /// - Agent: Orange-500 (#F97316)
-    /// - Unspecified: Black (default system stroke)
-    pub fn stroke_color(&self) -> Color {
-        match self {
-            HcgsArchetype::Unspecified => Color::BLACK,
-            HcgsArchetype::Governance => Color::srgb_u8(59, 130, 246), // Blue-500
-            HcgsArchetype::Economy => Color::srgb_u8(34, 197, 94),     // Green-500
-            HcgsArchetype::Agent => Color::srgb_u8(249, 115, 22),      // Orange-500
-        }
-    }
-}
-
-impl std::fmt::Display for HcgsArchetype {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            HcgsArchetype::Unspecified => write!(f, "Unspecified"),
-            HcgsArchetype::Governance => write!(f, "Governance"),
-            HcgsArchetype::Economy => write!(f, "Economy"),
-            HcgsArchetype::Agent => write!(f, "Agent"),
-        }
-    }
-}
-
-impl SubstanceType {
-    /// Returns the color used for visual representation of flows of this substance type.
-    ///
-    /// Uses the original BERT colors regardless of background theme.
-    ///
-    /// # Returns
-    ///
-    /// A [`Color`] value appropriate for rendering flow connections in the diagram.
-    /// Colors are chosen to provide intuitive visual distinction between substance types.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bert::SubstanceType;
-    /// use bevy::prelude::Color;
-    ///
-    /// let energy_color = SubstanceType::Energy.flow_color();
-    /// let material_color = SubstanceType::Material.flow_color();
-    ///
-    /// // Colors are different for each substance type
-    /// assert_ne!(energy_color, material_color);
-    /// ```
-    pub fn flow_color(&self) -> Color {
-        match self {
-            SubstanceType::Energy => Color::srgb_u8(181, 27, 27), // Deep red for energy
-            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5), // Medium gray for material
-            SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75), // Light gray for information
-        }
-    }
-
-    /// Returns the color used for visual representation of interfaces handling this substance type.
-    ///
-    /// Interface colors are typically lighter variants of the corresponding flow colors
-    /// to provide visual consistency while maintaining distinction between flows and boundaries.
-    ///
-    /// # Returns
-    ///
-    /// A [`Color`] value appropriate for rendering interface boundaries in the diagram.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bert::SubstanceType;
-    ///
-    /// let energy_interface = SubstanceType::Energy.interface_color();
-    /// let energy_flow = SubstanceType::Energy.flow_color();
-    ///
-    /// // Interface colors are related but distinct from flow colors
-    /// assert_ne!(energy_interface, energy_flow);
-    /// ```
-    pub fn interface_color(&self) -> Color {
-        match self {
-            SubstanceType::Energy => Color::srgb_u8(233, 182, 178), // Light red for energy interfaces
-            SubstanceType::Material => Color::srgb(0.5, 0.5, 0.5), // Medium gray for material interfaces
-            SubstanceType::Message => Color::srgb(0.75, 0.75, 0.75), // Light gray for message interfaces
-        }
-    }
-
-    /// Converts the flow color to an RGB string representation for web/CSS usage.
-    ///
-    /// # Returns
-    ///
-    /// A string in the format "rgb(r, g, b)" where r, g, b are integers 0-255.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bert::SubstanceType;
-    ///
-    /// let energy_rgb = SubstanceType::Energy.to_rgb_string();
-    /// assert!(energy_rgb.starts_with("rgb("));
-    /// assert!(energy_rgb.ends_with(")"));
-    /// ```
-    pub fn to_rgb_string(&self) -> String {
-        let srgb = self.flow_color().to_srgba();
-        let r = srgb.red;
-        let g = srgb.green;
-        let b = srgb.blue;
-        format!("rgb({}, {}, {})", r * 255.0, g * 255.0, b * 255.0)
-    }
-
-    /// Convenience method for frontend usage - same as to_rgb_string().
-    ///
-    /// # Returns
-    ///
-    /// A string in the format "rgb(r, g, b)".
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bert::SubstanceType;
-    ///
-    /// let energy_rgb = SubstanceType::Energy.to_rgb_string_default();
-    /// assert!(energy_rgb.starts_with("rgb("));
-    /// ```
-    pub fn to_rgb_string_default(&self) -> String {
-        self.to_rgb_string()
-    }
-
-    /// Convenience method for getting flow color - same as flow_color().
-    ///
-    /// # Returns
-    ///
-    /// A [`Color`] value.
-    pub fn flow_color_default(&self) -> Color {
-        self.flow_color()
-    }
-
-    /// Convenience method for getting interface color - same as interface_color().
-    ///
-    /// # Returns
-    ///
-    /// A [`Color`] value.
-    pub fn interface_color_default(&self) -> Color {
-        self.interface_color()
-    }
-}
-
-impl std::fmt::Display for SubstanceType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SubstanceType::Energy => write!(f, "Energy"),
-            SubstanceType::Material => write!(f, "Material"),
-            SubstanceType::Message => write!(f, "Message"),
-        }
-    }
-}
 
 /// Attached to all entities with a SystemElement component. Stores user input.
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Default)]

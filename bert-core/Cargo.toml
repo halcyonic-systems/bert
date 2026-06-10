@@ -1,0 +1,22 @@
+[package]
+name = "bert-core"
+version = "0.4.0"
+edition = "2021"
+description = "BERT's System Language kernel: the serialized model contract (WorldModel, 8-tuple element types) and 4-layer validator, free of UI dependencies"
+license = "Apache-2.0"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rust_decimal = { version = "1", features = ["serde"] }
+glam = { version = "0.30", features = ["serde"] }
+enum-iterator = "2.1.0"
+uuid = { version = "1", features = ["v4", "js"] }
+
+# Optional: Reflect derives for the Bevy app, whose ECS components embed
+# kernel types. Pure consumers (transpiler, compose, generators) skip this.
+bevy_reflect = { version = "0.17", optional = true }
+
+[features]
+default = []
+reflect = ["dep:bevy_reflect"]

@@ -1,3 +1,4 @@
+use crate::bevy_app::components::SubstanceTypeExt;
 use crate::{data_model::Complexity, SubstanceType};
 use leptos::prelude::*;
 
