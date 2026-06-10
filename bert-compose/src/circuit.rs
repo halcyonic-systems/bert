@@ -45,6 +45,22 @@ impl NodeKind {
             _ => SubstanceType::Material,
         }
     }
+
+    /// The substance a primitive actually consumes to do work. Feeding it the
+    /// wrong kind is a silent no-op (e.g. Copying ignores Material) — the UI
+    /// uses this to surface the mismatch instead of swallowing the flow.
+    /// `None` = accepts any substance.
+    pub fn primary_input(&self) -> Option<SubstanceType> {
+        match self {
+            // Message-only signal processors: copying matter would counterfeit it.
+            NodeKind::Process(ProcessPrimitive::Copying | ProcessPrimitive::Inverting) => {
+                Some(SubstanceType::Message)
+            }
+            // Sensing reads physical flow (crosses to Message on output).
+            NodeKind::Process(ProcessPrimitive::Sensing) => Some(SubstanceType::Material),
+            _ => None,
+        }
+    }
 }
 
 pub const PALETTE: &[NodeKind] = &[
@@ -270,6 +286,28 @@ impl Circuit {
         out
     }
 
+    /// Nodes wired to receive a substance they can't consume — the flow is
+    /// silently ignored. Returns (node index, what it wants, what it's fed).
+    pub fn substance_mismatches(&self) -> Vec<(usize, SubstanceType, SubstanceType)> {
+        let mut out = Vec::new();
+        for (i, node) in self.nodes.iter().enumerate() {
+            let Some(wants) = node.kind.primary_input() else { continue };
+            for w in self.wires.iter().filter(|w| w.to == i) {
+                let got = self.wire_substance(w);
+                let cross_ok =
+                    matches!(node.kind, NodeKind::Process(ProcessPrimitive::Sensing));
+                // Sensing accepts Energy too (both physical); only Message is wrong for it.
+                let usable = got == wants
+                    || (cross_ok && got != SubstanceType::Message);
+                if !usable {
+                    out.push((i, wants, got));
+                    break;
+                }
+            }
+        }
+        out
+    }
+
     /// SameKind (Systems/Core/Complexity.lean): two components are the same
     /// kind iff they act on exactly the same things and exactly the same
     /// things act on them. Returns the number of equivalence classes —
@@ -384,6 +422,20 @@ mod tests {
         }
         // desired = 1.0 * 10 = 10, but only 2.5 energy available
         assert!((c.nodes[2].activity - 2.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn copying_material_is_flagged_not_swallowed() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source)); // emits Material by default
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Copying)));
+        c.wires.push(Wire { from: 0, to: 1 });
+        let m = c.substance_mismatches();
+        assert_eq!(m.len(), 1);
+        assert_eq!(m[0], (1, SubstanceType::Message, SubstanceType::Material));
+        // Setting the source to emit Message clears it.
+        c.nodes[0].out_substance = SubstanceType::Message;
+        assert!(c.substance_mismatches().is_empty());
     }
 
     #[test]

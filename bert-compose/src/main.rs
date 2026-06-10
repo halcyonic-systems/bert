@@ -241,16 +241,28 @@ fn status_bar(app: &App, ctx: &egui::Context) {
                 dot(ui, GREEN);
                 ui.label(RichText::new(&app.status).color(SECONDARY).small());
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(
-                        RichText::new(format!(
-                            "{} components · {} bonds · diversity {} · always valid — composition is unconditional",
-                            app.circuit.nodes.len(),
-                            app.circuit.wires.len(),
-                            app.circuit.diversity(),
-                        ))
-                        .color(SECONDARY)
-                        .small(),
-                    );
+                    let mismatches = app.circuit.substance_mismatches();
+                    if let Some((i, wants, got)) = mismatches.first() {
+                        ui.label(
+                            RichText::new(format!(
+                                "⚠ {} consumes {wants:?} but is fed {got:?} — that flow is ignored. Change the source's substance or insert a Sensing transducer.",
+                                app.circuit.nodes[*i].name,
+                            ))
+                            .color(theme::AMBER)
+                            .small(),
+                        );
+                    } else {
+                        ui.label(
+                            RichText::new(format!(
+                                "{} components · {} bonds · diversity {} · always valid — composition is unconditional",
+                                app.circuit.nodes.len(),
+                                app.circuit.wires.len(),
+                                app.circuit.diversity(),
+                            ))
+                            .color(SECONDARY)
+                            .small(),
+                        );
+                    }
                 });
             });
         });
@@ -443,6 +455,11 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                 }
             }
 
+            // Substance mismatches: nodes silently ignoring a flow they can't use.
+            let mismatches = app.circuit.substance_mismatches();
+            let mismatched: std::collections::HashSet<usize> =
+                mismatches.iter().map(|(i, _, _)| *i).collect();
+
             // Nodes.
             let mut clicked_body: Option<usize> = None;
             let mut clicked_port: Option<usize> = None;
@@ -471,6 +488,8 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                     (GOLD, 2.2)
                 } else if app.selected == Some(i) {
                     (ACCENT, 2.0)
+                } else if mismatched.contains(&i) {
+                    (theme::AMBER, 2.0)
                 } else {
                     (HAIRLINE, 1.2)
                 };
@@ -520,6 +539,15 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                     egui::FontId::proportional(10.0),
                     SECONDARY,
                 );
+                if mismatched.contains(&i) {
+                    painter.text(
+                        pos + vec2(0.0, -NODE_R - 8.0),
+                        egui::Align2::CENTER_CENTER,
+                        "⚠",
+                        egui::FontId::proportional(14.0),
+                        theme::AMBER,
+                    );
+                }
                 // port
                 let port_color = if port_resp.hovered() { GOLD } else { substance_color(node.out_substance) };
                 painter.circle(port, 5.0, PAPER, Stroke::new(1.6, port_color));
