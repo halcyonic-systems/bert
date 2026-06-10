@@ -3,7 +3,7 @@
 
 use crate::app::App;
 use crate::theme::{self, primary_button, semibold, GREEN, PAPER, PRIMARY, SECONDARY};
-use crate::{askhal, examples, lens};
+use crate::{examples, lens};
 use egui::RichText;
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
@@ -81,6 +81,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     ));
                 }
                 ui.toggle_value(&mut app.show_charts, "📈 Charts");
+                if ui.button("?").on_hover_text("what is this?").clicked() {
+                    app.show_about = true;
+                }
                 let mut load: Option<usize> = None;
                 ui.menu_button("Examples ▾", |ui| {
                     for (i, ex) in examples::EXAMPLES.iter().enumerate() {
@@ -114,20 +117,36 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         }
                     });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.add(primary_button("Save as BERT model")).clicked() {
-                        app.save();
-                    }
-                    if ui
-                        .button("Load")
-                        .on_hover_text(
-                            "open a saved BERT model back onto the canvas — \
-                             or drag a .json anywhere into the window",
-                        )
-                        .clicked()
-                    {
-                        app.load_dialog();
-                    }
-                    // Ask hal — sovereign in-app analysis of the run.
+                    // File — save/load/export folded into one menu to keep the
+                    // bar uncrowded.
+                    ui.menu_button("File ▾", |ui| {
+                        if ui.button("Save as BERT model").clicked() {
+                            app.save();
+                            ui.close_menu();
+                        }
+                        if ui
+                            .button("Load…")
+                            .on_hover_text("open a saved BERT model — or drag a .json onto the window")
+                            .clicked()
+                        {
+                            app.load_dialog();
+                            ui.close_menu();
+                        }
+                        ui.separator();
+                        if ui
+                            .add_enabled(
+                                !app.circuit.history.is_empty(),
+                                egui::Button::new("Export run CSV"),
+                            )
+                            .on_hover_text("write the recorded per-tick data to ~/Desktop")
+                            .clicked()
+                        {
+                            app.export_csv();
+                            ui.close_menu();
+                        }
+                    });
+                    // Ask hal — sovereign in-app analysis. Model picker lives in
+                    // the hal window now, not the bar.
                     let can_ask = !app.circuit.history.is_empty() && !app.hal_busy;
                     let label = if app.hal_busy { "hal thinking…" } else { "✦ Ask hal" };
                     if ui
@@ -136,29 +155,6 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         .clicked()
                     {
                         app.ask_hal();
-                    }
-                    egui::ComboBox::from_id_salt("hal-model")
-                        .width(118.0)
-                        .selected_text(RichText::new(&app.hal_model).small())
-                        .show_ui(ui, |ui| {
-                            for m in askhal::MODELS {
-                                let tag = if askhal::is_local(m) { "local" } else { "cloud" };
-                                ui.selectable_value(
-                                    &mut app.hal_model,
-                                    m.to_string(),
-                                    format!("{m}  ·  {tag}"),
-                                );
-                            }
-                        });
-                    if ui
-                        .add_enabled(
-                            !app.circuit.history.is_empty(),
-                            egui::Button::new("Export CSV"),
-                        )
-                        .on_hover_text("write the recorded run (per-tick data) to ~/Desktop")
-                        .clicked()
-                    {
-                        app.export_csv();
                     }
                 });
             });

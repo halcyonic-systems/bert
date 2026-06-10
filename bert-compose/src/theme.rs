@@ -240,8 +240,11 @@ pub fn hover_row(
 }
 
 /// Canvas empty state for bert-compose.
-pub fn empty_state_inline(ui: &mut egui::Ui) {
-    ui.add_space(ui.available_height() * 0.30);
+/// Empty-canvas orientation. Returns true if the user clicked the "what is
+/// this?" link (the caller opens the About window — keeps theme UI-state free).
+pub fn empty_state_inline(ui: &mut egui::Ui) -> bool {
+    let mut want_about = false;
+    ui.add_space(ui.available_height() * 0.24);
     ui.vertical_centered(|ui| {
         ui.label(RichText::new("⚒").color(HAIRLINE).size(44.0));
         ui.add_space(4.0);
@@ -251,12 +254,24 @@ pub fn empty_state_inline(ui: &mut egui::Ui) {
                 .family(semibold())
                 .size(14.0),
         );
+        ui.add_space(8.0);
+        // Three concrete on-ramps, easiest first.
+        ui.label(RichText::new("①  Load an example  (Examples ▾, top bar)").color(SECONDARY).size(12.0));
         ui.add_space(2.0);
-        ui.label(
-            RichText::new("Add primitives from the palette, wire ◦ → component, press Run — \
-                           flows move, stocks fill, feedback regulates.")
-                .color(SECONDARY)
-                .size(12.0),
-        );
+        ui.label(RichText::new("②  Stamp a process  (Systems Processes, left palette)").color(SECONDARY).size(12.0));
+        ui.add_space(2.0);
+        ui.label(RichText::new("③  Or add a primitive, wire ◦ → component, press Run").color(SECONDARY).size(12.0));
+        ui.add_space(10.0);
+        if ui
+            .add(
+                egui::Label::new(RichText::new("what is this? →").color(ACCENT).size(12.0))
+                    .sense(egui::Sense::click()),
+            )
+            .on_hover_text("open the orientation")
+            .clicked()
+        {
+            want_about = true;
+        }
     });
+    want_about
 }

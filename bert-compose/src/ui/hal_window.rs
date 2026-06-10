@@ -43,7 +43,25 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         .color(SECONDARY)
                         .small(),
                     );
-                    if ui.small_button("ask again").clicked() {
+                });
+                ui.add_space(2.0);
+                // Model picker lives here (moved off the top bar). Switch and
+                // re-ask.
+                ui.horizontal(|ui| {
+                    egui::ComboBox::from_id_salt("hal-model")
+                        .width(140.0)
+                        .selected_text(RichText::new(&app.hal_model).small())
+                        .show_ui(ui, |ui| {
+                            for m in askhal::MODELS {
+                                let tag = if askhal::is_local(m) { "local" } else { "cloud" };
+                                ui.selectable_value(
+                                    &mut app.hal_model,
+                                    m.to_string(),
+                                    format!("{m}  ·  {tag}"),
+                                );
+                            }
+                        });
+                    if ui.button("ask again").clicked() {
                         app.ask_hal();
                     }
                 });

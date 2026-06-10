@@ -2,7 +2,8 @@
 //! everything that reads or writes disk (save, export, the latest-run
 //! contract, the run digest). UI panels live in `ui/*`.
 
-use crate::circuit::{Circuit, DeclaredSubstance, Node, NodeKind, SUBSTANCES};
+use crate::circuit::{Circuit, DeclaredSubstance, Node, NodeKind, Wire, SUBSTANCES};
+use crate::ladder::Rung;
 use crate::{askhal, examples, export, theme, ui};
 use bert_core::SubstanceType;
 use eframe::egui;
@@ -24,6 +25,8 @@ pub struct App {
     pub chart_metric: usize,
     /// Active presentation lens (index into `lens::LENSES`; 0 = Systems).
     pub lens: usize,
+    /// The "what is this?" orientation window.
+    pub show_about: bool,
     // — substance dictionary —
     /// Substances free-declared this session (pickable on any node).
     pub declared: Vec<DeclaredSubstance>,
@@ -54,6 +57,7 @@ impl App {
             show_charts: true,
             chart_metric: 0,
             lens: 0,
+            show_about: true, // first thing a new user sees
             declared: Vec::new(),
             declaring: false,
             decl_name: String::new(),
@@ -138,6 +142,44 @@ impl App {
         {
             self.load_model_file(&path);
         }
+    }
+
+    /// Stamp a Troncale process onto the canvas: it drops the rung's PRIMITIVE
+    /// circuit (visible, editable) — a macro, not a new atom. Appends below
+    /// existing content so a model can be built by composing processes; on an
+    /// empty canvas it lands at the rung's native layout. The status line
+    /// keeps the honesty ("these are primitives; edit them freely").
+    pub fn stamp_macro(&mut self, rung: &Rung) {
+        let sub = (rung.build)();
+        let dy = if self.circuit.nodes.is_empty() {
+            0.0
+        } else {
+            let existing_max = self.circuit.nodes.iter().map(|n| n.pos.y).fold(f32::MIN, f32::max);
+            let sub_min = sub.nodes.iter().map(|n| n.pos.y).fold(f32::MAX, f32::min);
+            existing_max + 150.0 - sub_min
+        };
+        let base = self.circuit.nodes.len();
+        for mut node in sub.nodes {
+            node.pos.y += dy;
+            self.circuit.nodes.push(node);
+        }
+        for w in sub.wires {
+            self.circuit.wires.push(Wire {
+                from: w.from + base,
+                to: w.to + base,
+                mode: w.mode,
+                conductance: w.conductance,
+            });
+        }
+        self.harvest_declared();
+        self.next_n = self.circuit.nodes.len() + 1;
+        self.selected = None;
+        self.pending_wire = None;
+        self.running = false;
+        self.status = format!(
+            "stamped {} — {}. These are primitives; edit them freely.",
+            rung.name, rung.composition
+        );
     }
 
     pub fn add_node(&mut self, kind: NodeKind, canvas_center: Pos2) {
@@ -326,6 +368,7 @@ impl eframe::App for App {
         }
 
         ui::top_bar::show(self, ctx);
+        ui::about::show(self, ctx);
         ui::hal_window::show(self, ctx);
         ui::status_bar::show(self, ctx);
         ui::palette::show(self, ctx);

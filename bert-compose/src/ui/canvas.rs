@@ -14,7 +14,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         .frame(egui::Frame::new().fill(theme::CREAM))
         .show(ctx, |ui| {
             if app.circuit.nodes.is_empty() {
-                theme::empty_state_inline(ui);
+                if theme::empty_state_inline(ui) {
+                    app.show_about = true;
+                }
                 return;
             }
             let painter = ui.painter();

@@ -1,5 +1,6 @@
 //! The shell, one module per panel. Shared visual vocabulary lives here.
 
+pub mod about;
 pub mod canvas;
 pub mod charts;
 pub mod hal_window;
