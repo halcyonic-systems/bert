@@ -169,7 +169,9 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                 &format!("{} → {}", from.name, circuit.nodes[wire.to].name),
                 "",
             ),
-            substance: Substance { sub_type: String::new(), ty: substance },
+            // The declared substance name rides in sub_type — the kernel
+            // field that existed for exactly this — over the conserved base.
+            substance: Substance { sub_type: from.out_substance.name.clone(), ty: substance },
             // Gradient (field-driven) flows export as BERT's Force interaction
             // — the redemption of InteractionType::Force: it now means "a flow
             // whose rate is a potential gradient," not a label without dynamics.
@@ -192,7 +194,7 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                 },
             )
             .unwrap_or(bert_core::rust_decimal::Decimal::ONE),
-            unit: String::new(),
+            unit: from.out_substance.unit.clone(),
             parameters: Vec::new(),
             smart_parameters: Vec::new(),
             endpoint_offset: None,
@@ -230,6 +232,8 @@ mod tests {
         c.wires.push(Wire::new(1, 2));
         c.nodes[0].param = 2.5; // asserted emission rate
         c.nodes[1].initial_storage = 12.0; // asserted starting stock
+        c.nodes[0].out_substance =
+            crate::circuit::DeclaredSubstance::named("water", bert_core::SubstanceType::Material, "L");
 
         let model = to_world_model(&c, "Touchable Circuit");
         let errors: Vec<_> = validate(&model)
@@ -252,5 +256,8 @@ mod tests {
         );
         let src_flow = &reloaded.interactions[0];
         assert_eq!(src_flow.amount.to_string(), "2.5", "emission rate on the flow");
+        assert_eq!(src_flow.substance.sub_type, "water", "declared name rides in sub_type");
+        assert_eq!(src_flow.substance.ty, bert_core::SubstanceType::Material, "over its base");
+        assert_eq!(src_flow.unit, "L", "declared unit on the interaction");
     }
 }

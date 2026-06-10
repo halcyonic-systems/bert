@@ -2,9 +2,16 @@
 //! social scientist or systems theorist can run, read, and tinker with. They
 //! triple as the educational library, Troncale-sweep artifacts, and tests.
 
-use crate::circuit::{Circuit, Node, NodeKind, Wire};
+use crate::circuit::{Circuit, DeclaredSubstance, Node, NodeKind, Wire, SUBSTANCES};
 use bert_core::{ProcessPrimitive::*, SubstanceType};
 use egui::pos2;
+
+/// Look up a curated substance by name — examples speak human (water, money,
+/// news), not just Energy/Material/Message.
+fn substance(name: &str) -> DeclaredSubstance {
+    let (n, b, u) = SUBSTANCES.iter().find(|(n, _, _)| *n == name).unwrap();
+    DeclaredSubstance::named(n, *b, u)
+}
 
 pub struct Example {
     pub name: &'static str,
@@ -65,6 +72,8 @@ fn leaky_bucket() -> Circuit {
     c.nodes[1].initial_storage = 20.0; // starts full
     c.nodes[1].release_rate = 2.0; // drains faster than it fills
     c.nodes[1].storage = 20.0;
+    c.nodes[0].out_substance = substance("water");
+    c.nodes[1].out_substance = substance("water");
     c.wires.push(Wire::new(0, 1));
     c.wires.push(Wire::new(1, 2));
     c
@@ -83,6 +92,9 @@ fn homeostat() -> Circuit {
     c.nodes[0].param = 3.0;
     c.nodes[2].release_rate = 1.0;
     c.nodes[4].param = 0.2; // gauge gain
+    for i in [0, 1, 2] {
+        c.nodes[i].out_substance = substance("water");
+    }
     c.wires.push(Wire::new(0, 1)); // supply → valve
     c.wires.push(Wire::new(1, 2)); // valve → tank
     c.wires.push(Wire::new(2, 3)); // tank → sink
@@ -100,6 +112,8 @@ fn budget_split() -> Circuit {
     c.nodes.push(n(NodeKind::Sink, 3, 740.0, 300.0));
     c.nodes.push(n(NodeKind::Sink, 4, 740.0, 460.0));
     c.nodes[0].param = 4.0;
+    c.nodes[0].out_substance = substance("money");
+    c.nodes[1].out_substance = substance("money");
     c.wires.push(Wire::new(0, 1));
     c.wires.push(Wire::new(1, 2));
     c.wires.push(Wire::new(1, 3));
@@ -115,9 +129,9 @@ fn megaphone() -> Circuit {
     c.nodes.push(n(NodeKind::Process(Amplifying), 3, 560.0, 380.0)); // 2 amp
     c.nodes.push(n(NodeKind::Sink, 4, 740.0, 380.0)); // 3
     c.nodes[0].param = 1.0;
-    c.nodes[0].out_substance = SubstanceType::Message;
+    c.nodes[0].out_substance = SubstanceType::Message.into();
     c.nodes[1].param = 3.0;
-    c.nodes[1].out_substance = SubstanceType::Energy;
+    c.nodes[1].out_substance = substance("electricity");
     c.nodes[2].param = 1.0; // gain 10, but power caps at 3
     c.wires.push(Wire::new(0, 2));
     c.wires.push(Wire::new(1, 2));
@@ -134,7 +148,8 @@ fn broadcast() -> Circuit {
     c.nodes.push(n(NodeKind::Sink, 4, 720.0, 380.0));
     c.nodes.push(n(NodeKind::Sink, 5, 720.0, 480.0));
     c.nodes[0].param = 1.0;
-    c.nodes[0].out_substance = SubstanceType::Message;
+    c.nodes[0].out_substance = substance("news");
+    c.nodes[1].out_substance = substance("news");
     c.wires.push(Wire::new(0, 1));
     c.wires.push(Wire::new(1, 2));
     c.wires.push(Wire::new(1, 3));
@@ -154,6 +169,8 @@ fn battery() -> Circuit {
     c.nodes[0].storage = 20.0;
     c.nodes[0].release_rate = 0.0;
     c.nodes[1].release_rate = 0.0;
+    c.nodes[0].out_substance = substance("electricity");
+    c.nodes[1].out_substance = substance("electricity");
     c.wires.push(Wire::gradient(0, 1, 0.25));
     c
 }
@@ -182,6 +199,9 @@ fn passive_vs_active() -> Circuit {
     c.nodes[2].param = 3.0;
     c.nodes[4].release_rate = 1.0;
     c.nodes[6].param = 0.2;
+    for i in [0, 1, 2, 3, 4] {
+        c.nodes[i].out_substance = substance("water");
+    }
     c.wires.push(Wire::new(2, 3));
     c.wires.push(Wire::new(3, 4));
     c.wires.push(Wire::new(4, 5));

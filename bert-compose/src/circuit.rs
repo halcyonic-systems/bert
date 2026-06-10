@@ -104,6 +104,65 @@ impl NodeKind {
     }
 }
 
+/// A declared substance: a human name ("money", "water", "votes") that
+/// factors through one of the three conserved kinds. Neutrality is the
+/// trichotomy (Energy/Material/Message); reality is a refinement that maps
+/// onto it — the dynamics only ever read `base`, so money conserves exactly
+/// like Material and votes copy exactly like Message. The name and unit ride
+/// along into the BERT JSON (`Substance.sub_type`, `Interaction.unit`).
+#[derive(Clone, PartialEq, Debug)]
+pub struct DeclaredSubstance {
+    /// Plain name ("money"); empty = the bare base kind.
+    pub name: String,
+    /// The conserved kind whose physics this substance inherits.
+    pub base: SubstanceType,
+    /// Display unit ("$", "L", "votes"); empty = unitless.
+    pub unit: String,
+}
+
+impl DeclaredSubstance {
+    pub fn bare(base: SubstanceType) -> Self {
+        Self { name: String::new(), base, unit: String::new() }
+    }
+    pub fn named(name: &str, base: SubstanceType, unit: &str) -> Self {
+        Self { name: name.to_string(), base, unit: unit.to_string() }
+    }
+    /// "money (Material)" — or just "Material" when unnamed.
+    pub fn label(&self) -> String {
+        if self.name.is_empty() {
+            format!("{:?}", self.base)
+        } else {
+            format!("{} ({:?})", self.name, self.base)
+        }
+    }
+}
+
+impl From<SubstanceType> for DeclaredSubstance {
+    fn from(base: SubstanceType) -> Self {
+        Self::bare(base)
+    }
+}
+
+/// The curated substance palette — relatable names first (this tool is for
+/// social scientists and systems theorists, not just engineers). Each maps
+/// to the conserved kind whose physics it inherits; anything not here can be
+/// free-declared in the inspector.
+pub const SUBSTANCES: &[(&str, SubstanceType, &str)] = &[
+    ("money", SubstanceType::Material, "$"),
+    ("water", SubstanceType::Material, "L"),
+    ("people", SubstanceType::Material, "people"),
+    ("food", SubstanceType::Material, "kg"),
+    ("goods", SubstanceType::Material, "units"),
+    ("sunlight", SubstanceType::Energy, "W"),
+    ("electricity", SubstanceType::Energy, "kWh"),
+    ("fuel", SubstanceType::Energy, "J"),
+    ("effort", SubstanceType::Energy, "hours"),
+    ("votes", SubstanceType::Message, "votes"),
+    ("news", SubstanceType::Message, "stories"),
+    ("data", SubstanceType::Message, "bits"),
+    ("orders", SubstanceType::Message, "orders"),
+];
+
 pub const PALETTE: &[NodeKind] = &[
     NodeKind::Source,
     NodeKind::Sink,
@@ -123,8 +182,10 @@ pub struct Node {
     pub kind: NodeKind,
     pub name: String,
     pub pos: egui::Pos2,
-    /// Output substance type (wires created from this node inherit it).
-    pub out_substance: SubstanceType,
+    /// Output substance (wires created from this node inherit it). A
+    /// declared name + unit over a conserved base kind; dynamics read
+    /// `.base` only.
+    pub out_substance: DeclaredSubstance,
     /// Source rate / agency capacity (gain, efficiency, k…) depending on kind.
     pub param: f32,
     /// Buffer release rate per tick.
@@ -144,7 +205,7 @@ impl Node {
             kind,
             name: format!("{} {}", kind.label(), n),
             pos,
-            out_substance: kind.default_out(),
+            out_substance: kind.default_out().into(),
             param: if kind == NodeKind::Source { 1.0 } else { 0.5 },
             release_rate: 1.0,
             initial_storage: 0.0,
@@ -229,7 +290,7 @@ impl Circuit {
             .iter()
             .filter(|n| {
                 matches!(n.kind, NodeKind::Process(_))
-                    && n.out_substance != SubstanceType::Message
+                    && n.out_substance.base != SubstanceType::Message
             })
             .map(|n| n.activity)
             .sum()
@@ -245,9 +306,10 @@ impl Circuit {
         self.emitted + baseline - (self.stored() + self.sunk + self.in_flight() + self.dissipated)
     }
 
-    /// Substance carried by a wire = the sender's output substance.
+    /// Conserved kind carried by a wire = the base of the sender's declared
+    /// output substance (what the dynamics run on).
     pub fn wire_substance(&self, w: &Wire) -> SubstanceType {
-        self.nodes[w.from].out_substance
+        self.nodes[w.from].out_substance.base
     }
 
     /// One synchronous step: all transfer functions read the previous tick's
@@ -290,7 +352,7 @@ impl Circuit {
         // (Buffers never dangle: release is 0 without a pushed outlet.)
         for i in 0..n {
             if matches!(self.nodes[i].kind, NodeKind::Process(_))
-                && self.nodes[i].out_substance != SubstanceType::Message
+                && self.nodes[i].out_substance.base != SubstanceType::Message
                 && !self.wires.iter().any(|w| w.from == i && w.mode == FlowMode::Pushed)
             {
                 dissipated_now += self.nodes[i].activity;
@@ -369,7 +431,7 @@ impl Circuit {
             // Energy/Material split across the fanout (matter doesn't) —
             // which is also why Copying relabeled to a physical substance
             // splits rather than duplicating.
-            if sender.out_substance == SubstanceType::Message {
+            if sender.out_substance.base == SubstanceType::Message {
                 sender.activity
             } else {
                 sender.activity / outs
@@ -507,7 +569,7 @@ impl Circuit {
                 NodeKind::Source => dissipated_now += delivered_phys,
                 NodeKind::Sink => sunk_now += delivered_phys,
                 NodeKind::Process(_) => {
-                    let out_phys = if node.out_substance == SubstanceType::Message {
+                    let out_phys = if node.out_substance.base == SubstanceType::Message {
                         0.0
                     } else {
                         next_activity[i]
@@ -562,13 +624,14 @@ impl Circuit {
     }
 
     /// Nodes wired to receive a substance they can't consume — the flow is
-    /// silently ignored. Returns (node index, what it wants, what it's fed).
-    pub fn substance_mismatches(&self) -> Vec<(usize, SubstanceType, SubstanceType)> {
+    /// silently ignored. Returns (node index, what it wants, what it's fed —
+    /// as declared, so warnings can say "fed money (Material)").
+    pub fn substance_mismatches(&self) -> Vec<(usize, SubstanceType, DeclaredSubstance)> {
         let mut out = Vec::new();
         for (i, node) in self.nodes.iter().enumerate() {
             for w in self.wires.iter().filter(|w| w.to == i) {
-                let got = self.wire_substance(w);
-                if !node.kind.consumes(got) {
+                let got = self.nodes[w.from].out_substance.clone();
+                if !node.kind.consumes(got.base) {
                     // Report what it wants: the first substance it does consume.
                     let wants = [
                         SubstanceType::Message,
@@ -737,9 +800,9 @@ mod tests {
         c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying))); // 2
         c.nodes.push(node(NodeKind::Sink)); // 3
         c.nodes[0].param = 1.0;
-        c.nodes[0].out_substance = SubstanceType::Message;
+        c.nodes[0].out_substance = SubstanceType::Message.into();
         c.nodes[1].param = 2.5;
-        c.nodes[1].out_substance = SubstanceType::Energy;
+        c.nodes[1].out_substance = SubstanceType::Energy.into();
         c.nodes[2].param = 1.0; // gain 10
         c.wires.push(Wire::new(0, 2));
         c.wires.push(Wire::new(1, 2));
@@ -759,7 +822,7 @@ mod tests {
         c.wires.push(Wire::new(0, 1));
         let m = c.substance_mismatches();
         assert_eq!(m.len(), 1);
-        assert_eq!(m[0], (1, SubstanceType::Message, SubstanceType::Material));
+        assert_eq!((m[0].0, m[0].1, m[0].2.base), (1, SubstanceType::Message, SubstanceType::Material));
         // Amplifying fed Material is also flagged now (was silently zeroing).
         let mut amp = Circuit::default();
         amp.nodes.push(node(NodeKind::Source)); // Material
@@ -769,12 +832,12 @@ mod tests {
         // Splitting fed Message is flagged (you split matter, you copy info).
         let mut sp = Circuit::default();
         sp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Copying)));
-        sp.nodes[0].out_substance = SubstanceType::Message;
+        sp.nodes[0].out_substance = SubstanceType::Message.into();
         sp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
         sp.wires.push(Wire::new(0, 1));
         assert_eq!(sp.substance_mismatches().len(), 1, "Message -> Splitting flagged");
         // Setting the source to emit Message clears it.
-        c.nodes[0].out_substance = SubstanceType::Message;
+        c.nodes[0].out_substance = SubstanceType::Message.into();
         assert!(c.substance_mismatches().is_empty());
     }
 
@@ -1004,9 +1067,9 @@ mod tests {
                 let mut nd = node(NodeKind::Source);
                 nd.param = 0.5 + 2.5 * r.f();
                 if r.f() < 0.3 {
-                    nd.out_substance = SubstanceType::Message;
+                    nd.out_substance = SubstanceType::Message.into();
                 } else if r.f() < 0.3 {
-                    nd.out_substance = SubstanceType::Energy;
+                    nd.out_substance = SubstanceType::Energy.into();
                 }
                 c.nodes.push(nd);
             }
@@ -1137,7 +1200,7 @@ mod tests {
         gated.nodes.push(node(NodeKind::Sink));
         gated.nodes[0].param = 2.0;
         gated.nodes[1].param = 0.5;
-        gated.nodes[1].out_substance = SubstanceType::Message;
+        gated.nodes[1].out_substance = SubstanceType::Message.into();
         gated.wires.push(Wire::new(0, 2));
         gated.wires.push(Wire::new(1, 2));
         gated.wires.push(Wire::new(2, 3));
@@ -1190,9 +1253,9 @@ mod tests {
         amp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
         amp.nodes.push(node(NodeKind::Sink));
         amp.nodes[0].param = 1.0;
-        amp.nodes[0].out_substance = SubstanceType::Message;
+        amp.nodes[0].out_substance = SubstanceType::Message.into();
         amp.nodes[1].param = 2.5;
-        amp.nodes[1].out_substance = SubstanceType::Energy;
+        amp.nodes[1].out_substance = SubstanceType::Energy.into();
         amp.wires.push(Wire::new(0, 2));
         amp.wires.push(Wire::new(1, 2));
         amp.wires.push(Wire::new(2, 3));
@@ -1213,8 +1276,8 @@ mod tests {
         c.nodes.push(node(NodeKind::Sink));
         c.nodes.push(node(NodeKind::Sink));
         c.nodes[0].param = 1.0;
-        c.nodes[0].out_substance = SubstanceType::Message;
-        c.nodes[1].out_substance = SubstanceType::Material; // user relabel
+        c.nodes[0].out_substance = SubstanceType::Message.into();
+        c.nodes[1].out_substance = SubstanceType::Material.into(); // user relabel
         c.wires.push(Wire::new(0, 1));
         c.wires.push(Wire::new(1, 2));
         c.wires.push(Wire::new(1, 3));
@@ -1252,6 +1315,41 @@ mod tests {
             assert_balanced(&c, "mixed buffer");
         }
         assert!(c.dissipated.abs() < 1e-2, "nothing dissipates in this circuit");
+    }
+
+    /// A named substance inherits its base physics exactly: money splits and
+    /// conserves like Material; votes copy like Message; a mismatch warning
+    /// carries the human name.
+    #[test]
+    fn named_substance_inherits_base_physics() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Sink));
+        let money = DeclaredSubstance::named("money", SubstanceType::Material, "$");
+        c.nodes[0].out_substance = money.clone();
+        c.nodes[1].out_substance = money;
+        c.nodes[0].param = 4.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(1, 2));
+        c.wires.push(Wire::new(1, 3));
+        for _ in 0..20 {
+            c.step();
+            assert_balanced(&c, "money splits");
+        }
+        assert!((c.nodes[2].total - c.nodes[3].total).abs() < 1e-3, "equal shares");
+        assert!(c.dissipated.abs() < 1e-3, "money is conserved");
+
+        let mut v = Circuit::default();
+        v.nodes.push(node(NodeKind::Source));
+        v.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        v.nodes[0].out_substance =
+            DeclaredSubstance::named("votes", SubstanceType::Message, "votes");
+        v.wires.push(Wire::new(0, 1));
+        let m = v.substance_mismatches();
+        assert_eq!(m.len(), 1, "votes (Message) into a Splitter is flagged");
+        assert_eq!(m[0].2.name, "votes", "the warning speaks the human name");
     }
 
     #[test]

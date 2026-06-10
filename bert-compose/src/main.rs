@@ -28,6 +28,16 @@ use theme::{
     GREEN_SOFT, HAIRLINE, PAPER, PRIMARY, RED, SECONDARY,
 };
 
+/// One-line physics of a base kind — shown under the substance picker so a
+/// declared name ("money") carries its conservation law with it.
+fn substance_blurb(base: SubstanceType) -> &'static str {
+    match base {
+        SubstanceType::Energy => "conserved — splits across fanouts, meters the amplifier",
+        SubstanceType::Material => "conserved — splits and stores, never copies",
+        SubstanceType::Message => "information — copies freely, gates and signals, not conserved",
+    }
+}
+
 // BERT substance colors (message lifted to accent for visibility on cream).
 fn substance_color(s: SubstanceType) -> Color32 {
     match s {
@@ -64,6 +74,13 @@ struct App {
     show_charts: bool,
     /// Which metric the plots track: 0 activity, 1 storage, 2 cumulative total.
     chart_metric: usize,
+    // — substance dictionary —
+    /// Substances free-declared this session (pickable on any node).
+    declared: Vec<circuit::DeclaredSubstance>,
+    declaring: bool,
+    decl_name: String,
+    decl_unit: String,
+    decl_base: SubstanceType,
     // — Ask hal (sovereign in-app analysis) —
     hal_model: String,
     hal_rx: Option<std::sync::mpsc::Receiver<Result<String, String>>>,
@@ -86,6 +103,11 @@ impl App {
             status: "add primitives from the palette, wire ◦ → node, press Run".to_string(),
             show_charts: true,
             chart_metric: 0,
+            declared: Vec::new(),
+            declaring: false,
+            decl_name: String::new(),
+            decl_unit: String::new(),
+            decl_base: SubstanceType::Material,
             hal_model: "llama3".to_string(),
             hal_rx: None,
             hal_answer: None,
@@ -103,6 +125,18 @@ impl App {
     fn load_example(&mut self, ex: &examples::Example) {
         self.circuit = (ex.build)();
         self.name = ex.name.to_string();
+        // Named substances the example uses become pickable on new nodes.
+        for node in &self.circuit.nodes {
+            let d = &node.out_substance;
+            if !d.name.is_empty()
+                && !self.declared.contains(d)
+                && !circuit::SUBSTANCES
+                    .iter()
+                    .any(|(n, b, u)| *n == d.name && *b == d.base && *u == d.unit)
+            {
+                self.declared.push(d.clone());
+            }
+        }
         self.next_n = self.circuit.nodes.len() + 1;
         self.selected = None;
         self.pending_wire = None;
@@ -208,10 +242,10 @@ impl App {
         s.push_str("\n## Wiring\n");
         for w in &c.wires {
             s.push_str(&format!(
-                "- {} → {} ({:?})\n",
+                "- {} → {} ({})\n",
                 c.nodes[w.from].name,
                 c.nodes[w.to].name,
-                c.wire_substance(w),
+                c.nodes[w.from].out_substance.label(),
             ));
         }
         if c.tick > 0 {
@@ -226,8 +260,9 @@ impl App {
             s.push_str("\n## Warnings\n");
             for (i, wants, got) in mm {
                 s.push_str(&format!(
-                    "- {} consumes {wants:?} but is fed {got:?} (flow ignored)\n",
-                    c.nodes[i].name
+                    "- {} consumes {wants:?} but is fed {} (flow ignored)\n",
+                    c.nodes[i].name,
+                    got.label(),
                 ));
             }
         }
@@ -497,8 +532,9 @@ fn status_bar(app: &App, ctx: &egui::Context) {
                     if let Some((i, wants, got)) = mismatches.first() {
                         ui.label(
                             RichText::new(format!(
-                                "⚠ {} consumes {wants:?} but is fed {got:?} — that flow is ignored. Change the source's substance or insert a Sensing transducer.",
+                                "⚠ {} consumes {wants:?} but is fed {} — that flow is ignored. Change the source's substance or insert a Sensing transducer.",
                                 app.circuit.nodes[*i].name,
+                                got.label(),
                             ))
                             .color(theme::AMBER)
                             .small(),
@@ -645,19 +681,112 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
             }
             ui.add_space(4.0);
             ui.label(RichText::new("emits").color(SECONDARY).small());
-            ui.horizontal_wrapped(|ui| {
-                for s in
-                    [SubstanceType::Energy, SubstanceType::Material, SubstanceType::Message]
-                {
-                    let sel = node.out_substance == s;
-                    if ui
-                        .selectable_label(sel, RichText::new(format!("{s:?}")).size(10.5))
-                        .clicked()
+            // Substance dictionary: bare kinds, the curated palette, anything
+            // declared this session, or declare a new one. Names are for
+            // humans; the dynamics run on the conserved base kind.
+            let mut choose: Option<circuit::DeclaredSubstance> = None;
+            egui::ComboBox::from_id_salt("substance")
+                .width(176.0)
+                .selected_text(RichText::new(node.out_substance.label()).size(11.0))
+                .show_ui(ui, |ui| {
+                    for base in
+                        [SubstanceType::Energy, SubstanceType::Material, SubstanceType::Message]
                     {
-                        node.out_substance = s;
+                        let d = circuit::DeclaredSubstance::bare(base);
+                        if ui.selectable_label(node.out_substance == d, d.label()).clicked() {
+                            choose = Some(d);
+                        }
                     }
-                }
-            });
+                    ui.separator();
+                    for (name, base, unit) in circuit::SUBSTANCES {
+                        let d = circuit::DeclaredSubstance::named(name, *base, unit);
+                        if ui
+                            .selectable_label(
+                                node.out_substance == d,
+                                format!("{name}  ·  {base:?}"),
+                            )
+                            .clicked()
+                        {
+                            choose = Some(d);
+                        }
+                    }
+                    if !app.declared.is_empty() {
+                        ui.separator();
+                        for d in &app.declared {
+                            if ui
+                                .selectable_label(
+                                    node.out_substance == *d,
+                                    format!("{}  ·  {:?}", d.name, d.base),
+                                )
+                                .clicked()
+                            {
+                                choose = Some(d.clone());
+                            }
+                        }
+                    }
+                    ui.separator();
+                    if ui.selectable_label(app.declaring, "+ declare a substance…").clicked() {
+                        app.declaring = true;
+                    }
+                });
+            if let Some(d) = choose {
+                node.out_substance = d;
+                app.declaring = false;
+            }
+            if app.declaring {
+                ui.add(
+                    egui::TextEdit::singleline(&mut app.decl_name)
+                        .hint_text("name — e.g. trust, grain, memes")
+                        .desired_width(170.0),
+                );
+                ui.add(
+                    egui::TextEdit::singleline(&mut app.decl_unit)
+                        .hint_text("unit (optional)")
+                        .desired_width(170.0),
+                );
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(RichText::new("flows as").color(SECONDARY).size(10.0));
+                    for base in
+                        [SubstanceType::Energy, SubstanceType::Material, SubstanceType::Message]
+                    {
+                        if ui
+                            .selectable_label(
+                                app.decl_base == base,
+                                RichText::new(format!("{base:?}")).size(10.5),
+                            )
+                            .clicked()
+                        {
+                            app.decl_base = base;
+                        }
+                    }
+                });
+                ui.horizontal(|ui| {
+                    let ok = !app.decl_name.trim().is_empty();
+                    if ui.add_enabled(ok, egui::Button::new("declare")).clicked() {
+                        let d = circuit::DeclaredSubstance::named(
+                            app.decl_name.trim(),
+                            app.decl_base,
+                            app.decl_unit.trim(),
+                        );
+                        if !app.declared.contains(&d) {
+                            app.declared.push(d.clone());
+                        }
+                        node.out_substance = d;
+                        app.declaring = false;
+                        app.decl_name.clear();
+                        app.decl_unit.clear();
+                    }
+                    if ui.small_button("cancel").clicked() {
+                        app.declaring = false;
+                    }
+                });
+            }
+            ui.label(
+                RichText::new(substance_blurb(node.out_substance.base))
+                    .color(SECONDARY)
+                    .size(10.0)
+                    .italics(),
+            );
             ui.add_space(6.0);
             ui.label(
                 RichText::new(format!(
@@ -895,10 +1024,15 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                     app.circuit.nodes[wire.from].activity
                 };
                 let mid = a_edge + (b_edge - a_edge) * 0.5;
+                let unit = &app.circuit.nodes[wire.from].out_substance.unit;
                 painter.text(
                     mid + vec2(0.0, -10.0),
                     egui::Align2::CENTER_CENTER,
-                    format!("{amount:.1}{}", if gradient { " ⤓" } else { "" }),
+                    format!(
+                        "{amount:.1}{}{}",
+                        if unit.is_empty() { String::new() } else { format!(" {unit}") },
+                        if gradient { " ⤓" } else { "" }
+                    ),
                     egui::FontId::monospace(9.5),
                     if amount > 0.005 { color } else { HAIRLINE },
                 );
@@ -991,7 +1125,7 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                     );
                 }
                 // port
-                let port_color = if port_resp.hovered() { GOLD } else { substance_color(node.out_substance) };
+                let port_color = if port_resp.hovered() { GOLD } else { substance_color(node.out_substance.base) };
                 painter.circle(port, 5.0, PAPER, Stroke::new(1.6, port_color));
             }
 
