@@ -214,6 +214,13 @@ impl App {
                 c.wire_substance(w),
             ));
         }
+        if c.tick > 0 {
+            let baseline: f32 = c.nodes.iter().map(|n| n.initial_storage).sum();
+            s.push_str(&format!(
+                "\n## Conservation\nemitted {:.2} + initial stocks {:.2} = stored {:.2} + sunk {:.2} + in-flight {:.2} + dissipated {:.2} (residual {:+.3})\n",
+                c.emitted, baseline, c.stored(), c.sunk, c.in_flight(), c.dissipated, c.balance(),
+            ));
+        }
         let mm = c.substance_mismatches();
         if !mm.is_empty() {
             s.push_str("\n## Warnings\n");
@@ -452,8 +459,41 @@ fn status_bar(app: &App, ctx: &egui::Context) {
                 dot(ui, GREEN);
                 ui.label(RichText::new(&app.status).color(SECONDARY).small());
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    // Conservation ledger — live. Green = every unit of
+                    // physical mass accounted; amber = leak (or a mid-run
+                    // stock edit moved the baseline).
+                    if app.circuit.tick > 0 {
+                        let c = &app.circuit;
+                        let baseline: f32 = c.nodes.iter().map(|n| n.initial_storage).sum();
+                        let residual = c.balance();
+                        let ok = residual.abs() <= 0.01 * (c.emitted + baseline).max(1.0);
+                        let label = if ok {
+                            RichText::new("⚖ conserved").color(GREEN).small()
+                        } else {
+                            RichText::new(format!("⚖ off by {residual:+.2}"))
+                                .color(theme::AMBER)
+                                .small()
+                        };
+                        ui.label(label).on_hover_text(format!(
+                            "emitted {:.2} + initial stocks {:.2}  =  stored {:.2} + sunk {:.2} \
+                             + in flight {:.2} + dissipated {:.2}  (residual {:+.3})\n\
+                             Dissipation = friction, valve shed, amp power, sensing, mismatches, \
+                             dead ends — each intended and counted.\n\
+                             Edited a stock mid-run? That moves the baseline — Reset re-balances.",
+                            c.emitted,
+                            baseline,
+                            c.stored(),
+                            c.sunk,
+                            c.in_flight(),
+                            c.dissipated,
+                            residual,
+                        ));
+                        ui.add_space(8.0);
+                    }
                     let mismatches = app.circuit.substance_mismatches();
                     let underpowered = app.circuit.underpowered_amplifiers();
+                    let inert = app.circuit.inert_gradient_wires();
+                    let dead = app.circuit.dead_ends();
                     if let Some((i, wants, got)) = mismatches.first() {
                         ui.label(
                             RichText::new(format!(
@@ -467,6 +507,25 @@ fn status_bar(app: &App, ctx: &egui::Context) {
                         ui.label(
                             RichText::new(format!(
                                 "⚠ {} has a signal but no Energy power — amplification is bounded to 0. Wire an Energy source into it.",
+                                app.circuit.nodes[*i].name,
+                            ))
+                            .color(theme::AMBER)
+                            .small(),
+                        );
+                    } else if let Some(k) = inert.first() {
+                        let w = &app.circuit.wires[*k];
+                        ui.label(
+                            RichText::new(format!(
+                                "⚠ gradient {} → {} carries nothing — a field needs a potential to fall from. Only Sources and stocks have levels; switch it to pushed.",
+                                app.circuit.nodes[w.from].name, app.circuit.nodes[w.to].name,
+                            ))
+                            .color(theme::AMBER)
+                            .small(),
+                        );
+                    } else if let Some(i) = dead.first() {
+                        ui.label(
+                            RichText::new(format!(
+                                "⚠ {}'s output goes nowhere — it evaporates each tick. Wire it onward or add a Sink.",
                                 app.circuit.nodes[*i].name,
                             ))
                             .color(theme::AMBER)
@@ -663,8 +722,10 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
                     }
                     ui.label(RichText::new(format!("{fname} → {tname}")).color(PRIMARY).size(11.0));
                 });
-                // Mode toggle only for outgoing wires (the flow's rate law).
-                if from == i {
+                // Mode toggle only for outgoing wires (the flow's rate law),
+                // and only where a gradient is meaningful: a field needs a
+                // potential to fall from, which only Sources and stocks have.
+                if from == i && app.circuit.has_potential(i) {
                     ui.horizontal(|ui| {
                         ui.add_space(18.0);
                         let w = &mut app.circuit.wires[k];
@@ -934,16 +995,31 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                 painter.circle(port, 5.0, PAPER, Stroke::new(1.6, port_color));
             }
 
-            // Wiring interaction: port starts, body completes.
+            // Wiring interaction: port starts, body completes. Boundary
+            // discipline: a Sink only absorbs (nothing flows out of it) and a
+            // Source only emits (flows can't run back into the environment
+            // input) — both would break conservation.
             if let Some(i) = clicked_port {
-                app.pending_wire = Some(i);
-                app.status = format!(
-                    "wiring from {} — click a target component (esc cancels)",
-                    app.circuit.nodes[i].name
-                );
+                if matches!(app.circuit.nodes[i].kind, NodeKind::Sink) {
+                    app.status = format!(
+                        "{} is a sink — it only absorbs; nothing flows out of it",
+                        app.circuit.nodes[i].name
+                    );
+                } else {
+                    app.pending_wire = Some(i);
+                    app.status = format!(
+                        "wiring from {} — click a target component (esc cancels)",
+                        app.circuit.nodes[i].name
+                    );
+                }
             } else if let Some(i) = clicked_body {
                 if let Some(from) = app.pending_wire.take() {
-                    if from != i
+                    if matches!(app.circuit.nodes[i].kind, NodeKind::Source) {
+                        app.status = format!(
+                            "{} is a source — it only emits; flows can't run back into it",
+                            app.circuit.nodes[i].name
+                        );
+                    } else if from != i
                         && !app.circuit.wires.iter().any(|w| w.from == from && w.to == i)
                     {
                         app.circuit.wires.push(Wire::new(from, i));

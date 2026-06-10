@@ -211,6 +211,17 @@ mod tests {
             }
             let moved: f32 = c.nodes.iter().map(|n| n.total + n.activity + n.storage).sum();
             assert!(moved > 0.0, "{} never moved anything", ex.name);
+            // Every example's mass must be fully accounted by the ledger.
+            let scale = (c.emitted
+                + c.nodes.iter().map(|n| n.initial_storage).sum::<f32>())
+            .max(1.0);
+            assert!(
+                c.balance().abs() <= 1e-3 * scale,
+                "{} leaks: residual {} (dissipated {})",
+                ex.name,
+                c.balance(),
+                c.dissipated
+            );
         }
     }
 }

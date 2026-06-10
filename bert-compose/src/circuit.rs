@@ -12,6 +12,37 @@
 //! dynamics, no special cases. (Divergence from the Python, noted: the
 //! buffer's release is a knob here rather than demand-tracking — same
 //! conservative stock, simpler to touch.)
+//!
+//! # Conservation ledger
+//!
+//! Physical mass (Energy/Material) is fully accounted every tick:
+//!
+//! ```text
+//! emitted + initial stocks == stored + sunk + in-flight + dissipated
+//! ```
+//!
+//! `dissipated` is not a fudge factor — it is computed per node as
+//! `physical in − physical out − Δstorage`, so the equation holds by
+//! construction and any *unintended* leak shows up as a nonzero residual
+//! (`balance()`), which the property tests assert over random circuits.
+//! The intended dissipation channels, each a deliberate modeling decision:
+//!
+//! - **Propelling/Impeding friction** — the `(1 − agency)` share is lost in
+//!   transport, the classic transport cost.
+//! - **Amplifying power draw** — the amp consumes its entire metered Energy
+//!   feed (signal out + heat); output is Message, which is never ledgered.
+//! - **Modulating shed** — flow blocked by a throttled gate is shed at the
+//!   valve (this push model has no backpressure).
+//! - **Sensing consumption** — a pushed feed into a sensor is consumed by
+//!   measurement. Observation taps (Buffer → Sensing) read the level and
+//!   consume nothing.
+//! - **Substance-mismatch shed** — flow a node can't use vanishes; surfaced
+//!   by the amber ⚠ and counted here.
+//! - **Dead ends** — activity with no pushed outwire evaporates next tick;
+//!   surfaced by `dead_ends()` and counted.
+//!
+//! Message is information: copied, gated, manufactured (Inverting) — never
+//! conserved, never in the ledger.
 
 use bert_core::{ProcessPrimitive, SubstanceType};
 
@@ -162,6 +193,14 @@ pub struct Circuit {
     /// Per-tick data rows: [tick, n0.activity, n0.storage, n0.total, n1…].
     /// Cleared on Reset or when the topology changes mid-recording.
     pub history: Vec<Vec<f32>>,
+    // — conservation ledger (physical mass only; see module docs) —
+    /// Cumulative physical mass delivered out of Sources.
+    pub emitted: f32,
+    /// Cumulative physical mass absorbed by Sinks.
+    pub sunk: f32,
+    /// Cumulative physical mass shed through the intended channels
+    /// (friction, valve shed, amp power, sensing, mismatches, dead ends).
+    pub dissipated: f32,
 }
 
 impl Circuit {
@@ -173,6 +212,37 @@ impl Circuit {
         }
         self.tick = 0;
         self.history.clear();
+        self.emitted = 0.0;
+        self.sunk = 0.0;
+        self.dissipated = 0.0;
+    }
+
+    /// Σ stock across all nodes.
+    pub fn stored(&self) -> f32 {
+        self.nodes.iter().map(|n| n.storage).sum()
+    }
+
+    /// Physical mass in transit: activity of process nodes that emit a
+    /// conserved substance — emitted last tick, delivered next.
+    pub fn in_flight(&self) -> f32 {
+        self.nodes
+            .iter()
+            .filter(|n| {
+                matches!(n.kind, NodeKind::Process(_))
+                    && n.out_substance != SubstanceType::Message
+            })
+            .map(|n| n.activity)
+            .sum()
+    }
+
+    /// Conservation residual. ≈0 (float noise) means every unit of physical
+    /// mass is accounted: emissions plus starting stocks equal what's stored,
+    /// sunk, in flight, or dissipated through declared channels. Anything
+    /// else is a leak — a bug by definition. (Editing a stock mid-run moves
+    /// the baseline; Reset re-baselines.)
+    pub fn balance(&self) -> f32 {
+        let baseline: f32 = self.nodes.iter().map(|n| n.initial_storage).sum();
+        self.emitted + baseline - (self.stored() + self.sunk + self.in_flight() + self.dissipated)
     }
 
     /// Substance carried by a wire = the sender's output substance.
@@ -194,9 +264,38 @@ impl Circuit {
         }
     }
 
+    /// A node has a potential — something a gradient flow can fall from —
+    /// only if it's a Source (fixed potential) or a Buffering stock. A
+    /// gradient wire from anything else would read mass off a transient
+    /// activity that nothing drains (creating matter), so those wires are
+    /// inert; `inert_gradient_wires()` surfaces them.
+    pub fn has_potential(&self, i: usize) -> bool {
+        matches!(
+            self.nodes[i].kind,
+            NodeKind::Source | NodeKind::Process(ProcessPrimitive::Buffering)
+        )
+    }
+
     pub fn step(&mut self) {
         let n = self.nodes.len();
         let nw = self.wires.len();
+
+        // Ledger deltas for this tick, committed at the end.
+        let mut emitted_now = 0.0f32;
+        let mut sunk_now = 0.0f32;
+        let mut dissipated_now = 0.0f32;
+
+        // Dead ends: an activity with no pushed outwire is read by nothing —
+        // it evaporates this tick. Count it so the ledger stays exact.
+        // (Buffers never dangle: release is 0 without a pushed outlet.)
+        for i in 0..n {
+            if matches!(self.nodes[i].kind, NodeKind::Process(_))
+                && self.nodes[i].out_substance != SubstanceType::Message
+                && !self.wires.iter().any(|w| w.from == i && w.mode == FlowMode::Pushed)
+            {
+                dissipated_now += self.nodes[i].activity;
+            }
+        }
 
         // ── Gradient flows (Potential Fields): rate = conductance·(Δlevel),
         // forward-only, read from pre-tick levels (synchronous). Capped so a
@@ -205,7 +304,7 @@ impl Circuit {
             .wires
             .iter()
             .map(|w| {
-                if w.mode == FlowMode::Gradient {
+                if w.mode == FlowMode::Gradient && self.has_potential(w.from) {
                     (w.conductance * (self.level(w.from) - self.level(w.to))).max(0.0)
                 } else {
                     0.0
@@ -235,10 +334,12 @@ impl Circuit {
         // Previous-tick amount arriving over each PUSHED wire, split when the
         // sender fans out a conservative substance (Splitting/Copying handle
         // their own fanout semantics; everything else divides physical flow).
-        // A wire Buffer → Sensing is an observation tap: the sensor reads the
-        // stock's LEVEL without draining it ("sensing is very low power").
+        // A PUSHED wire Buffer → Sensing is an observation tap: the sensor
+        // reads the stock's LEVEL without draining it ("sensing is very low
+        // power"). A gradient wire into a sensor is a real drain, not a tap.
         let is_observation = |w: &Wire| -> bool {
-            matches!(self.nodes[w.from].kind, NodeKind::Process(ProcessPrimitive::Buffering))
+            w.mode == FlowMode::Pushed
+                && matches!(self.nodes[w.from].kind, NodeKind::Process(ProcessPrimitive::Buffering))
                 && matches!(self.nodes[w.to].kind, NodeKind::Process(ProcessPrimitive::Sensing))
         };
         // amount delivered over wire index k (gradient or pushed).
@@ -251,6 +352,9 @@ impl Circuit {
                 return self.nodes[w.from].storage; // non-draining level read
             }
             let sender = &self.nodes[w.from];
+            if matches!(sender.kind, NodeKind::Sink) {
+                return 0.0; // a sink is terminal — absorbed mass never re-emits
+            }
             // Pushed fanout splits the sender's activity across pushed,
             // non-observation outwires only (gradient/observation excluded).
             let outs = (0..nw)
@@ -261,31 +365,61 @@ impl Circuit {
                 })
                 .count()
                 .max(1) as f32;
-            match sender.kind {
-                NodeKind::Process(ProcessPrimitive::Copying) => sender.activity, // replicates
-                _ if sender.out_substance == SubstanceType::Message => sender.activity,
-                _ => sender.activity / outs, // conserve Energy/Material across fanout
+            // Message replicates to every receiver (information copies);
+            // Energy/Material split across the fanout (matter doesn't) —
+            // which is also why Copying relabeled to a physical substance
+            // splits rather than duplicating.
+            if sender.out_substance == SubstanceType::Message {
+                sender.activity
+            } else {
+                sender.activity / outs
             }
         };
+
+        // Emissions: physical mass actually delivered out of Sources this
+        // tick, over pushed and gradient wires alike.
+        for k in 0..nw {
+            let w = &self.wires[k];
+            if matches!(self.nodes[w.from].kind, NodeKind::Source)
+                && self.wire_substance(w) != SubstanceType::Message
+            {
+                emitted_now += amount_on(k);
+            }
+        }
 
         let mut next_activity = vec![0.0f32; n];
         let mut next_storage: Vec<f32> = self.nodes.iter().map(|x| x.storage).collect();
         let mut sink_add = vec![0.0f32; n];
 
         for (i, node) in self.nodes.iter().enumerate() {
-            let incoming: Vec<(SubstanceType, f32)> = (0..nw)
+            let incoming: Vec<(SubstanceType, f32, bool)> = (0..nw)
                 .filter(|&k| self.wires[k].to == i)
-                .map(|k| (self.wire_substance(&self.wires[k]), amount_on(k)))
+                .map(|k| {
+                    (
+                        self.wire_substance(&self.wires[k]),
+                        amount_on(k),
+                        is_observation(&self.wires[k]),
+                    )
+                })
                 .collect();
+            // What the transfer function sees (observation level-reads count:
+            // a sensor reads the stock).
             let physical: f32 = incoming
                 .iter()
-                .filter(|(s, _)| *s != SubstanceType::Message)
-                .map(|(_, a)| a)
+                .filter(|(s, _, _)| *s != SubstanceType::Message)
+                .map(|(_, a, _)| a)
+                .sum();
+            // What was actually DELIVERED — observation reads excluded; this
+            // is the mass the ledger holds the node accountable for.
+            let delivered_phys: f32 = incoming
+                .iter()
+                .filter(|(s, _, obs)| *s != SubstanceType::Message && !obs)
+                .map(|(_, a, _)| a)
                 .sum();
             let message: f32 = incoming
                 .iter()
-                .filter(|(s, _)| *s == SubstanceType::Message)
-                .map(|(_, a)| a)
+                .filter(|(s, _, _)| *s == SubstanceType::Message)
+                .map(|(_, a, _)| a)
                 .sum();
             let a = node.param; // agency capacity 0..1
 
@@ -337,20 +471,53 @@ impl Circuit {
                     ProcessPrimitive::Amplifying => {
                         let power: f32 = incoming
                             .iter()
-                            .filter(|(s, _)| *s == SubstanceType::Energy)
-                            .map(|(_, x)| x)
+                            .filter(|(s, _, _)| *s == SubstanceType::Energy)
+                            .map(|(_, x, _)| x)
                             .sum();
                         let gain = 1.0 + 9.0 * a;
                         (message * gain).min(power)
                     }
                     // physical → signal (crosses substance, never drains)
                     ProcessPrimitive::Sensing => physical * a,
-                    // primary gated by control in [0,1]
-                    ProcessPrimitive::Modulating => physical * message.clamp(0.0, 1.0),
+                    // primary gated by control in [0,1]; with no control wire
+                    // the valve sits OPEN (gate 1) — same convention as the
+                    // buffer's gate. A closed-by-default valve silently
+                    // destroyed every physical inflow.
+                    ProcessPrimitive::Modulating => {
+                        let has_control = self.wires.iter().any(|w| {
+                            w.to == i
+                                && w.mode == FlowMode::Pushed
+                                && self.wire_substance(w) == SubstanceType::Message
+                        });
+                        let gate = if has_control { message.clamp(0.0, 1.0) } else { 1.0 };
+                        physical * gate
+                    }
                     ProcessPrimitive::Inverting => (1.0 - message).max(0.0),
                     ProcessPrimitive::Copying => message,
                 },
             };
+
+            // The ledger rule (one rule, every arm): whatever physical mass a
+            // node was delivered and neither re-emits, passes down a gradient,
+            // nor stores, it dissipated. Exact by construction — see module
+            // docs for why each channel is intended.
+            match node.kind {
+                // Inflow to a source has nowhere to go (the UI refuses these
+                // wires; ledgered defensively).
+                NodeKind::Source => dissipated_now += delivered_phys,
+                NodeKind::Sink => sunk_now += delivered_phys,
+                NodeKind::Process(_) => {
+                    let out_phys = if node.out_substance == SubstanceType::Message {
+                        0.0
+                    } else {
+                        next_activity[i]
+                    };
+                    dissipated_now += delivered_phys
+                        - out_phys
+                        - gradient_out[i]
+                        - (next_storage[i] - node.storage);
+                }
+            }
         }
 
         for (i, node) in self.nodes.iter_mut().enumerate() {
@@ -358,6 +525,9 @@ impl Circuit {
             node.storage = next_storage[i];
             node.total += sink_add[i];
         }
+        self.emitted += emitted_now;
+        self.sunk += sunk_now;
+        self.dissipated += dissipated_now;
         self.tick += 1;
 
         // Record the tick. A topology change invalidates prior columns.
@@ -430,6 +600,36 @@ impl Circuit {
                     && !self.wires.iter().any(|w| {
                         w.to == *i && self.wire_substance(w) == SubstanceType::Energy
                     })
+            })
+            .map(|(i, _)| i)
+            .collect()
+    }
+
+    /// Gradient wires drawn from a node with no potential (not a Source or a
+    /// stock): a field needs a level to fall from, so these carry nothing.
+    /// Surfaced so the wire doesn't read as mysteriously dead.
+    pub fn inert_gradient_wires(&self) -> Vec<usize> {
+        (0..self.wires.len())
+            .filter(|&k| {
+                self.wires[k].mode == FlowMode::Gradient && !self.has_potential(self.wires[k].from)
+            })
+            .collect()
+    }
+
+    /// Process nodes that receive flow but send it nowhere (no pushed
+    /// outwire): their output evaporates each tick (ledgered as dissipated).
+    /// Usually the model wants a Sink there. Buffers are exempt — a terminal
+    /// stock legitimately accumulates.
+    pub fn dead_ends(&self) -> Vec<usize> {
+        self.nodes
+            .iter()
+            .enumerate()
+            .filter(|(i, n)| {
+                matches!(
+                    n.kind,
+                    NodeKind::Process(p) if p != ProcessPrimitive::Buffering
+                ) && self.wires.iter().any(|w| w.to == *i)
+                    && !self.wires.iter().any(|w| w.from == *i && w.mode == FlowMode::Pushed)
             })
             .map(|(i, _)| i)
             .collect()
@@ -656,6 +856,402 @@ mod tests {
             c.step();
         }
         assert!((c.nodes[1].storage - 5.0).abs() < 0.2, "charges to source potential");
+    }
+
+    // ── Conservation invariant: the whole bug class at once ──────────────
+    //
+    // The class is "an outflow computed but not delivered, or an inflow
+    // accepted but not stored" (splitter, copy, amplifier, buffer-release —
+    // each found one at a time). The systematic catch: random circuits +
+    // the ledger equation asserted every tick.
+
+    /// xorshift64 — deterministic, dependency-free.
+    struct Rng(u64);
+    impl Rng {
+        fn next(&mut self) -> u64 {
+            let mut x = self.0;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            self.0 = x;
+            x
+        }
+        fn f(&mut self) -> f32 {
+            (self.next() % 1000) as f32 / 1000.0
+        }
+        fn pick(&mut self, n: usize) -> usize {
+            (self.next() % n as u64) as usize
+        }
+    }
+
+    fn assert_balanced(c: &Circuit, ctx: &str) {
+        let scale = (c.emitted + c.nodes.iter().map(|n| n.initial_storage).sum::<f32>()).max(1.0);
+        assert!(
+            c.balance().abs() <= 1e-3 * scale,
+            "{ctx}: tick {} leaks {} (emitted {}, stored {}, sunk {}, in-flight {}, dissipated {})",
+            c.tick,
+            c.balance(),
+            c.emitted,
+            c.stored(),
+            c.sunk,
+            c.in_flight(),
+            c.dissipated,
+        );
+    }
+
+    /// Random circuit over the CONSERVATIVE node set (everything Material;
+    /// no signal processors, no friction). `guarantee_outlets` retries until
+    /// every non-sink node has an outwire (no dead ends).
+    fn random_conservative(seed: u64, guarantee_outlets: bool) -> Circuit {
+        use ProcessPrimitive::*;
+        let mut r = Rng(seed | 1);
+        let mut c = Circuit::default();
+        for _ in 0..1 + r.pick(2) {
+            let mut nd = node(NodeKind::Source);
+            nd.param = 0.5 + 2.5 * r.f();
+            c.nodes.push(nd);
+        }
+        let kinds = [Buffering, Splitting, Combining, Modulating];
+        for _ in 0..2 + r.pick(5) {
+            let k = kinds[r.pick(kinds.len())];
+            let mut nd = node(NodeKind::Process(k));
+            if k == Buffering {
+                nd.release_rate = 2.0 * r.f();
+                nd.initial_storage = 10.0 * r.f();
+                nd.storage = nd.initial_storage;
+            }
+            c.nodes.push(nd);
+        }
+        for _ in 0..1 + r.pick(2) {
+            c.nodes.push(node(NodeKind::Sink));
+        }
+        // Wires obey what the UI enforces: none into a Source, none out of a
+        // Sink. Cycles, fanouts, and gradient wires (from potentials) allowed.
+        let total = c.nodes.len();
+        let targets: Vec<usize> =
+            (0..total).filter(|&i| !matches!(c.nodes[i].kind, NodeKind::Source)).collect();
+        for i in 0..total {
+            if matches!(c.nodes[i].kind, NodeKind::Sink) {
+                continue;
+            }
+            for attempt in 0..1 + r.pick(2) {
+                let t = targets[r.pick(targets.len())];
+                if t == i {
+                    if guarantee_outlets && attempt == 0 {
+                        let t2 = *targets.iter().find(|&&x| x != i).unwrap();
+                        c.wires.push(Wire::new(i, t2));
+                    }
+                    continue; // self-wires forbidden (sometimes leaves a dead end)
+                }
+                if r.f() < 0.25 && c.has_potential(i) {
+                    c.wires.push(Wire::gradient(i, t, 0.1 + 0.4 * r.f()));
+                    if guarantee_outlets
+                        && !c.wires.iter().any(|w| w.from == i && w.mode == FlowMode::Pushed)
+                    {
+                        c.wires.push(Wire::new(i, t));
+                    }
+                } else {
+                    c.wires.push(Wire::new(i, t));
+                }
+            }
+        }
+        c
+    }
+
+    /// Property: over the conservative set with every node given an outlet,
+    /// the ledger balances every tick AND nothing dissipates — there is no
+    /// intended loss channel in this set, so any dissipation is a leak.
+    #[test]
+    fn conservation_property_strict() {
+        for seed in 1..=300u64 {
+            let mut c = random_conservative(seed.wrapping_mul(0x9E3779B97F4A7C15), true);
+            for _ in 0..50 {
+                c.step();
+                assert_balanced(&c, &format!("strict seed {seed}"));
+                assert!(
+                    c.dissipated.abs() <= 1e-3 * c.emitted.max(1.0),
+                    "strict seed {seed}: conservative circuit dissipated {} at tick {}",
+                    c.dissipated,
+                    c.tick
+                );
+            }
+        }
+    }
+
+    /// Property: same set but dead ends allowed — mass may dissipate (it
+    /// evaporates at the dangling node) but the ledger must still be exact.
+    #[test]
+    fn conservation_property_with_dead_ends() {
+        for seed in 1..=300u64 {
+            let mut c = random_conservative(seed.wrapping_mul(0xD1B54A32D192ED03), false);
+            for _ in 0..50 {
+                c.step();
+                assert_balanced(&c, &format!("dead-end seed {seed}"));
+            }
+        }
+    }
+
+    /// Property: the FULL palette — friction, sensors, amps, valves, signal
+    /// sources, observation taps. Dissipation is expected; the ledger must
+    /// still account every unit (any delivery double-count or undercount
+    /// breaks the equation).
+    #[test]
+    fn conservation_property_full_palette() {
+        for seed in 1..=300u64 {
+            let mut r = Rng(seed.wrapping_mul(0xA0761D6478BD642F) | 1);
+            let mut c = Circuit::default();
+            for _ in 0..1 + r.pick(2) {
+                let mut nd = node(NodeKind::Source);
+                nd.param = 0.5 + 2.5 * r.f();
+                if r.f() < 0.3 {
+                    nd.out_substance = SubstanceType::Message;
+                } else if r.f() < 0.3 {
+                    nd.out_substance = SubstanceType::Energy;
+                }
+                c.nodes.push(nd);
+            }
+            for _ in 0..2 + r.pick(6) {
+                let k = PALETTE[2 + r.pick(PALETTE.len() - 2)]; // any primitive
+                let mut nd = node(k);
+                if k == NodeKind::Process(ProcessPrimitive::Buffering) {
+                    nd.release_rate = 2.0 * r.f();
+                    nd.initial_storage = 10.0 * r.f();
+                    nd.storage = nd.initial_storage;
+                }
+                c.nodes.push(nd);
+            }
+            for _ in 0..1 + r.pick(2) {
+                c.nodes.push(node(NodeKind::Sink));
+            }
+            let total = c.nodes.len();
+            let targets: Vec<usize> =
+                (0..total).filter(|&i| !matches!(c.nodes[i].kind, NodeKind::Source)).collect();
+            for i in 0..total {
+                if matches!(c.nodes[i].kind, NodeKind::Sink) {
+                    continue;
+                }
+                for _ in 0..1 + r.pick(2) {
+                    let t = targets[r.pick(targets.len())];
+                    if t == i {
+                        continue;
+                    }
+                    // Gradient wires from ANY node — anything a user can do,
+                    // the engine must keep balanced (non-potentials → inert).
+                    if r.f() < 0.2 {
+                        c.wires.push(Wire::gradient(i, t, 0.1 + 0.4 * r.f()));
+                    } else {
+                        c.wires.push(Wire::new(i, t));
+                    }
+                }
+            }
+            for _ in 0..60 {
+                c.step();
+                assert_balanced(&c, &format!("full-palette seed {seed}"));
+            }
+        }
+    }
+
+    // ── Targeted probes: the checkpoint's known suspects ─────────────────
+
+    /// A sink is terminal: wiring onward from it must re-emit nothing.
+    #[test]
+    fn sink_never_reemits() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes[0].param = 2.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(1, 2)); // illegal in UI; engine must not duplicate
+        for _ in 0..20 {
+            c.step();
+            assert_balanced(&c, "sink re-emission");
+        }
+        assert!(c.nodes[2].storage.abs() < f32::EPSILON, "sink re-emitted into the buffer");
+    }
+
+    /// Flow wired into a Source (UI refuses; engine defends): the mass is
+    /// shed to the ledger, not silently destroyed.
+    #[test]
+    fn inflow_to_source_is_ledgered() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes[0].param = 2.0;
+        c.wires.push(Wire::new(0, 1));
+        for _ in 0..10 {
+            c.step();
+            assert_balanced(&c, "inflow to source");
+        }
+        assert!(c.dissipated > 0.0, "shed inflow must appear in the ledger");
+    }
+
+    /// A gradient wire from a node with no potential is inert — before this
+    /// fix it minted mass off the sender's activity without draining anything.
+    #[test]
+    fn gradient_from_process_node_is_inert() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes.push(node(NodeKind::Sink)); // legit outlet for the splitter
+        c.nodes[0].param = 3.0;
+        c.nodes[2].release_rate = 0.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::gradient(1, 2, 0.5)); // field from a non-potential
+        c.wires.push(Wire::new(1, 3));
+        assert_eq!(c.inert_gradient_wires(), vec![1], "advisory lists the inert wire");
+        for _ in 0..30 {
+            c.step();
+            assert_balanced(&c, "inert gradient");
+        }
+        assert!(
+            c.nodes[2].storage.abs() < f32::EPSILON,
+            "gradient from a non-potential minted {} mass",
+            c.nodes[2].storage
+        );
+    }
+
+    /// A valve with no control wire sits open (was: closed by default,
+    /// destroying every inflow). With control it sheds — to the ledger.
+    #[test]
+    fn valve_open_without_control_sheds_with() {
+        let mut open = Circuit::default();
+        open.nodes.push(node(NodeKind::Source));
+        open.nodes.push(node(NodeKind::Process(ProcessPrimitive::Modulating)));
+        open.nodes.push(node(NodeKind::Sink));
+        open.nodes[0].param = 2.0;
+        open.wires.push(Wire::new(0, 1));
+        open.wires.push(Wire::new(1, 2));
+        for _ in 0..20 {
+            open.step();
+            assert_balanced(&open, "open valve");
+        }
+        assert!(open.nodes[2].total > 30.0, "uncontrolled valve passes flow through");
+        assert!(open.dissipated.abs() < 1e-3, "open valve sheds nothing");
+
+        let mut gated = Circuit::default();
+        gated.nodes.push(node(NodeKind::Source)); // 0 supply
+        gated.nodes.push(node(NodeKind::Source)); // 1 control = 0.5
+        gated.nodes.push(node(NodeKind::Process(ProcessPrimitive::Modulating)));
+        gated.nodes.push(node(NodeKind::Sink));
+        gated.nodes[0].param = 2.0;
+        gated.nodes[1].param = 0.5;
+        gated.nodes[1].out_substance = SubstanceType::Message;
+        gated.wires.push(Wire::new(0, 2));
+        gated.wires.push(Wire::new(1, 2));
+        gated.wires.push(Wire::new(2, 3));
+        for _ in 0..20 {
+            gated.step();
+            assert_balanced(&gated, "gated valve");
+        }
+        assert!(gated.dissipated > 0.0, "the blocked half is ledgered, not lost");
+    }
+
+    /// Output wired to nowhere evaporates — but onto the ledger, with the
+    /// dead end surfaced as an advisory.
+    #[test]
+    fn dead_end_is_ledgered_and_surfaced() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Combining)));
+        c.nodes[0].param = 2.0;
+        c.wires.push(Wire::new(0, 1)); // combiner output goes nowhere
+        assert_eq!(c.dead_ends(), vec![1]);
+        for _ in 0..20 {
+            c.step();
+            assert_balanced(&c, "dead end");
+        }
+        assert!(c.dissipated > 0.0, "evaporated output appears in the ledger");
+    }
+
+    /// Friction (Propelling at η<1) and amplifier power draw are the model's
+    /// intended dissipations — decided + documented in the module docs —
+    /// and both are tracked.
+    #[test]
+    fn friction_and_amp_power_are_ledgered() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Propelling)));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 2.0;
+        c.nodes[1].param = 0.5; // η = 0.5: half arrives, half is friction
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(1, 2));
+        for _ in 0..20 {
+            c.step();
+            assert_balanced(&c, "friction");
+        }
+        assert!(c.dissipated > 0.0 && (c.sunk - c.dissipated).abs() < 1.1, "η=0.5 splits evenly");
+
+        let mut amp = Circuit::default();
+        amp.nodes.push(node(NodeKind::Source)); // 0 signal
+        amp.nodes.push(node(NodeKind::Source)); // 1 power
+        amp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
+        amp.nodes.push(node(NodeKind::Sink));
+        amp.nodes[0].param = 1.0;
+        amp.nodes[0].out_substance = SubstanceType::Message;
+        amp.nodes[1].param = 2.5;
+        amp.nodes[1].out_substance = SubstanceType::Energy;
+        amp.wires.push(Wire::new(0, 2));
+        amp.wires.push(Wire::new(1, 2));
+        amp.wires.push(Wire::new(2, 3));
+        for _ in 0..20 {
+            amp.step();
+            assert_balanced(&amp, "amp power");
+        }
+        assert!(amp.dissipated > 0.0, "the metered power draw is ledgered");
+    }
+
+    /// Matter doesn't copy: a Copying node relabeled to a physical substance
+    /// splits across its fanout instead of duplicating to every receiver.
+    #[test]
+    fn matter_does_not_copy() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Copying)));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 1.0;
+        c.nodes[0].out_substance = SubstanceType::Message;
+        c.nodes[1].out_substance = SubstanceType::Material; // user relabel
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(1, 2));
+        c.wires.push(Wire::new(1, 3));
+        for _ in 0..10 {
+            c.step();
+        }
+        assert!(
+            (c.nodes[2].total - c.nodes[3].total).abs() < f32::EPSILON
+                && c.nodes[2].total < c.tick as f32 * 0.51,
+            "relabeled copy must split, not duplicate: {} + {}",
+            c.nodes[2].total,
+            c.nodes[3].total
+        );
+    }
+
+    /// Mixed pushed + gradient outflow from one buffer — the checkpoint's
+    /// remaining suspect — conserves exactly.
+    #[test]
+    fn mixed_pushed_and_gradient_buffer_conserves() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 2 gradient target
+        c.nodes.push(node(NodeKind::Sink)); // 3 pushed target
+        c.nodes[0].param = 1.5;
+        c.nodes[1].initial_storage = 12.0;
+        c.nodes[1].storage = 12.0;
+        c.nodes[1].release_rate = 0.8;
+        c.nodes[2].release_rate = 0.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::gradient(1, 2, 0.3));
+        c.wires.push(Wire::new(1, 3));
+        for _ in 0..100 {
+            c.step();
+            assert_balanced(&c, "mixed buffer");
+        }
+        assert!(c.dissipated.abs() < 1e-2, "nothing dissipates in this circuit");
     }
 
     #[test]
