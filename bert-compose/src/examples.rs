@@ -412,20 +412,35 @@ fn public_budget() -> Circuit {
 /// NEUROMORPHICS — stimulus gated through a synapse onto a membrane,
 /// inhibition holding it near threshold. Integrate-and-fire as a homeostat
 /// (Stimulus → Synapse → Membrane → Effector, Receptor → Inhibition).
+///
+/// The substance is *charge* (Energy), so the heavy dissipation is correct
+/// physics — synaptic transmission drops most input and the membrane leaks;
+/// neurons are famously energy-hungry. Unlike value, energy genuinely is lost.
 fn integrate_and_fire() -> Circuit {
     regulator(DeclaredSubstance::named("charge", SubstanceType::Energy, "mV"), 3.0, 1.0, 0.25)
 }
 
 /// PROTOCOL SCIENCE — issuance gated by difficulty into circulating supply,
-/// an oracle retargeting difficulty to hold a setpoint. A protocol regulating
-/// its own money (Issuance → Difficulty → Supply → Burn, Oracle → Retarget).
+/// burn removing it, difficulty retargeting to hold supply at a setpoint. A
+/// protocol regulating its own money (Issuance → Difficulty → Supply → Burn,
+/// Oracle → Retarget).
+///
+/// The substance is *tokens* (conserved value, like money), so — same reason
+/// as the budget — it's tuned gently: difficulty approves most issuance and
+/// declines only the surplus (modest dissipation = un-minted issuance, not
+/// value lost). Supply settles to a stable circulating ~8.
 fn difficulty_issuance() -> Circuit {
-    regulator(DeclaredSubstance::named("tokens", SubstanceType::Material, "coins"), 3.0, 1.0, 0.2)
+    regulator(DeclaredSubstance::named("tokens", SubstanceType::Material, "coins"), 1.7, 1.5, 0.015)
 }
 
 /// ECOLOGY / ENERGY — sunlight gated by a limiting factor into biomass,
 /// damping holding it at carrying capacity. Odum's energese as a homeostat
 /// (Inflow → Limiting factor → Biomass → Respiration, Indicator → Damping).
+///
+/// The substance is *sunlight* (Energy), so the heavy dissipation is exactly
+/// Odum's point: an ecosystem loses most of its energy to respiration/heat at
+/// every step (the ~10% trophic-transfer rule). Energy dissipating IS the
+/// physics here, not a leak.
 fn meadow() -> Circuit {
     regulator(substance("sunlight"), 3.0, 1.0, 0.2)
 }

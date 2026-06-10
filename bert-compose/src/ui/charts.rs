@@ -16,8 +16,20 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
                 section_header(ui, "METRICS");
-                for (i, name) in ["activity", "storage", "cumulative"].iter().enumerate() {
-                    if ui.selectable_label(app.chart_metric == i, *name).clicked() {
+                for (i, name) in ["activity", "storage", "cumulative", "conservation"]
+                    .iter()
+                    .enumerate()
+                {
+                    let resp = ui.selectable_label(app.chart_metric == i, *name);
+                    let resp = if i == 3 {
+                        resp.on_hover_text(
+                            "where the mass goes over time: emitted vs delivered vs stored \
+                             vs dissipated. The gap between emitted and delivered IS the loss.",
+                        )
+                    } else {
+                        resp
+                    };
+                    if resp.clicked() {
                         app.chart_metric = i;
                     }
                 }
@@ -40,6 +52,39 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             .italics(),
                     );
                 });
+                return;
+            }
+
+            // ── Conservation: where the mass goes (the ledger over time) ──
+            // emitted on top; delivered + stored + dissipated below sum to it.
+            // For conserved value the dissipated line stays near the floor; for
+            // energy it climbs — that gap is the energy-vs-value insight.
+            if app.chart_metric == 3 {
+                let series: [(&str, Color32); 4] = [
+                    ("emitted", ACCENT),
+                    ("delivered", GREEN),
+                    ("stored", theme::GOLD),
+                    ("dissipated", RED),
+                ];
+                egui_plot::Plot::new("conservation")
+                    .height(ui.available_height())
+                    .legend(egui_plot::Legend::default())
+                    .show_axes([true, true])
+                    .show_grid(true)
+                    .show(ui, |plot_ui| {
+                        for (j, (name, color)) in series.iter().enumerate() {
+                            let pts: Vec<[f64; 2]> = app
+                                .circuit
+                                .ledger_history
+                                .iter()
+                                .enumerate()
+                                .map(|(i, l)| [(i + 1) as f64, l[j] as f64])
+                                .collect();
+                            plot_ui.line(
+                                egui_plot::Line::new(pts).name(*name).color(*color).width(2.2),
+                            );
+                        }
+                    });
                 return;
             }
 
@@ -72,9 +117,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         if pts.iter().all(|p| p[1].abs() < 1e-6) {
                             continue;
                         }
+                        // Lens-aware legend, matching the exported data.
+                        let label = crate::lens::display_name(app.lens, node.kind, &node.name);
                         plot_ui.line(
                             egui_plot::Line::new(pts)
-                                .name(node.name.clone())
+                                .name(label)
                                 .color(palette[n % palette.len()])
                                 .width(1.8),
                         );

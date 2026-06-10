@@ -290,6 +290,9 @@ pub struct Circuit {
     /// Cumulative physical mass shed through the intended channels
     /// (friction, valve shed, amp power, sensing, mismatches, dead ends).
     pub dissipated: f32,
+    /// Per-tick ledger snapshot `[emitted, delivered(sunk), stored, dissipated]`
+    /// — what the conservation chart plots. Same length as `history`.
+    pub ledger_history: Vec<[f32; 4]>,
 }
 
 impl Circuit {
@@ -301,6 +304,7 @@ impl Circuit {
         }
         self.tick = 0;
         self.history.clear();
+        self.ledger_history.clear();
         self.emitted = 0.0;
         self.sunk = 0.0;
         self.dissipated = 0.0;
@@ -624,6 +628,7 @@ impl Circuit {
         let width = 1 + self.nodes.len() * 3;
         if self.history.last().map(|r| r.len()) != Some(width) {
             self.history.clear();
+            self.ledger_history.clear();
         }
         let mut row = Vec::with_capacity(width);
         row.push(self.tick as f32);
@@ -633,6 +638,8 @@ impl Circuit {
             row.push(node.total);
         }
         self.history.push(row);
+        self.ledger_history
+            .push([self.emitted, self.sunk, self.stored(), self.dissipated]);
     }
 
     /// The recorded run as CSV with raw node names. (The app exports via
