@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "environment": {
+    "info": {
+      "id": "E-1",
+      "level": -1,
+      "name": "Environment",
+      "description": ""
+    },
+    "sources": [],
+    "sinks": []
+  },
+  "systems": [
+    {
+      "info": {
+        "id": "S0",
+        "level": 0,
+        "name": "00-potential-fields",
+        "description": "Built in bert-compose: process primitives wired into a working circuit (composition is unconditional — Systems/Mobus/Composition.lean)."
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "E-1",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0",
+          "level": 0,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 400.0,
+      "transform": {
+        "translation": [
+          0.0,
+          0.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": ""
+    },
+    {
+      "info": {
+        "id": "C0.0",
+        "level": 1,
+        "name": "Buffering 1",
+        "description": "Buffering work process (Mobus atomic primitive)"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.0",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          216.00002,
+          192.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ],
+        "cognitive_params": {
+          "release_rate": 0.0
+        },
+        "initial_state": {
+          "storage": 20.0
+        }
+      }
+    },
+    {
+      "info": {
+        "id": "C0.1",
+        "level": 1,
+        "name": "Buffering 2",
+        "description": "Buffering work process (Mobus atomic primitive)"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.1",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          372.0,
+          192.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ],
+        "cognitive_params": {
+          "release_rate": 0.0
+        }
+      }
+    }
+  ],
+  "interactions": [
+    {
+      "info": {
+        "id": "F0.0",
+        "level": 1,
+        "name": "Buffering 1 → Buffering 2",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Material"
+      },
+      "type": "Force",
+      "usability": "Product",
+      "source": "C0.0",
+      "source_interface": null,
+      "sink": "C0.1",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "",
+      "parameters": [
+        {
+          "name": "conductance",
+          "value": "0.25",
+          "unit": ""
+        }
+      ]
+    }
+  ],
+  "hidden_entities": []
+}

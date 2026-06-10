@@ -23,6 +23,8 @@ mod examples;
 mod export;
 mod glyph;
 mod lens;
+#[cfg(test)]
+mod sweep;
 mod theme;
 mod ui;
 
