@@ -42,4 +42,4 @@ It is **not** an agent simulator (individuated tokens — *this* validator defec
 | `src/ui/*` | one module per panel (top_bar, status_bar, palette, inspector, charts, canvas, hal_window, about) |
 | `src/app.rs` | application state + persistence (save, export, the latest-run contract) |
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the layers, the conservation contract, the save/load format, and the four-bucket sweep method. The product vision is in [DESIGN-VISION.md](DESIGN-VISION.md).
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the layers, the conservation contract, the save/load format, and the four-bucket sweep method. The product vision is in [DESIGN-VISION.md](DESIGN-VISION.md). Where it sits among systems-modeling tools (System Dynamics, AlgebraicJulia/CatColab, Monterey Phoenix, SysML, Palantir) is in [POSITIONING.md](POSITIONING.md).
