@@ -64,6 +64,28 @@ impl NodeKind {
         }
     }
 
+    /// The tunable scalar coefficient of this work process, for the inspector:
+    /// `(label, max)`. `None` means the primitive has no scalar knob — its
+    /// behavior is structural (Buffering's knobs are stock + release; a
+    /// Splitter just divides; a valve is driven by its control wire).
+    ///
+    /// NB: these are PROCESS PARAMETERS — a gain, an efficiency, a rate — NOT
+    /// "agency". In Mobus, agency is a property of *agents* (Reactive/
+    /// Anticipatory/Intentional), not of atomic work processes. The earlier
+    /// "agency 0–1" label was a category error; a Sensing process has a gain,
+    /// not agency.
+    pub fn param_spec(&self) -> Option<(&'static str, f32)> {
+        use ProcessPrimitive::*;
+        match self {
+            NodeKind::Source => Some(("rate / tick", 10.0)),
+            NodeKind::Process(Sensing) => Some(("sensor gain  k", 1.0)),
+            NodeKind::Process(Amplifying) => Some(("gain  (→ ×1–10)", 1.0)),
+            NodeKind::Process(Propelling) => Some(("efficiency  η", 1.0)),
+            NodeKind::Process(Impeding) => Some(("throughput  (1 − impedance)", 1.0)),
+            _ => None,
+        }
+    }
+
     /// Default output substance — signal-class primitives emit Message.
     pub fn default_out(&self) -> SubstanceType {
         match self {

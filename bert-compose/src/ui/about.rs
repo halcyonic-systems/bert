@@ -3,26 +3,46 @@
 //! top bar and from the empty-canvas first-run prompt.
 
 use crate::app::App;
-use crate::theme::{section_header, ACCENT, GREEN, PRIMARY, SECONDARY};
-use egui::RichText;
+use crate::theme::{self, primary_button, semibold, ACCENT, GOLD, GREEN, PRIMARY, SECONDARY};
+use egui::{Color32, RichText, Stroke};
+
+/// A colored mini-heading — the section colors echo the palette legend
+/// (gold = processes, green = conservation, accent = build/lens).
+fn head(ui: &mut egui::Ui, text: &str, color: egui::Color32) {
+    ui.label(
+        RichText::new(text)
+            .color(color)
+            .size(10.5)
+            .family(semibold())
+            .extra_letter_spacing(1.3),
+    );
+}
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
     if !app.show_about {
         return;
     }
     let mut open = true;
-    egui::Window::new("What is BERT Compose?")
+    // Centered on screen, with a soft accent border so it reads as a welcome
+    // card rather than a system dialog.
+    let center = ctx.screen_rect().center();
+    let frame = egui::Frame::window(&ctx.style())
+        .fill(theme::PAPER)
+        .stroke(Stroke::new(1.5, ACCENT.gamma_multiply(0.55)));
+    egui::Window::new(RichText::new("What is BERT Compose?").color(ACCENT))
         .id(egui::Id::new("about-window"))
         .open(&mut open)
-        .default_width(440.0)
-        .default_pos([280.0, 110.0])
+        .default_width(450.0)
+        .pivot(egui::Align2::CENTER_CENTER)
+        .default_pos(center)
         .collapsible(false)
+        .frame(frame)
         .show(ctx, |ui| {
-            egui::ScrollArea::vertical().max_height(460.0).show(ui, |ui| {
+            egui::ScrollArea::vertical().max_height(470.0).show(ui, |ui| {
                 ui.label(
                     RichText::new("Touch the system.")
-                        .color(PRIMARY)
-                        .size(15.0)
+                        .color(ACCENT)
+                        .size(15.5)
                         .strong(),
                 );
                 ui.add_space(4.0);
@@ -37,7 +57,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 );
 
                 ui.add_space(12.0);
-                section_header(ui, "THE BRICKS");
+                head(ui, "THE BRICKS", ACCENT);
                 ui.label(
                     RichText::new(
                         "The PRIMITIVES are Mobus's atomic work processes — a tank \
@@ -49,7 +69,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 );
 
                 ui.add_space(10.0);
-                section_header(ui, "THE PROCESSES");
+                head(ui, "THE PROCESSES", GOLD);
                 ui.label(
                     RichText::new(
                         "SYSTEMS PROCESSES are Troncale's patterns — Feedback, \
@@ -63,7 +83,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 );
 
                 ui.add_space(10.0);
-                section_header(ui, "THE PROMISE");
+                head(ui, "THE PROMISE", GREEN);
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("⚖").color(GREEN).size(14.0));
                     ui.label(
@@ -78,7 +98,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 });
 
                 ui.add_space(10.0);
-                section_header(ui, "THE LENS");
+                head(ui, "THE LENS", Color32::from_rgb(146, 100, 156));
                 ui.label(
                     RichText::new(
                         "The same model reads across domains. Switch the 🔍 lens and \
@@ -126,7 +146,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 });
 
                 ui.add_space(10.0);
-                if ui.button("Got it — let me build").clicked() {
+                if ui.add(primary_button("Got it — let me build")).clicked() {
                     app.show_about = false;
                 }
             });

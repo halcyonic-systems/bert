@@ -7,7 +7,7 @@ use crate::ladder::Rung;
 use crate::{askhal, examples, export, theme, ui};
 use bert_core::SubstanceType;
 use eframe::egui;
-use egui::{vec2, Pos2};
+use egui::{pos2, vec2, Pos2, Vec2};
 
 pub struct App {
     pub circuit: Circuit,
@@ -27,6 +27,11 @@ pub struct App {
     pub lens: usize,
     /// The "what is this?" orientation window.
     pub show_about: bool,
+    /// Canvas pan offset (drag empty space to move the whole diagram).
+    pub pan: Vec2,
+    /// Screen-space top-left of the canvas, updated each frame — so a stamped
+    /// macro can be placed where it's actually visible.
+    pub canvas_origin: Pos2,
     // — substance dictionary —
     /// Substances free-declared this session (pickable on any node).
     pub declared: Vec<DeclaredSubstance>,
@@ -58,6 +63,8 @@ impl App {
             chart_metric: 0,
             lens: 0,
             show_about: true, // first thing a new user sees
+            pan: Vec2::ZERO,
+            canvas_origin: pos2(180.0, 90.0),
             declared: Vec::new(),
             declaring: false,
             decl_name: String::new(),
@@ -151,16 +158,21 @@ impl App {
     /// keeps the honesty ("these are primitives; edit them freely").
     pub fn stamp_macro(&mut self, rung: &Rung) {
         let sub = (rung.build)();
-        let dy = if self.circuit.nodes.is_empty() {
-            0.0
-        } else {
-            let existing_max = self.circuit.nodes.iter().map(|n| n.pos.y).fold(f32::MIN, f32::max);
-            let sub_min = sub.nodes.iter().map(|n| n.pos.y).fold(f32::MAX, f32::min);
-            existing_max + 150.0 - sub_min
-        };
+        // Land the macro where it's VISIBLE: translate its top-left corner to
+        // the current viewport's top-left (accounting for pan), with a small
+        // cascade so repeated stamps don't perfectly overlap. (The old
+        // "place below existing content" pushed stamps off the bottom.)
+        let sub_min = egui::pos2(
+            sub.nodes.iter().map(|n| n.pos.x).fold(f32::MAX, f32::min),
+            sub.nodes.iter().map(|n| n.pos.y).fold(f32::MAX, f32::min),
+        );
+        let cascade = (self.circuit.nodes.len() as f32 / 6.0).floor() * 34.0 % 170.0;
+        // world coords for a screen point near the canvas top-left
+        let target = self.canvas_origin + vec2(70.0 + cascade, 70.0 + cascade) - self.pan;
+        let offset = target - sub_min;
         let base = self.circuit.nodes.len();
         for mut node in sub.nodes {
-            node.pos.y += dy;
+            node.pos += offset;
             self.circuit.nodes.push(node);
         }
         for w in sub.wires {
@@ -338,6 +350,16 @@ impl eframe::App for App {
         }
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             self.pending_wire = None;
+        }
+        // Delete / Backspace removes the selected node — unless a text field
+        // (a name editor) has focus, where those keys edit text.
+        if let Some(i) = self.selected {
+            let del = ctx.input(|i| {
+                i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace)
+            });
+            if del && !ctx.wants_keyboard_input() {
+                self.delete_node(i);
+            }
         }
 
         // A .json dragged onto the window loads as a model.

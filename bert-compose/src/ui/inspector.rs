@@ -43,13 +43,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 app.circuit.nodes[i].kind,
                 NodeKind::Process(bert_core::ProcessPrimitive::Buffering)
             );
-            let is_source = app.circuit.nodes[i].kind == NodeKind::Source;
+            let param_spec = app.circuit.nodes[i].kind.param_spec();
             let node = &mut app.circuit.nodes[i];
             ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(170.0));
             ui.add_space(4.0);
-            let label = if is_source { "rate / tick" } else { "agency 0–1" };
-            let max = if is_source { 10.0 } else { 1.0 };
-            ui.add(egui::Slider::new(&mut node.param, 0.0..=max).text(label));
+            // Process parameter (gain / efficiency / rate) — only where the
+            // primitive actually has one. Not "agency": that belongs to agents.
+            if let Some((label, max)) = param_spec {
+                ui.add(egui::Slider::new(&mut node.param, 0.0..=max).text(label));
+            }
             if is_buffer {
                 ui.add(
                     egui::Slider::new(&mut node.release_rate, 0.0..=10.0).text("release / tick"),

@@ -19,6 +19,20 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 }
                 return;
             }
+            // Pan: drag empty canvas to move the whole diagram. A background
+            // interact spans the canvas; node interacts (added later, so on
+            // top) win on their own rects, leaving empty-space drags to pan.
+            let canvas_rect = ui.max_rect();
+            app.canvas_origin = canvas_rect.min;
+            let bg = ui.interact(canvas_rect, ui.id().with("canvas_bg"), Sense::click_and_drag());
+            if bg.dragged() {
+                app.pan += bg.drag_delta();
+            }
+            if bg.clicked() {
+                app.selected = None;
+                app.pending_wire = None;
+            }
+            let pan = app.pan;
             let painter = ui.painter();
             let time = ui.input(|i| i.time) as f32;
 
@@ -45,8 +59,8 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
 
             // Wires first (under nodes).
             for (k, wire) in app.circuit.wires.iter().enumerate() {
-                let a = app.circuit.nodes[wire.from].pos;
-                let b = app.circuit.nodes[wire.to].pos;
+                let a = app.circuit.nodes[wire.from].pos + pan;
+                let b = app.circuit.nodes[wire.to].pos + pan;
                 let substance = app.circuit.wire_substance(wire);
                 let color = substance_color(substance);
                 let dir = (b - a).normalized();
@@ -110,7 +124,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             let mut clicked_body: Option<usize> = None;
             let mut clicked_port: Option<usize> = None;
             for i in 0..app.circuit.nodes.len() {
-                let pos = app.circuit.nodes[i].pos;
+                let pos = app.circuit.nodes[i].pos + pan;
                 let rect = egui::Rect::from_center_size(pos, vec2(NODE_R * 2.0, NODE_R * 2.0));
                 let resp = ui.interact(rect, ui.id().with(("node", i)), Sense::click_and_drag());
                 if resp.dragged() {
@@ -229,7 +243,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             if let Some(from) = app.pending_wire {
                 if let Some(p) = ui.ctx().pointer_latest_pos() {
                     ui.painter().line_segment(
-                        [app.circuit.nodes[from].pos, p],
+                        [app.circuit.nodes[from].pos + pan, p],
                         Stroke::new(1.2, GOLD),
                     );
                 }
