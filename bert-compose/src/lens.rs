@@ -40,6 +40,9 @@ pub struct Lens {
     pub tagline: &'static str,
     /// Domain names per slot; `None` for the identity (Systems) lens.
     vocab: Option<[&'static str; 12]>,
+    /// One-line domain reading per slot — shown in the inspector so a renamed
+    /// node carries its meaning, not just a new label. `None` for Systems.
+    glosses: Option<[&'static str; 12]>,
 }
 
 /// Lens 0 is the identity — canonical Mobus names. The other four are the
@@ -49,6 +52,7 @@ pub const LENSES: &[Lens] = &[
         name: "Systems",
         tagline: "Mobus primitives — the domain-neutral reading.",
         vocab: None,
+        glosses: None,
     },
     Lens {
         name: "Governance",
@@ -66,6 +70,20 @@ pub const LENSES: &[Lens] = &[
             "Broadcast",      // Copying
             "Implementation", // Propelling
             "Bureaucracy",    // Impeding
+        ]),
+        glosses: Some([
+            "where demands and mandate enter",
+            "where a decision takes effect",
+            "the record — what the system holds in trust",
+            "votes and inputs pooled into one",
+            "a budget or mandate divided into shares",
+            "a movement amplified by resources",
+            "a threshold that lets action through as support rises",
+            "an audit reading the current state",
+            "the corrective — pushes back as pressure mounts",
+            "an announcement reaching everyone",
+            "carrying a decision into effect",
+            "friction in the process that slows throughput",
         ]),
     },
     Lens {
@@ -85,6 +103,20 @@ pub const LENSES: &[Lens] = &[
             "Conduction",        // Propelling
             "Refractory",        // Impeding
         ]),
+        glosses: Some([
+            "input arriving at the cell",
+            "the muscle or gland acted on",
+            "accumulated charge — the cell's state",
+            "dendritic inputs integrated",
+            "the axon dividing to many targets",
+            "a signal strengthened (drawing energy)",
+            "the gated junction that passes the signal",
+            "sensing the membrane level",
+            "an inhibitory signal damping the firing",
+            "propagating the spike onward, undiminished",
+            "moving the signal along the fibre",
+            "resistance just after firing",
+        ]),
     },
     Lens {
         name: "Crypto",
@@ -102,6 +134,20 @@ pub const LENSES: &[Lens] = &[
             "Gossip",              // Copying
             "Settlement",          // Propelling
             "Congestion",          // Impeding
+        ]),
+        glosses: Some([
+            "new coins entering (the block reward)",
+            "fees burned or coins exiting supply",
+            "the circulating coin stock",
+            "hashpower or liquidity pooled",
+            "rewards split among participants",
+            "a position amplified by collateral",
+            "the throttle holding block-time at target",
+            "reading chain state (e.g. hashrate)",
+            "the corrective adjustment to the setpoint",
+            "propagating to peers across the network",
+            "finalizing the transfer",
+            "fee pressure resisting throughput",
         ]),
     },
     Lens {
@@ -121,6 +167,20 @@ pub const LENSES: &[Lens] = &[
             "Transport",       // Propelling
             "Resistance",      // Impeding
         ]),
+        glosses: Some([
+            "sunlight or nutrient entering the system",
+            "energy dissipated as heat (respiration)",
+            "stored living matter — the standing stock",
+            "flows merging up a trophic level",
+            "energy divided among consumers",
+            "a self-reinforcing loop (drawing energy)",
+            "the scarce input gating growth (Liebig's law)",
+            "a species or signal reading the state",
+            "negative feedback steadying the system",
+            "spreading through the population",
+            "moving energy or matter along",
+            "what slows the flow",
+        ]),
     },
 ];
 
@@ -132,6 +192,12 @@ pub fn label(lens: usize, kind: NodeKind) -> String {
         .and_then(|l| l.vocab)
         .map(|v| v[slot(kind)].to_string())
         .unwrap_or_else(|| kind.label())
+}
+
+/// The one-line domain reading of a primitive under a lens (None for Systems
+/// or an out-of-range index). Shown in the inspector.
+pub fn gloss(lens: usize, kind: NodeKind) -> Option<&'static str> {
+    LENSES.get(lens).and_then(|l| l.glosses).map(|g| g[slot(kind)])
 }
 
 /// What to paint under a node: re-skin only the *auto* names ("Sensing 5" →

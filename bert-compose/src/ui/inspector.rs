@@ -183,9 +183,21 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 .monospace(),
             );
             ui.add_space(8.0);
-            if ui.button(RichText::new("✕ delete").color(RED).size(11.5)).clicked() {
-                app.delete_node(i);
-                return;
+            // Keyboard ⌫ is the primary delete now (see app.rs); this stays as
+            // the discoverable affordance, but quiet — a small link, not a
+            // red button — with the shortcut taught beside it.
+            ui.horizontal(|ui| {
+                if ui
+                    .add(egui::Label::new(RichText::new("✕ delete").color(RED).size(11.0))
+                        .sense(egui::Sense::click()))
+                    .clicked()
+                {
+                    app.delete_node(i);
+                }
+                ui.label(RichText::new("or ⌫").color(SECONDARY).size(10.0));
+            });
+            if app.selected.is_none() {
+                return; // node was deleted
             }
 
             // Teaching card — plain English first, details on demand.
@@ -203,6 +215,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     .color(theme::ACCENT)
                     .size(11.0),
                 );
+                if let Some(g) = crate::lens::gloss(app.lens, kind) {
+                    ui.label(RichText::new(g).color(SECONDARY).size(11.0).italics());
+                }
                 ui.add_space(2.0);
             }
             let d = docs::doc(kind);

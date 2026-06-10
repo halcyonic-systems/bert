@@ -110,6 +110,19 @@ impl App {
         self.status = status;
     }
 
+    /// Clear the canvas to an empty system — start fresh. (Reset, by
+    /// contrast, only rewinds the simulation; this wipes the topology.)
+    pub fn new_canvas(&mut self) {
+        self.circuit = Circuit::default();
+        self.name = "My System".to_string();
+        self.selected = None;
+        self.pending_wire = None;
+        self.running = false;
+        self.next_n = 1;
+        self.pan = Vec2::ZERO;
+        self.status = "cleared — start fresh".to_string();
+    }
+
     pub fn load_example(&mut self, ex: &examples::Example) {
         self.adopt_circuit(
             (ex.build)(),

@@ -120,6 +120,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     // File — save/load/export folded into one menu to keep the
                     // bar uncrowded.
                     ui.menu_button("File ▾", |ui| {
+                        if ui
+                            .button("New — clear canvas")
+                            .on_hover_text("wipe the canvas and start fresh (Reset only rewinds the run)")
+                            .clicked()
+                        {
+                            app.new_canvas();
+                            ui.close_menu();
+                        }
+                        ui.separator();
                         if ui.button("Save as BERT model").clicked() {
                             app.save();
                             ui.close_menu();
