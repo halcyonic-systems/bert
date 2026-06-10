@@ -39,6 +39,16 @@ pub const EXAMPLES: &[Example] = &[
         blurb: "Information copies for free; matter never could.",
         build: broadcast,
     },
+    Example {
+        name: "Battery (gradient flow)",
+        blurb: "A field, not a pump: charge flows down a gradient and equalizes.",
+        build: battery,
+    },
+    Example {
+        name: "Two paths to balance",
+        blurb: "Passive gradient vs. active feedback — same equilibrium, two mechanisms.",
+        build: passive_vs_active,
+    },
 ];
 
 fn n(kind: NodeKind, num: usize, x: f32, y: f32) -> Node {
@@ -55,8 +65,8 @@ fn leaky_bucket() -> Circuit {
     c.nodes[1].initial_storage = 20.0; // starts full
     c.nodes[1].release_rate = 2.0; // drains faster than it fills
     c.nodes[1].storage = 20.0;
-    c.wires.push(Wire { from: 0, to: 1 });
-    c.wires.push(Wire { from: 1, to: 2 });
+    c.wires.push(Wire::new(0, 1));
+    c.wires.push(Wire::new(1, 2));
     c
 }
 
@@ -73,12 +83,12 @@ fn homeostat() -> Circuit {
     c.nodes[0].param = 3.0;
     c.nodes[2].release_rate = 1.0;
     c.nodes[4].param = 0.2; // gauge gain
-    c.wires.push(Wire { from: 0, to: 1 }); // supply → valve
-    c.wires.push(Wire { from: 1, to: 2 }); // valve → tank
-    c.wires.push(Wire { from: 2, to: 3 }); // tank → sink
-    c.wires.push(Wire { from: 2, to: 4 }); // tank level sensed
-    c.wires.push(Wire { from: 4, to: 5 }); // gauge → controller
-    c.wires.push(Wire { from: 5, to: 1 }); // controller → valve (closes loop)
+    c.wires.push(Wire::new(0, 1)); // supply → valve
+    c.wires.push(Wire::new(1, 2)); // valve → tank
+    c.wires.push(Wire::new(2, 3)); // tank → sink
+    c.wires.push(Wire::new(2, 4)); // tank level sensed
+    c.wires.push(Wire::new(4, 5)); // gauge → controller
+    c.wires.push(Wire::new(5, 1)); // controller → valve (closes loop)
     c
 }
 
@@ -90,9 +100,9 @@ fn budget_split() -> Circuit {
     c.nodes.push(n(NodeKind::Sink, 3, 740.0, 300.0));
     c.nodes.push(n(NodeKind::Sink, 4, 740.0, 460.0));
     c.nodes[0].param = 4.0;
-    c.wires.push(Wire { from: 0, to: 1 });
-    c.wires.push(Wire { from: 1, to: 2 });
-    c.wires.push(Wire { from: 1, to: 3 });
+    c.wires.push(Wire::new(0, 1));
+    c.wires.push(Wire::new(1, 2));
+    c.wires.push(Wire::new(1, 3));
     c
 }
 
@@ -109,9 +119,9 @@ fn megaphone() -> Circuit {
     c.nodes[1].param = 3.0;
     c.nodes[1].out_substance = SubstanceType::Energy;
     c.nodes[2].param = 1.0; // gain 10, but power caps at 3
-    c.wires.push(Wire { from: 0, to: 2 });
-    c.wires.push(Wire { from: 1, to: 2 });
-    c.wires.push(Wire { from: 2, to: 3 });
+    c.wires.push(Wire::new(0, 2));
+    c.wires.push(Wire::new(1, 2));
+    c.wires.push(Wire::new(2, 3));
     c
 }
 
@@ -125,10 +135,59 @@ fn broadcast() -> Circuit {
     c.nodes.push(n(NodeKind::Sink, 5, 720.0, 480.0));
     c.nodes[0].param = 1.0;
     c.nodes[0].out_substance = SubstanceType::Message;
-    c.wires.push(Wire { from: 0, to: 1 });
-    c.wires.push(Wire { from: 1, to: 2 });
-    c.wires.push(Wire { from: 1, to: 3 });
-    c.wires.push(Wire { from: 1, to: 4 });
+    c.wires.push(Wire::new(0, 1));
+    c.wires.push(Wire::new(1, 2));
+    c.wires.push(Wire::new(1, 3));
+    c.wires.push(Wire::new(1, 4));
+    c
+}
+
+/// A full stock and an empty one joined by a gradient flow — charge falls
+/// down the potential until they equalize. No pump, no controller: the field
+/// IS the driver (Mobus: forces/fields are generalized flows). The wire
+/// visibly thins as the gradient closes.
+fn battery() -> Circuit {
+    let mut c = Circuit::default();
+    c.nodes.push(n(NodeKind::Process(Buffering), 1, 420.0, 360.0)); // charged
+    c.nodes.push(n(NodeKind::Process(Buffering), 2, 660.0, 360.0)); // empty
+    c.nodes[0].initial_storage = 20.0;
+    c.nodes[0].storage = 20.0;
+    c.nodes[0].release_rate = 0.0;
+    c.nodes[1].release_rate = 0.0;
+    c.wires.push(Wire::gradient(0, 1, 0.25));
+    c
+}
+
+/// Two tanks reaching the same steady level by different means. Left pair:
+/// a gradient flow equalizes them passively. Right loop: a source + valve +
+/// sensing-feedback holds a tank at a setpoint actively. Both are Troncale
+/// regulation processes; one is a field, one is a controller.
+fn passive_vs_active() -> Circuit {
+    let mut c = Circuit::default();
+    // Passive: full buffer --gradient--> empty buffer.
+    c.nodes.push(n(NodeKind::Process(Buffering), 1, 320.0, 250.0)); // 0
+    c.nodes.push(n(NodeKind::Process(Buffering), 2, 520.0, 250.0)); // 1
+    c.nodes[0].initial_storage = 16.0;
+    c.nodes[0].storage = 16.0;
+    c.nodes[0].release_rate = 0.0;
+    c.nodes[1].release_rate = 0.0;
+    c.wires.push(Wire::gradient(0, 1, 0.25));
+    // Active: supply -> valve -> tank -> sink, with sensing->inverting feedback.
+    c.nodes.push(n(NodeKind::Source, 3, 320.0, 470.0)); // 2
+    c.nodes.push(n(NodeKind::Process(Modulating), 4, 480.0, 470.0)); // 3
+    c.nodes.push(n(NodeKind::Process(Buffering), 5, 640.0, 470.0)); // 4
+    c.nodes.push(n(NodeKind::Sink, 6, 800.0, 470.0)); // 5
+    c.nodes.push(n(NodeKind::Process(Sensing), 7, 640.0, 600.0)); // 6
+    c.nodes.push(n(NodeKind::Process(Inverting), 8, 480.0, 600.0)); // 7
+    c.nodes[2].param = 3.0;
+    c.nodes[4].release_rate = 1.0;
+    c.nodes[6].param = 0.2;
+    c.wires.push(Wire::new(2, 3));
+    c.wires.push(Wire::new(3, 4));
+    c.wires.push(Wire::new(4, 5));
+    c.wires.push(Wire::new(4, 6));
+    c.wires.push(Wire::new(6, 7));
+    c.wires.push(Wire::new(7, 3));
     c
 }
 

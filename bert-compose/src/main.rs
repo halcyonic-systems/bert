@@ -640,28 +640,62 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
                         });
                 });
 
-            // Wires touching this node, removable.
+            // Wires touching this node: remove, and set flow mode (pushed vs
+            // gradient = Potential Field) + conductance per outgoing wire.
             ui.add_space(10.0);
             section_header(ui, "BONDS");
             ui.add_space(2.0);
             let mut remove: Option<usize> = None;
-            for (k, w) in app.circuit.wires.iter().enumerate() {
-                if w.from != i && w.to != i {
-                    continue;
-                }
+            let names: Vec<(usize, usize, String, String)> = app
+                .circuit
+                .wires
+                .iter()
+                .enumerate()
+                .filter(|(_, w)| w.from == i || w.to == i)
+                .map(|(k, w)| {
+                    (k, w.from, app.circuit.nodes[w.from].name.clone(), app.circuit.nodes[w.to].name.clone())
+                })
+                .collect();
+            for (k, from, fname, tname) in names {
                 ui.horizontal(|ui| {
                     if ui.small_button("✕").clicked() {
                         remove = Some(k);
                     }
-                    ui.label(
-                        RichText::new(format!(
-                            "{} → {}",
-                            app.circuit.nodes[w.from].name, app.circuit.nodes[w.to].name
-                        ))
-                        .color(PRIMARY)
-                        .size(11.0),
-                    );
+                    ui.label(RichText::new(format!("{fname} → {tname}")).color(PRIMARY).size(11.0));
                 });
+                // Mode toggle only for outgoing wires (the flow's rate law).
+                if from == i {
+                    ui.horizontal(|ui| {
+                        ui.add_space(18.0);
+                        let w = &mut app.circuit.wires[k];
+                        let mut gradient = w.mode == circuit::FlowMode::Gradient;
+                        if ui
+                            .selectable_label(
+                                gradient,
+                                RichText::new("gradient (field)").size(10.0),
+                            )
+                            .on_hover_text(
+                                "flow runs down a potential difference: rate = k·(Δlevel). \
+                                 Self-regulating — slows as the two stocks equalize.",
+                            )
+                            .clicked()
+                        {
+                            gradient = !gradient;
+                            w.mode = if gradient {
+                                circuit::FlowMode::Gradient
+                            } else {
+                                circuit::FlowMode::Pushed
+                            };
+                        }
+                        if gradient {
+                            ui.add(
+                                egui::Slider::new(&mut w.conductance, 0.0..=1.0)
+                                    .text("k")
+                                    .fixed_decimals(2),
+                            );
+                        }
+                    });
+                }
             }
             if let Some(k) = remove {
                 app.circuit.wires.remove(k);
@@ -769,21 +803,41 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                 let color = substance_color(substance);
                 let dir = (b - a).normalized();
                 let (a_edge, b_edge) = (a + dir * NODE_R, b - dir * (NODE_R + 4.0));
-                painter.line_segment([a_edge, b_edge], Stroke::new(1.6, color));
+                let gradient = wire.mode == circuit::FlowMode::Gradient;
+                // Gradient flows: thickness scales with the LIVE potential
+                // difference — the wire visibly thins as the two stocks
+                // equalize. You watch the field relax.
+                let delta = (app.circuit.level(wire.from) - app.circuit.level(wire.to)).max(0.0);
+                let width: f32 = if gradient { (0.8 + 0.5 * delta).min(5.0) } else { 1.6 };
+                if gradient {
+                    // dashed to read as a field, not a pushed pipe
+                    let seg = b_edge - a_edge;
+                    let steps = (seg.length() / 9.0).max(1.0) as i32;
+                    for s in 0..steps {
+                        if s % 2 == 0 {
+                            let p0 = a_edge + seg * (s as f32 / steps as f32);
+                            let p1 = a_edge + seg * ((s as f32 + 1.0) / steps as f32);
+                            painter.line_segment([p0, p1], Stroke::new(width, color));
+                        }
+                    }
+                } else {
+                    painter.line_segment([a_edge, b_edge], Stroke::new(width, color));
+                }
                 // arrowhead
                 let n = vec2(-dir.y, dir.x);
                 painter.line_segment([b_edge, b_edge - dir * 7.0 + n * 4.0], Stroke::new(1.6, color));
                 painter.line_segment([b_edge, b_edge - dir * 7.0 - n * 4.0], Stroke::new(1.6, color));
                 // live amount + moving pulse
-                let amount = {
-                    let sender = &app.circuit.nodes[wire.from];
-                    sender.activity
+                let amount = if gradient {
+                    wire.conductance * delta
+                } else {
+                    app.circuit.nodes[wire.from].activity
                 };
                 let mid = a_edge + (b_edge - a_edge) * 0.5;
                 painter.text(
                     mid + vec2(0.0, -10.0),
                     egui::Align2::CENTER_CENTER,
-                    format!("{amount:.1}"),
+                    format!("{amount:.1}{}", if gradient { " ⤓" } else { "" }),
                     egui::FontId::monospace(9.5),
                     if amount > 0.005 { color } else { HAIRLINE },
                 );
@@ -889,8 +943,10 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                 );
             } else if let Some(i) = clicked_body {
                 if let Some(from) = app.pending_wire.take() {
-                    if from != i && !app.circuit.wires.contains(&Wire { from, to: i }) {
-                        app.circuit.wires.push(Wire { from, to: i });
+                    if from != i
+                        && !app.circuit.wires.iter().any(|w| w.from == from && w.to == i)
+                    {
+                        app.circuit.wires.push(Wire::new(from, i));
                         app.status = format!(
                             "bond: {} → {} (internalized — both endpoints inside)",
                             app.circuit.nodes[from].name, app.circuit.nodes[i].name

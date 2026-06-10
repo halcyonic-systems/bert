@@ -170,7 +170,14 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                 "",
             ),
             substance: Substance { sub_type: String::new(), ty: substance },
-            ty: InteractionType::Flow,
+            // Gradient (field-driven) flows export as BERT's Force interaction
+            // — the redemption of InteractionType::Force: it now means "a flow
+            // whose rate is a potential gradient," not a label without dynamics.
+            ty: if wire.mode == crate::circuit::FlowMode::Gradient {
+                InteractionType::Force
+            } else {
+                InteractionType::Flow
+            },
             usability,
             source: node_id[&wire.from].clone(),
             source_interface: None,
@@ -219,8 +226,8 @@ mod tests {
             pos2(0.0, 0.0),
         ));
         c.nodes.push(Node::new(NodeKind::Sink, 3, pos2(200.0, 0.0)));
-        c.wires.push(Wire { from: 0, to: 1 });
-        c.wires.push(Wire { from: 1, to: 2 });
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(1, 2));
         c.nodes[0].param = 2.5; // asserted emission rate
         c.nodes[1].initial_storage = 12.0; // asserted starting stock
 
