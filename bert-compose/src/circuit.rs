@@ -310,7 +310,21 @@ impl Circuit {
                         } else {
                             1.0
                         };
-                        let released = (node.release_rate * gate).min(storage.max(0.0));
+                        // Release is the PUSHED outflow. It can only leave through
+                        // a pushed, mass-carrying outwire — you can't pour out of a
+                        // tank with no spout. Without one, the release would drain
+                        // the stock into nowhere (mass destroyed). Gradient outwires
+                        // are NOT spouts for release; they carry gradient_out above.
+                        let has_pushed_outlet = (0..nw).any(|k| {
+                            self.wires[k].from == i
+                                && self.wires[k].mode == FlowMode::Pushed
+                                && !is_observation(&self.wires[k])
+                        });
+                        let released = if has_pushed_outlet {
+                            (node.release_rate * gate).min(storage.max(0.0))
+                        } else {
+                            0.0
+                        };
                         storage -= released;
                         next_storage[i] = storage;
                         released
@@ -603,6 +617,29 @@ mod tests {
         let (a, b) = (c.nodes[0].storage, c.nodes[1].storage);
         assert!((a - b).abs() < 0.1, "two tanks equalize: {a} vs {b}");
         assert!((a + b - total0).abs() < 1e-3, "stock conserved: {} vs {total0}", a + b);
+    }
+
+    /// A buffer with release but NO pushed outlet must not destroy mass —
+    /// you can't pour out of a tank with no spout (a gradient outwire is a
+    /// field, not a spout). Regression for the conservation bug Shingai found
+    /// by raising release on a gradient-only buffer mid-run.
+    #[test]
+    fn release_without_pushed_outlet_conserves() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 0
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
+        c.nodes[0].initial_storage = 20.0;
+        c.nodes[0].storage = 20.0;
+        c.nodes[0].release_rate = 1.4; // cranked, but its only outwire is gradient
+        c.nodes[1].release_rate = 0.0;
+        c.wires.push(Wire::gradient(0, 1, 0.25));
+        let total0 = 20.0;
+        for _ in 0..100 {
+            c.step();
+        }
+        let total = c.nodes[0].storage + c.nodes[1].storage;
+        assert!((total - total0).abs() < 1e-3, "mass conserved despite release: {total}");
+        assert!((c.nodes[0].storage - c.nodes[1].storage).abs() < 0.1, "still equalizes");
     }
 
     /// A source at fixed potential charges a buffer toward that potential
