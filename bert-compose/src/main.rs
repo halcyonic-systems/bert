@@ -435,10 +435,15 @@ fn learn_row(ui: &mut egui::Ui, label: &str, value: &str) {
 
 fn inspector_panel(app: &mut App, ctx: &egui::Context) {
     egui::SidePanel::right("inspector")
-        .resizable(false)
-        .exact_width(200.0)
+        .resizable(true)
+        .default_width(248.0)
+        .width_range(220.0..=360.0)
         .frame(egui::Frame::new().fill(theme::CREAM).inner_margin(egui::Margin::same(10)))
         .show(ctx, |ui| {
+            // Everything wraps to the panel width — no clipped text.
+            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+            egui::ScrollArea::vertical().show(ui, |ui| {
+            ui.set_width(ui.available_width());
             section_header(ui, "INSPECTOR");
             ui.add_space(4.0);
             let Some(i) = app.selected else {
@@ -475,8 +480,8 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
                 }
             }
             ui.add_space(4.0);
-            ui.horizontal(|ui| {
-                ui.label(RichText::new("emits").color(SECONDARY).small());
+            ui.label(RichText::new("emits").color(SECONDARY).small());
+            ui.horizontal_wrapped(|ui| {
                 for s in
                     [SubstanceType::Energy, SubstanceType::Material, SubstanceType::Message]
                 {
@@ -556,6 +561,7 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
             if let Some(k) = remove {
                 app.circuit.wires.remove(k);
             }
+            }); // ScrollArea
         });
 }
 
