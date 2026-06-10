@@ -440,9 +440,11 @@ fn difficulty_issuance() -> Circuit {
 /// The substance is *sunlight* (Energy), so the heavy dissipation is exactly
 /// Odum's point: an ecosystem loses most of its energy to respiration/heat at
 /// every step (the ~10% trophic-transfer rule). Energy dissipating IS the
-/// physics here, not a leak.
+/// physics here, not a leak. Tuned for abundant sunlight and a gentle limiting
+/// factor, so the biomass builds to a substantial standing stock (~15, the
+/// carrying capacity) while ~75% of incident sunlight respires away.
 fn meadow() -> Circuit {
-    regulator(substance("sunlight"), 3.0, 1.0, 0.2)
+    regulator(substance("sunlight"), 4.0, 1.0, 0.05)
 }
 
 /// The universal homeostat, exposed for the lens-invariance test in lens.rs.

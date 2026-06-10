@@ -21,7 +21,12 @@
 //! emitted + initial stocks == stored + sunk + in-flight + dissipated
 //! ```
 //!
-//! `dissipated` is not a fudge factor — it is computed per node as
+//! `dissipated` is not a fudge factor — it is Mobus's waste heat. Mobus 2022
+//! Fig 3.17: every work process needs high-potential energy and, by the
+//! Second Law, sheds some as waste — "material transformations involve some
+//! material waste; energy transformations produce a greater proportion of
+//! waste heat." That is exactly why the domain examples differ: Material/value
+//! loses little, Energy loses most. `dissipated` is computed per node as
 //! `physical in − physical out − Δstorage`, so the equation holds by
 //! construction and any *unintended* leak shows up as a nonzero residual
 //! (`balance()`), which the property tests assert over random circuits.
