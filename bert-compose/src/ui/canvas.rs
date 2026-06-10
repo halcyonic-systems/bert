@@ -20,6 +20,27 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             let painter = ui.painter();
             let time = ui.input(|i| i.time) as f32;
 
+            // Lens caption — labels the diagram in the corner rather than
+            // crowding the top bar. The active domain reading lives here.
+            if app.lens != 0 {
+                let l = &crate::lens::LENSES[app.lens];
+                let top_left = ui.max_rect().left_top() + vec2(12.0, 10.0);
+                painter.text(
+                    top_left,
+                    egui::Align2::LEFT_TOP,
+                    format!("🔍 {}", l.name),
+                    egui::FontId::proportional(13.0),
+                    ACCENT,
+                );
+                painter.text(
+                    top_left + vec2(0.0, 18.0),
+                    egui::Align2::LEFT_TOP,
+                    l.tagline,
+                    egui::FontId::proportional(10.5),
+                    SECONDARY,
+                );
+            }
+
             // Wires first (under nodes).
             for (k, wire) in app.circuit.wires.iter().enumerate() {
                 let a = app.circuit.nodes[wire.from].pos;

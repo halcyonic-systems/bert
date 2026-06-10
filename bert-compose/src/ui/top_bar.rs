@@ -98,6 +98,8 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     app.load_example(&examples::EXAMPLES[i]);
                 }
                 // Lens picker — the SAME circuit read in domain vocabulary.
+                // The tagline lives as a canvas caption (see ui::canvas), not
+                // inline, to keep the bar uncrowded.
                 egui::ComboBox::from_id_salt("lens")
                     .selected_text(format!("🔍 {}", lens::LENSES[app.lens].name))
                     .show_ui(ui, |ui| {
@@ -111,14 +113,6 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             }
                         }
                     });
-                if app.lens != 0 {
-                    ui.label(
-                        RichText::new(lens::LENSES[app.lens].tagline)
-                            .color(SECONDARY)
-                            .small()
-                            .italics(),
-                    );
-                }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.add(primary_button("Save as BERT model")).clicked() {
                         app.save();
