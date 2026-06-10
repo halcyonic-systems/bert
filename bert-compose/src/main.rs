@@ -13,6 +13,7 @@
 
 mod circuit;
 mod export;
+mod glyph;
 mod theme;
 
 use bert_core::SubstanceType;
@@ -57,6 +58,9 @@ struct App {
     last_tick_at: f64,
     next_n: usize,
     status: String,
+    show_charts: bool,
+    /// Which metric the plots track: 0 activity, 1 storage, 2 cumulative total.
+    chart_metric: usize,
 }
 
 impl App {
@@ -72,6 +76,8 @@ impl App {
             last_tick_at: 0.0,
             next_n: 1,
             status: "add primitives from the palette, wire ◦ → node, press Run".to_string(),
+            show_charts: true,
+            chart_metric: 0,
         }
     }
 
@@ -163,6 +169,7 @@ impl eframe::App for App {
         status_bar(self, ctx);
         palette_panel(self, ctx);
         inspector_panel(self, ctx);
+        charts_panel(self, ctx);
         canvas(self, ctx);
     }
 }
@@ -210,6 +217,7 @@ fn top_bar(app: &mut App, ctx: &egui::Context) {
                         .color(SECONDARY)
                         .monospace(),
                 );
+                ui.toggle_value(&mut app.show_charts, "📈 Charts");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.add(primary_button("Save as BERT model")).clicked() {
                         app.save();
@@ -411,6 +419,86 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
         });
 }
 
+/// Live metrics panel — NetLogo/Mesa-style plots of the recorded run, one line
+/// per node, drawn from circuit.history (column layout: [tick, a,s,t per node]).
+fn charts_panel(app: &mut App, ctx: &egui::Context) {
+    if !app.show_charts {
+        return;
+    }
+    egui::TopBottomPanel::bottom("charts")
+        .resizable(true)
+        .default_height(210.0)
+        .frame(egui::Frame::new().fill(PAPER).inner_margin(egui::Margin::same(10)))
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                section_header(ui, "METRICS");
+                for (i, name) in ["activity", "storage", "cumulative"].iter().enumerate() {
+                    if ui.selectable_label(app.chart_metric == i, *name).clicked() {
+                        app.chart_metric = i;
+                    }
+                }
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.label(
+                        RichText::new(format!("{} ticks recorded", app.circuit.history.len()))
+                            .color(SECONDARY)
+                            .small(),
+                    );
+                });
+            });
+            ui.add_space(2.0);
+
+            if app.circuit.history.is_empty() {
+                ui.add_space(40.0);
+                ui.vertical_centered(|ui| {
+                    ui.label(
+                        RichText::new("press Run or Step — lines plot here as the system flows")
+                            .color(SECONDARY)
+                            .italics(),
+                    );
+                });
+                return;
+            }
+
+            let palette = [
+                ACCENT,
+                GREEN,
+                theme::AMBER,
+                Color32::from_rgb(146, 100, 156),
+                RED,
+                Color32::from_rgb(90, 140, 160),
+                Color32::from_rgb(150, 110, 70),
+            ];
+            let offset = 1 + app.chart_metric; // col within each node's triple
+            egui_plot::Plot::new("metrics")
+                .height(ui.available_height())
+                .legend(egui_plot::Legend::default())
+                .show_axes([true, true])
+                .show_grid(true)
+                .show(ui, |plot_ui| {
+                    for (n, node) in app.circuit.nodes.iter().enumerate() {
+                        // Skip flat-zero series to keep the legend meaningful.
+                        let col = 1 + n * 3 + offset;
+                        let pts: Vec<[f64; 2]> = app
+                            .circuit
+                            .history
+                            .iter()
+                            .filter(|r| col < r.len())
+                            .map(|r| [r[0] as f64, r[col] as f64])
+                            .collect();
+                        if pts.iter().all(|p| p[1].abs() < 1e-6) {
+                            continue;
+                        }
+                        plot_ui.line(
+                            egui_plot::Line::new(pts)
+                                .name(node.name.clone())
+                                .color(palette[n % palette.len()])
+                                .width(1.8),
+                        );
+                    }
+                });
+        });
+}
+
 fn canvas(app: &mut App, ctx: &egui::Context) {
     egui::CentralPanel::default()
         .frame(egui::Frame::new().fill(theme::CREAM))
@@ -498,42 +586,30 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
                     NodeKind::Sink => ACCENT_SOFT,
                     _ => PAPER,
                 };
-                painter.circle(pos, NODE_R, fill, Stroke::new(ring_w, ring));
-                // Buffer fill bar: state made visible.
+                // The shape IS the semantics — vessel, funnel, valve, eye…
+                glyph::draw(painter, node.kind, pos, fill, Stroke::new(ring_w, ring));
+                // Buffer fill: the vessel visibly holds its stock.
                 if matches!(
                     node.kind,
                     NodeKind::Process(bert_core::ProcessPrimitive::Buffering)
                 ) {
-                    let frac = (node.storage / 10.0).clamp(0.0, 1.0);
-                    let bar = egui::Rect::from_min_size(
-                        pos + vec2(-16.0, 12.0 - 24.0 * frac),
-                        vec2(5.0, 24.0 * frac),
+                    let frac = (node.storage / node.initial_storage.max(10.0)).clamp(0.0, 1.0);
+                    let h = glyph::R * 1.6;
+                    let inner = egui::Rect::from_center_size(
+                        pos + vec2(0.0, 2.0 + h * 0.5 * (1.0 - frac)),
+                        vec2(glyph::R * 1.3, h * frac),
                     );
-                    painter.rect_filled(bar, 2.0, GOLD);
-                    painter.rect_stroke(
-                        egui::Rect::from_min_size(pos + vec2(-16.0, -12.0), vec2(5.0, 24.0)),
-                        2.0,
-                        Stroke::new(1.0, HAIRLINE),
-                        egui::StrokeKind::Inside,
-                    );
+                    painter.rect_filled(inner, 2.0, GOLD.gamma_multiply(0.55));
                 }
-                let short: String = node.kind.label().chars().take(7).collect();
                 painter.text(
-                    pos + vec2(2.0, -3.0),
-                    egui::Align2::CENTER_CENTER,
-                    short,
-                    egui::FontId::new(9.5, semibold()),
-                    PRIMARY,
-                );
-                painter.text(
-                    pos + vec2(2.0, 8.0),
+                    pos + vec2(0.0, 8.0),
                     egui::Align2::CENTER_CENTER,
                     format!("{:.1}", node.activity),
                     egui::FontId::monospace(9.0),
-                    SECONDARY,
+                    PRIMARY,
                 );
                 painter.text(
-                    pos + vec2(0.0, NODE_R + 10.0),
+                    pos + vec2(0.0, glyph::R + 11.0),
                     egui::Align2::CENTER_CENTER,
                     &node.name,
                     egui::FontId::proportional(10.0),
