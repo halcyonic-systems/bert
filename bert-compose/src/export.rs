@@ -1,19 +1,27 @@
-//! Circuit → BERT JSON: the canvas saves as an ordinary WorldModel that the
-//! editor opens and the Mesa bridge can simulate.
+//! Circuit ↔ BERT JSON: the canvas saves as an ordinary WorldModel that the
+//! editor opens and the Mesa bridge can simulate — and loads one back
+//! (`from_world_model`), completing the round-trip.
 //!
 //! Encoding follows the canonical pattern: each primitive node becomes an
 //! Atomic subsystem carrying `AgentModel.primitives = [primitive]` (the same
 //! encoding python/agents.py reads to pick its transfer function); wires
 //! become internal flows; Source/Sink nodes become environment externals
-//! whose flows connect to the wired subsystem directly.
+//! whose flows connect to the wired subsystem directly. Compose-only knobs
+//! ride in the model's extensible fields: a buffer's release rate in
+//! `cognitive_params["release_rate"]`, a gradient wire's conductance as an
+//! Interaction parameter — so nothing is lost on the way back.
 
-use crate::circuit::{Circuit, NodeKind};
+use crate::circuit::{Circuit, DeclaredSubstance, FlowMode, Node, NodeKind, Wire};
 use bert_core::{
     AgentKind, AgentModel, Boundary, Complexity, Environment, ExternalEntity,
     ExternalEntityType, Id, IdType, Info, Interaction, InteractionType, InteractionUsability,
-    Substance, System, Transform2d, WorldModel,
+    Parameter, ProcessPrimitive, Substance, System, Transform2d, WorldModel,
 };
+use egui::pos2;
 use std::collections::HashMap;
+
+/// Canvas px → model px on save; the inverse on load.
+const SCALE: f32 = 0.6;
 
 fn id(ty: IdType, indices: &[i64]) -> Id {
     Id { ty, indices: indices.to_vec() }
@@ -71,9 +79,8 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
     let mut node_id: HashMap<usize, Id> = HashMap::new();
     let (mut sub_n, mut src_n, mut sink_n) = (0i64, 0i64, 0i64);
 
-    let scale = 0.6; // canvas px → model px
     for (i, node) in circuit.nodes.iter().enumerate() {
-        let (x, y) = (node.pos.x * scale, node.pos.y * scale);
+        let (x, y) = (node.pos.x * SCALE, node.pos.y * SCALE);
         match node.kind {
             NodeKind::Source => {
                 let eid = id(IdType::Source, &[-1, src_n]);
@@ -134,7 +141,16 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                         kind: AgentKind::Reactive,
                         agency_capacity: node.param,
                         primitives: vec![primitive],
-                        cognitive_params: HashMap::new(),
+                        // Compose knob with no canonical home; rides in the
+                        // extensible params so the round-trip is lossless.
+                        cognitive_params: if primitive == ProcessPrimitive::Buffering {
+                            HashMap::from([(
+                                "release_rate".to_string(),
+                                node.release_rate as f64,
+                            )])
+                        } else {
+                            HashMap::new()
+                        },
                         process_configs: Vec::new(),
                         initial_state: if node.initial_storage > 0.0 {
                             HashMap::from([(
@@ -195,7 +211,16 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
             )
             .unwrap_or(bert_core::rust_decimal::Decimal::ONE),
             unit: from.out_substance.unit.clone(),
-            parameters: Vec::new(),
+            // Gradient conductance (k) rides as a flow parameter.
+            parameters: if wire.mode == FlowMode::Gradient {
+                vec![Parameter {
+                    name: "conductance".to_string(),
+                    value: wire.conductance.to_string(),
+                    ..Default::default()
+                }]
+            } else {
+                Vec::new()
+            },
             smart_parameters: Vec::new(),
             endpoint_offset: None,
         });
@@ -208,6 +233,109 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
         interactions,
         hidden_entities: Vec::new(),
     }
+}
+
+/// The model's display name = its root (level-0) system.
+pub fn model_name(model: &WorldModel) -> String {
+    model
+        .systems
+        .iter()
+        .find(|s| s.info.level == 0)
+        .map(|s| s.info.name.clone())
+        .filter(|n| !n.is_empty())
+        .unwrap_or_else(|| "Loaded model".to_string())
+}
+
+/// BERT JSON → Circuit: the inverse of [`to_world_model`]. Loads any
+/// compose-shaped model — environment sources/sinks, atomic subsystems
+/// carrying a Mobus primitive, flows between them. Hierarchy below level 1,
+/// interfaces, and primitive-less subsystems are out of the canvas's
+/// vocabulary and reported as an error rather than silently dropped.
+pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
+    let mut c = Circuit::default();
+    let mut ids: Vec<(Id, usize)> = Vec::new();
+    let pos_of = |t: &Option<Transform2d>, i: usize| {
+        t.as_ref()
+            .map(|t| pos2(t.translation.x / SCALE, t.translation.y / SCALE))
+            .unwrap_or_else(|| pos2(380.0 + (i % 4) as f32 * 160.0, 300.0 + (i / 4) as f32 * 140.0))
+    };
+
+    for ext in model.environment.sources.iter().chain(model.environment.sinks.iter()) {
+        let kind = if matches!(ext.ty, ExternalEntityType::Source) {
+            NodeKind::Source
+        } else {
+            NodeKind::Sink
+        };
+        let mut node = Node::new(kind, ids.len() + 1, pos_of(&ext.transform, ids.len()));
+        node.name = ext.info.name.clone();
+        ids.push((ext.info.id.clone(), c.nodes.len()));
+        c.nodes.push(node);
+    }
+
+    for sys in model.systems.iter().filter(|s| s.info.level > 0) {
+        let agent = sys.agent.as_ref().ok_or_else(|| {
+            format!("\"{}\" has no agent model — not a compose-shaped subsystem", sys.info.name)
+        })?;
+        let &primitive = agent.primitives.first().ok_or_else(|| {
+            format!("\"{}\" carries no Mobus primitive — nothing to place", sys.info.name)
+        })?;
+        let mut node = Node::new(
+            NodeKind::Process(primitive),
+            ids.len() + 1,
+            pos_of(&sys.transform, ids.len()),
+        );
+        node.name = sys.info.name.clone();
+        node.param = agent.agency_capacity;
+        if let Some(s) = agent.initial_state.get("storage").and_then(|v| v.as_f64()) {
+            node.initial_storage = s as f32;
+            node.storage = s as f32;
+        }
+        if let Some(&r) = agent.cognitive_params.get("release_rate") {
+            node.release_rate = r as f32;
+        }
+        ids.push((sys.info.id.clone(), c.nodes.len()));
+        c.nodes.push(node);
+    }
+
+    if c.nodes.is_empty() {
+        return Err("model has no sources, sinks, or primitive subsystems".to_string());
+    }
+
+    let idx_of = |id: &Id| ids.iter().find(|(i, _)| i == id).map(|(_, n)| *n);
+    for inter in &model.interactions {
+        let (Some(from), Some(to)) = (idx_of(&inter.source), idx_of(&inter.sink)) else {
+            return Err(format!(
+                "flow \"{}\" touches an entity outside the canvas vocabulary",
+                inter.info.name
+            ));
+        };
+        let wire = if inter.ty == InteractionType::Force {
+            let k = inter
+                .parameters
+                .iter()
+                .find(|p| p.name == "conductance")
+                .and_then(|p| p.value.parse::<f32>().ok())
+                .unwrap_or(0.3);
+            Wire::gradient(from, to, k)
+        } else {
+            Wire::new(from, to)
+        };
+        // The wire's substance is the sender's declared output.
+        c.nodes[from].out_substance = DeclaredSubstance {
+            name: inter.substance.sub_type.clone(),
+            base: inter.substance.ty,
+            unit: inter.unit.clone(),
+        };
+        // Source-fed flows carry the asserted emission rate (= the source's
+        // fixed potential, for gradient flows).
+        if matches!(c.nodes[from].kind, NodeKind::Source) {
+            if let Ok(rate) = inter.amount.to_string().parse::<f32>() {
+                c.nodes[from].param = rate;
+            }
+        }
+        c.wires.push(wire);
+    }
+    Ok(c)
 }
 
 #[cfg(test)]
@@ -259,5 +387,79 @@ mod tests {
         assert_eq!(src_flow.substance.sub_type, "water", "declared name rides in sub_type");
         assert_eq!(src_flow.substance.ty, bert_core::SubstanceType::Material, "over its base");
         assert_eq!(src_flow.unit, "L", "declared unit on the interaction");
+    }
+
+    /// Save → Load round-trip: every knob the canvas can set survives —
+    /// kinds, names, rates, stocks, release, substances, gradient mode and
+    /// conductance — and the loaded circuit behaves identically.
+    #[test]
+    fn save_load_round_trip_is_lossless() {
+        let mut c = Circuit::default();
+        c.nodes.push(Node::new(NodeKind::Source, 1, pos2(-200.0, 0.0)));
+        c.nodes.push(Node::new(
+            NodeKind::Process(ProcessPrimitive::Buffering),
+            2,
+            pos2(0.0, 0.0),
+        ));
+        c.nodes.push(Node::new(
+            NodeKind::Process(ProcessPrimitive::Buffering),
+            3,
+            pos2(120.0, 80.0),
+        ));
+        c.nodes.push(Node::new(NodeKind::Sink, 4, pos2(200.0, 0.0)));
+        c.nodes[0].param = 2.5;
+        c.nodes[0].out_substance = DeclaredSubstance::named(
+            "water",
+            bert_core::SubstanceType::Material,
+            "L",
+        );
+        c.nodes[1].name = "Tank".to_string();
+        c.nodes[1].initial_storage = 12.0;
+        c.nodes[1].storage = 12.0;
+        c.nodes[1].release_rate = 1.4;
+        c.nodes[1].out_substance = DeclaredSubstance::named(
+            "water",
+            bert_core::SubstanceType::Material,
+            "L",
+        );
+        c.nodes[2].release_rate = 0.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::gradient(1, 2, 0.42));
+        c.wires.push(Wire::new(1, 3));
+
+        let json = serde_json::to_string(&to_world_model(&c, "Round Trip")).unwrap();
+        let model: WorldModel = serde_json::from_str(&json).unwrap();
+        assert_eq!(model_name(&model), "Round Trip");
+        let mut r = from_world_model(&model).expect("loads");
+
+        assert_eq!(r.nodes.len(), 4);
+        assert_eq!(r.wires.len(), 3);
+        let tank = r.nodes.iter().find(|n| n.name == "Tank").expect("name survives");
+        assert_eq!(tank.initial_storage, 12.0);
+        assert_eq!(tank.release_rate, 1.4, "release rate survives via cognitive_params");
+        assert_eq!(tank.out_substance.name, "water");
+        assert_eq!(tank.out_substance.unit, "L");
+        let grad = r.wires.iter().find(|w| w.mode == FlowMode::Gradient).expect("mode survives");
+        assert_eq!(grad.conductance, 0.42, "conductance survives via flow parameter");
+        let src = r.nodes.iter().find(|n| n.kind == NodeKind::Source).unwrap();
+        assert_eq!(src.param, 2.5, "emission rate survives");
+
+        // Behavioral identity: same physics on both sides of the trip.
+        // (Load reorders nodes — env entities first — so match by name.)
+        for _ in 0..30 {
+            c.step();
+            r.step();
+        }
+        for a in &c.nodes {
+            let b = r.nodes.iter().find(|n| n.name == a.name).expect("node survives");
+            assert!(
+                (a.storage - b.storage).abs() < 1e-4 && (a.total - b.total).abs() < 1e-4,
+                "loaded circuit diverges at {}: {} vs {}",
+                a.name,
+                a.storage,
+                b.storage
+            );
+        }
+        assert!(r.balance().abs() < 1e-3, "loaded circuit conserves");
     }
 }
