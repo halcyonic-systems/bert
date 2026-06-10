@@ -46,19 +46,23 @@ impl NodeKind {
         }
     }
 
-    /// The substance a primitive actually consumes to do work. Feeding it the
-    /// wrong kind is a silent no-op (e.g. Copying ignores Material) — the UI
-    /// uses this to surface the mismatch instead of swallowing the flow.
-    /// `None` = accepts any substance.
-    pub fn primary_input(&self) -> Option<SubstanceType> {
+    /// Can this primitive turn an incoming flow of `s` into output? Feeding it
+    /// a substance it can't use is a silent no-op (Copying ignores Material,
+    /// Amplifying ignores Material) — the UI surfaces the mismatch so no flow
+    /// vanishes without explanation.
+    pub fn consumes(&self, s: SubstanceType) -> bool {
+        use ProcessPrimitive::*;
         match self {
-            // Message-only signal processors: copying matter would counterfeit it.
-            NodeKind::Process(ProcessPrimitive::Copying | ProcessPrimitive::Inverting) => {
-                Some(SubstanceType::Message)
-            }
-            // Sensing reads physical flow (crosses to Message on output).
-            NodeKind::Process(ProcessPrimitive::Sensing) => Some(SubstanceType::Material),
-            _ => None,
+            // Message-only signal processors: copying/inverting matter would
+            // counterfeit it.
+            NodeKind::Process(Copying | Inverting) => s == SubstanceType::Message,
+            // Sensing reads physical flow (Energy/Material), crosses to Message.
+            NodeKind::Process(Sensing) => s != SubstanceType::Message,
+            // Amplifying needs a Message signal and Energy power — Material is
+            // dead weight to it.
+            NodeKind::Process(Amplifying) => s != SubstanceType::Material,
+            // Everything else moves whatever it's given.
+            _ => true,
         }
     }
 }
@@ -291,21 +295,43 @@ impl Circuit {
     pub fn substance_mismatches(&self) -> Vec<(usize, SubstanceType, SubstanceType)> {
         let mut out = Vec::new();
         for (i, node) in self.nodes.iter().enumerate() {
-            let Some(wants) = node.kind.primary_input() else { continue };
             for w in self.wires.iter().filter(|w| w.to == i) {
                 let got = self.wire_substance(w);
-                let cross_ok =
-                    matches!(node.kind, NodeKind::Process(ProcessPrimitive::Sensing));
-                // Sensing accepts Energy too (both physical); only Message is wrong for it.
-                let usable = got == wants
-                    || (cross_ok && got != SubstanceType::Message);
-                if !usable {
+                if !node.kind.consumes(got) {
+                    // Report what it wants: the first substance it does consume.
+                    let wants = [
+                        SubstanceType::Message,
+                        SubstanceType::Energy,
+                        SubstanceType::Material,
+                    ]
+                    .into_iter()
+                    .find(|s| node.kind.consumes(*s))
+                    .unwrap_or(SubstanceType::Message);
                     out.push((i, wants, got));
                     break;
                 }
             }
         }
         out
+    }
+
+    /// Amplifying with a signal but no Energy power: output is bounded to 0.
+    /// A second, softer advisory (the node IS wired right, just underpowered).
+    pub fn underpowered_amplifiers(&self) -> Vec<usize> {
+        self.nodes
+            .iter()
+            .enumerate()
+            .filter(|(i, n)| {
+                matches!(n.kind, NodeKind::Process(ProcessPrimitive::Amplifying))
+                    && self.wires.iter().any(|w| {
+                        w.to == *i && self.wire_substance(w) == SubstanceType::Message
+                    })
+                    && !self.wires.iter().any(|w| {
+                        w.to == *i && self.wire_substance(w) == SubstanceType::Energy
+                    })
+            })
+            .map(|(i, _)| i)
+            .collect()
     }
 
     /// SameKind (Systems/Core/Complexity.lean): two components are the same
@@ -433,6 +459,12 @@ mod tests {
         let m = c.substance_mismatches();
         assert_eq!(m.len(), 1);
         assert_eq!(m[0], (1, SubstanceType::Message, SubstanceType::Material));
+        // Amplifying fed Material is also flagged now (was silently zeroing).
+        let mut amp = Circuit::default();
+        amp.nodes.push(node(NodeKind::Source)); // Material
+        amp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
+        amp.wires.push(Wire { from: 0, to: 1 });
+        assert_eq!(amp.substance_mismatches().len(), 1, "Material -> Amplifying flagged");
         // Setting the source to emit Message clears it.
         c.nodes[0].out_substance = SubstanceType::Message;
         assert!(c.substance_mismatches().is_empty());

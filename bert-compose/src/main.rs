@@ -250,10 +250,20 @@ fn status_bar(app: &App, ctx: &egui::Context) {
                 ui.label(RichText::new(&app.status).color(SECONDARY).small());
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let mismatches = app.circuit.substance_mismatches();
+                    let underpowered = app.circuit.underpowered_amplifiers();
                     if let Some((i, wants, got)) = mismatches.first() {
                         ui.label(
                             RichText::new(format!(
                                 "⚠ {} consumes {wants:?} but is fed {got:?} — that flow is ignored. Change the source's substance or insert a Sensing transducer.",
+                                app.circuit.nodes[*i].name,
+                            ))
+                            .color(theme::AMBER)
+                            .small(),
+                        );
+                    } else if let Some(i) = underpowered.first() {
+                        ui.label(
+                            RichText::new(format!(
+                                "⚠ {} has a signal but no Energy power — amplification is bounded to 0. Wire an Energy source into it.",
                                 app.circuit.nodes[*i].name,
                             ))
                             .color(theme::AMBER)
@@ -544,9 +554,9 @@ fn canvas(app: &mut App, ctx: &egui::Context) {
             }
 
             // Substance mismatches: nodes silently ignoring a flow they can't use.
-            let mismatches = app.circuit.substance_mismatches();
-            let mismatched: std::collections::HashSet<usize> =
-                mismatches.iter().map(|(i, _, _)| *i).collect();
+            let mut mismatched: std::collections::HashSet<usize> =
+                app.circuit.substance_mismatches().iter().map(|(i, _, _)| *i).collect();
+            mismatched.extend(app.circuit.underpowered_amplifiers());
 
             // Nodes.
             let mut clicked_body: Option<usize> = None;
