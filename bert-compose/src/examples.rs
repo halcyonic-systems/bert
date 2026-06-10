@@ -124,7 +124,7 @@ pub const EXAMPLES: &[Example] = &[
     // ── Political Economy ────────────────────────────────────────────────
     Example {
         name: "Public budget on a quorum",
-        blurb: "A treasury whose spending a quorum throttles, opposition damping as it depletes — self-governing fiscal policy.",
+        blurb: "Revenue funds two programs through a treasury; a quorum approves most appropriations and declines the surplus as the treasury fills.",
         category: Category::PoliticalEconomy,
         lens: POLITICAL_ECONOMY,
         build: public_budget,
@@ -376,6 +376,11 @@ fn regulator(sub: DeclaredSubstance, rate: f32, release: f32, gain: f32) -> Circ
 /// allocated to two programs, opposition damping the quorum as the treasury
 /// fills. A self-governing fiscal loop (reads under the Political Economy lens
 /// as Constituency → Quorum gate → Registry → Allocation → Enactment).
+///
+/// Tuned so the treasury fills to a healthy ~8 and the quorum approves most
+/// proposed revenue, declining only the surplus as the treasury fills (that
+/// declined portion shows in the ledger as dissipated — money the quorum
+/// chose not to appropriate, not money lost).
 fn public_budget() -> Circuit {
     let money = substance("money");
     let mut c = Circuit::default();
@@ -387,9 +392,9 @@ fn public_budget() -> Circuit {
     c.nodes.push(n(NodeKind::Sink, 6, 900.0, 370.0)); // 5 program B
     c.nodes.push(n(NodeKind::Process(Sensing), 7, 620.0, 470.0)); // 6 monitor
     c.nodes.push(n(NodeKind::Process(Inverting), 8, 470.0, 470.0)); // 7 opposition
-    c.nodes[0].param = 3.0;
-    c.nodes[2].release_rate = 1.0;
-    c.nodes[6].param = 0.2;
+    c.nodes[0].param = 1.7; // proposed revenue
+    c.nodes[2].release_rate = 1.5; // spending to programs
+    c.nodes[6].param = 0.015; // gentle monitor gain → treasury settles ~8
     for i in [0, 1, 2, 3] {
         c.nodes[i].out_substance = money.clone();
     }

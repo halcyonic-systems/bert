@@ -237,6 +237,18 @@ impl App {
         self.pending_wire = None;
     }
 
+    /// A node's name as the active lens reads it — so a domain run's exported
+    /// data says "Quorum gate / Treasury", not "Modulating 2 / Buffering 3".
+    fn node_label(&self, i: usize) -> String {
+        let node = &self.circuit.nodes[i];
+        crate::lens::display_name(self.lens, node.kind, &node.name)
+    }
+
+    /// The recorded run as CSV, labeled by the active lens.
+    fn labeled_csv(&self) -> String {
+        self.circuit.csv_with(|i| self.node_label(i))
+    }
+
     /// First free path: name.ext, name-1.ext, name-2.ext, …
     fn unique_path(dir: &str, stem: &str, ext: &str) -> String {
         let candidate = format!("{dir}/{stem}.{ext}");
@@ -256,7 +268,7 @@ impl App {
             &format!("{}-data", self.name.replace(' ', "-")),
             "csv",
         );
-        match std::fs::write(&path, self.circuit.csv()) {
+        match std::fs::write(&path, self.labeled_csv()) {
             Ok(()) => {
                 self.write_latest();
                 self.status = format!(
@@ -277,7 +289,7 @@ impl App {
         if std::fs::create_dir_all(&dir).is_err() {
             return;
         }
-        let _ = std::fs::write(format!("{dir}/latest.csv"), self.circuit.csv());
+        let _ = std::fs::write(format!("{dir}/latest.csv"), self.labeled_csv());
         let model = export::to_world_model(&self.circuit, &self.name);
         if let Ok(j) = serde_json::to_string_pretty(&model) {
             let _ = std::fs::write(format!("{dir}/latest.json"), j);
@@ -285,21 +297,28 @@ impl App {
         let _ = std::fs::write(format!("{dir}/latest.md"), self.run_summary());
     }
 
-    /// A compact human/LLM-readable digest of the current run.
+    /// A compact human/LLM-readable digest of the current run. Names follow
+    /// the active lens, so a domain run reads in domain terms.
     pub fn run_summary(&self) -> String {
         let c = &self.circuit;
+        let lens_note = if self.lens != 0 {
+            format!(" · {} lens", crate::lens::LENSES[self.lens].name)
+        } else {
+            String::new()
+        };
         let mut s = format!(
-            "# {} — bert-compose run\n\n{} components, {} bonds, {} ticks, diversity {}.\n\n## Components\n",
+            "# {} — bert-compose run{}\n\n{} components, {} bonds, {} ticks, diversity {}.\n\n## Components\n",
             self.name,
+            lens_note,
             c.nodes.len(),
             c.wires.len(),
             c.history.len(),
             c.diversity(),
         );
-        for node in &c.nodes {
+        for (i, node) in c.nodes.iter().enumerate() {
             s.push_str(&format!(
                 "- {} ({}): activity {:.2}{}\n",
-                node.name,
+                self.node_label(i),
                 node.kind.label(),
                 node.activity,
                 if node.storage.abs() > 1e-6 {
@@ -315,8 +334,8 @@ impl App {
         for w in &c.wires {
             s.push_str(&format!(
                 "- {} → {} ({})\n",
-                c.nodes[w.from].name,
-                c.nodes[w.to].name,
+                self.node_label(w.from),
+                self.node_label(w.to),
                 c.nodes[w.from].out_substance.label(),
             ));
         }

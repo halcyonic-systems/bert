@@ -635,11 +635,21 @@ impl Circuit {
         self.history.push(row);
     }
 
-    /// The recorded run as CSV: tick, then activity/storage/total per node.
+    /// The recorded run as CSV with raw node names. (The app exports via
+    /// `csv_with` to carry lens names; this is the raw form used by tests and
+    /// the sweep emitter.)
+    #[allow(dead_code)]
     pub fn csv(&self) -> String {
+        self.csv_with(|i| self.nodes[i].name.clone())
+    }
+
+    /// The recorded run as CSV: tick, then activity/storage/total per node.
+    /// `label(i)` names column-group `i` — the app passes the lens reading so
+    /// a domain run exports as "Quorum gate", "Treasury", not "Modulating 2".
+    pub fn csv_with(&self, label: impl Fn(usize) -> String) -> String {
         let mut out = String::from("tick");
-        for node in &self.nodes {
-            let name = node.name.replace(',', " ");
+        for i in 0..self.nodes.len() {
+            let name = label(i).replace(',', " ");
             out.push_str(&format!(",{name}.activity,{name}.storage,{name}.total"));
         }
         out.push('\n');
