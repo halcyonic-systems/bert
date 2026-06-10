@@ -186,6 +186,7 @@ impl App {
         let base = self.circuit.nodes.len();
         for mut node in sub.nodes {
             node.pos += offset;
+            node.process = Some(rung.name); // provenance for the inspector
             self.circuit.nodes.push(node);
         }
         for w in sub.wires {

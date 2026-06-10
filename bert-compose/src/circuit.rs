@@ -215,6 +215,11 @@ pub struct Node {
     /// Buffer starting stock — the "this system HAS a quantity" assertion.
     /// Exported as AgentModel.initial_state{"storage"} (what Mesa seeds).
     pub initial_storage: f32,
+    /// Provenance: the Troncale process this node was stamped from (a
+    /// `ladder::Rung` name), or `None` if hand-placed. Pure UI hint — lets the
+    /// inspector show "this is part of a Feedback process" alongside the
+    /// node's own primitive card. Not serialized.
+    pub process: Option<&'static str>,
     // — live state —
     pub storage: f32,
     pub activity: f32,
@@ -231,6 +236,7 @@ impl Node {
             param: if kind == NodeKind::Source { 1.0 } else { 0.5 },
             release_rate: 1.0,
             initial_storage: 0.0,
+            process: None,
             storage: 0.0,
             activity: 0.0,
             total: 0.0,

@@ -203,6 +203,48 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             // Teaching card — plain English first, details on demand.
             ui.add_space(10.0);
             let kind = app.circuit.nodes[i].kind;
+
+            // Process provenance — if this node was stamped as part of a
+            // Troncale process, describe the PROCESS (not just the brick), so
+            // clicking any node of a stamped Feedback loop teaches Feedback.
+            if let Some(rung) = app.circuit.nodes[i].process.and_then(crate::ladder::by_name) {
+                egui::Frame::new()
+                    .fill(theme::GOLD.gamma_multiply(0.10))
+                    .stroke(egui::Stroke::new(1.0, theme::GOLD.gamma_multiply(0.5)))
+                    .corner_radius(egui::CornerRadius::same(6))
+                    .inner_margin(egui::Margin::same(8))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(format!("⬡ {} — a systems process", rung.name))
+                                .color(theme::GOLD)
+                                .size(11.5)
+                                .family(theme::semibold()),
+                        );
+                        ui.add_space(2.0);
+                        ui.label(RichText::new(rung.blurb).color(PRIMARY).size(11.5));
+                        ui.add_space(3.0);
+                        ui.label(
+                            RichText::new(format!("built from: {}", rung.composition))
+                                .color(SECONDARY)
+                                .size(10.5)
+                                .italics(),
+                        );
+                        ui.label(
+                            RichText::new(format!("Troncale: {}", rung.provenance))
+                                .color(SECONDARY)
+                                .size(10.0),
+                        );
+                    });
+                ui.add_space(4.0);
+                ui.label(
+                    RichText::new("This node's role in it:")
+                        .color(SECONDARY)
+                        .size(10.5)
+                        .italics(),
+                );
+                ui.add_space(2.0);
+            }
+
             // Under a domain lens, name the reading: "Receptor · a Sensing
             // primitive" — the renaming and what it really is, side by side.
             if app.lens != 0 {

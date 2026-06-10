@@ -148,6 +148,12 @@ pub fn palette_macros() -> impl Iterator<Item = &'static Rung> {
     LADDER.iter().filter(|r| r.in_palette)
 }
 
+/// Look up a rung by its display name — used by the inspector to describe a
+/// stamped node's parent process.
+pub fn by_name(name: &str) -> Option<&'static Rung> {
+    LADDER.iter().find(|r| r.name == name)
+}
+
 // ── builders (the canonical circuits) ────────────────────────────────────
 
 /// POTENTIAL FIELDS — a field is a flow MODE, not a node (Mobus Ch.4). Two
