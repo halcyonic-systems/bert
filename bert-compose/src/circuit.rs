@@ -72,6 +72,9 @@ pub struct Node {
     pub param: f32,
     /// Buffer release rate per tick.
     pub release_rate: f32,
+    /// Buffer starting stock — the "this system HAS a quantity" assertion.
+    /// Exported as AgentModel.initial_state{"storage"} (what Mesa seeds).
+    pub initial_storage: f32,
     // — live state —
     pub storage: f32,
     pub activity: f32,
@@ -87,6 +90,7 @@ impl Node {
             out_substance: kind.default_out(),
             param: if kind == NodeKind::Source { 1.0 } else { 0.5 },
             release_rate: 1.0,
+            initial_storage: 0.0,
             storage: 0.0,
             activity: 0.0,
             total: 0.0,
@@ -110,7 +114,7 @@ pub struct Circuit {
 impl Circuit {
     pub fn reset(&mut self) {
         for n in &mut self.nodes {
-            n.storage = 0.0;
+            n.storage = n.initial_storage;
             n.activity = 0.0;
             n.total = 0.0;
         }

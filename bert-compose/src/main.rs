@@ -282,6 +282,13 @@ fn inspector_panel(app: &mut App, ctx: &egui::Context) {
                 ui.add(
                     egui::Slider::new(&mut node.release_rate, 0.0..=10.0).text("release / tick"),
                 );
+                let resp = ui.add(
+                    egui::Slider::new(&mut node.initial_storage, 0.0..=50.0)
+                        .text("initial stock"),
+                );
+                if resp.changed() {
+                    node.storage = node.initial_storage; // immediate, touchable
+                }
             }
             ui.add_space(4.0);
             ui.horizontal(|ui| {

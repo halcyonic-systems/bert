@@ -136,7 +136,14 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                         primitives: vec![primitive],
                         cognitive_params: HashMap::new(),
                         process_configs: Vec::new(),
-                        initial_state: HashMap::new(),
+                        initial_state: if node.initial_storage > 0.0 {
+                            HashMap::from([(
+                                "storage".to_string(),
+                                serde_json::json!(node.initial_storage),
+                            )])
+                        } else {
+                            HashMap::new()
+                        },
                         network_config: None,
                     }),
                 });
@@ -169,7 +176,15 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
             source_interface: None,
             sink: node_id[&wire.to].clone(),
             sink_interface: None,
-            amount: bert_core::rust_decimal::Decimal::ONE,
+            // Source-fed flows carry the asserted emission rate.
+            amount: bert_core::rust_decimal::Decimal::try_from(
+                if matches!(circuit.nodes[wire.from].kind, NodeKind::Source) {
+                    circuit.nodes[wire.from].param
+                } else {
+                    1.0
+                },
+            )
+            .unwrap_or(bert_core::rust_decimal::Decimal::ONE),
             unit: String::new(),
             parameters: Vec::new(),
             smart_parameters: Vec::new(),
@@ -206,6 +221,8 @@ mod tests {
         c.nodes.push(Node::new(NodeKind::Sink, 3, pos2(200.0, 0.0)));
         c.wires.push(Wire { from: 0, to: 1 });
         c.wires.push(Wire { from: 1, to: 2 });
+        c.nodes[0].param = 2.5; // asserted emission rate
+        c.nodes[1].initial_storage = 12.0; // asserted starting stock
 
         let model = to_world_model(&c, "Touchable Circuit");
         let errors: Vec<_> = validate(&model)
@@ -221,5 +238,12 @@ mod tests {
         assert_eq!(reloaded.interactions.len(), 2);
         let agent = reloaded.systems[1].agent.as_ref().expect("primitive encoding");
         assert_eq!(agent.primitives, vec![ProcessPrimitive::Buffering]);
+        assert_eq!(
+            agent.initial_state.get("storage").and_then(|v| v.as_f64()),
+            Some(12.0),
+            "asserted stock survives as initial_state (what Mesa seeds)"
+        );
+        let src_flow = &reloaded.interactions[0];
+        assert_eq!(src_flow.amount.to_string(), "2.5", "emission rate on the flow");
     }
 }
