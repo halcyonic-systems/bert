@@ -36,8 +36,16 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         _ => "",
                     },
                 };
+                // Brick reads in the active lens's vocabulary; canonical name
+                // stays in the tooltip so the mapping is never lost.
+                let brick = crate::lens::label(app.lens, *kind);
+                let hover = if app.lens == 0 {
+                    hover.to_string()
+                } else {
+                    format!("{} · {hover}", kind.label())
+                };
                 if ui
-                    .add_sized([146.0, 24.0], egui::Button::new(RichText::new(kind.label()).size(12.0)))
+                    .add_sized([146.0, 24.0], egui::Button::new(RichText::new(brick).size(12.0)))
                     .on_hover_text(hover)
                     .clicked()
                 {

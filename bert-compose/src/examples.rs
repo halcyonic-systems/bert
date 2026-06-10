@@ -56,6 +56,11 @@ pub const EXAMPLES: &[Example] = &[
         blurb: "Passive gradient vs. active feedback — same equilibrium, two mechanisms.",
         build: passive_vs_active,
     },
+    Example {
+        name: "Universal homeostat",
+        blurb: "One regulator — read it as crypto, governance, neuro, or ecology (switch lenses).",
+        build: universal_homeostat,
+    },
 ];
 
 fn n(kind: NodeKind, num: usize, x: f32, y: f32) -> Node {
@@ -209,6 +214,36 @@ fn passive_vs_active() -> Circuit {
     c.wires.push(Wire::new(6, 7));
     c.wires.push(Wire::new(7, 3));
     c
+}
+
+/// The same negative-feedback regulator as the thermostat, but with auto
+/// names and a domain-neutral substance — built to be READ through every
+/// lens. Difficulty adjustment, quorum throttle, spike threshold, limiting
+/// factor: one circuit, four readings, identical dynamics. The K≅2 artifact.
+fn universal_homeostat() -> Circuit {
+    let mut c = Circuit::default();
+    c.nodes.push(n(NodeKind::Source, 1, 360.0, 320.0)); // 0
+    c.nodes.push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1
+    c.nodes.push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2
+    c.nodes.push(n(NodeKind::Sink, 4, 840.0, 320.0)); // 3
+    c.nodes.push(n(NodeKind::Process(Sensing), 5, 680.0, 480.0)); // 4
+    c.nodes.push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5
+    c.nodes[0].param = 3.0;
+    c.nodes[2].release_rate = 1.0;
+    c.nodes[4].param = 0.2;
+    c.wires.push(Wire::new(0, 1));
+    c.wires.push(Wire::new(1, 2));
+    c.wires.push(Wire::new(2, 3));
+    c.wires.push(Wire::new(2, 4));
+    c.wires.push(Wire::new(4, 5));
+    c.wires.push(Wire::new(5, 1));
+    c
+}
+
+/// The universal homeostat, exposed for the lens-invariance test in lens.rs.
+#[cfg(test)]
+pub fn universal_homeostat_for_test() -> Circuit {
+    universal_homeostat()
 }
 
 #[cfg(test)]

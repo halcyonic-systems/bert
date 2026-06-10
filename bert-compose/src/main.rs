@@ -22,6 +22,7 @@ mod docs;
 mod examples;
 mod export;
 mod glyph;
+mod lens;
 mod theme;
 mod ui;
 

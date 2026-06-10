@@ -189,6 +189,20 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             // Teaching card — plain English first, details on demand.
             ui.add_space(10.0);
             let kind = app.circuit.nodes[i].kind;
+            // Under a domain lens, name the reading: "Receptor · a Sensing
+            // primitive" — the renaming and what it really is, side by side.
+            if app.lens != 0 {
+                ui.label(
+                    RichText::new(format!(
+                        "{} · a {} primitive",
+                        crate::lens::label(app.lens, kind),
+                        kind.label()
+                    ))
+                    .color(theme::ACCENT)
+                    .size(11.0),
+                );
+                ui.add_space(2.0);
+            }
             let d = docs::doc(kind);
             ui.label(RichText::new(d.plain).color(PRIMARY).size(12.0));
             ui.add_space(2.0);

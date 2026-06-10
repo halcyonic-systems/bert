@@ -22,6 +22,8 @@ pub struct App {
     pub show_charts: bool,
     /// Which metric the plots track: 0 activity, 1 storage, 2 cumulative total.
     pub chart_metric: usize,
+    /// Active presentation lens (index into `lens::LENSES`; 0 = Systems).
+    pub lens: usize,
     // — substance dictionary —
     /// Substances free-declared this session (pickable on any node).
     pub declared: Vec<DeclaredSubstance>,
@@ -51,6 +53,7 @@ impl App {
             status: "add primitives from the palette, wire ◦ → node, press Run".to_string(),
             show_charts: true,
             chart_metric: 0,
+            lens: 0,
             declared: Vec::new(),
             declaring: false,
             decl_name: String::new(),

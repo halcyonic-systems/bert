@@ -3,7 +3,7 @@
 
 use crate::app::App;
 use crate::theme::{self, primary_button, semibold, GREEN, PAPER, PRIMARY, SECONDARY};
-use crate::{askhal, examples};
+use crate::{askhal, examples, lens};
 use egui::RichText;
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
@@ -96,6 +96,28 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 });
                 if let Some(i) = load {
                     app.load_example(&examples::EXAMPLES[i]);
+                }
+                // Lens picker — the SAME circuit read in domain vocabulary.
+                egui::ComboBox::from_id_salt("lens")
+                    .selected_text(format!("🔍 {}", lens::LENSES[app.lens].name))
+                    .show_ui(ui, |ui| {
+                        for (i, l) in lens::LENSES.iter().enumerate() {
+                            if ui
+                                .selectable_label(app.lens == i, l.name)
+                                .on_hover_text(l.tagline)
+                                .clicked()
+                            {
+                                app.lens = i;
+                            }
+                        }
+                    });
+                if app.lens != 0 {
+                    ui.label(
+                        RichText::new(lens::LENSES[app.lens].tagline)
+                            .color(SECONDARY)
+                            .small()
+                            .italics(),
+                    );
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.add(primary_button("Save as BERT model")).clicked() {

@@ -146,7 +146,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 painter.text(
                     pos + vec2(0.0, glyph::R + 11.0),
                     egui::Align2::CENTER_CENTER,
-                    &node.name,
+                    crate::lens::display_name(app.lens, node.kind, &node.name),
                     egui::FontId::proportional(10.0),
                     SECONDARY,
                 );
