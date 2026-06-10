@@ -1,6 +1,12 @@
-//! Pre-loaded classic systems — the on-ramp. Each loads a working circuit a
-//! social scientist or systems theorist can run, read, and tinker with. They
-//! triple as the educational library, Troncale-sweep artifacts, and tests.
+//! Pre-loaded systems — the on-ramp, organized to mirror halcyonic.systems.
+//!
+//! **Foundations** teach the systems concepts (FLOWS / BONDS / FEEDBACK) and
+//! stay in the neutral Systems lens — a leaky bucket relabeled "Supply" is
+//! noise. The **domain** examples (Political Economy / Neuromorphics /
+//! Protocol Science / Ecology) are native to one domain and load in that
+//! domain's lens, where the renaming actually means something. The **Universal
+//! homeostat** is the one cross-domain showcase: sweep every lens and the CSV
+//! is identical (the K≅2 artifact).
 
 use crate::circuit::{Circuit, DeclaredSubstance, Node, NodeKind, Wire, SUBSTANCES};
 use bert_core::{ProcessPrimitive::*, SubstanceType};
@@ -13,52 +19,146 @@ fn substance(name: &str) -> DeclaredSubstance {
     DeclaredSubstance::named(n, *b, u)
 }
 
+/// Lens indices (see `lens::LENSES`): the menu groups + auto-applied lens map
+/// onto the halcyonic.systems pillars.
+const SYSTEMS: usize = 0;
+const POLITICAL_ECONOMY: usize = 1;
+const NEUROMORPHICS: usize = 2;
+const PROTOCOL_SCIENCE: usize = 3;
+const ECOLOGY: usize = 4;
+
+/// Example categories, in menu order — mirrors the site's pillars.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Category {
+    Foundations,
+    PoliticalEconomy,
+    Neuromorphics,
+    ProtocolScience,
+    Ecology,
+    CrossDomain,
+}
+
+impl Category {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Category::Foundations => "Foundations",
+            Category::PoliticalEconomy => "Political Economy",
+            Category::Neuromorphics => "Neuromorphics",
+            Category::ProtocolScience => "Protocol Science",
+            Category::Ecology => "Ecology",
+            Category::CrossDomain => "Cross-domain",
+        }
+    }
+    pub const ORDER: &'static [Category] = &[
+        Category::Foundations,
+        Category::PoliticalEconomy,
+        Category::Neuromorphics,
+        Category::ProtocolScience,
+        Category::Ecology,
+        Category::CrossDomain,
+    ];
+}
+
 pub struct Example {
     pub name: &'static str,
     /// One line: what it shows.
     pub blurb: &'static str,
+    pub category: Category,
+    /// Lens auto-applied on load (Foundations stay in Systems; domain examples
+    /// open in their domain's lens).
+    pub lens: usize,
     pub build: fn() -> Circuit,
 }
 
 pub const EXAMPLES: &[Example] = &[
+    // ── Foundations — the systems concepts, neutral lens ─────────────────
     Example {
         name: "Leaky bucket",
-        blurb: "A store fills and drains — the simplest dynamics.",
+        blurb: "FLOWS: a store fills and drains — the simplest dynamics.",
+        category: Category::Foundations,
+        lens: SYSTEMS,
         build: leaky_bucket,
     },
     Example {
-        name: "Thermostat (homeostat)",
-        blurb: "Negative feedback: the system regulates itself to a setpoint.",
-        build: homeostat,
-    },
-    Example {
         name: "Splitting a budget",
-        blurb: "Conservation you can watch: one inflow, two equal shares.",
+        blurb: "BONDS: conservation you can watch — one inflow, two equal shares.",
+        category: Category::Foundations,
+        lens: SYSTEMS,
         build: budget_split,
     },
     Example {
-        name: "Megaphone (amp + power)",
-        blurb: "A weak signal amplified — but only as far as the power allows.",
-        build: megaphone,
+        name: "Thermostat",
+        blurb: "FEEDBACK: the system regulates itself to a setpoint.",
+        category: Category::Foundations,
+        lens: SYSTEMS,
+        build: homeostat,
     },
     Example {
-        name: "Spreading the word",
-        blurb: "Information copies for free; matter never could.",
-        build: broadcast,
-    },
-    Example {
-        name: "Battery (gradient flow)",
-        blurb: "A field, not a pump: charge flows down a gradient and equalizes.",
+        name: "Battery (gradient)",
+        blurb: "POTENTIAL FIELDS: a field, not a pump — charge falls down a gradient.",
+        category: Category::Foundations,
+        lens: SYSTEMS,
         build: battery,
     },
     Example {
         name: "Two paths to balance",
         blurb: "Passive gradient vs. active feedback — same equilibrium, two mechanisms.",
+        category: Category::Foundations,
+        lens: SYSTEMS,
         build: passive_vs_active,
     },
     Example {
+        name: "Megaphone (amp + power)",
+        blurb: "Amplification is metered — a weak signal grows only as far as the power allows.",
+        category: Category::Foundations,
+        lens: SYSTEMS,
+        build: megaphone,
+    },
+    Example {
+        name: "Spreading the word",
+        blurb: "Information copies for free; matter never could.",
+        category: Category::Foundations,
+        lens: SYSTEMS,
+        build: broadcast,
+    },
+    // ── Political Economy ────────────────────────────────────────────────
+    Example {
+        name: "Public budget on a quorum",
+        blurb: "A treasury whose spending a quorum throttles, opposition damping as it depletes — self-governing fiscal policy.",
+        category: Category::PoliticalEconomy,
+        lens: POLITICAL_ECONOMY,
+        build: public_budget,
+    },
+    // ── Neuromorphics ────────────────────────────────────────────────────
+    Example {
+        name: "Integrate-and-fire neuron",
+        blurb: "A membrane integrating stimulus, inhibition holding it at threshold — homeostatic firing.",
+        category: Category::Neuromorphics,
+        lens: NEUROMORPHICS,
+        build: integrate_and_fire,
+    },
+    // ── Protocol Science ─────────────────────────────────────────────────
+    Example {
+        name: "Difficulty-adjusted issuance",
+        blurb: "Issuance into supply, difficulty retargeting to hold a setpoint — a protocol regulating its own money.",
+        category: Category::ProtocolScience,
+        lens: PROTOCOL_SCIENCE,
+        build: difficulty_issuance,
+    },
+    // ── Ecology / Energy (Odum) ──────────────────────────────────────────
+    Example {
+        name: "Energy through a meadow",
+        blurb: "Sunlight into biomass, a limiting factor holding it at carrying capacity — Odum's energese.",
+        category: Category::Ecology,
+        lens: ECOLOGY,
+        build: meadow,
+    },
+    // ── Cross-domain showcase ────────────────────────────────────────────
+    Example {
         name: "Universal homeostat",
-        blurb: "One regulator — read it as crypto, governance, neuro, or ecology (switch lenses).",
+        blurb: "One regulator — sweep the lens and read it as economy, neuro, protocol, or ecology. The CSV never changes.",
+        category: Category::CrossDomain,
+        lens: SYSTEMS,
         build: universal_homeostat,
     },
 ];
@@ -238,6 +338,91 @@ fn universal_homeostat() -> Circuit {
     c.wires.push(Wire::new(4, 5));
     c.wires.push(Wire::new(5, 1));
     c
+}
+
+// ── Domain examples ──────────────────────────────────────────────────────
+//
+// Each is native to ONE domain and loads in that domain's lens. They share
+// the regulation skeleton on purpose — that sameness IS K≅2 — but carry the
+// domain's substance and read naturally under its lens.
+
+/// The shared negative-feedback regulator: a flow gated into a stock, the
+/// stock sensed and fed back to throttle the gate. `sub` flows on the physical
+/// path; the sensor/controller carry Message.
+fn regulator(sub: DeclaredSubstance, rate: f32, release: f32, gain: f32) -> Circuit {
+    let mut c = Circuit::default();
+    c.nodes.push(n(NodeKind::Source, 1, 360.0, 320.0)); // 0 inflow
+    c.nodes.push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1 gate
+    c.nodes.push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2 stock
+    c.nodes.push(n(NodeKind::Sink, 4, 840.0, 320.0)); // 3 outflow
+    c.nodes.push(n(NodeKind::Process(Sensing), 5, 680.0, 480.0)); // 4 sensor
+    c.nodes.push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5 controller
+    c.nodes[0].param = rate;
+    c.nodes[2].release_rate = release;
+    c.nodes[4].param = gain;
+    for i in [0, 1, 2] {
+        c.nodes[i].out_substance = sub.clone();
+    }
+    c.wires.push(Wire::new(0, 1));
+    c.wires.push(Wire::new(1, 2));
+    c.wires.push(Wire::new(2, 3));
+    c.wires.push(Wire::new(2, 4));
+    c.wires.push(Wire::new(4, 5));
+    c.wires.push(Wire::new(5, 1));
+    c
+}
+
+/// POLITICAL ECONOMY — revenue gated by a quorum into a treasury, spending
+/// allocated to two programs, opposition damping the quorum as the treasury
+/// fills. A self-governing fiscal loop (reads under the Political Economy lens
+/// as Constituency → Quorum gate → Registry → Allocation → Enactment).
+fn public_budget() -> Circuit {
+    let money = substance("money");
+    let mut c = Circuit::default();
+    c.nodes.push(n(NodeKind::Source, 1, 320.0, 300.0)); // 0 revenue
+    c.nodes.push(n(NodeKind::Process(Modulating), 2, 470.0, 300.0)); // 1 quorum
+    c.nodes.push(n(NodeKind::Process(Buffering), 3, 620.0, 300.0)); // 2 treasury
+    c.nodes.push(n(NodeKind::Process(Splitting), 4, 770.0, 300.0)); // 3 allocation
+    c.nodes.push(n(NodeKind::Sink, 5, 900.0, 230.0)); // 4 program A
+    c.nodes.push(n(NodeKind::Sink, 6, 900.0, 370.0)); // 5 program B
+    c.nodes.push(n(NodeKind::Process(Sensing), 7, 620.0, 470.0)); // 6 monitor
+    c.nodes.push(n(NodeKind::Process(Inverting), 8, 470.0, 470.0)); // 7 opposition
+    c.nodes[0].param = 3.0;
+    c.nodes[2].release_rate = 1.0;
+    c.nodes[6].param = 0.2;
+    for i in [0, 1, 2, 3] {
+        c.nodes[i].out_substance = money.clone();
+    }
+    c.wires.push(Wire::new(0, 1)); // revenue → quorum
+    c.wires.push(Wire::new(1, 2)); // quorum → treasury
+    c.wires.push(Wire::new(2, 3)); // treasury → allocation
+    c.wires.push(Wire::new(3, 4)); // → program A
+    c.wires.push(Wire::new(3, 5)); // → program B
+    c.wires.push(Wire::new(2, 6)); // treasury sensed
+    c.wires.push(Wire::new(6, 7)); // monitor → opposition
+    c.wires.push(Wire::new(7, 1)); // opposition → quorum (closes loop)
+    c
+}
+
+/// NEUROMORPHICS — stimulus gated through a synapse onto a membrane,
+/// inhibition holding it near threshold. Integrate-and-fire as a homeostat
+/// (Stimulus → Synapse → Membrane → Effector, Receptor → Inhibition).
+fn integrate_and_fire() -> Circuit {
+    regulator(DeclaredSubstance::named("charge", SubstanceType::Energy, "mV"), 3.0, 1.0, 0.25)
+}
+
+/// PROTOCOL SCIENCE — issuance gated by difficulty into circulating supply,
+/// an oracle retargeting difficulty to hold a setpoint. A protocol regulating
+/// its own money (Issuance → Difficulty → Supply → Burn, Oracle → Retarget).
+fn difficulty_issuance() -> Circuit {
+    regulator(DeclaredSubstance::named("tokens", SubstanceType::Material, "coins"), 3.0, 1.0, 0.2)
+}
+
+/// ECOLOGY / ENERGY — sunlight gated by a limiting factor into biomass,
+/// damping holding it at carrying capacity. Odum's energese as a homeostat
+/// (Inflow → Limiting factor → Biomass → Respiration, Indicator → Damping).
+fn meadow() -> Circuit {
+    regulator(substance("sunlight"), 3.0, 1.0, 0.2)
 }
 
 /// The universal homeostat, exposed for the lens-invariance test in lens.rs.

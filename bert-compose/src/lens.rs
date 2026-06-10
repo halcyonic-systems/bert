@@ -55,7 +55,7 @@ pub const LENSES: &[Lens] = &[
         glosses: None,
     },
     Lens {
-        name: "Governance",
+        name: "Political Economy",
         tagline: "A quorum throttling enactment as demand rises — self-governing.",
         vocab: Some([
             "Constituency",   // Source
@@ -87,7 +87,7 @@ pub const LENSES: &[Lens] = &[
         ]),
     },
     Lens {
-        name: "Neuro",
+        name: "Neuromorphics",
         tagline: "A membrane gated by a synapse, held at threshold — homeostatic firing.",
         vocab: Some([
             "Stimulus",          // Source
@@ -119,8 +119,8 @@ pub const LENSES: &[Lens] = &[
         ]),
     },
     Lens {
-        name: "Crypto",
-        tagline: "Difficulty retargeting issuance to hold a block-time setpoint.",
+        name: "Protocol Science",
+        tagline: "Issuance retargeted to a setpoint — a protocol regulating its commitment substrate.",
         vocab: Some([
             "Issuance",            // Source
             "Burn",                // Sink

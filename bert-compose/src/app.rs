@@ -129,6 +129,8 @@ impl App {
             ex.name.to_string(),
             format!("loaded \"{}\" — {} · press Run", ex.name, ex.blurb),
         );
+        // Domain examples open in their domain's lens; Foundations stay neutral.
+        self.lens = ex.lens;
     }
 
     /// Load a BERT model (ours or any compose-shaped one) back onto the

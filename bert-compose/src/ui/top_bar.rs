@@ -86,14 +86,32 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 }
                 let mut load: Option<usize> = None;
                 ui.menu_button("Examples ▾", |ui| {
-                    for (i, ex) in examples::EXAMPLES.iter().enumerate() {
-                        if ui
-                            .add(egui::Button::new(ex.name))
-                            .on_hover_text(ex.blurb)
-                            .clicked()
-                        {
-                            load = Some(i);
-                            ui.close_menu();
+                    // Grouped by category — Foundations (the systems concepts)
+                    // first, then the domain pillars, then the cross-domain
+                    // showcase. Mirrors halcyonic.systems.
+                    for (ci, cat) in examples::Category::ORDER.iter().enumerate() {
+                        if ci > 0 {
+                            ui.separator();
+                        }
+                        ui.label(
+                            RichText::new(cat.label())
+                                .color(if *cat == examples::Category::Foundations {
+                                    SECONDARY
+                                } else {
+                                    theme::GOLD
+                                })
+                                .size(9.5)
+                                .family(semibold())
+                                .extra_letter_spacing(1.2),
+                        );
+                        for (i, ex) in examples::EXAMPLES.iter().enumerate() {
+                            if ex.category != *cat {
+                                continue;
+                            }
+                            if ui.add(egui::Button::new(ex.name)).on_hover_text(ex.blurb).clicked() {
+                                load = Some(i);
+                                ui.close_menu();
+                            }
                         }
                     }
                 });
