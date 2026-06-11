@@ -316,18 +316,33 @@ impl App {
             c.diversity(),
         );
         for (i, node) in c.nodes.iter().enumerate() {
+            let mut detail = if node.storage.abs() > 1e-6 {
+                format!(", stored {:.2}", node.storage)
+            } else if node.total.abs() > 1e-6 {
+                format!(", total {:.2}", node.total)
+            } else {
+                String::new()
+            };
+            // Capacity legibility: report the ceiling and whether it ever bit
+            // (a regulated stock often never reaches its capacity — see the
+            // history max vs the ceiling).
+            if matches!(node.kind, NodeKind::Process(bert_core::ProcessPrimitive::Buffering))
+                && node.capacity > 0.0
+            {
+                let max_seen = c
+                    .history
+                    .iter()
+                    .filter_map(|r| r.get(i * 3 + 2).copied())
+                    .fold(0.0f32, f32::max);
+                let bind = if max_seen >= node.capacity - 0.01 { "binding" } else { "dormant" };
+                detail.push_str(&format!(", capacity {:.0} ({bind})", node.capacity));
+            }
             s.push_str(&format!(
                 "- {} ({}): activity {:.2}{}\n",
                 self.node_label(i),
                 node.kind.label(),
                 node.activity,
-                if node.storage.abs() > 1e-6 {
-                    format!(", stored {:.2}", node.storage)
-                } else if node.total.abs() > 1e-6 {
-                    format!(", total {:.2}", node.total)
-                } else {
-                    String::new()
-                },
+                detail,
             ));
         }
         s.push_str("\n## Wiring\n");
