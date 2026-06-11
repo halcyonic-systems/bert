@@ -48,6 +48,9 @@
 //! - **Overflow** — a bounded buffer (capacity > 0) clamps its stock at the
 //!   ceiling; the excess overflows and the ledger charges it (a tank running
 //!   over). The clamp alone does the accounting — see the Buffering arm.
+//! - **Maintenance** — a buffer's upkeep loss (`maintenance` per tick) leaves
+//!   the stock without being delivered (Odum depreciation / Mobus Fig 3.17);
+//!   the ledger charges it like overflow, by the same Δstorage accounting.
 //!
 //! Message is information: copied, gated, manufactured (Inverting) — never
 //! conserved, never in the ledger.
@@ -104,6 +107,20 @@ impl NodeKind {
         matches!(
             self,
             NodeKind::Process(Sensing | Inverting | Copying | Amplifying)
+        )
+    }
+
+    /// Does this primitive simply pass its substance through? A buffer holds
+    /// and re-emits what it received; a valve/transport/splitter carry their
+    /// inflow onward. Their output substance is INHERITED from upstream, not
+    /// chosen — you set it once at the Source. (Combining merges, possibly
+    /// mixed substances, so it stays a chooser; transducers/signal processors
+    /// are handled by `emits_signal`.)
+    pub fn inherits_substance(&self) -> bool {
+        use ProcessPrimitive::*;
+        matches!(
+            self,
+            NodeKind::Process(Buffering | Modulating | Impeding | Propelling | Splitting)
         )
     }
 
@@ -248,6 +265,19 @@ pub struct Node {
     /// hold a higher level. Default `1.0` reproduces the bare `1 − signal`.
     /// Only Inverting reads it.
     pub setpoint: f32,
+    /// Buffer drain time constant τ (Mobus 2022: Buffering "smooths flow
+    /// volumes over time"). `0.0` = fixed-rate drain (`release_rate`, the
+    /// zeroth-order default). `> 0` = FIRST-ORDER drain: each tick releases
+    /// ≈ `stock / τ`, so the stock decays exponentially and the outflow is a
+    /// smoothed (low-pass) version of the inflow. Big τ = slow and smooth.
+    pub time_constant: f32,
+    /// Maintenance respiration: a stock's continuous upkeep cost (Mobus 2022
+    /// Fig 3.17 maintenance energy; Odum's depreciation outflow — every store
+    /// has one). Each tick the stock loses `maintenance` to upkeep, DISSIPATED
+    /// (waste heat) — never delivered downstream — whether or not the stock is
+    /// used. Battery self-discharge, baseline death rate, spoilage, basal
+    /// metabolism. `0.0` = none. The ledger charges it automatically.
+    pub maintenance: f32,
     /// Provenance: the Troncale process this node was stamped from (a
     /// `ladder::Rung` name), or `None` if hand-placed. Pure UI hint — lets the
     /// inspector show "this is part of a Feedback process" alongside the
@@ -269,8 +299,10 @@ impl Node {
             param: if kind == NodeKind::Source { 1.0 } else { 0.5 },
             release_rate: 1.0,
             initial_storage: 0.0,
-            capacity: 0.0, // unbounded
-            setpoint: 1.0, // Inverting reference; 1.0 = bare (1 − signal)
+            capacity: 0.0,      // unbounded
+            setpoint: 1.0,      // Inverting reference; 1.0 = bare (1 − signal)
+            time_constant: 0.0, // 0 = fixed-rate drain
+            maintenance: 0.0,   // 0 = no upkeep loss
             process: None,
             storage: 0.0,
             activity: 0.0,
@@ -377,6 +409,36 @@ impl Circuit {
     /// output substance (what the dynamics run on).
     pub fn wire_substance(&self, w: &Wire) -> SubstanceType {
         self.nodes[w.from].out_substance.base
+    }
+
+    /// Flow the Source-chosen substance forward: a pass-through node
+    /// (`inherits_substance`) takes the substance of its physical inflow, so
+    /// you declare "water" once at the Source and the tank/valve/splitter
+    /// downstream inherit it — no per-node copies. Iterates until stable
+    /// (physical edges form a DAG from sources). Cheap; call on edits.
+    pub fn propagate_substances(&mut self) {
+        for _ in 0..self.nodes.len() {
+            let mut changed = false;
+            for i in 0..self.nodes.len() {
+                if !self.nodes[i].kind.inherits_substance() {
+                    continue;
+                }
+                let inflow = self.wires.iter().find_map(|w| {
+                    (w.to == i
+                        && self.nodes[w.from].out_substance.base != SubstanceType::Message)
+                        .then(|| self.nodes[w.from].out_substance.clone())
+                });
+                if let Some(sub) = inflow {
+                    if self.nodes[i].out_substance != sub {
+                        self.nodes[i].out_substance = sub;
+                        changed = true;
+                    }
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
     }
 
     /// One synchronous step: all transfer functions read the previous tick's
@@ -584,11 +646,26 @@ impl Circuit {
                                 && !is_observation(&self.wires[k])
                         });
                         let released = if has_pushed_outlet {
-                            (node.release_rate * gate).min(storage.max(0.0))
+                            // First-order drain (τ > 0): release ≈ stock/τ, an
+                            // exponential decay / low-pass smoother. Else the
+                            // fixed amount per tick. Either way capped by stock.
+                            let base = if node.time_constant > 0.0 {
+                                storage.max(0.0) / node.time_constant
+                            } else {
+                                node.release_rate
+                            };
+                            (base * gate).min(storage.max(0.0))
                         } else {
                             0.0
                         };
                         storage -= released;
+                        // Maintenance respiration: a constant upkeep loss from
+                        // the stock, dissipated (never delivered). The ledger
+                        // charges it automatically — the stock falls but no
+                        // outflow carries it. Odum depreciation / Mobus Fig 3.17.
+                        if node.maintenance > 0.0 {
+                            storage -= node.maintenance.min(storage.max(0.0));
+                        }
                         // Capacity: a bounded tank overflows. Clamping the
                         // stock here makes the conservation ledger's per-node
                         // rule charge the overflow as dissipated by itself
@@ -1516,6 +1593,107 @@ mod tests {
         let hi = tail_mean(&mut homeo(2.0));
         assert!(hi > lo + 2.0, "higher setpoint → higher held level: {lo:.1} vs {hi:.1}");
         assert!((lo - 3.3).abs() < 1.5, "setpoint 1.0 = bare 1−signal behavior, got {lo:.1}");
+    }
+
+    /// Time constant: a first-order buffer drains exponentially (release ≈
+    /// stock/τ) — the step sizes SHRINK — versus the fixed-rate buffer's
+    /// constant steps. Both conserve. (Mobus: Buffering smooths over time;
+    /// first-order decay closes #85.)
+    #[test]
+    fn time_constant_drains_first_order() {
+        fn drain(tc: f32, rate: f32) -> (Vec<f32>, f32) {
+            let mut c = Circuit::default();
+            c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+            c.nodes.push(node(NodeKind::Sink));
+            c.nodes[0].initial_storage = 30.0;
+            c.nodes[0].storage = 30.0;
+            c.nodes[0].time_constant = tc;
+            c.nodes[0].release_rate = rate;
+            c.wires.push(Wire::new(0, 1));
+            let mut s = Vec::new();
+            for _ in 0..15 {
+                c.step();
+                s.push(c.nodes[0].storage);
+            }
+            (s, c.balance())
+        }
+        // First-order: the drop per tick shrinks as the stock falls.
+        let (fo, fo_bal) = drain(5.0, 0.0);
+        let early = 30.0 - fo[0];
+        let late = fo[8] - fo[9];
+        assert!(late < early * 0.7, "first-order step shrinks: {early:.2} → {late:.2}");
+        assert!(fo_bal.abs() < 1e-3, "first-order drain conserves");
+        // Fixed rate: constant drop per tick.
+        let (lin, lin_bal) = drain(0.0, 6.0);
+        let a = 30.0 - lin[0];
+        let b = lin[2] - lin[3];
+        assert!((a - b).abs() < 0.5, "fixed-rate step is constant: {a:.2} vs {b:.2}");
+        assert!(lin_bal.abs() < 1e-3, "fixed-rate drain conserves");
+    }
+
+    /// Maintenance respiration: a stock loses its upkeep every tick to
+    /// dissipation — never delivered downstream — whether or not it's used.
+    /// (Odum depreciation / Mobus Fig 3.17 maintenance energy.)
+    #[test]
+    fn maintenance_drains_to_waste_not_delivery() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes[0].initial_storage = 10.0;
+        c.nodes[0].storage = 10.0;
+        c.nodes[0].maintenance = 1.0; // 1/tick upkeep
+        c.nodes[0].release_rate = 0.0; // no delivery — pure upkeep loss
+        for _ in 0..5 {
+            c.step();
+            assert_balanced(&c, "maintenance");
+        }
+        assert!(
+            (c.nodes[0].storage - 5.0).abs() < 1e-4,
+            "lost 1/tick to upkeep: {}",
+            c.nodes[0].storage
+        );
+        assert!((c.dissipated - 5.0).abs() < 1e-3, "the loss is dissipated, not delivered");
+        // With a sink wired, maintenance still goes to waste, NOT the sink:
+        // less reaches the sink than would without upkeep.
+        let drain_to_sink = |maint: f32| {
+            let mut c = Circuit::default();
+            c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+            c.nodes.push(node(NodeKind::Sink));
+            c.nodes[0].initial_storage = 10.0;
+            c.nodes[0].storage = 10.0;
+            c.nodes[0].release_rate = 1.0;
+            c.nodes[0].maintenance = maint;
+            c.wires.push(Wire::new(0, 1));
+            for _ in 0..20 {
+                c.step();
+            }
+            c.nodes[1].total
+        };
+        assert!(
+            drain_to_sink(0.5) < drain_to_sink(0.0),
+            "upkeep skims from what reaches the sink"
+        );
+    }
+
+    /// Substance inheritance: declare it once at the Source and the
+    /// pass-through nodes (buffer, splitter, …) take it from their inflow —
+    /// no per-node copies. A signal node is never overwritten.
+    #[test]
+    fn substance_inherits_from_source() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].out_substance =
+            DeclaredSubstance::named("money", SubstanceType::Material, "$");
+        // buffer + splitter start at their default (unnamed Material)
+        for (f, t) in [(0, 1), (1, 2), (2, 3)] {
+            c.wires.push(Wire::new(f, t));
+        }
+        c.propagate_substances();
+        assert_eq!(c.nodes[1].out_substance.name, "money", "buffer inherits from source");
+        assert_eq!(c.nodes[2].out_substance.name, "money", "splitter inherits down the chain");
+        assert_eq!(c.nodes[0].out_substance.name, "money", "the source is never overwritten");
     }
 
     #[test]

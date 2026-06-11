@@ -443,6 +443,10 @@ impl eframe::App for App {
             }
         }
 
+        // Flow Source-chosen substances forward to pass-through nodes (set
+        // once at the Source; the tank/valve/splitter inherit it).
+        self.circuit.propagate_substances();
+
         ui::top_bar::show(self, ctx);
         ui::about::show(self, ctx);
         ui::hal_window::show(self, ctx);

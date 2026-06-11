@@ -150,6 +150,12 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                                 if node.capacity > 0.0 {
                                     p.insert("capacity".to_string(), node.capacity as f64);
                                 }
+                                if node.time_constant > 0.0 {
+                                    p.insert("time_constant".to_string(), node.time_constant as f64);
+                                }
+                                if node.maintenance > 0.0 {
+                                    p.insert("maintenance".to_string(), node.maintenance as f64);
+                                }
                             }
                             if primitive == ProcessPrimitive::Inverting && node.setpoint != 1.0 {
                                 p.insert("setpoint".to_string(), node.setpoint as f64);
@@ -304,6 +310,12 @@ pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
         if let Some(&sp) = agent.cognitive_params.get("setpoint") {
             node.setpoint = sp as f32;
         }
+        if let Some(&tc) = agent.cognitive_params.get("time_constant") {
+            node.time_constant = tc as f32;
+        }
+        if let Some(&m) = agent.cognitive_params.get("maintenance") {
+            node.maintenance = m as f32;
+        }
         ids.push((sys.info.id.clone(), c.nodes.len()));
         c.nodes.push(node);
     }
@@ -449,6 +461,8 @@ mod tests {
         c.nodes[1].storage = 12.0;
         c.nodes[1].release_rate = 1.4;
         c.nodes[1].capacity = 20.0;
+        c.nodes[1].time_constant = 4.0;
+        c.nodes[1].maintenance = 0.3;
         c.nodes[1].out_substance = DeclaredSubstance::named(
             "water",
             bert_core::SubstanceType::Material,
@@ -470,6 +484,8 @@ mod tests {
         assert_eq!(tank.initial_storage, 12.0);
         assert_eq!(tank.release_rate, 1.4, "release rate survives via cognitive_params");
         assert_eq!(tank.capacity, 20.0, "capacity survives via cognitive_params");
+        assert_eq!(tank.time_constant, 4.0, "time constant survives via cognitive_params");
+        assert_eq!(tank.maintenance, 0.3, "maintenance survives via cognitive_params");
         assert_eq!(tank.out_substance.name, "water");
         assert_eq!(tank.out_substance.unit, "L");
         let grad = r.wires.iter().find(|w| w.mode == FlowMode::Gradient).expect("mode survives");

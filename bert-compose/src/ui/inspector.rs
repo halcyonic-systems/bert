@@ -66,9 +66,41 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     );
             }
             if is_buffer {
-                ui.add(
-                    egui::Slider::new(&mut node.release_rate, 0.0..=10.0).text("release / tick"),
-                );
+                // Drain law: fixed amount per tick, or first-order (time
+                // constant) — Mobus's "smooth flow over time".
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("drain").color(SECONDARY).size(10.0));
+                    let fixed = node.time_constant <= 0.0;
+                    if ui
+                        .selectable_label(fixed, RichText::new("rate").size(10.5))
+                        .on_hover_text("a fixed amount per tick (zeroth-order)")
+                        .clicked()
+                    {
+                        node.time_constant = 0.0;
+                    }
+                    if ui
+                        .selectable_label(!fixed, RichText::new("smoothed τ").size(10.5))
+                        .on_hover_text(
+                            "first-order: ≈ stock/τ per tick — the stock decays exponentially \
+                             and the outflow smooths the inflow over ~τ ticks. Mobus: Buffering \
+                             smooths flow over time.",
+                        )
+                        .clicked()
+                        && node.time_constant <= 0.0
+                    {
+                        node.time_constant = 5.0;
+                    }
+                });
+                if node.time_constant > 0.0 {
+                    ui.add(
+                        egui::Slider::new(&mut node.time_constant, 1.0..=30.0)
+                            .text("time constant τ"),
+                    );
+                } else {
+                    ui.add(
+                        egui::Slider::new(&mut node.release_rate, 0.0..=10.0).text("release / tick"),
+                    );
+                }
                 let resp = ui.add(
                     egui::Slider::new(&mut node.initial_storage, 0.0..=50.0)
                         .text("initial stock"),
@@ -89,6 +121,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     "the tank's ceiling — above it the stock overflows (excess \
                      dissipated). 0 = unbounded. Mobus: containers have a capacity.",
                 );
+                // Maintenance: a continuous upkeep loss from the stock,
+                // dissipated (not delivered). Self-discharge, spoilage, basal
+                // metabolism. 0 = none.
+                ui.add(egui::Slider::new(&mut node.maintenance, 0.0..=5.0).text("maintenance / tick"))
+                    .on_hover_text(
+                        "upkeep: the stock loses this much per tick to waste, whether or not it's \
+                         used (self-discharge, spoilage, basal metabolism). Dissipated, never \
+                         delivered. Odum depreciation / Mobus Fig 3.17.",
+                    );
             }
             ui.add_space(4.0);
             // The substance choice is only a CHOICE where the substance is a
@@ -98,6 +139,16 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             // domain substance the user picks.
             if matches!(node.kind, NodeKind::Sink) {
                 ui.label(RichText::new("absorbs everything").color(SECONDARY).small().italics());
+            } else if node.kind.inherits_substance() {
+                // Pass-through: substance comes from upstream, set at the Source.
+                ui.label(RichText::new("carries").color(SECONDARY).small());
+                ui.label(RichText::new(node.out_substance.label()).color(PRIMARY).size(11.5));
+                ui.label(
+                    RichText::new("inherited from inflow — set it at the Source")
+                        .color(SECONDARY)
+                        .size(10.0)
+                        .italics(),
+                );
             } else if node.kind.emits_signal() {
                 node.out_substance = circuit::DeclaredSubstance::bare(SubstanceType::Message);
                 ui.label(RichText::new("emits").color(SECONDARY).small());
