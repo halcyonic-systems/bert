@@ -94,6 +94,19 @@ impl NodeKind {
         }
     }
 
+    /// Does this primitive emit a SIGNAL (Message) by definition? Sensing
+    /// transduces a physical flow to a signal; Inverting/Copying process
+    /// signals; Amplifying outputs a stronger signal. Their output kind is
+    /// fixed by the primitive (Mobus Figs 3.18–3.19) — not a free choice —
+    /// so the inspector locks it instead of offering the trichotomy.
+    pub fn emits_signal(&self) -> bool {
+        use ProcessPrimitive::*;
+        matches!(
+            self,
+            NodeKind::Process(Sensing | Inverting | Copying | Amplifying)
+        )
+    }
+
     /// Default output substance — signal-class primitives emit Message.
     pub fn default_out(&self) -> SubstanceType {
         match self {

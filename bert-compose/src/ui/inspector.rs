@@ -91,6 +91,24 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 );
             }
             ui.add_space(4.0);
+            // The substance choice is only a CHOICE where the substance is a
+            // degree of freedom. A Sink absorbs (no output). A signal primitive
+            // (Sensing/Inverting/Copying/Amplifying) emits a Message by its
+            // definition — locked, not a trichotomy. Everything else carries a
+            // domain substance the user picks.
+            if matches!(node.kind, NodeKind::Sink) {
+                ui.label(RichText::new("absorbs everything").color(SECONDARY).small().italics());
+            } else if node.kind.emits_signal() {
+                node.out_substance = circuit::DeclaredSubstance::bare(SubstanceType::Message);
+                ui.label(RichText::new("emits").color(SECONDARY).small());
+                ui.label(RichText::new("signal (Message)").color(PRIMARY).size(11.5));
+                ui.label(
+                    RichText::new("fixed by this process — a control signal")
+                        .color(SECONDARY)
+                        .size(10.0)
+                        .italics(),
+                );
+            } else {
             ui.label(RichText::new("emits").color(SECONDARY).small());
             // Substance dictionary: bare kinds, the curated palette, anything
             // declared this session, or declare a new one. Names are for
@@ -198,6 +216,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     .size(10.0)
                     .italics(),
             );
+            } // end else (substance is a free choice)
             ui.add_space(6.0);
             ui.label(
                 RichText::new(format!(
