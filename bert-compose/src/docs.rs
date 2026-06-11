@@ -73,12 +73,12 @@ pub fn doc(kind: NodeKind) -> Doc {
                 code: "gain = 1 + 9·agency;\nout = min(signal*gain, energy_in)",
             },
             Modulating => Doc {
-                plain: "A valve. A control signal decides how much of a flow gets through.",
+                plain: "A valve. A control signal decides how much of a flow gets through. Blocked flow is shed — or, with back-pressure, it backs up.",
                 everyday: "A thermostat throttling heat, a quorum gating a decision, a tap.",
                 math: "out = primary · clamp(control, 0..1)",
-                substance: "a physical flow as the primary input, an information signal as the control. The gate can only restrict (≤1), never amplify.",
-                theory: "Mobus atomic work process. The regulating element of every feedback loop.",
-                code: "out = primary * control.clamp(0,1)",
+                substance: "a physical flow as the primary input, an information signal as the control (≤1, restricts only). Back-pressure throttles the upstream instead of shedding.",
+                theory: "Mobus atomic work process — the regulating element of every feedback loop. Mobus's Impeding has a 'consequent back-pressure' (the back-pressure toggle).",
+                code: "out = primary * control.clamp(0,1)   // or, back-pressure: throttle upstream, pass all",
             },
             Sensing => Doc {
                 plain: "Reads how much of something is flowing (or stored) and reports it as a signal.",

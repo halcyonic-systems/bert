@@ -278,6 +278,13 @@ pub struct Node {
     /// used. Battery self-discharge, baseline death rate, spoilage, basal
     /// metabolism. `0.0` = none. The ledger charges it automatically.
     pub maintenance: f32,
+    /// Back-pressure (Modulating): when `true`, a throttled valve does NOT
+    /// shed the blocked flow — it throttles its UPSTREAM instead. A Source
+    /// feeding it emits only what passes (flow not produced); a Buffer feeding
+    /// it releases only what passes (the rest stays in the stock). Mobus 2022:
+    /// Impeding "slows the rate of flow with a consequent back-pressure". The
+    /// push-model default (`false`) sheds; this makes the valve back up.
+    pub back_pressure: bool,
     /// Provenance: the Troncale process this node was stamped from (a
     /// `ladder::Rung` name), or `None` if hand-placed. Pure UI hint — lets the
     /// inspector show "this is part of a Feedback process" alongside the
@@ -301,8 +308,9 @@ impl Node {
             initial_storage: 0.0,
             capacity: 0.0,      // unbounded
             setpoint: 1.0,      // Inverting reference; 1.0 = bare (1 − signal)
-            time_constant: 0.0, // 0 = fixed-rate drain
-            maintenance: 0.0,   // 0 = no upkeep loss
+            time_constant: 0.0,    // 0 = fixed-rate drain
+            maintenance: 0.0,      // 0 = no upkeep loss
+            back_pressure: false,  // false = push model sheds; true = backs up
             process: None,
             storage: 0.0,
             activity: 0.0,
@@ -578,6 +586,43 @@ impl Circuit {
             }
         }
 
+        // Back-pressure: a throttled valve with `back_pressure` throttles its
+        // UPSTREAM instead of shedding. Each such valve has a demand gate (from
+        // last-tick control); a Source/Buffer feeding it scales its output by
+        // that gate, so the blocked flow is never produced/released (it stays
+        // upstream) — nothing is shed, conservation holds by not creating it.
+        let valve_gate = |v: usize| -> f32 {
+            let ctrl: Vec<usize> = (0..nw)
+                .filter(|&k| {
+                    self.wires[k].to == v
+                        && self.wires[k].mode == FlowMode::Pushed
+                        && self.wire_substance(&self.wires[k]) == SubstanceType::Message
+                })
+                .collect();
+            if ctrl.is_empty() {
+                return 1.0; // no control = open
+            }
+            ctrl.iter().map(|&k| self.nodes[self.wires[k].from].activity).sum::<f32>().clamp(0.0, 1.0)
+        };
+        let bp_factor: Vec<f32> = (0..n)
+            .map(|i| {
+                (0..nw)
+                    .find_map(|k| {
+                        let w = &self.wires[k];
+                        let to_bp_valve = w.from == i
+                            && w.mode == FlowMode::Pushed
+                            && self.wire_substance(w) != SubstanceType::Message
+                            && matches!(
+                                self.nodes[w.to].kind,
+                                NodeKind::Process(ProcessPrimitive::Modulating)
+                            )
+                            && self.nodes[w.to].back_pressure;
+                        to_bp_valve.then(|| valve_gate(w.to))
+                    })
+                    .unwrap_or(1.0)
+            })
+            .collect();
+
         let mut next_activity = vec![0.0f32; n];
         let mut next_storage: Vec<f32> = self.nodes.iter().map(|x| x.storage).collect();
         let mut sink_add = vec![0.0f32; n];
@@ -615,7 +660,9 @@ impl Circuit {
             let a = node.param; // agency capacity 0..1
 
             next_activity[i] = match node.kind {
-                NodeKind::Source => node.param, // emits its rate
+                // Emits its rate — throttled to what a downstream back-pressured
+                // valve will accept (the rest is simply not produced).
+                NodeKind::Source => node.param * bp_factor[i],
                 NodeKind::Sink => {
                     sink_add[i] = physical + message;
                     physical + message
@@ -654,7 +701,10 @@ impl Circuit {
                             } else {
                                 node.release_rate
                             };
-                            (base * gate).min(storage.max(0.0))
+                            // Back-pressure: a downstream throttled valve holds
+                            // the release back — the unspent part stays in the
+                            // stock rather than draining and shedding.
+                            (base * gate * bp_factor[i]).min(storage.max(0.0))
                         } else {
                             0.0
                         };
@@ -698,13 +748,20 @@ impl Circuit {
                     // buffer's gate. A closed-by-default valve silently
                     // destroyed every physical inflow.
                     ProcessPrimitive::Modulating => {
-                        let has_control = self.wires.iter().any(|w| {
-                            w.to == i
-                                && w.mode == FlowMode::Pushed
-                                && self.wire_substance(w) == SubstanceType::Message
-                        });
-                        let gate = if has_control { message.clamp(0.0, 1.0) } else { 1.0 };
-                        physical * gate
+                        if node.back_pressure {
+                            // The throttling happened upstream (bp_factor), so
+                            // the valve passes everything it received — no shed.
+                            physical
+                        } else {
+                            let has_control = self.wires.iter().any(|w| {
+                                w.to == i
+                                    && w.mode == FlowMode::Pushed
+                                    && self.wire_substance(w) == SubstanceType::Message
+                            });
+                            let gate =
+                                if has_control { message.clamp(0.0, 1.0) } else { 1.0 };
+                            physical * gate
+                        }
                     }
                     // Comparator: reference − measured (Mobus Fig 4.12). The
                     // setpoint defaults to 1.0, so this is the bare 1 − signal.
@@ -1694,6 +1751,45 @@ mod tests {
         assert_eq!(c.nodes[1].out_substance.name, "money", "buffer inherits from source");
         assert_eq!(c.nodes[2].out_substance.name, "money", "splitter inherits down the chain");
         assert_eq!(c.nodes[0].out_substance.name, "money", "the source is never overwritten");
+    }
+
+    /// Back-pressure: a throttled valve backs its flow up the chain instead
+    /// of shedding it. With back-pressure the upstream Source emits only what
+    /// passes (little waste); without it the valve sheds the blocked half.
+    /// Both conserve every tick. (Mobus: Impeding has back-pressure.)
+    #[test]
+    fn back_pressure_throttles_upstream_not_sheds() {
+        use ProcessPrimitive::*;
+        fn run(bp: bool) -> (f32, f32) {
+            let mut c = Circuit::default();
+            c.nodes.push(node(NodeKind::Source)); // 0 water supply
+            c.nodes.push(node(NodeKind::Source)); // 1 control signal
+            c.nodes.push(node(NodeKind::Process(Modulating))); // 2 valve
+            c.nodes.push(node(NodeKind::Sink)); // 3
+            c.nodes[0].param = 2.0;
+            c.nodes[1].param = 0.5; // gate to 50%
+            c.nodes[1].out_substance = SubstanceType::Message.into();
+            c.nodes[2].back_pressure = bp;
+            for (f, t) in [(0, 2), (1, 2), (2, 3)] {
+                c.wires.push(Wire::new(f, t));
+            }
+            for _ in 0..30 {
+                c.step();
+                assert_balanced(&c, if bp { "back-pressure" } else { "shed" });
+            }
+            (c.emitted, c.dissipated)
+        }
+        let (e_bp, d_bp) = run(true);
+        let (e_shed, d_shed) = run(false);
+        assert!(d_bp < 1.0, "back-pressure wastes ~nothing: dissipated {d_bp:.1}");
+        assert!(
+            d_shed > d_bp + 10.0,
+            "shed mode dumps the blocked half: {d_shed:.1} vs {d_bp:.1}"
+        );
+        assert!(
+            e_bp < e_shed - 10.0,
+            "back-pressure produces only what passes: emitted {e_bp:.1} vs {e_shed:.1}"
+        );
     }
 
     #[test]

@@ -47,6 +47,10 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 app.circuit.nodes[i].kind,
                 NodeKind::Process(bert_core::ProcessPrimitive::Inverting)
             );
+            let is_modulating = matches!(
+                app.circuit.nodes[i].kind,
+                NodeKind::Process(bert_core::ProcessPrimitive::Modulating)
+            );
             let param_spec = app.circuit.nodes[i].kind.param_spec();
             let node = &mut app.circuit.nodes[i];
             ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(170.0));
@@ -63,6 +67,16 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     .on_hover_text(
                         "the reference the controller aims for: output = (setpoint − signal). \
                          Raise it to hold a higher regulated level. Mobus Fig 4.12 (reference − measured).",
+                    );
+            }
+            // Back-pressure: throttle the upstream instead of shedding the
+            // blocked flow (Mobus: Impeding has a consequent back-pressure).
+            if is_modulating {
+                ui.checkbox(&mut node.back_pressure, "back-pressure")
+                    .on_hover_text(
+                        "ON: a throttled valve backs the flow UP — the source produces only what \
+                         passes, a feeding stock holds the rest (nothing shed). OFF: the blocked \
+                         flow is dissipated (the push-model default). Mobus: Impeding backs up.",
                     );
             }
             if is_buffer {

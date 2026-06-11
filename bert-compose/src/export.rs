@@ -160,6 +160,9 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                             if primitive == ProcessPrimitive::Inverting && node.setpoint != 1.0 {
                                 p.insert("setpoint".to_string(), node.setpoint as f64);
                             }
+                            if primitive == ProcessPrimitive::Modulating && node.back_pressure {
+                                p.insert("back_pressure".to_string(), 1.0);
+                            }
                             p
                         },
                         process_configs: Vec::new(),
@@ -316,6 +319,9 @@ pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
         if let Some(&m) = agent.cognitive_params.get("maintenance") {
             node.maintenance = m as f32;
         }
+        if agent.cognitive_params.contains_key("back_pressure") {
+            node.back_pressure = true;
+        }
         ids.push((sys.info.id.clone(), c.nodes.len()));
         c.nodes.push(node);
     }
@@ -412,15 +418,18 @@ mod tests {
         assert_eq!(src_flow.unit, "L", "declared unit on the interaction");
     }
 
-    /// An Inverting node's setpoint survives the JSON round-trip (rides in
-    /// cognitive_params, same path as capacity).
+    /// An Inverting node's setpoint and a Modulating node's back-pressure flag
+    /// survive the JSON round-trip (cognitive_params, same path as capacity).
     #[test]
-    fn setpoint_round_trips() {
+    fn setpoint_and_backpressure_round_trip() {
         let mut c = Circuit::default();
         c.nodes.push(Node::new(NodeKind::Process(ProcessPrimitive::Inverting), 1, pos2(0.0, 0.0)));
-        c.nodes.push(Node::new(NodeKind::Sink, 2, pos2(120.0, 0.0)));
+        c.nodes.push(Node::new(NodeKind::Process(ProcessPrimitive::Modulating), 2, pos2(60.0, 0.0)));
+        c.nodes.push(Node::new(NodeKind::Sink, 3, pos2(120.0, 0.0)));
         c.nodes[0].setpoint = 3.5;
-        c.wires.push(Wire::new(0, 1));
+        c.nodes[1].back_pressure = true;
+        c.wires.push(Wire::new(0, 1)); // inverting → modulating (control)
+        c.wires.push(Wire::new(1, 2)); // modulating → sink
         let model: WorldModel =
             serde_json::from_str(&serde_json::to_string(&to_world_model(&c, "SP")).unwrap()).unwrap();
         let r = from_world_model(&model).expect("loads");
@@ -430,6 +439,12 @@ mod tests {
             .find(|n| n.kind == NodeKind::Process(ProcessPrimitive::Inverting))
             .expect("inverting survives");
         assert_eq!(inv.setpoint, 3.5, "setpoint survives via cognitive_params");
+        let valve = r
+            .nodes
+            .iter()
+            .find(|n| n.kind == NodeKind::Process(ProcessPrimitive::Modulating))
+            .expect("modulating survives");
+        assert!(valve.back_pressure, "back-pressure survives via cognitive_params");
     }
 
     /// Save → Load round-trip: every knob the canvas can set survives —
