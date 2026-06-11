@@ -43,6 +43,10 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 app.circuit.nodes[i].kind,
                 NodeKind::Process(bert_core::ProcessPrimitive::Buffering)
             );
+            let is_inverting = matches!(
+                app.circuit.nodes[i].kind,
+                NodeKind::Process(bert_core::ProcessPrimitive::Inverting)
+            );
             let param_spec = app.circuit.nodes[i].kind.param_spec();
             let node = &mut app.circuit.nodes[i];
             ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(170.0));
@@ -51,6 +55,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             // primitive actually has one. Not "agency": that belongs to agents.
             if let Some((label, max)) = param_spec {
                 ui.add(egui::Slider::new(&mut node.param, 0.0..=max).text(label));
+            }
+            // Setpoint: the controller's reference (Mobus Fig 4.12). Raise it
+            // to hold the regulated stock at a higher level.
+            if is_inverting {
+                ui.add(egui::Slider::new(&mut node.setpoint, 0.0..=10.0).text("setpoint"))
+                    .on_hover_text(
+                        "the reference the controller aims for: output = (setpoint − signal). \
+                         Raise it to hold a higher regulated level. Mobus Fig 4.12 (reference − measured).",
+                    );
             }
             if is_buffer {
                 ui.add(

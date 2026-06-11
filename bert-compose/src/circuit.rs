@@ -229,6 +229,12 @@ pub struct Node {
     /// and is accounted as dissipated automatically by the conservation
     /// ledger (clamping `storage` makes the per-node rule charge the overflow).
     pub capacity: f32,
+    /// Inverting's reference / setpoint (Mobus 2022 Ch.4 Fig 4.12: a
+    /// comparator computes "reference − measured"). The controller outputs
+    /// `(setpoint − signal).max(0)`, so raising it makes the regulated loop
+    /// hold a higher level. Default `1.0` reproduces the bare `1 − signal`.
+    /// Only Inverting reads it.
+    pub setpoint: f32,
     /// Provenance: the Troncale process this node was stamped from (a
     /// `ladder::Rung` name), or `None` if hand-placed. Pure UI hint — lets the
     /// inspector show "this is part of a Feedback process" alongside the
@@ -251,6 +257,7 @@ impl Node {
             release_rate: 1.0,
             initial_storage: 0.0,
             capacity: 0.0, // unbounded
+            setpoint: 1.0, // Inverting reference; 1.0 = bare (1 − signal)
             process: None,
             storage: 0.0,
             activity: 0.0,
@@ -609,7 +616,9 @@ impl Circuit {
                         let gate = if has_control { message.clamp(0.0, 1.0) } else { 1.0 };
                         physical * gate
                     }
-                    ProcessPrimitive::Inverting => (1.0 - message).max(0.0),
+                    // Comparator: reference − measured (Mobus Fig 4.12). The
+                    // setpoint defaults to 1.0, so this is the bare 1 − signal.
+                    ProcessPrimitive::Inverting => (node.setpoint - message).max(0.0),
                     ProcessPrimitive::Copying => message,
                 },
             };
@@ -1454,6 +1463,46 @@ mod tests {
             u.step();
         }
         assert!(u.nodes[1].storage > 5.0, "capacity 0 is unbounded: {}", u.nodes[1].storage);
+    }
+
+    /// Setpoint: the controller's explicit reference. Raising it makes the
+    /// homeostat hold a higher regulated stock; the default (1.0) reproduces
+    /// the bare `1 − signal`. (Mobus Fig 4.12 comparator.)
+    #[test]
+    fn setpoint_raises_the_regulated_level() {
+        use ProcessPrimitive::*;
+        fn homeo(setpoint: f32) -> Circuit {
+            let mut c = Circuit::default();
+            c.nodes.push(node(NodeKind::Source)); // 0
+            c.nodes.push(node(NodeKind::Process(Modulating))); // 1
+            c.nodes.push(node(NodeKind::Process(Buffering))); // 2
+            c.nodes.push(node(NodeKind::Sink)); // 3
+            c.nodes.push(node(NodeKind::Process(Sensing))); // 4
+            c.nodes.push(node(NodeKind::Process(Inverting))); // 5
+            c.nodes[0].param = 3.0;
+            c.nodes[2].release_rate = 1.0;
+            c.nodes[4].param = 0.2;
+            c.nodes[5].setpoint = setpoint;
+            for (f, t) in [(0, 1), (1, 2), (2, 3), (2, 4), (4, 5), (5, 1)] {
+                c.wires.push(Wire::new(f, t));
+            }
+            c
+        }
+        let tail_mean = |c: &mut Circuit| {
+            let (mut sum, mut n) = (0.0f32, 0);
+            for t in 0..300 {
+                c.step();
+                if t >= 150 {
+                    sum += c.nodes[2].storage;
+                    n += 1;
+                }
+            }
+            sum / n as f32
+        };
+        let lo = tail_mean(&mut homeo(1.0));
+        let hi = tail_mean(&mut homeo(2.0));
+        assert!(hi > lo + 2.0, "higher setpoint → higher held level: {lo:.1} vs {hi:.1}");
+        assert!((lo - 3.3).abs() < 1.5, "setpoint 1.0 = bare 1−signal behavior, got {lo:.1}");
     }
 
     #[test]

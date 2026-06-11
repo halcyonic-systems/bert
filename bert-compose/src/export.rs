@@ -143,17 +143,18 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                         primitives: vec![primitive],
                         // Compose knobs with no canonical home ride in the
                         // extensible params so the round-trip is lossless.
-                        cognitive_params: if primitive == ProcessPrimitive::Buffering {
-                            let mut p = HashMap::from([(
-                                "release_rate".to_string(),
-                                node.release_rate as f64,
-                            )]);
-                            if node.capacity > 0.0 {
-                                p.insert("capacity".to_string(), node.capacity as f64);
+                        cognitive_params: {
+                            let mut p = HashMap::new();
+                            if primitive == ProcessPrimitive::Buffering {
+                                p.insert("release_rate".to_string(), node.release_rate as f64);
+                                if node.capacity > 0.0 {
+                                    p.insert("capacity".to_string(), node.capacity as f64);
+                                }
+                            }
+                            if primitive == ProcessPrimitive::Inverting && node.setpoint != 1.0 {
+                                p.insert("setpoint".to_string(), node.setpoint as f64);
                             }
                             p
-                        } else {
-                            HashMap::new()
                         },
                         process_configs: Vec::new(),
                         initial_state: if node.initial_storage > 0.0 {
@@ -300,6 +301,9 @@ pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
         if let Some(&cap) = agent.cognitive_params.get("capacity") {
             node.capacity = cap as f32;
         }
+        if let Some(&sp) = agent.cognitive_params.get("setpoint") {
+            node.setpoint = sp as f32;
+        }
         ids.push((sys.info.id.clone(), c.nodes.len()));
         c.nodes.push(node);
     }
@@ -394,6 +398,26 @@ mod tests {
         assert_eq!(src_flow.substance.sub_type, "water", "declared name rides in sub_type");
         assert_eq!(src_flow.substance.ty, bert_core::SubstanceType::Material, "over its base");
         assert_eq!(src_flow.unit, "L", "declared unit on the interaction");
+    }
+
+    /// An Inverting node's setpoint survives the JSON round-trip (rides in
+    /// cognitive_params, same path as capacity).
+    #[test]
+    fn setpoint_round_trips() {
+        let mut c = Circuit::default();
+        c.nodes.push(Node::new(NodeKind::Process(ProcessPrimitive::Inverting), 1, pos2(0.0, 0.0)));
+        c.nodes.push(Node::new(NodeKind::Sink, 2, pos2(120.0, 0.0)));
+        c.nodes[0].setpoint = 3.5;
+        c.wires.push(Wire::new(0, 1));
+        let model: WorldModel =
+            serde_json::from_str(&serde_json::to_string(&to_world_model(&c, "SP")).unwrap()).unwrap();
+        let r = from_world_model(&model).expect("loads");
+        let inv = r
+            .nodes
+            .iter()
+            .find(|n| n.kind == NodeKind::Process(ProcessPrimitive::Inverting))
+            .expect("inverting survives");
+        assert_eq!(inv.setpoint, 3.5, "setpoint survives via cognitive_params");
     }
 
     /// Save → Load round-trip: every knob the canvas can set survives —

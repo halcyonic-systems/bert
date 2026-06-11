@@ -89,12 +89,12 @@ pub fn doc(kind: NodeKind) -> Doc {
                 code: "signal = observed_level * k  // non-draining read",
             },
             Inverting => Doc {
-                plain: "Flips a signal: high becomes low, low becomes high.",
-                everyday: "An error signal — 'the fuller it gets, the less I want'. The controller in negative feedback.",
-                math: "out = max(0, 1 − signal)",
-                substance: "information only.",
-                theory: "Mobus atomic work process. Turns a measurement into a corrective command — the heart of self-regulation.",
-                code: "out = (1 - signal).max(0)",
+                plain: "The controller. It compares the measurement to a reference (the setpoint) and outputs the error — 'the fuller it gets, the less I want'.",
+                everyday: "A thermostat's dial: the loop drives the stock toward the setpoint you choose.",
+                math: "out = max(0, setpoint − signal)",
+                substance: "information only. Raise the setpoint to hold a higher regulated level.",
+                theory: "Mobus Fig 4.12 — the comparator computes reference − measured. The heart of self-regulation (setpoint defaults to 1).",
+                code: "out = (setpoint - signal).max(0)",
             },
             Copying => Doc {
                 plain: "Replicates a signal to everyone downstream — free of charge.",
