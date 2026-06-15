@@ -262,6 +262,8 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
 
     WorldModel {
         version: 1,
+        // Absent ≡ Full; compose exports carry the dynamical face.
+        mode: None,
         environment,
         systems,
         interactions,

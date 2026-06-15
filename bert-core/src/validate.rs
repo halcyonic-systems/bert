@@ -89,6 +89,113 @@ pub fn validate(model: &WorldModel) -> ValidationResult {
     ValidationResult { issues }
 }
 
+/// Gate *entry* into a target mode on the kernel ladder.
+///
+/// This never asks "is the model valid"; it asks "may this model be authored
+/// *as* a [`Mode`]". Every model is a valid Core model — each rung adds its own
+/// faithful-view hypothesis, proven in
+/// `systems-science-foundations/Systems/Klir/ViewGeneration.lean`. The rungs are
+/// parallel lenses, not a tower: `Structural` needs a bond (Bunge) and
+/// `Operational` needs irreflexivity (Mobus), but neither inherits the other —
+/// they share only `Core`'s on-ness. `Full` extends `Operational` with a
+/// dynamical-face check that, since `Full` is the default view, only warns.
+///
+/// Universal structural errors (dangling refs, orphans, duplicates) are caught
+/// first by [`validate`] and surface in every mode — they are defects, not
+/// mode mismatches. `validate_mode` borrows the model immutably: switching the
+/// displayed mode never mutates it, so a lens-switching UI can ask this freely.
+pub fn validate_mode(model: &WorldModel, target: Mode) -> ValidationResult {
+    let mut result = validate(model);
+    let issues = &mut result.issues;
+
+    // Core's rule — every interaction endpoint resolves (on-ness) — is already
+    // enforced by `validate`'s `check_interaction_references`.
+    match target {
+        Mode::Core => {}
+        Mode::Structural => check_bond(model, issues),
+        Mode::Operational => check_self_loops(model, issues),
+        Mode::Full => {
+            check_self_loops(model, issues);
+            check_dynamical_face(model, issues);
+        }
+    }
+
+    result
+}
+
+/// A relatum that is a system component (root or nested) — not an external
+/// entity, interface, or the environment node. Exhaustive on purpose: a new
+/// [`IdType`] variant becomes a compile error here, not a silent misclassification.
+fn is_system(id: &Id) -> bool {
+    match id.ty {
+        IdType::System | IdType::Subsystem => true,
+        IdType::Interface
+        | IdType::Source
+        | IdType::Sink
+        | IdType::Environment
+        | IdType::Flow
+        | IdType::Boundary => false,
+    }
+}
+
+/// Structural precondition: at least one bond between two distinct system components.
+/// Mirrors Lean `Kernel.HasBond`.
+fn check_bond(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
+    let bonded = model
+        .interactions
+        .iter()
+        .any(|ix| is_system(&ix.source) && is_system(&ix.sink) && ix.source != ix.sink);
+    if !bonded {
+        issues.push(ValidationIssue::error(
+            "mode/Structural",
+            "Bunge Def 1.1: a system requires at least one bond between distinct \
+             components; an unbonded collection is an aggregate",
+            Some("Add an interaction between two distinct systems, or author in Core mode"),
+        ));
+    }
+}
+
+/// Operational precondition: no interaction depends on itself. Mirrors Lean `Kernel.Irreflexive`.
+fn check_self_loops(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
+    for (i, ix) in model.interactions.iter().enumerate() {
+        if ix.source == ix.sink {
+            issues.push(ValidationIssue::error(
+                format!("interactions[{i}]"),
+                format!(
+                    "Mobus §4.3: flow edges require k ≠ o; '{}' has the same endpoint as \
+                     source and sink, and self-dependency is not representable in the 8-tuple",
+                    ix.info.name
+                ),
+                Some("Remove the self-loop; feedback as a first-class cycle is Cybernetic mode (not yet available)"),
+            ));
+        }
+    }
+}
+
+/// Full check: warn *once* when the model engages the dynamical face nowhere.
+/// Full is the default view, so an empty face informs rather than blocks (the
+/// slots stay stringly-typed in v2.0 — typing them is deferred). A model-level
+/// check, not per-system: a single populated system means the model is using
+/// Full, so a per-leaf warning would only add noise. Any non-empty slot counts.
+fn check_dynamical_face(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
+    if model.systems.is_empty() {
+        return;
+    }
+    let any_face = model.systems.iter().any(|s| {
+        !s.transformation.trim().is_empty()
+            || !s.history.trim().is_empty()
+            || !s.time_constant.trim().is_empty()
+    });
+    if !any_face {
+        issues.push(ValidationIssue::warning(
+            "mode/Full",
+            "Full mode shows the dynamical face, but no system has a transformation, \
+             history, or time constant",
+            Some("Populate the dynamical slots, or view this model in Operational mode"),
+        ));
+    }
+}
+
 /// Classify a model as open or closed *with respect to mass*, returning a short
 /// human-readable note for the UI (shown as a non-blocking toast on load).
 ///
@@ -737,6 +844,7 @@ mod tests {
         };
         WorldModel {
             version: CURRENT_FILE_VERSION,
+            mode: None,
             environment: Environment {
                 info: Info {
                     id: env_id.clone(),
@@ -1286,5 +1394,357 @@ mod tests {
             "should not warn when processor exists; got: {:#?}",
             result.issues
         );
+    }
+
+    // ---- Mode ladder (bert#88) -------------------------------------------
+
+    fn sys_id(indices: Vec<i64>) -> Id {
+        Id {
+            ty: IdType::Subsystem,
+            indices,
+        }
+    }
+
+    /// An atomic subsystem component with an empty boundary and no dynamical face.
+    fn component(indices: Vec<i64>, name: &str, parent: Id) -> System {
+        let level = indices.len() as i32 - 1;
+        System {
+            info: Info {
+                id: sys_id(indices.clone()),
+                level,
+                name: name.to_string(),
+                description: String::new(),
+            },
+            sources: vec![],
+            sinks: vec![],
+            parent,
+            complexity: Complexity::Atomic,
+            boundary: Boundary {
+                info: Info {
+                    id: Id {
+                        ty: IdType::Boundary,
+                        indices,
+                    },
+                    level,
+                    name: String::new(),
+                    description: String::new(),
+                },
+                porosity: 0.0,
+                perceptive_fuzziness: 0.0,
+                interfaces: vec![],
+                parent_interface: None,
+            },
+            radius: 100.0,
+            transform: None,
+            equivalence: String::new(),
+            history: String::new(),
+            transformation: String::new(),
+            member_autonomy: 1.0,
+            time_constant: String::new(),
+            archetype: None,
+            agent: None,
+        }
+    }
+
+    fn flow(idx: i64, name: &str, source: Id, sink: Id) -> Interaction {
+        Interaction {
+            info: Info {
+                id: Id {
+                    ty: IdType::Flow,
+                    indices: vec![idx],
+                },
+                level: 0,
+                name: name.to_string(),
+                description: String::new(),
+            },
+            substance: Substance {
+                sub_type: String::new(),
+                ty: SubstanceType::Material,
+            },
+            ty: InteractionType::Flow,
+            usability: InteractionUsability::Product,
+            source,
+            source_interface: None,
+            sink,
+            sink_interface: None,
+            amount: rust_decimal::Decimal::ZERO,
+            unit: String::new(),
+            parameters: vec![],
+            smart_parameters: vec![],
+            endpoint_offset: None,
+        }
+    }
+
+    /// Root S0 with two distinct atomic components and no interactions yet —
+    /// a bare collection, valid as Core but an aggregate under Bunge.
+    fn two_component_model() -> WorldModel {
+        let mut m = minimal_model();
+        let s0 = m.systems[0].info.id.clone();
+        m.systems.push(component(vec![0, 0], "A", s0.clone()));
+        m.systems.push(component(vec![0, 1], "B", s0));
+        m
+    }
+
+    #[test]
+    fn aggregate_enters_core_but_not_structural() {
+        let m = two_component_model();
+        assert!(
+            !validate_mode(&m, Mode::Core).has_errors(),
+            "two components on-things is a valid Core model: {:#?}",
+            validate_mode(&m, Mode::Core).issues
+        );
+        let r = validate_mode(&m, Mode::Structural);
+        assert!(
+            r.has_errors(),
+            "an unbonded collection cannot enter Structural"
+        );
+        assert!(
+            r.issues.iter().any(|i| i.message.contains("Bunge Def 1.1")),
+            "got: {:#?}",
+            r.issues
+        );
+    }
+
+    #[test]
+    fn a_bond_enters_structural() {
+        let mut m = two_component_model();
+        m.interactions
+            .push(flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1])));
+        let r = validate_mode(&m, Mode::Structural);
+        assert!(
+            !r.has_errors(),
+            "a bonded pair enters Structural: {:#?}",
+            r.issues
+        );
+    }
+
+    #[test]
+    fn interface_mediated_bond_enters_structural() {
+        // Invariant guard: even when a bond runs through interfaces, the
+        // canonical encoding puts the *systems* in source/sink and the
+        // interfaces in source_interface/sink_interface (an Interface Id is
+        // never a source/sink — confirmed across every example model). So
+        // check_bond sees two distinct systems and the bond is recognized.
+        let mut m = two_component_model();
+        let iface_a = Id {
+            ty: IdType::Interface,
+            indices: vec![0, 0, 0],
+        };
+        let iface_b = Id {
+            ty: IdType::Interface,
+            indices: vec![0, 1, 0],
+        };
+        let mk_iface = |id: Id, ty: InterfaceType| Interface {
+            info: Info {
+                id,
+                level: 2,
+                name: String::new(),
+                description: String::new(),
+            },
+            protocol: String::new(),
+            ty,
+            exports_to: vec![],
+            receives_from: vec![],
+            angle: Some(0.0),
+        };
+        m.systems[1]
+            .boundary
+            .interfaces
+            .push(mk_iface(iface_a.clone(), InterfaceType::Export));
+        m.systems[2]
+            .boundary
+            .interfaces
+            .push(mk_iface(iface_b.clone(), InterfaceType::Import));
+        let mut ix = flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1]));
+        ix.source_interface = Some(iface_a);
+        ix.sink_interface = Some(iface_b);
+        m.interactions.push(ix);
+
+        let r = validate_mode(&m, Mode::Structural);
+        assert!(
+            !r.has_errors(),
+            "an interface-mediated bond enters Structural: {:#?}",
+            r.issues
+        );
+    }
+
+    #[test]
+    fn self_loop_enters_structural_but_not_operational() {
+        let mut m = two_component_model();
+        m.interactions
+            .push(flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1])));
+        m.interactions
+            .push(flow(1, "loop", sys_id(vec![0, 0]), sys_id(vec![0, 0])));
+        assert!(
+            !validate_mode(&m, Mode::Structural).has_errors(),
+            "a self-loop is legal under Bunge"
+        );
+        let r = validate_mode(&m, Mode::Operational);
+        assert!(r.has_errors(), "a self-loop cannot enter Operational");
+        assert!(
+            r.issues.iter().any(|i| i.message.contains("Mobus §4.3")),
+            "got: {:#?}",
+            r.issues
+        );
+    }
+
+    #[test]
+    fn structural_and_operational_are_independent_lenses() {
+        // A single-component model with no bond is *not* Structural, yet it is
+        // irreflexive and so *is* Operational — the lenses do not inherit.
+        let m = minimal_model();
+        assert!(validate_mode(&m, Mode::Structural).has_errors());
+        assert!(!validate_mode(&m, Mode::Operational).has_errors());
+    }
+
+    #[test]
+    fn absent_mode_is_full_and_byte_stable() {
+        let m = minimal_model();
+        assert_eq!(m.mode(), Mode::Full, "absent mode resolves to Full");
+        let json = serde_json::to_string(&m).unwrap();
+        assert!(
+            !json.contains("\"mode\""),
+            "the default Full mode must not serialize a key (old files stay byte-stable): {json}"
+        );
+
+        let mut core = minimal_model();
+        core.mode = Some(Mode::Core);
+        let json = serde_json::to_string(&core).unwrap();
+        assert!(
+            json.contains("\"mode\":\"Core\""),
+            "an explicit mode serializes: {json}"
+        );
+    }
+
+    #[test]
+    fn all_example_models_enter_full_mode() {
+        let dir = format!("{}/../assets/models/examples", env!("CARGO_MANIFEST_DIR"));
+        for entry in std::fs::read_dir(&dir).expect("open examples dir") {
+            let path = entry.unwrap().path();
+            if path.extension().and_then(|s| s.to_str()) != Some("json") {
+                continue;
+            }
+            let name = path.file_name().unwrap().to_str().unwrap();
+            let model = load_example_model(name);
+            let result = validate_mode(&model, Mode::Full);
+            assert!(
+                !result.has_errors(),
+                "{name} should enter Full with no errors; got: {:#?}",
+                result
+                    .issues
+                    .iter()
+                    .filter(|i| i.severity == Severity::Error)
+                    .collect::<Vec<_>>()
+            );
+        }
+    }
+
+    #[test]
+    fn empty_dynamical_face_warns_in_full_mode() {
+        // Clear S0's default time_constant so no system carries a dynamical face.
+        let mut m = two_component_model();
+        m.systems[0].time_constant = String::new();
+        let r = validate_mode(&m, Mode::Full);
+        assert!(
+            !r.has_errors(),
+            "a missing dynamical face is a warning, not an error: {:#?}",
+            r.issues
+        );
+        assert!(
+            r.has_warnings(),
+            "Full mode warns when no system has a dynamical face"
+        );
+        assert!(
+            r.issues
+                .iter()
+                .any(|i| i.message.contains("dynamical face")),
+            "got: {:#?}",
+            r.issues
+        );
+        // And the warning is gone once any system has a face.
+        m.systems[0].time_constant = "Second".to_string();
+        assert!(!validate_mode(&m, Mode::Full).has_warnings());
+    }
+
+    // ---- Kernel projection round trip (bert#88 Part 3) -------------------
+
+    #[test]
+    fn kernel_projects_things_and_dependencies() {
+        let mut m = two_component_model();
+        m.interactions
+            .push(flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1])));
+        let k = m.kernel();
+        // S0 + two components + the environment node; no external entities.
+        assert_eq!(k.things.len(), 4);
+        assert!(
+            k.things.contains(&m.environment.info.id),
+            "the environment node is a relatum (on-ness must match check_interaction_references)"
+        );
+        assert_eq!(k.dep, vec![(sys_id(vec![0, 0]), sys_id(vec![0, 1]))]);
+    }
+
+    #[test]
+    fn kernel_includes_environment_externals() {
+        // Exercise the environment source/sink branch of kernel().
+        let mut m = minimal_model();
+        let src = ExternalEntity {
+            info: Info {
+                id: Id {
+                    ty: IdType::Source,
+                    indices: vec![-1, 0],
+                },
+                level: -1,
+                name: "Src".to_string(),
+                description: String::new(),
+            },
+            ty: ExternalEntityType::Source,
+            transform: None,
+            equivalence: String::new(),
+            model: String::new(),
+            is_same_as_id: None,
+        };
+        let snk = ExternalEntity {
+            info: Info {
+                id: Id {
+                    ty: IdType::Sink,
+                    indices: vec![-1, 1],
+                },
+                level: -1,
+                name: "Snk".to_string(),
+                description: String::new(),
+            },
+            ty: ExternalEntityType::Sink,
+            transform: None,
+            equivalence: String::new(),
+            model: String::new(),
+            is_same_as_id: None,
+        };
+        let src_id = src.info.id.clone();
+        let snk_id = snk.info.id.clone();
+        m.environment.sources.push(src);
+        m.environment.sinks.push(snk);
+
+        let things = m.kernel().things;
+        assert!(things.contains(&src_id), "env source is a relatum");
+        assert!(things.contains(&snk_id), "env sink is a relatum");
+        // S0 + environment node + env source + env sink.
+        assert_eq!(things.len(), 4);
+    }
+
+    #[test]
+    fn mode_views_are_read_only_kernel_invariant() {
+        // The Rust twin of the Lean round-trip theorems: viewing a model through
+        // any mode is read-only. `validate_mode` takes `&WorldModel`, so the
+        // compiler already guarantees it cannot mutate; this test pins the
+        // resulting invariant — the projected kernel is identical before and after.
+        let mut m = two_component_model();
+        m.interactions
+            .push(flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1])));
+        let before = m.kernel();
+        for mode in [Mode::Core, Mode::Structural, Mode::Operational, Mode::Full] {
+            let _ = validate_mode(&m, mode);
+        }
+        let after = m.kernel();
+        assert_eq!(before, after, "mode views must not mutate the kernel");
     }
 }

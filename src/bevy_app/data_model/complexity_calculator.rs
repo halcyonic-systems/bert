@@ -238,6 +238,7 @@ mod tests {
     fn test_empty_world_complexity() {
         let world_model = WorldModel {
             version: CURRENT_FILE_VERSION,
+            mode: None,
             environment: Environment {
                 info: Info {
                     id: Id {

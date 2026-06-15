@@ -515,6 +515,8 @@ pub fn serialize_world(
 
     WorldModel {
         version: CURRENT_FILE_VERSION,
+        // Absent ≡ Full: the save format stays byte-stable, no `mode` key emitted.
+        mode: None,
         systems,
         interactions: ctx.interactions,
         hidden_entities,
