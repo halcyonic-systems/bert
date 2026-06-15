@@ -117,10 +117,15 @@ pub fn SimPanel(
             if let Some(ref json) = mj {
                 mn = serde_json::from_str::<serde_json::Value>(json)
                     .ok()
-                    .and_then(|v| v["systems"].as_array()
-                        .and_then(|sys| sys.iter().find(|s| s["info"]["level"].as_i64() == Some(0)))
-                        .and_then(|s| s["info"]["name"].as_str())
-                        .map(|s| s.to_lowercase().replace(' ', "-")))
+                    .and_then(|v| {
+                        v["systems"]
+                            .as_array()
+                            .and_then(|sys| {
+                                sys.iter().find(|s| s["info"]["level"].as_i64() == Some(0))
+                            })
+                            .and_then(|s| s["info"]["name"].as_str())
+                            .map(|s| s.to_lowercase().replace(' ', "-"))
+                    })
                     .unwrap_or_else(|| "model".to_string());
             }
         }
@@ -406,7 +411,7 @@ pub fn SimPanel(
                                 }
                             }
                         >
-                            {move || if maximized.get() { "\u{25BC}" } else if expanded.get() { "\u{25BC}" } else { "\u{25B2}" }}
+                            {move || if maximized.get() || expanded.get() { "\u{25BC}" } else { "\u{25B2}" }}
                         </button>
                         <button
                             class="text-gray-400 hover:text-gray-600 text-sm px-1"

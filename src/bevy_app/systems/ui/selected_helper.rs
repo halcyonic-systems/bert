@@ -106,19 +106,17 @@ pub fn spawn_selected_flow(
     global_transform_query: Query<&GlobalTransform>,
     zoom: Res<Zoom>,
 ) {
-    for (entity, flow_curve, offset, start_conn, end_conn, selection, nesting_level) in
-        &curve_query
+    for (entity, flow_curve, offset, start_conn, end_conn, selection, nesting_level) in &curve_query
     {
         if selection.is_selected {
-            let mut adjusted_curve =
-                crate::bevy_app::systems::ui::flow::compute_adjusted_curve(
-                    flow_curve,
-                    offset,
-                    start_conn,
-                    end_conn,
-                    &subsystem_query,
-                    **zoom,
-                );
+            let mut adjusted_curve = crate::bevy_app::systems::ui::flow::compute_adjusted_curve(
+                flow_curve,
+                offset,
+                start_conn,
+                end_conn,
+                &subsystem_query,
+                **zoom,
+            );
 
             if let Some(offset) = offset {
                 if let Ok(parent) = parent_query.get(entity) {

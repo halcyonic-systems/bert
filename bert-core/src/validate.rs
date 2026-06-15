@@ -2,7 +2,7 @@
 //! Siblings: `general-systems-reasoner/core/src/constraints.rs` (generation-time, spec `Value`),
 //! `bert/tools/bert-typedb/src/validate.rs` (pre-transpile). See the bert-dev skill "Validators".
 
-use super::*;
+use crate::*;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -700,7 +700,7 @@ mod tests {
 
     fn load_example_model(name: &str) -> WorldModel {
         let path = format!(
-            "{}/assets/models/examples/{name}",
+            "{}/../assets/models/examples/{name}",
             env!("CARGO_MANIFEST_DIR")
         );
         let bytes = std::fs::read(&path).unwrap_or_else(|_| panic!("should read {path}"));
@@ -709,7 +709,7 @@ mod tests {
 
     #[test]
     fn all_example_models_validate_without_errors() {
-        let dir = format!("{}/assets/models/examples", env!("CARGO_MANIFEST_DIR"));
+        let dir = format!("{}/../assets/models/examples", env!("CARGO_MANIFEST_DIR"));
         for entry in std::fs::read_dir(&dir).unwrap() {
             let path = entry.unwrap().path();
             if path.extension().and_then(|s| s.to_str()) != Some("json") {
@@ -946,7 +946,7 @@ mod tests {
     #[test]
     fn preparse_complete_model_is_clean() {
         let path = format!(
-            "{}/assets/models/examples/bitcoin.json",
+            "{}/../assets/models/examples/bitcoin.json",
             env!("CARGO_MANIFEST_DIR")
         );
         let bytes = std::fs::read(&path).expect("should read bitcoin.json");
@@ -961,7 +961,7 @@ mod tests {
 
     #[test]
     fn preparse_all_examples_clean() {
-        let dir = format!("{}/assets/models/examples", env!("CARGO_MANIFEST_DIR"));
+        let dir = format!("{}/../assets/models/examples", env!("CARGO_MANIFEST_DIR"));
         for entry in std::fs::read_dir(&dir).unwrap() {
             let path = entry.unwrap().path();
             if path.extension().and_then(|s| s.to_str()) != Some("json") {

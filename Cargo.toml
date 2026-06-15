@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bert-core = { path = "bert-core", features = ["reflect"] }
 bevy = { version = "0.17", features = [
     "bevy_picking",
     "bevy_mesh_picking_backend",
@@ -53,7 +54,7 @@ web-sys = { version = "0.3", features = [
 uuid = { version = "1.12.1", features = ["v4"] }
 
 [workspace]
-members = ["src-tauri", "tools/bert-typedb"]
+members = ["src-tauri", "tools/bert-typedb", "bert-core", "bert-compose"]
 
 
 [profile.dev]

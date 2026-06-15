@@ -8,14 +8,16 @@ Every system in BERT follows this formal structure:
 
 | Symbol | Name | BERT Mapping |
 |--------|------|--------------|
-| **C** | Components | Subsystems (circles) |
+| **C** | Components | Subsystems (circles); zoom in = recursive decomposition |
 | **N** | Network | Internal flows between subsystems |
 | **E** | Environment | External sources/sinks |
 | **G** | External interactions | Flows crossing boundary |
 | **B** | Boundary | System boundary ring |
 | **T** | Transformation | Protocols on interfaces |
-| **H** | Hierarchy | Nested systems (zoom in) |
+| **H** | History | Accumulated state — what the system has learned over time (conditions T) |
 | **Δt** | Time scale | Time unit setting |
+
+> **Note:** H is **History** (accumulated state / memory), not "hierarchy." Hierarchy is not a tuple element — it is the recursion of C (a component may itself be a system at the next level down). Authoritative definition: `systems-science-foundations/Systems/Mobus/Tuple.lean` (`S = ⟨C, N, E, G, B, T, H, Δt⟩`).
 
 ## Core DSA Principles
 

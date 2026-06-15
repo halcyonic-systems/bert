@@ -4,8 +4,7 @@ use leptos::prelude::*;
 const LLM_MODEL_JSON: &str = include_str!("../../../assets/models/examples/llm.json");
 const BITCOIN_MODEL_JSON: &str = include_str!("../../../assets/models/examples/bitcoin.json");
 const ETHEREUM_MODEL_JSON: &str = include_str!("../../../assets/models/examples/ethereum.json");
-const COSMOS_HUB_MODEL_JSON: &str =
-    include_str!("../../../assets/models/examples/cosmos-hub.json");
+const COSMOS_HUB_MODEL_JSON: &str = include_str!("../../../assets/models/examples/cosmos-hub.json");
 const SOLANA_MODEL_JSON: &str = include_str!("../../../assets/models/examples/solana.json");
 
 struct ExampleModel {
@@ -81,14 +80,10 @@ pub fn ModelBrowser(
                             #[allow(dead_code)]
                             modified: u64,
                         }
-                        let models = tauri_sys::core::invoke::<Vec<LocalModelInfo>>(
-                            "list_local_models",
-                            (),
-                        )
-                        .await;
-                        set_local.set(
-                            models.into_iter().map(|m| (m.name, m.path)).collect(),
-                        );
+                        let models =
+                            tauri_sys::core::invoke::<Vec<LocalModelInfo>>("list_local_models", ())
+                                .await;
+                        set_local.set(models.into_iter().map(|m| (m.name, m.path)).collect());
                     }
                 });
             }

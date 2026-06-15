@@ -1,0 +1,13 @@
+[package]
+name = "bert-compose"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bert-core = { path = "../bert-core" }
+serde_json = "1"
+eframe = "0.31"
+egui = "0.31"
+egui_plot = "=0.31.0"
+ureq = { version = "2.10", features = ["json"] }
+rfd = "0.15"
