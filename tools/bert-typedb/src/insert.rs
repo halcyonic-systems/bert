@@ -483,6 +483,7 @@ fn process_primitive_str(p: ProcessPrimitive) -> &'static str {
         ProcessPrimitive::Copying => "Copying",
         ProcessPrimitive::Sensing => "Sensing",
         ProcessPrimitive::Modulating => "Modulating",
+        ProcessPrimitive::Amplifying => "Amplifying",
         ProcessPrimitive::Inverting => "Inverting",
     }
 }
