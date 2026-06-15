@@ -1619,7 +1619,7 @@ mod tests {
     #[test]
     fn all_example_models_enter_full_mode() {
         let dir = format!("{}/../assets/models/examples", env!("CARGO_MANIFEST_DIR"));
-        for entry in std::fs::read_dir(&dir).unwrap() {
+        for entry in std::fs::read_dir(&dir).expect("open examples dir") {
             let path = entry.unwrap().path();
             if path.extension().and_then(|s| s.to_str()) != Some("json") {
                 continue;
@@ -1637,6 +1637,33 @@ mod tests {
                     .collect::<Vec<_>>()
             );
         }
+    }
+
+    #[test]
+    fn empty_dynamical_face_warns_in_full_mode() {
+        // Clear S0's default time_constant so no system carries a dynamical face.
+        let mut m = two_component_model();
+        m.systems[0].time_constant = String::new();
+        let r = validate_mode(&m, Mode::Full);
+        assert!(
+            !r.has_errors(),
+            "a missing dynamical face is a warning, not an error: {:#?}",
+            r.issues
+        );
+        assert!(
+            r.has_warnings(),
+            "Full mode warns when no system has a dynamical face"
+        );
+        assert!(
+            r.issues
+                .iter()
+                .any(|i| i.message.contains("dynamical face")),
+            "got: {:#?}",
+            r.issues
+        );
+        // And the warning is gone once any system has a face.
+        m.systems[0].time_constant = "Second".to_string();
+        assert!(!validate_mode(&m, Mode::Full).has_warnings());
     }
 
     // ---- Kernel projection round trip (bert#88 Part 3) -------------------
