@@ -123,10 +123,19 @@ pub fn validate_mode(model: &WorldModel, target: Mode) -> ValidationResult {
     result
 }
 
-/// A relatum that is a system component (root or nested), not an external entity.
-/// Keep this in sync with [`IdType`]: a new system-like variant must be added here.
+/// A relatum that is a system component (root or nested) — not an external
+/// entity, interface, or the environment node. Exhaustive on purpose: a new
+/// [`IdType`] variant becomes a compile error here, not a silent misclassification.
 fn is_system(id: &Id) -> bool {
-    matches!(id.ty, IdType::System | IdType::Subsystem)
+    match id.ty {
+        IdType::System | IdType::Subsystem => true,
+        IdType::Interface
+        | IdType::Source
+        | IdType::Sink
+        | IdType::Environment
+        | IdType::Flow
+        | IdType::Boundary => false,
+    }
 }
 
 /// Structural precondition: at least one bond between two distinct system components.
@@ -1510,6 +1519,56 @@ mod tests {
     }
 
     #[test]
+    fn interface_mediated_bond_enters_structural() {
+        // Invariant guard: even when a bond runs through interfaces, the
+        // canonical encoding puts the *systems* in source/sink and the
+        // interfaces in source_interface/sink_interface (an Interface Id is
+        // never a source/sink — confirmed across every example model). So
+        // check_bond sees two distinct systems and the bond is recognized.
+        let mut m = two_component_model();
+        let iface_a = Id {
+            ty: IdType::Interface,
+            indices: vec![0, 0, 0],
+        };
+        let iface_b = Id {
+            ty: IdType::Interface,
+            indices: vec![0, 1, 0],
+        };
+        let mk_iface = |id: Id, ty: InterfaceType| Interface {
+            info: Info {
+                id,
+                level: 2,
+                name: String::new(),
+                description: String::new(),
+            },
+            protocol: String::new(),
+            ty,
+            exports_to: vec![],
+            receives_from: vec![],
+            angle: Some(0.0),
+        };
+        m.systems[1]
+            .boundary
+            .interfaces
+            .push(mk_iface(iface_a.clone(), InterfaceType::Export));
+        m.systems[2]
+            .boundary
+            .interfaces
+            .push(mk_iface(iface_b.clone(), InterfaceType::Import));
+        let mut ix = flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1]));
+        ix.source_interface = Some(iface_a);
+        ix.sink_interface = Some(iface_b);
+        m.interactions.push(ix);
+
+        let r = validate_mode(&m, Mode::Structural);
+        assert!(
+            !r.has_errors(),
+            "an interface-mediated bond enters Structural: {:#?}",
+            r.issues
+        );
+    }
+
+    #[test]
     fn self_loop_enters_structural_but_not_operational() {
         let mut m = two_component_model();
         m.interactions
@@ -1595,6 +1654,54 @@ mod tests {
             "the environment node is a relatum (on-ness must match check_interaction_references)"
         );
         assert_eq!(k.dep, vec![(sys_id(vec![0, 0]), sys_id(vec![0, 1]))]);
+    }
+
+    #[test]
+    fn kernel_includes_environment_externals() {
+        // Exercise the environment source/sink branch of kernel().
+        let mut m = minimal_model();
+        let src = ExternalEntity {
+            info: Info {
+                id: Id {
+                    ty: IdType::Source,
+                    indices: vec![-1, 0],
+                },
+                level: -1,
+                name: "Src".to_string(),
+                description: String::new(),
+            },
+            ty: ExternalEntityType::Source,
+            transform: None,
+            equivalence: String::new(),
+            model: String::new(),
+            is_same_as_id: None,
+        };
+        let snk = ExternalEntity {
+            info: Info {
+                id: Id {
+                    ty: IdType::Sink,
+                    indices: vec![-1, 1],
+                },
+                level: -1,
+                name: "Snk".to_string(),
+                description: String::new(),
+            },
+            ty: ExternalEntityType::Sink,
+            transform: None,
+            equivalence: String::new(),
+            model: String::new(),
+            is_same_as_id: None,
+        };
+        let src_id = src.info.id.clone();
+        let snk_id = snk.info.id.clone();
+        m.environment.sources.push(src);
+        m.environment.sinks.push(snk);
+
+        let things = m.kernel().things;
+        assert!(things.contains(&src_id), "env source is a relatum");
+        assert!(things.contains(&snk_id), "env sink is a relatum");
+        // S0 + environment node + env source + env sink.
+        assert_eq!(things.len(), 4);
     }
 
     #[test]
