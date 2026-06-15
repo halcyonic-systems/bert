@@ -60,18 +60,18 @@ impl Transpiler {
         password: &str,
     ) -> Result<Self, TranspilerError> {
         let driver_opts = DriverOptions::new(DriverTlsConfig::disabled());
-        let addresses = Addresses::try_from_address_str(host).map_err(|e| {
-            TranspilerError::Connection {
-                host: host.to_string(),
-                source: Box::new(e),
-            }
-        })?;
-        let driver = TypeDBDriver::new(addresses, Credentials::new(username, password), driver_opts)
-            .await
-            .map_err(|e| TranspilerError::Connection {
+        let addresses =
+            Addresses::try_from_address_str(host).map_err(|e| TranspilerError::Connection {
                 host: host.to_string(),
                 source: Box::new(e),
             })?;
+        let driver =
+            TypeDBDriver::new(addresses, Credentials::new(username, password), driver_opts)
+                .await
+                .map_err(|e| TranspilerError::Connection {
+                    host: host.to_string(),
+                    source: Box::new(e),
+                })?;
         Ok(Self {
             driver,
             db_name: db_name.to_string(),
