@@ -1,15 +1,19 @@
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use typedb_driver::{Credentials, DriverOptions, TransactionType, TypeDBDriver};
+use typedb_driver::{
+    Addresses, Credentials, DriverOptions, DriverTlsConfig, TransactionType, TypeDBDriver,
+};
 
 const DEFAULT_HOST: &str = "localhost:1729";
 const DEFAULT_USERNAME: &str = "admin";
 const DEFAULT_PASSWORD: &str = "password";
 
 pub async fn connect() -> Result<TypeDBDriver, String> {
-    let opts = DriverOptions::new(false, None).map_err(|e| format!("DriverOptions: {e}"))?;
+    let opts = DriverOptions::new(DriverTlsConfig::disabled());
+    let addresses =
+        Addresses::try_from_address_str(DEFAULT_HOST).map_err(|e| format!("Addresses: {e}"))?;
     TypeDBDriver::new(
-        DEFAULT_HOST,
+        addresses,
         Credentials::new(DEFAULT_USERNAME, DEFAULT_PASSWORD),
         opts,
     )

@@ -20,7 +20,9 @@
 use crate::error::TranspilerError;
 use crate::schema::SCHEMA_TQL;
 use std::time::{Duration, Instant};
-use typedb_driver::{Credentials, DriverOptions, TransactionType, TypeDBDriver};
+use typedb_driver::{
+    Addresses, Credentials, DriverOptions, DriverTlsConfig, TransactionType, TypeDBDriver,
+};
 
 /// Default local TypeDB server address.
 pub const DEFAULT_ADDRESS: &str = "localhost:1729";
@@ -57,15 +59,19 @@ impl Transpiler {
         username: &str,
         password: &str,
     ) -> Result<Self, TranspilerError> {
-        let driver_opts = DriverOptions::new(false, None).map_err(|e| {
-            TranspilerError::Internal(format!("DriverOptions construction failed: {e}"))
-        })?;
-        let driver = TypeDBDriver::new(host, Credentials::new(username, password), driver_opts)
-            .await
-            .map_err(|e| TranspilerError::Connection {
+        let driver_opts = DriverOptions::new(DriverTlsConfig::disabled());
+        let addresses =
+            Addresses::try_from_address_str(host).map_err(|e| TranspilerError::Connection {
                 host: host.to_string(),
                 source: Box::new(e),
             })?;
+        let driver =
+            TypeDBDriver::new(addresses, Credentials::new(username, password), driver_opts)
+                .await
+                .map_err(|e| TranspilerError::Connection {
+                    host: host.to_string(),
+                    source: Box::new(e),
+                })?;
         Ok(Self {
             driver,
             db_name: db_name.to_string(),
