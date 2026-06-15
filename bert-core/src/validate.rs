@@ -124,6 +124,7 @@ pub fn validate_mode(model: &WorldModel, target: Mode) -> ValidationResult {
 }
 
 /// A relatum that is a system component (root or nested), not an external entity.
+/// Keep this in sync with [`IdType`]: a new system-like variant must be added here.
 fn is_system(id: &Id) -> bool {
     matches!(id.ty, IdType::System | IdType::Subsystem)
 }
@@ -131,11 +132,10 @@ fn is_system(id: &Id) -> bool {
 /// Structural precondition: at least one bond between two distinct system components.
 /// Mirrors Lean `Kernel.HasBond`.
 fn check_bond(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
-    let bonded = model.interactions.iter().any(|ix| {
-        is_system(&ix.source)
-            && is_system(&ix.sink)
-            && serialize_id(&ix.source) != serialize_id(&ix.sink)
-    });
+    let bonded = model
+        .interactions
+        .iter()
+        .any(|ix| is_system(&ix.source) && is_system(&ix.sink) && ix.source != ix.sink);
     if !bonded {
         issues.push(ValidationIssue::error(
             "mode/Structural",
@@ -149,7 +149,7 @@ fn check_bond(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
 /// Operational precondition: no interaction depends on itself. Mirrors Lean `Kernel.Irreflexive`.
 fn check_self_loops(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
     for (i, ix) in model.interactions.iter().enumerate() {
-        if serialize_id(&ix.source) == serialize_id(&ix.sink) {
+        if ix.source == ix.sink {
             issues.push(ValidationIssue::error(
                 format!("interactions[{i}]"),
                 format!(
@@ -163,25 +163,27 @@ fn check_self_loops(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
     }
 }
 
-/// Full check: warn when a system carries no dynamical face. Full is the default
-/// view, so an empty face informs rather than blocks (the slots stay stringly-typed
-/// in v2.0 — typing them is deferred). Non-emptiness in any slot counts as a face.
+/// Full check: warn *once* when the model engages the dynamical face nowhere.
+/// Full is the default view, so an empty face informs rather than blocks (the
+/// slots stay stringly-typed in v2.0 — typing them is deferred). A model-level
+/// check, not per-system: a single populated system means the model is using
+/// Full, so a per-leaf warning would only add noise. Any non-empty slot counts.
 fn check_dynamical_face(model: &WorldModel, issues: &mut Vec<ValidationIssue>) {
-    for (i, system) in model.systems.iter().enumerate() {
-        let has_face = !system.transformation.trim().is_empty()
-            || !system.history.trim().is_empty()
-            || !system.time_constant.trim().is_empty();
-        if !has_face {
-            issues.push(ValidationIssue::warning(
-                format!("systems[{i}]"),
-                format!(
-                    "Full mode shows the dynamical face, but '{}' has no transformation, \
-                     history, or time constant",
-                    system.info.name
-                ),
-                Some("Populate the dynamical slots, or view this model in Operational mode"),
-            ));
-        }
+    if model.systems.is_empty() {
+        return;
+    }
+    let any_face = model.systems.iter().any(|s| {
+        !s.transformation.trim().is_empty()
+            || !s.history.trim().is_empty()
+            || !s.time_constant.trim().is_empty()
+    });
+    if !any_face {
+        issues.push(ValidationIssue::warning(
+            "mode/Full",
+            "Full mode shows the dynamical face, but no system has a transformation, \
+             history, or time constant",
+            Some("Populate the dynamical slots, or view this model in Operational mode"),
+        ));
     }
 }
 
@@ -1586,16 +1588,21 @@ mod tests {
         m.interactions
             .push(flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1])));
         let k = m.kernel();
-        // S0 + two components, no external entities.
-        assert_eq!(k.things.len(), 3);
+        // S0 + two components + the environment node; no external entities.
+        assert_eq!(k.things.len(), 4);
+        assert!(
+            k.things.contains(&m.environment.info.id),
+            "the environment node is a relatum (on-ness must match check_interaction_references)"
+        );
         assert_eq!(k.dep, vec![(sys_id(vec![0, 0]), sys_id(vec![0, 1]))]);
     }
 
     #[test]
     fn mode_views_are_read_only_kernel_invariant() {
         // The Rust twin of the Lean round-trip theorems: viewing a model through
-        // any mode is read-only, so the projected kernel is identical before and
-        // after. `validate_mode` borrows immutably, so this is enforced, not asserted.
+        // any mode is read-only. `validate_mode` takes `&WorldModel`, so the
+        // compiler already guarantees it cannot mutate; this test pins the
+        // resulting invariant — the projected kernel is identical before and after.
         let mut m = two_component_model();
         m.interactions
             .push(flow(0, "bond", sys_id(vec![0, 0]), sys_id(vec![0, 1])));

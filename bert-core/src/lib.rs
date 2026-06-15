@@ -665,7 +665,7 @@ pub enum Mode {
 /// and the round trip through any mode view returns the same `(things, dep)`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Kernel {
-    /// T: the relata — every system plus every external source and sink.
+    /// T: the relata — every system, the environment node, and every external source and sink.
     pub things: Vec<Id>,
     /// R: the dependency relation — each interaction as a `(source, sink)` arrow, on `things`.
     pub dep: Vec<(Id, Id)>,
@@ -679,16 +679,21 @@ impl WorldModel {
 
     /// Project the kernel: forget every elaboration, keep `(things, dep)`.
     ///
-    /// Mirrors Lean `Kernel.toKlir`. `things` enumerates systems then external
-    /// entities (environment first, then each system's local sources and sinks);
-    /// `dep` is each interaction's `(source, sink)`. Pure and total — the relata
-    /// of a dangling interaction simply may not appear in `things` (that is the
-    /// on-ness rule [`validate::validate_mode`] checks at `Core`).
+    /// Mirrors Lean `Kernel.toKlir`. `things` enumerates every declarable
+    /// relatum: systems, the environment node, then each environment- and
+    /// system-local source and sink. This is exactly the endpoint set
+    /// [`validate::validate`]'s `check_interaction_references` accepts (minus
+    /// interfaces, which are ports, not relata), so the Core on-ness rule and
+    /// this projection agree by construction. `dep` is each interaction's
+    /// `(source, sink)`. Pure and total — the relata of a dangling interaction
+    /// simply may not appear in `things` (the on-ness rule
+    /// [`validate::validate_mode`] checks at `Core`).
     pub fn kernel(&self) -> Kernel {
         let mut things = Vec::new();
         for system in &self.systems {
             things.push(system.info.id.clone());
         }
+        things.push(self.environment.info.id.clone());
         for source in &self.environment.sources {
             things.push(source.info.id.clone());
         }
