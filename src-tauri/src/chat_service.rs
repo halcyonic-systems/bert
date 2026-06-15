@@ -26,9 +26,13 @@ async fn get_rag_engine() -> Result<&'static RagEngine, Box<dyn std::error::Erro
     RAG_ENGINE
         .get_or_try_init(|| async {
             let path = kg_data_path();
-            RagEngine::new(&path, OLLAMA_MODEL, "nomic-embed-text").await
+            RagEngine::new(&path, OLLAMA_MODEL, "nomic-embed-text")
+                .await
                 .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> {
-                    Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+                    Box::new(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        e.to_string(),
+                    ))
                 })
         })
         .await
@@ -112,7 +116,8 @@ pub async fn chat_with_model(request: ChatRequest) -> Result<ChatResponse, Strin
 
     // Engine gets full model JSON for structural reasoning.
     // Ollama fallback gets compressed summary to fit smaller context windows.
-    if let Ok(resp) = try_reasoner(&request.message, &request.model_context, &request.history).await {
+    if let Ok(resp) = try_reasoner(&request.message, &request.model_context, &request.history).await
+    {
         return Ok(resp);
     }
 
@@ -230,7 +235,9 @@ pub async fn generate_model_from_conversation(
 
 /// Primary generation path: delegates to General Systems Reasoner engine which handles
 /// LLM extraction, intermediate validation, and deterministic compilation.
-async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse, Box<dyn std::error::Error>> {
+async fn try_engine_generate(
+    description: &str,
+) -> Result<GenerateModelResponse, Box<dyn std::error::Error>> {
     let body = serde_json::json!({ "description": description });
 
     let client = reqwest::Client::builder()
@@ -238,7 +245,11 @@ async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse,
         .timeout(Duration::from_secs(120))
         .build()?;
 
-    let resp = client.post(REASONER_GENERATE_URL).json(&body).send().await?;
+    let resp = client
+        .post(REASONER_GENERATE_URL)
+        .json(&body)
+        .send()
+        .await?;
 
     if !resp.status().is_success() {
         let text = resp.text().await.unwrap_or_default();
@@ -246,11 +257,18 @@ async fn try_engine_generate(description: &str) -> Result<GenerateModelResponse,
     }
 
     let json: serde_json::Value = resp.json().await?;
-    let model = json.get("model").ok_or("no model field in engine response")?;
+    let model = json
+        .get("model")
+        .ok_or("no model field in engine response")?;
     let json_data = serde_json::to_string(model)?;
-    let repairs = json.get("repairs")
+    let repairs = json
+        .get("repairs")
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect()
+        })
         .unwrap_or_default();
 
     Ok(GenerateModelResponse { json_data, repairs })
@@ -288,8 +306,7 @@ async fn retry_extraction_with_feedback(
         .unwrap_or(&raw);
     let json_str = json_str.strip_suffix("```").unwrap_or(json_str).trim();
 
-    serde_json::from_str(json_str)
-        .map_err(|e| format!("Failed to parse retried JSON: {e}"))
+    serde_json::from_str(json_str).map_err(|e| format!("Failed to parse retried JSON: {e}"))
 }
 
 fn repair_intermediate(spec: &mut serde_json::Value) -> Vec<String> {
@@ -380,9 +397,14 @@ async fn try_reasoner(
     model_context: &str,
     history: &[HistoryMessage],
 ) -> Result<ChatResponse, Box<dyn std::error::Error>> {
-    let engine = get_rag_engine().await.map_err(|e| -> Box<dyn std::error::Error> {
-        Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
-    })?;
+    let engine = get_rag_engine()
+        .await
+        .map_err(|e| -> Box<dyn std::error::Error> {
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ))
+        })?;
 
     let hist: Vec<bert_rag::HistoryMessage> = history
         .iter()
@@ -398,9 +420,16 @@ async fn try_reasoner(
         Some(model_context)
     };
 
-    let result = engine.ask(message, ctx, &hist).await.map_err(|e| -> Box<dyn std::error::Error> {
-        Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
-    })?;
+    let result =
+        engine
+            .ask(message, ctx, &hist)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error> {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    e.to_string(),
+                ))
+            })?;
 
     Ok(ChatResponse {
         response: result.answer,

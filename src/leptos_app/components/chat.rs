@@ -108,10 +108,14 @@ pub fn ChatPanel(
         if creating && prev_creating != Some(true) {
             set_messages.set(vec![ChatMessage {
                 id: 0,
-                content: "Name a system and I'll generate a first draft. You can refine it from there.".to_string(),
+                content:
+                    "Name a system and I'll generate a first draft. You can refine it from there."
+                        .to_string(),
                 is_user: false,
                 provider: Some("system".to_string()),
-                dimensions: None, route: None, sources: None,
+                dimensions: None,
+                route: None,
+                sources: None,
             }]);
             set_next_id.set(1);
         }
@@ -140,19 +144,30 @@ pub fn ChatPanel(
         set_input_value.set(String::new());
 
         let creating = is_creating.get_untracked();
-        let first_user_msg = creating && !messages.get_untracked().iter().any(|m| m.is_user && m.id != uid);
+        let first_user_msg = creating
+            && !messages
+                .get_untracked()
+                .iter()
+                .any(|m| m.is_user && m.id != uid);
 
         if first_user_msg {
             leptos::task::spawn_local(async move {
                 let transcript = format!("User: {message}");
-                let args = GenerateArgs { conversation: transcript };
+                let args = GenerateArgs {
+                    conversation: transcript,
+                };
 
                 match invoke_result::<GenerateResponse, String>(
-                    "generate_model_from_conversation", &args,
-                ).await {
+                    "generate_model_from_conversation",
+                    &args,
+                )
+                .await
+                {
                     Ok(resp) => {
                         if !resp.repairs.is_empty() {
-                            web_sys::console::log_1(&format!("Model repairs: {:?}", resp.repairs).into());
+                            web_sys::console::log_1(
+                                &format!("Model repairs: {:?}", resp.repairs).into(),
+                            );
                         }
                         on_model_generated.run(resp.json_data.into_bytes());
                         let rid = next_id.get_untracked();
@@ -176,7 +191,9 @@ pub fn ChatPanel(
                                 content: format!("Generation failed: {e}"),
                                 is_user: false,
                                 provider: Some("system".to_string()),
-                                dimensions: None, route: None, sources: None,
+                                dimensions: None,
+                                route: None,
+                                sources: None,
                             });
                         });
                     }
@@ -223,7 +240,13 @@ pub fn ChatPanel(
 
             let (response_text, provider, dims, route, sources) =
                 match invoke_result::<ChatResponse, String>("chat_with_model", &args).await {
-                    Ok(resp) => (resp.response, Some(resp.provider), resp.dimensions, resp.route, resp.sources),
+                    Ok(resp) => (
+                        resp.response,
+                        Some(resp.provider),
+                        resp.dimensions,
+                        resp.route,
+                        resp.sources,
+                    ),
                     Err(e) => (format!("Error: {e}"), None, None, None, None),
                 };
 
@@ -264,7 +287,9 @@ pub fn ChatPanel(
                 content: "Generating your model... This may take a moment.".to_string(),
                 is_user: false,
                 provider: Some("system".to_string()),
-                dimensions: None, route: None, sources: None,
+                dimensions: None,
+                route: None,
+                sources: None,
             });
         });
 
@@ -292,7 +317,9 @@ pub fn ChatPanel(
             {
                 Ok(resp) => {
                     if !resp.repairs.is_empty() {
-                        web_sys::console::log_1(&format!("Model repairs: {:?}", resp.repairs).into());
+                        web_sys::console::log_1(
+                            &format!("Model repairs: {:?}", resp.repairs).into(),
+                        );
                     }
                     on_model_generated.run(resp.json_data.into_bytes());
                 }
@@ -305,7 +332,9 @@ pub fn ChatPanel(
                             content: format!("Generation failed: {e}"),
                             is_user: false,
                             provider: Some("system".to_string()),
-                            dimensions: None, route: None, sources: None,
+                            dimensions: None,
+                            route: None,
+                            sources: None,
                         });
                     });
                 }

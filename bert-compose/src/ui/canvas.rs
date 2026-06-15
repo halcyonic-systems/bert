@@ -2,11 +2,11 @@
 
 use crate::app::App;
 use crate::circuit::{self, NodeKind, Wire};
+use crate::glyph;
 use crate::theme::{
     self, ACCENT, ACCENT_SOFT, GOLD, GREEN_SOFT, HAIRLINE, PAPER, PRIMARY, SECONDARY,
 };
 use crate::ui::{substance_color, NODE_R};
-use crate::glyph;
 use egui::{vec2, Sense, Stroke};
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
@@ -67,7 +67,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 // difference — the wire visibly thins as the two stocks
                 // equalize. You watch the field relax.
                 let delta = (app.circuit.level(wire.from) - app.circuit.level(wire.to)).max(0.0);
-                let width: f32 = if gradient { (0.8 + 0.5 * delta).min(5.0) } else { 1.6 };
+                let width: f32 = if gradient {
+                    (0.8 + 0.5 * delta).min(5.0)
+                } else {
+                    1.6
+                };
                 if gradient {
                     // dashed to read as a field, not a pushed pipe
                     let seg = b_edge - a_edge;
@@ -84,8 +88,14 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 }
                 // arrowhead
                 let n = vec2(-dir.y, dir.x);
-                painter.line_segment([b_edge, b_edge - dir * 7.0 + n * 4.0], Stroke::new(1.6, color));
-                painter.line_segment([b_edge, b_edge - dir * 7.0 - n * 4.0], Stroke::new(1.6, color));
+                painter.line_segment(
+                    [b_edge, b_edge - dir * 7.0 + n * 4.0],
+                    Stroke::new(1.6, color),
+                );
+                painter.line_segment(
+                    [b_edge, b_edge - dir * 7.0 - n * 4.0],
+                    Stroke::new(1.6, color),
+                );
                 // live amount + moving pulse
                 let amount = if gradient {
                     wire.conductance * delta
@@ -99,7 +109,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     egui::Align2::CENTER_CENTER,
                     format!(
                         "{amount:.1}{}{}",
-                        if unit.is_empty() { String::new() } else { format!(" {unit}") },
+                        if unit.is_empty() {
+                            String::new()
+                        } else {
+                            format!(" {unit}")
+                        },
                         if gradient { " ⤓" } else { "" }
                     ),
                     egui::FontId::monospace(9.5),
@@ -113,8 +127,12 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             }
 
             // Substance mismatches: nodes silently ignoring a flow they can't use.
-            let mut mismatched: std::collections::HashSet<usize> =
-                app.circuit.substance_mismatches().iter().map(|(i, _, _)| *i).collect();
+            let mut mismatched: std::collections::HashSet<usize> = app
+                .circuit
+                .substance_mismatches()
+                .iter()
+                .map(|(i, _, _)| *i)
+                .collect();
             mismatched.extend(app.circuit.underpowered_amplifiers());
 
             // Nodes.
@@ -133,8 +151,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 // Out-port handle.
                 let port = pos + vec2(NODE_R + 7.0, 0.0);
                 let port_rect = egui::Rect::from_center_size(port, vec2(14.0, 14.0));
-                let port_resp =
-                    ui.interact(port_rect, ui.id().with(("port", i)), Sense::click());
+                let port_resp = ui.interact(port_rect, ui.id().with(("port", i)), Sense::click());
                 if port_resp.clicked() {
                     clicked_port = Some(i);
                 }
@@ -201,7 +218,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     );
                 }
                 // port
-                let port_color = if port_resp.hovered() { GOLD } else { substance_color(node.out_substance.base) };
+                let port_color = if port_resp.hovered() {
+                    GOLD
+                } else {
+                    substance_color(node.out_substance.base)
+                };
                 painter.circle(port, 5.0, PAPER, Stroke::new(1.6, port_color));
             }
 
@@ -230,7 +251,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             app.circuit.nodes[i].name
                         );
                     } else if from != i
-                        && !app.circuit.wires.iter().any(|w| w.from == from && w.to == i)
+                        && !app
+                            .circuit
+                            .wires
+                            .iter()
+                            .any(|w| w.from == from && w.to == i)
                     {
                         app.circuit.wires.push(Wire::new(from, i));
                         app.status = format!(

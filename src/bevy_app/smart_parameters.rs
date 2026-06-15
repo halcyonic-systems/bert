@@ -10,10 +10,6 @@ use std::collections::HashMap;
 // ── Kernel contract types, extracted to bert-core ────────────────────────────
 pub use bert_core::{ParameterSuggestion, ParameterType, ParameterValue, SmartParameter};
 
-
-
-
-
 /// Static database providing context-aware parameter suggestions
 #[derive(Debug, Clone)]
 pub struct SmartParameterDatabase {
@@ -422,13 +418,11 @@ impl SmartParameterDatabase {
     }
 }
 
-
 impl Default for SmartParameterDatabase {
     fn default() -> Self {
         Self::new()
     }
 }
-
 
 #[cfg(test)]
 mod tests {

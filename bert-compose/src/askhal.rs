@@ -32,9 +32,12 @@ pub fn ask(summary: String, model: String) -> Receiver<Result<String, String>> {
             .timeout(std::time::Duration::from_secs(120))
             .set("Authorization", &format!("Bearer {KEY}"))
             .send_json(body)
-            .map_err(|e| format!("hal unreachable: {e}\n\nIs the proxy up? `launch start litellm-proxy`"))
+            .map_err(|e| {
+                format!("hal unreachable: {e}\n\nIs the proxy up? `launch start litellm-proxy`")
+            })
             .and_then(|resp| {
-                resp.into_json::<serde_json::Value>().map_err(|e| format!("parse: {e}"))
+                resp.into_json::<serde_json::Value>()
+                    .map_err(|e| format!("parse: {e}"))
             })
             .map(|j| {
                 j["choices"][0]["message"]["content"]
@@ -49,8 +52,13 @@ pub fn ask(summary: String, model: String) -> Receiver<Result<String, String>> {
 }
 
 /// Local-first model menu (sovereign by default; cloud options last).
-pub const MODELS: &[&str] =
-    &["llama3", "mistral-small", "gemma4", "claude-haiku", "claude-sonnet"];
+pub const MODELS: &[&str] = &[
+    "llama3",
+    "mistral-small",
+    "gemma4",
+    "claude-haiku",
+    "claude-sonnet",
+];
 
 pub fn is_local(model: &str) -> bool {
     !(model.starts_with("claude") || model.starts_with("gemini") || model.starts_with("gpt"))

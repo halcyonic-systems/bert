@@ -27,9 +27,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 return;
             }
             if let Some(answer) = &app.hal_answer {
-                egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
-                    ui.label(RichText::new(answer).color(PRIMARY).size(13.0));
-                });
+                egui::ScrollArea::vertical()
+                    .max_height(300.0)
+                    .show(ui, |ui| {
+                        ui.label(RichText::new(answer).color(PRIMARY).size(13.0));
+                    });
                 ui.add_space(6.0);
                 ui.horizontal(|ui| {
                     let local = askhal::is_local(&app.hal_model);
@@ -53,7 +55,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         .selected_text(RichText::new(&app.hal_model).small())
                         .show_ui(ui, |ui| {
                             for m in askhal::MODELS {
-                                let tag = if askhal::is_local(m) { "local" } else { "cloud" };
+                                let tag = if askhal::is_local(m) {
+                                    "local"
+                                } else {
+                                    "cloud"
+                                };
                                 ui.selectable_value(
                                     &mut app.hal_model,
                                     m.to_string(),

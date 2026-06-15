@@ -182,10 +182,18 @@ pub struct DeclaredSubstance {
 
 impl DeclaredSubstance {
     pub fn bare(base: SubstanceType) -> Self {
-        Self { name: String::new(), base, unit: String::new() }
+        Self {
+            name: String::new(),
+            base,
+            unit: String::new(),
+        }
     }
     pub fn named(name: &str, base: SubstanceType, unit: &str) -> Self {
-        Self { name: name.to_string(), base, unit: unit.to_string() }
+        Self {
+            name: name.to_string(),
+            base,
+            unit: unit.to_string(),
+        }
     }
     /// "money (Material)" — or just "Material" when unnamed.
     pub fn label(&self) -> String {
@@ -306,11 +314,11 @@ impl Node {
             param: if kind == NodeKind::Source { 1.0 } else { 0.5 },
             release_rate: 1.0,
             initial_storage: 0.0,
-            capacity: 0.0,      // unbounded
-            setpoint: 1.0,      // Inverting reference; 1.0 = bare (1 − signal)
-            time_constant: 0.0,    // 0 = fixed-rate drain
-            maintenance: 0.0,      // 0 = no upkeep loss
-            back_pressure: false,  // false = push model sheds; true = backs up
+            capacity: 0.0,        // unbounded
+            setpoint: 1.0,        // Inverting reference; 1.0 = bare (1 − signal)
+            time_constant: 0.0,   // 0 = fixed-rate drain
+            maintenance: 0.0,     // 0 = no upkeep loss
+            back_pressure: false, // false = push model sheds; true = backs up
             process: None,
             storage: 0.0,
             activity: 0.0,
@@ -342,10 +350,20 @@ pub struct Wire {
 
 impl Wire {
     pub fn new(from: usize, to: usize) -> Self {
-        Self { from, to, mode: FlowMode::Pushed, conductance: 0.3 }
+        Self {
+            from,
+            to,
+            mode: FlowMode::Pushed,
+            conductance: 0.3,
+        }
     }
     pub fn gradient(from: usize, to: usize, conductance: f32) -> Self {
-        Self { from, to, mode: FlowMode::Gradient, conductance }
+        Self {
+            from,
+            to,
+            mode: FlowMode::Gradient,
+            conductance,
+        }
     }
 }
 
@@ -432,8 +450,7 @@ impl Circuit {
                     continue;
                 }
                 let inflow = self.wires.iter().find_map(|w| {
-                    (w.to == i
-                        && self.nodes[w.from].out_substance.base != SubstanceType::Message)
+                    (w.to == i && self.nodes[w.from].out_substance.base != SubstanceType::Message)
                         .then(|| self.nodes[w.from].out_substance.clone())
                 });
                 if let Some(sub) = inflow {
@@ -490,7 +507,10 @@ impl Circuit {
         for i in 0..n {
             if matches!(self.nodes[i].kind, NodeKind::Process(_))
                 && self.nodes[i].out_substance.base != SubstanceType::Message
-                && !self.wires.iter().any(|w| w.from == i && w.mode == FlowMode::Pushed)
+                && !self
+                    .wires
+                    .iter()
+                    .any(|w| w.from == i && w.mode == FlowMode::Pushed)
             {
                 dissipated_now += self.nodes[i].activity;
             }
@@ -511,7 +531,10 @@ impl Circuit {
             })
             .collect();
         for i in 0..n {
-            if !matches!(self.nodes[i].kind, NodeKind::Process(ProcessPrimitive::Buffering)) {
+            if !matches!(
+                self.nodes[i].kind,
+                NodeKind::Process(ProcessPrimitive::Buffering)
+            ) {
                 continue; // only buffers can over-drain; sources are fixed potentials
             }
             let idxs: Vec<usize> = (0..nw)
@@ -527,7 +550,12 @@ impl Circuit {
         }
         // Gradient outflow leaving each node (drains buffers).
         let gradient_out: Vec<f32> = (0..n)
-            .map(|i| (0..nw).filter(|&k| self.wires[k].from == i).map(|k| grad[k]).sum())
+            .map(|i| {
+                (0..nw)
+                    .filter(|&k| self.wires[k].from == i)
+                    .map(|k| grad[k])
+                    .sum()
+            })
             .collect();
 
         // Previous-tick amount arriving over each PUSHED wire, split when the
@@ -538,8 +566,14 @@ impl Circuit {
         // power"). A gradient wire into a sensor is a real drain, not a tap.
         let is_observation = |w: &Wire| -> bool {
             w.mode == FlowMode::Pushed
-                && matches!(self.nodes[w.from].kind, NodeKind::Process(ProcessPrimitive::Buffering))
-                && matches!(self.nodes[w.to].kind, NodeKind::Process(ProcessPrimitive::Sensing))
+                && matches!(
+                    self.nodes[w.from].kind,
+                    NodeKind::Process(ProcessPrimitive::Buffering)
+                )
+                && matches!(
+                    self.nodes[w.to].kind,
+                    NodeKind::Process(ProcessPrimitive::Sensing)
+                )
         };
         // amount delivered over wire index k (gradient or pushed).
         let amount_on = |k: usize| -> f32 {
@@ -602,7 +636,10 @@ impl Circuit {
             if ctrl.is_empty() {
                 return 1.0; // no control = open
             }
-            ctrl.iter().map(|&k| self.nodes[self.wires[k].from].activity).sum::<f32>().clamp(0.0, 1.0)
+            ctrl.iter()
+                .map(|&k| self.nodes[self.wires[k].from].activity)
+                .sum::<f32>()
+                .clamp(0.0, 1.0)
         };
         let bp_factor: Vec<f32> = (0..n)
             .map(|i| {
@@ -758,8 +795,11 @@ impl Circuit {
                                     && w.mode == FlowMode::Pushed
                                     && self.wire_substance(w) == SubstanceType::Message
                             });
-                            let gate =
-                                if has_control { message.clamp(0.0, 1.0) } else { 1.0 };
+                            let gate = if has_control {
+                                message.clamp(0.0, 1.0)
+                            } else {
+                                1.0
+                            };
                             physical * gate
                         }
                     }
@@ -881,12 +921,14 @@ impl Circuit {
             .enumerate()
             .filter(|(i, n)| {
                 matches!(n.kind, NodeKind::Process(ProcessPrimitive::Amplifying))
-                    && self.wires.iter().any(|w| {
-                        w.to == *i && self.wire_substance(w) == SubstanceType::Message
-                    })
-                    && !self.wires.iter().any(|w| {
-                        w.to == *i && self.wire_substance(w) == SubstanceType::Energy
-                    })
+                    && self
+                        .wires
+                        .iter()
+                        .any(|w| w.to == *i && self.wire_substance(w) == SubstanceType::Message)
+                    && !self
+                        .wires
+                        .iter()
+                        .any(|w| w.to == *i && self.wire_substance(w) == SubstanceType::Energy)
             })
             .map(|(i, _)| i)
             .collect()
@@ -916,7 +958,10 @@ impl Circuit {
                     n.kind,
                     NodeKind::Process(p) if p != ProcessPrimitive::Buffering
                 ) && self.wires.iter().any(|w| w.to == *i)
-                    && !self.wires.iter().any(|w| w.from == *i && w.mode == FlowMode::Pushed)
+                    && !self
+                        .wires
+                        .iter()
+                        .any(|w| w.from == *i && w.mode == FlowMode::Pushed)
             })
             .map(|(i, _)| i)
             .collect()
@@ -928,10 +973,18 @@ impl Circuit {
     /// component-kind diversity, derived from wiring alone.
     pub fn diversity(&self) -> usize {
         let profile = |i: usize| {
-            let mut outs: Vec<usize> =
-                self.wires.iter().filter(|w| w.from == i).map(|w| w.to).collect();
-            let mut ins: Vec<usize> =
-                self.wires.iter().filter(|w| w.to == i).map(|w| w.from).collect();
+            let mut outs: Vec<usize> = self
+                .wires
+                .iter()
+                .filter(|w| w.from == i)
+                .map(|w| w.to)
+                .collect();
+            let mut ins: Vec<usize> = self
+                .wires
+                .iter()
+                .filter(|w| w.to == i)
+                .map(|w| w.from)
+                .collect();
             outs.sort_unstable();
             ins.sort_unstable();
             (outs, ins)
@@ -962,7 +1015,8 @@ mod tests {
     fn buffer_stores_state_and_conserves() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source)); // rate 1.0
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
         c.nodes.push(node(NodeKind::Sink));
         c.nodes[0].param = 2.0; // inflow 2/tick
         c.nodes[1].release_rate = 1.0; // outflow 1/tick
@@ -971,7 +1025,11 @@ mod tests {
         for _ in 0..10 {
             c.step();
         }
-        assert!(c.nodes[1].storage > 5.0, "stock accumulates: {}", c.nodes[1].storage);
+        assert!(
+            c.nodes[1].storage > 5.0,
+            "stock accumulates: {}",
+            c.nodes[1].storage
+        );
         // Conservation: everything emitted is in the stock, in transit, or in the sink.
         let emitted = 2.0 * (c.tick as f32 - 1.0); // first tick's emission lands at t=2
         let accounted = c.nodes[1].storage + c.nodes[1].activity + c.nodes[2].total;
@@ -988,10 +1046,14 @@ mod tests {
     fn negative_feedback_regulates() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source)); // 0: supply
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Modulating))); // 1: valve
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 2: stock
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Sensing))); // 3: sensor
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Inverting))); // 4: controller
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Modulating))); // 1: valve
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 2: stock
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Sensing))); // 3: sensor
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Inverting))); // 4: controller
         c.nodes.push(node(NodeKind::Sink)); // 5
         c.nodes[0].param = 3.0;
         c.nodes[2].release_rate = 1.0;
@@ -1021,7 +1083,8 @@ mod tests {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source)); // 0: signal source
         c.nodes.push(node(NodeKind::Source)); // 1: power source
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying))); // 2
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Amplifying))); // 2
         c.nodes.push(node(NodeKind::Sink)); // 3
         c.nodes[0].param = 1.0;
         c.nodes[0].out_substance = SubstanceType::Message.into();
@@ -1042,24 +1105,39 @@ mod tests {
     fn copying_material_is_flagged_not_swallowed() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source)); // emits Material by default
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Copying)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Copying)));
         c.wires.push(Wire::new(0, 1));
         let m = c.substance_mismatches();
         assert_eq!(m.len(), 1);
-        assert_eq!((m[0].0, m[0].1, m[0].2.base), (1, SubstanceType::Message, SubstanceType::Material));
+        assert_eq!(
+            (m[0].0, m[0].1, m[0].2.base),
+            (1, SubstanceType::Message, SubstanceType::Material)
+        );
         // Amplifying fed Material is also flagged now (was silently zeroing).
         let mut amp = Circuit::default();
         amp.nodes.push(node(NodeKind::Source)); // Material
-        amp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
+        amp.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
         amp.wires.push(Wire::new(0, 1));
-        assert_eq!(amp.substance_mismatches().len(), 1, "Material -> Amplifying flagged");
+        assert_eq!(
+            amp.substance_mismatches().len(),
+            1,
+            "Material -> Amplifying flagged"
+        );
         // Splitting fed Message is flagged (you split matter, you copy info).
         let mut sp = Circuit::default();
-        sp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Copying)));
+        sp.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Copying)));
         sp.nodes[0].out_substance = SubstanceType::Message.into();
-        sp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        sp.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
         sp.wires.push(Wire::new(0, 1));
-        assert_eq!(sp.substance_mismatches().len(), 1, "Message -> Splitting flagged");
+        assert_eq!(
+            sp.substance_mismatches().len(),
+            1,
+            "Message -> Splitting flagged"
+        );
         // Setting the source to emit Message clears it.
         c.nodes[0].out_substance = SubstanceType::Message.into();
         assert!(c.substance_mismatches().is_empty());
@@ -1090,8 +1168,10 @@ mod tests {
     #[test]
     fn gradient_flow_equalizes_and_conserves() {
         let mut c = Circuit::default();
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 0 full
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1 empty
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 0 full
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1 empty
         c.nodes[0].initial_storage = 10.0;
         c.nodes[0].storage = 10.0;
         c.nodes[0].release_rate = 0.0; // no pushed release — gradient only
@@ -1103,7 +1183,11 @@ mod tests {
         }
         let (a, b) = (c.nodes[0].storage, c.nodes[1].storage);
         assert!((a - b).abs() < 0.1, "two tanks equalize: {a} vs {b}");
-        assert!((a + b - total0).abs() < 1e-3, "stock conserved: {} vs {total0}", a + b);
+        assert!(
+            (a + b - total0).abs() < 1e-3,
+            "stock conserved: {} vs {total0}",
+            a + b
+        );
     }
 
     /// A buffer with release but NO pushed outlet must not destroy mass —
@@ -1113,8 +1197,10 @@ mod tests {
     #[test]
     fn release_without_pushed_outlet_conserves() {
         let mut c = Circuit::default();
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 0
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 0
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
         c.nodes[0].initial_storage = 20.0;
         c.nodes[0].storage = 20.0;
         c.nodes[0].release_rate = 1.4; // cranked, but its only outwire is gradient
@@ -1125,8 +1211,14 @@ mod tests {
             c.step();
         }
         let total = c.nodes[0].storage + c.nodes[1].storage;
-        assert!((total - total0).abs() < 1e-3, "mass conserved despite release: {total}");
-        assert!((c.nodes[0].storage - c.nodes[1].storage).abs() < 0.1, "still equalizes");
+        assert!(
+            (total - total0).abs() < 1e-3,
+            "mass conserved despite release: {total}"
+        );
+        assert!(
+            (c.nodes[0].storage - c.nodes[1].storage).abs() < 0.1,
+            "still equalizes"
+        );
     }
 
     /// A source at fixed potential charges a buffer toward that potential
@@ -1135,14 +1227,18 @@ mod tests {
     fn gradient_charges_toward_source_potential() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source)); // fixed potential = param
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
         c.nodes[0].param = 5.0;
         c.nodes[1].release_rate = 0.0;
         c.wires.push(Wire::gradient(0, 1, 0.3));
         for _ in 0..300 {
             c.step();
         }
-        assert!((c.nodes[1].storage - 5.0).abs() < 0.2, "charges to source potential");
+        assert!(
+            (c.nodes[1].storage - 5.0).abs() < 0.2,
+            "charges to source potential"
+        );
     }
 
     // ── Conservation invariant: the whole bug class at once ──────────────
@@ -1215,8 +1311,9 @@ mod tests {
         // Wires obey what the UI enforces: none into a Source, none out of a
         // Sink. Cycles, fanouts, and gradient wires (from potentials) allowed.
         let total = c.nodes.len();
-        let targets: Vec<usize> =
-            (0..total).filter(|&i| !matches!(c.nodes[i].kind, NodeKind::Source)).collect();
+        let targets: Vec<usize> = (0..total)
+            .filter(|&i| !matches!(c.nodes[i].kind, NodeKind::Source))
+            .collect();
         for i in 0..total {
             if matches!(c.nodes[i].kind, NodeKind::Sink) {
                 continue;
@@ -1233,7 +1330,10 @@ mod tests {
                 if r.f() < 0.25 && c.has_potential(i) {
                     c.wires.push(Wire::gradient(i, t, 0.1 + 0.4 * r.f()));
                     if guarantee_outlets
-                        && !c.wires.iter().any(|w| w.from == i && w.mode == FlowMode::Pushed)
+                        && !c
+                            .wires
+                            .iter()
+                            .any(|w| w.from == i && w.mode == FlowMode::Pushed)
                     {
                         c.wires.push(Wire::new(i, t));
                     }
@@ -1311,8 +1411,9 @@ mod tests {
                 c.nodes.push(node(NodeKind::Sink));
             }
             let total = c.nodes.len();
-            let targets: Vec<usize> =
-                (0..total).filter(|&i| !matches!(c.nodes[i].kind, NodeKind::Source)).collect();
+            let targets: Vec<usize> = (0..total)
+                .filter(|&i| !matches!(c.nodes[i].kind, NodeKind::Source))
+                .collect();
             for i in 0..total {
                 if matches!(c.nodes[i].kind, NodeKind::Sink) {
                     continue;
@@ -1346,7 +1447,8 @@ mod tests {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
         c.nodes.push(node(NodeKind::Sink));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
         c.nodes[0].param = 2.0;
         c.wires.push(Wire::new(0, 1));
         c.wires.push(Wire::new(1, 2)); // illegal in UI; engine must not duplicate
@@ -1354,7 +1456,10 @@ mod tests {
             c.step();
             assert_balanced(&c, "sink re-emission");
         }
-        assert!(c.nodes[2].storage.abs() < f32::EPSILON, "sink re-emitted into the buffer");
+        assert!(
+            c.nodes[2].storage.abs() < f32::EPSILON,
+            "sink re-emitted into the buffer"
+        );
     }
 
     /// Flow wired into a Source (UI refuses; engine defends): the mass is
@@ -1379,15 +1484,21 @@ mod tests {
     fn gradient_from_process_node_is_inert() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
         c.nodes.push(node(NodeKind::Sink)); // legit outlet for the splitter
         c.nodes[0].param = 3.0;
         c.nodes[2].release_rate = 0.0;
         c.wires.push(Wire::new(0, 1));
         c.wires.push(Wire::gradient(1, 2, 0.5)); // field from a non-potential
         c.wires.push(Wire::new(1, 3));
-        assert_eq!(c.inert_gradient_wires(), vec![1], "advisory lists the inert wire");
+        assert_eq!(
+            c.inert_gradient_wires(),
+            vec![1],
+            "advisory lists the inert wire"
+        );
         for _ in 0..30 {
             c.step();
             assert_balanced(&c, "inert gradient");
@@ -1405,7 +1516,8 @@ mod tests {
     fn valve_open_without_control_sheds_with() {
         let mut open = Circuit::default();
         open.nodes.push(node(NodeKind::Source));
-        open.nodes.push(node(NodeKind::Process(ProcessPrimitive::Modulating)));
+        open.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Modulating)));
         open.nodes.push(node(NodeKind::Sink));
         open.nodes[0].param = 2.0;
         open.wires.push(Wire::new(0, 1));
@@ -1414,13 +1526,18 @@ mod tests {
             open.step();
             assert_balanced(&open, "open valve");
         }
-        assert!(open.nodes[2].total > 30.0, "uncontrolled valve passes flow through");
+        assert!(
+            open.nodes[2].total > 30.0,
+            "uncontrolled valve passes flow through"
+        );
         assert!(open.dissipated.abs() < 1e-3, "open valve sheds nothing");
 
         let mut gated = Circuit::default();
         gated.nodes.push(node(NodeKind::Source)); // 0 supply
         gated.nodes.push(node(NodeKind::Source)); // 1 control = 0.5
-        gated.nodes.push(node(NodeKind::Process(ProcessPrimitive::Modulating)));
+        gated
+            .nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Modulating)));
         gated.nodes.push(node(NodeKind::Sink));
         gated.nodes[0].param = 2.0;
         gated.nodes[1].param = 0.5;
@@ -1432,7 +1549,10 @@ mod tests {
             gated.step();
             assert_balanced(&gated, "gated valve");
         }
-        assert!(gated.dissipated > 0.0, "the blocked half is ledgered, not lost");
+        assert!(
+            gated.dissipated > 0.0,
+            "the blocked half is ledgered, not lost"
+        );
     }
 
     /// Output wired to nowhere evaporates — but onto the ledger, with the
@@ -1441,7 +1561,8 @@ mod tests {
     fn dead_end_is_ledgered_and_surfaced() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Combining)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Combining)));
         c.nodes[0].param = 2.0;
         c.wires.push(Wire::new(0, 1)); // combiner output goes nowhere
         assert_eq!(c.dead_ends(), vec![1]);
@@ -1449,7 +1570,10 @@ mod tests {
             c.step();
             assert_balanced(&c, "dead end");
         }
-        assert!(c.dissipated > 0.0, "evaporated output appears in the ledger");
+        assert!(
+            c.dissipated > 0.0,
+            "evaporated output appears in the ledger"
+        );
     }
 
     /// Friction (Propelling at η<1) and amplifier power draw are the model's
@@ -1459,7 +1583,8 @@ mod tests {
     fn friction_and_amp_power_are_ledgered() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Propelling)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Propelling)));
         c.nodes.push(node(NodeKind::Sink));
         c.nodes[0].param = 2.0;
         c.nodes[1].param = 0.5; // η = 0.5: half arrives, half is friction
@@ -1469,12 +1594,16 @@ mod tests {
             c.step();
             assert_balanced(&c, "friction");
         }
-        assert!(c.dissipated > 0.0 && (c.sunk - c.dissipated).abs() < 1.1, "η=0.5 splits evenly");
+        assert!(
+            c.dissipated > 0.0 && (c.sunk - c.dissipated).abs() < 1.1,
+            "η=0.5 splits evenly"
+        );
 
         let mut amp = Circuit::default();
         amp.nodes.push(node(NodeKind::Source)); // 0 signal
         amp.nodes.push(node(NodeKind::Source)); // 1 power
-        amp.nodes.push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
+        amp.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Amplifying)));
         amp.nodes.push(node(NodeKind::Sink));
         amp.nodes[0].param = 1.0;
         amp.nodes[0].out_substance = SubstanceType::Message.into();
@@ -1496,7 +1625,8 @@ mod tests {
     fn matter_does_not_copy() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Copying)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Copying)));
         c.nodes.push(node(NodeKind::Sink));
         c.nodes.push(node(NodeKind::Sink));
         c.nodes[0].param = 1.0;
@@ -1523,8 +1653,10 @@ mod tests {
     fn mixed_pushed_and_gradient_buffer_conserves() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 2 gradient target
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 2 gradient target
         c.nodes.push(node(NodeKind::Sink)); // 3 pushed target
         c.nodes[0].param = 1.5;
         c.nodes[1].initial_storage = 12.0;
@@ -1538,7 +1670,10 @@ mod tests {
             c.step();
             assert_balanced(&c, "mixed buffer");
         }
-        assert!(c.dissipated.abs() < 1e-2, "nothing dissipates in this circuit");
+        assert!(
+            c.dissipated.abs() < 1e-2,
+            "nothing dissipates in this circuit"
+        );
     }
 
     /// A named substance inherits its base physics exactly: money splits and
@@ -1548,7 +1683,8 @@ mod tests {
     fn named_substance_inherits_base_physics() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
         c.nodes.push(node(NodeKind::Sink));
         c.nodes.push(node(NodeKind::Sink));
         let money = DeclaredSubstance::named("money", SubstanceType::Material, "$");
@@ -1562,12 +1698,16 @@ mod tests {
             c.step();
             assert_balanced(&c, "money splits");
         }
-        assert!((c.nodes[2].total - c.nodes[3].total).abs() < 1e-3, "equal shares");
+        assert!(
+            (c.nodes[2].total - c.nodes[3].total).abs() < 1e-3,
+            "equal shares"
+        );
         assert!(c.dissipated.abs() < 1e-3, "money is conserved");
 
         let mut v = Circuit::default();
         v.nodes.push(node(NodeKind::Source));
-        v.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        v.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
         v.nodes[0].out_substance =
             DeclaredSubstance::named("votes", SubstanceType::Message, "votes");
         v.wires.push(Wire::new(0, 1));
@@ -1584,7 +1724,8 @@ mod tests {
     fn capacity_clamps_and_overflow_is_dissipated() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
         c.nodes[0].param = 3.0; // inflow 3/tick
         c.nodes[1].capacity = 5.0; // ceiling
         c.nodes[1].release_rate = 0.0; // no outlet — it just fills
@@ -1602,14 +1743,19 @@ mod tests {
         // Unbounded (capacity 0) keeps filling past 5 — the default is ∞.
         let mut u = Circuit::default();
         u.nodes.push(node(NodeKind::Source));
-        u.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        u.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
         u.nodes[0].param = 3.0;
         u.nodes[1].release_rate = 0.0;
         u.wires.push(Wire::new(0, 1));
         for _ in 0..20 {
             u.step();
         }
-        assert!(u.nodes[1].storage > 5.0, "capacity 0 is unbounded: {}", u.nodes[1].storage);
+        assert!(
+            u.nodes[1].storage > 5.0,
+            "capacity 0 is unbounded: {}",
+            u.nodes[1].storage
+        );
     }
 
     /// Setpoint: the controller's explicit reference. Raising it makes the
@@ -1648,8 +1794,14 @@ mod tests {
         };
         let lo = tail_mean(&mut homeo(1.0));
         let hi = tail_mean(&mut homeo(2.0));
-        assert!(hi > lo + 2.0, "higher setpoint → higher held level: {lo:.1} vs {hi:.1}");
-        assert!((lo - 3.3).abs() < 1.5, "setpoint 1.0 = bare 1−signal behavior, got {lo:.1}");
+        assert!(
+            hi > lo + 2.0,
+            "higher setpoint → higher held level: {lo:.1} vs {hi:.1}"
+        );
+        assert!(
+            (lo - 3.3).abs() < 1.5,
+            "setpoint 1.0 = bare 1−signal behavior, got {lo:.1}"
+        );
     }
 
     /// Time constant: a first-order buffer drains exponentially (release ≈
@@ -1660,7 +1812,8 @@ mod tests {
     fn time_constant_drains_first_order() {
         fn drain(tc: f32, rate: f32) -> (Vec<f32>, f32) {
             let mut c = Circuit::default();
-            c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+            c.nodes
+                .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
             c.nodes.push(node(NodeKind::Sink));
             c.nodes[0].initial_storage = 30.0;
             c.nodes[0].storage = 30.0;
@@ -1678,13 +1831,19 @@ mod tests {
         let (fo, fo_bal) = drain(5.0, 0.0);
         let early = 30.0 - fo[0];
         let late = fo[8] - fo[9];
-        assert!(late < early * 0.7, "first-order step shrinks: {early:.2} → {late:.2}");
+        assert!(
+            late < early * 0.7,
+            "first-order step shrinks: {early:.2} → {late:.2}"
+        );
         assert!(fo_bal.abs() < 1e-3, "first-order drain conserves");
         // Fixed rate: constant drop per tick.
         let (lin, lin_bal) = drain(0.0, 6.0);
         let a = 30.0 - lin[0];
         let b = lin[2] - lin[3];
-        assert!((a - b).abs() < 0.5, "fixed-rate step is constant: {a:.2} vs {b:.2}");
+        assert!(
+            (a - b).abs() < 0.5,
+            "fixed-rate step is constant: {a:.2} vs {b:.2}"
+        );
         assert!(lin_bal.abs() < 1e-3, "fixed-rate drain conserves");
     }
 
@@ -1694,7 +1853,8 @@ mod tests {
     #[test]
     fn maintenance_drains_to_waste_not_delivery() {
         let mut c = Circuit::default();
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
         c.nodes[0].initial_storage = 10.0;
         c.nodes[0].storage = 10.0;
         c.nodes[0].maintenance = 1.0; // 1/tick upkeep
@@ -1708,12 +1868,16 @@ mod tests {
             "lost 1/tick to upkeep: {}",
             c.nodes[0].storage
         );
-        assert!((c.dissipated - 5.0).abs() < 1e-3, "the loss is dissipated, not delivered");
+        assert!(
+            (c.dissipated - 5.0).abs() < 1e-3,
+            "the loss is dissipated, not delivered"
+        );
         // With a sink wired, maintenance still goes to waste, NOT the sink:
         // less reaches the sink than would without upkeep.
         let drain_to_sink = |maint: f32| {
             let mut c = Circuit::default();
-            c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+            c.nodes
+                .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
             c.nodes.push(node(NodeKind::Sink));
             c.nodes[0].initial_storage = 10.0;
             c.nodes[0].storage = 10.0;
@@ -1738,19 +1902,29 @@ mod tests {
     fn substance_inherits_from_source() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
         c.nodes.push(node(NodeKind::Sink));
-        c.nodes[0].out_substance =
-            DeclaredSubstance::named("money", SubstanceType::Material, "$");
+        c.nodes[0].out_substance = DeclaredSubstance::named("money", SubstanceType::Material, "$");
         // buffer + splitter start at their default (unnamed Material)
         for (f, t) in [(0, 1), (1, 2), (2, 3)] {
             c.wires.push(Wire::new(f, t));
         }
         c.propagate_substances();
-        assert_eq!(c.nodes[1].out_substance.name, "money", "buffer inherits from source");
-        assert_eq!(c.nodes[2].out_substance.name, "money", "splitter inherits down the chain");
-        assert_eq!(c.nodes[0].out_substance.name, "money", "the source is never overwritten");
+        assert_eq!(
+            c.nodes[1].out_substance.name, "money",
+            "buffer inherits from source"
+        );
+        assert_eq!(
+            c.nodes[2].out_substance.name, "money",
+            "splitter inherits down the chain"
+        );
+        assert_eq!(
+            c.nodes[0].out_substance.name, "money",
+            "the source is never overwritten"
+        );
     }
 
     /// Back-pressure: a throttled valve backs its flow up the chain instead
@@ -1781,7 +1955,10 @@ mod tests {
         }
         let (e_bp, d_bp) = run(true);
         let (e_shed, d_shed) = run(false);
-        assert!(d_bp < 1.0, "back-pressure wastes ~nothing: dissipated {d_bp:.1}");
+        assert!(
+            d_bp < 1.0,
+            "back-pressure wastes ~nothing: dissipated {d_bp:.1}"
+        );
         assert!(
             d_shed > d_bp + 10.0,
             "shed mode dumps the blocked half: {d_shed:.1} vs {d_bp:.1}"
@@ -1796,10 +1973,12 @@ mod tests {
     fn diversity_from_wiring_alone() {
         let mut c = Circuit::default();
         c.nodes.push(node(NodeKind::Source)); // 0
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
-        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 2
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 1
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering))); // 2
         c.nodes.push(node(NodeKind::Sink)); // 3
-        // both buffers fed by 0, both feed 3 → SameKind (identical profiles)
+                                            // both buffers fed by 0, both feed 3 → SameKind (identical profiles)
         for (f, t) in [(0, 1), (0, 2), (1, 3), (2, 3)] {
             c.wires.push(Wire::new(f, t));
         }

@@ -47,7 +47,6 @@ impl std::fmt::Display for ComplexityLevel {
     }
 }
 
-
 impl From<&Complexity> for ComplexityLevel {
     fn from(c: &Complexity) -> Self {
         match c {

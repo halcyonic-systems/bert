@@ -160,8 +160,10 @@ pub fn by_name(name: &str) -> Option<&'static Rung> {
 /// stocks joined by a gradient flow equalize with no controller.
 pub fn potential_fields() -> Circuit {
     let mut c = Circuit::default();
-    c.nodes.push(n(NodeKind::Process(Buffering), 1, 360.0, 320.0));
-    c.nodes.push(n(NodeKind::Process(Buffering), 2, 620.0, 320.0));
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 1, 360.0, 320.0));
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 2, 620.0, 320.0));
     c.nodes[0].initial_storage = 20.0;
     c.nodes[0].storage = 20.0;
     c.nodes[0].release_rate = 0.0;
@@ -174,7 +176,8 @@ pub fn potential_fields() -> Circuit {
 pub fn flows() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 320.0, 320.0));
-    c.nodes.push(n(NodeKind::Process(Buffering), 2, 520.0, 320.0));
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 2, 520.0, 320.0));
     c.nodes.push(n(NodeKind::Sink, 3, 720.0, 320.0));
     c.nodes[0].param = 2.0;
     c.nodes[1].release_rate = 1.5;
@@ -200,11 +203,14 @@ pub fn cycling_oscillation() -> Circuit {
 fn homeostat(gain: f32) -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 320.0, 300.0)); // 0 supply
-    c.nodes.push(n(NodeKind::Process(Modulating), 2, 480.0, 300.0)); // 1 valve
-    c.nodes.push(n(NodeKind::Process(Buffering), 3, 640.0, 300.0)); // 2 stock
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 2, 480.0, 300.0)); // 1 valve
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 3, 640.0, 300.0)); // 2 stock
     c.nodes.push(n(NodeKind::Sink, 4, 800.0, 300.0)); // 3 outflow
     c.nodes.push(n(NodeKind::Process(Sensing), 5, 640.0, 460.0)); // 4 gauge
-    c.nodes.push(n(NodeKind::Process(Inverting), 6, 480.0, 460.0)); // 5 control
+    c.nodes
+        .push(n(NodeKind::Process(Inverting), 6, 480.0, 460.0)); // 5 control
     c.nodes[0].param = 3.0;
     c.nodes[2].release_rate = 1.0;
     c.nodes[4].param = gain;
@@ -224,9 +230,12 @@ fn homeostat(gain: f32) -> Circuit {
 pub fn coupled_predator_prey() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 240.0, 240.0)); // 0 grass
-    c.nodes.push(n(NodeKind::Process(Buffering), 2, 420.0, 240.0)); // 1 prey
-    c.nodes.push(n(NodeKind::Process(Modulating), 3, 600.0, 240.0)); // 2 predation
-    c.nodes.push(n(NodeKind::Process(Buffering), 4, 600.0, 440.0)); // 3 predator
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 2, 420.0, 240.0)); // 1 prey
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 3, 600.0, 240.0)); // 2 predation
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 4, 600.0, 440.0)); // 3 predator
     c.nodes.push(n(NodeKind::Sink, 5, 600.0, 600.0)); // 4 predator death
     c.nodes.push(n(NodeKind::Process(Sensing), 6, 420.0, 440.0)); // 5 senses predator
     c.nodes[0].param = 2.0;
@@ -249,7 +258,8 @@ pub fn coupled_predator_prey() -> Circuit {
 /// DECAY — release > inflow drains the stock monotonically (linear).
 pub fn decay() -> Circuit {
     let mut c = Circuit::default();
-    c.nodes.push(n(NodeKind::Process(Buffering), 1, 420.0, 320.0));
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 1, 420.0, 320.0));
     c.nodes.push(n(NodeKind::Sink, 2, 640.0, 320.0));
     c.nodes[0].initial_storage = 30.0;
     c.nodes[0].storage = 30.0;
@@ -262,7 +272,8 @@ pub fn decay() -> Circuit {
 pub fn networks() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 300.0, 320.0));
-    c.nodes.push(n(NodeKind::Process(Splitting), 2, 480.0, 320.0));
+    c.nodes
+        .push(n(NodeKind::Process(Splitting), 2, 480.0, 320.0));
     c.nodes.push(n(NodeKind::Sink, 3, 680.0, 220.0));
     c.nodes.push(n(NodeKind::Sink, 4, 680.0, 320.0));
     c.nodes.push(n(NodeKind::Sink, 5, 680.0, 420.0));
@@ -278,7 +289,8 @@ pub fn networks() -> Circuit {
 /// that makes the wired whole's dynamics emergent.
 pub fn emergence_part() -> Circuit {
     let mut c = Circuit::default();
-    c.nodes.push(n(NodeKind::Process(Buffering), 1, 480.0, 320.0));
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 1, 480.0, 320.0));
     c.nodes[0].initial_storage = 8.0;
     c.nodes[0].storage = 8.0;
     c.nodes[0].release_rate = 0.0;

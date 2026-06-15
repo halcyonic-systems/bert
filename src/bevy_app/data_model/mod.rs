@@ -27,7 +27,6 @@ impl From<crate::bevy_app::components::InterfaceType> for InterfaceType {
     }
 }
 
-
 /// Bevy-coupled placement helper for the kernel's [`Transform2d`] — an
 /// extension trait because inherent impls can't live outside bert-core.
 pub trait Transform2dExt {

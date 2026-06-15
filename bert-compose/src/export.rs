@@ -13,9 +13,9 @@
 
 use crate::circuit::{Circuit, DeclaredSubstance, FlowMode, Node, NodeKind, Wire};
 use bert_core::{
-    AgentKind, AgentModel, Boundary, Complexity, Environment, ExternalEntity,
-    ExternalEntityType, Id, IdType, Info, Interaction, InteractionType, InteractionUsability,
-    Parameter, ProcessPrimitive, Substance, System, Transform2d, WorldModel,
+    AgentKind, AgentModel, Boundary, Complexity, Environment, ExternalEntity, ExternalEntityType,
+    Id, IdType, Info, Interaction, InteractionType, InteractionUsability, Parameter,
+    ProcessPrimitive, Substance, System, Transform2d, WorldModel,
 };
 use egui::pos2;
 use std::collections::HashMap;
@@ -24,15 +24,26 @@ use std::collections::HashMap;
 const SCALE: f32 = 0.6;
 
 fn id(ty: IdType, indices: &[i64]) -> Id {
-    Id { ty, indices: indices.to_vec() }
+    Id {
+        ty,
+        indices: indices.to_vec(),
+    }
 }
 
 fn info(i: Id, level: i32, name: &str, description: &str) -> Info {
-    Info { id: i, level, name: name.to_string(), description: description.to_string() }
+    Info {
+        id: i,
+        level,
+        name: name.to_string(),
+        description: description.to_string(),
+    }
 }
 
 fn transform(x: f32, y: f32) -> Option<Transform2d> {
-    Some(Transform2d { translation: bert_core::Vec2::new(x, y), rotation: 0.0 })
+    Some(Transform2d {
+        translation: bert_core::Vec2::new(x, y),
+        rotation: 0.0,
+    })
 }
 
 pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
@@ -56,7 +67,10 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
         sources: Vec::new(),
         sinks: Vec::new(),
         parent: id(IdType::Environment, &[-1]),
-        complexity: Complexity::Complex { adaptable: false, evolveable: false },
+        complexity: Complexity::Complex {
+            adaptable: false,
+            evolveable: false,
+        },
         boundary: Boundary {
             info: info(id(IdType::Boundary, &[0]), 0, "", ""),
             porosity: 0.0,
@@ -151,7 +165,10 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                                     p.insert("capacity".to_string(), node.capacity as f64);
                                 }
                                 if node.time_constant > 0.0 {
-                                    p.insert("time_constant".to_string(), node.time_constant as f64);
+                                    p.insert(
+                                        "time_constant".to_string(),
+                                        node.time_constant as f64,
+                                    );
                                 }
                                 if node.maintenance > 0.0 {
                                     p.insert("maintenance".to_string(), node.maintenance as f64);
@@ -201,7 +218,10 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
             ),
             // The declared substance name rides in sub_type — the kernel
             // field that existed for exactly this — over the conserved base.
-            substance: Substance { sub_type: from.out_substance.name.clone(), ty: substance },
+            substance: Substance {
+                sub_type: from.out_substance.name.clone(),
+                ty: substance,
+            },
             // Gradient (field-driven) flows export as BERT's Force interaction
             // — the redemption of InteractionType::Force: it now means "a flow
             // whose rate is a potential gradient," not a label without dynamics.
@@ -271,10 +291,20 @@ pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
     let pos_of = |t: &Option<Transform2d>, i: usize| {
         t.as_ref()
             .map(|t| pos2(t.translation.x / SCALE, t.translation.y / SCALE))
-            .unwrap_or_else(|| pos2(380.0 + (i % 4) as f32 * 160.0, 300.0 + (i / 4) as f32 * 140.0))
+            .unwrap_or_else(|| {
+                pos2(
+                    380.0 + (i % 4) as f32 * 160.0,
+                    300.0 + (i / 4) as f32 * 140.0,
+                )
+            })
     };
 
-    for ext in model.environment.sources.iter().chain(model.environment.sinks.iter()) {
+    for ext in model
+        .environment
+        .sources
+        .iter()
+        .chain(model.environment.sinks.iter())
+    {
         let kind = if matches!(ext.ty, ExternalEntityType::Source) {
             NodeKind::Source
         } else {
@@ -288,10 +318,16 @@ pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
 
     for sys in model.systems.iter().filter(|s| s.info.level > 0) {
         let agent = sys.agent.as_ref().ok_or_else(|| {
-            format!("\"{}\" has no agent model — not a compose-shaped subsystem", sys.info.name)
+            format!(
+                "\"{}\" has no agent model — not a compose-shaped subsystem",
+                sys.info.name
+            )
         })?;
         let &primitive = agent.primitives.first().ok_or_else(|| {
-            format!("\"{}\" carries no Mobus primitive — nothing to place", sys.info.name)
+            format!(
+                "\"{}\" carries no Mobus primitive — nothing to place",
+                sys.info.name
+            )
         })?;
         let mut node = Node::new(
             NodeKind::Process(primitive),
@@ -378,7 +414,8 @@ mod tests {
     #[test]
     fn emitted_model_validates_and_round_trips() {
         let mut c = Circuit::default();
-        c.nodes.push(Node::new(NodeKind::Source, 1, pos2(-200.0, 0.0)));
+        c.nodes
+            .push(Node::new(NodeKind::Source, 1, pos2(-200.0, 0.0)));
         c.nodes.push(Node::new(
             NodeKind::Process(ProcessPrimitive::Buffering),
             2,
@@ -389,8 +426,11 @@ mod tests {
         c.wires.push(Wire::new(1, 2));
         c.nodes[0].param = 2.5; // asserted emission rate
         c.nodes[1].initial_storage = 12.0; // asserted starting stock
-        c.nodes[0].out_substance =
-            crate::circuit::DeclaredSubstance::named("water", bert_core::SubstanceType::Material, "L");
+        c.nodes[0].out_substance = crate::circuit::DeclaredSubstance::named(
+            "water",
+            bert_core::SubstanceType::Material,
+            "L",
+        );
 
         let model = to_world_model(&c, "Touchable Circuit");
         let errors: Vec<_> = validate(&model)
@@ -398,13 +438,19 @@ mod tests {
             .into_iter()
             .filter(|i| i.severity == Severity::Error)
             .collect();
-        assert!(errors.is_empty(), "emitted model must validate: {errors:#?}");
+        assert!(
+            errors.is_empty(),
+            "emitted model must validate: {errors:#?}"
+        );
 
         let json = serde_json::to_string_pretty(&model).unwrap();
         let reloaded: WorldModel = serde_json::from_str(&json).unwrap();
         assert_eq!(reloaded.systems.len(), 2); // root + buffer
         assert_eq!(reloaded.interactions.len(), 2);
-        let agent = reloaded.systems[1].agent.as_ref().expect("primitive encoding");
+        let agent = reloaded.systems[1]
+            .agent
+            .as_ref()
+            .expect("primitive encoding");
         assert_eq!(agent.primitives, vec![ProcessPrimitive::Buffering]);
         assert_eq!(
             agent.initial_state.get("storage").and_then(|v| v.as_f64()),
@@ -412,9 +458,20 @@ mod tests {
             "asserted stock survives as initial_state (what Mesa seeds)"
         );
         let src_flow = &reloaded.interactions[0];
-        assert_eq!(src_flow.amount.to_string(), "2.5", "emission rate on the flow");
-        assert_eq!(src_flow.substance.sub_type, "water", "declared name rides in sub_type");
-        assert_eq!(src_flow.substance.ty, bert_core::SubstanceType::Material, "over its base");
+        assert_eq!(
+            src_flow.amount.to_string(),
+            "2.5",
+            "emission rate on the flow"
+        );
+        assert_eq!(
+            src_flow.substance.sub_type, "water",
+            "declared name rides in sub_type"
+        );
+        assert_eq!(
+            src_flow.substance.ty,
+            bert_core::SubstanceType::Material,
+            "over its base"
+        );
         assert_eq!(src_flow.unit, "L", "declared unit on the interaction");
     }
 
@@ -423,15 +480,24 @@ mod tests {
     #[test]
     fn setpoint_and_backpressure_round_trip() {
         let mut c = Circuit::default();
-        c.nodes.push(Node::new(NodeKind::Process(ProcessPrimitive::Inverting), 1, pos2(0.0, 0.0)));
-        c.nodes.push(Node::new(NodeKind::Process(ProcessPrimitive::Modulating), 2, pos2(60.0, 0.0)));
+        c.nodes.push(Node::new(
+            NodeKind::Process(ProcessPrimitive::Inverting),
+            1,
+            pos2(0.0, 0.0),
+        ));
+        c.nodes.push(Node::new(
+            NodeKind::Process(ProcessPrimitive::Modulating),
+            2,
+            pos2(60.0, 0.0),
+        ));
         c.nodes.push(Node::new(NodeKind::Sink, 3, pos2(120.0, 0.0)));
         c.nodes[0].setpoint = 3.5;
         c.nodes[1].back_pressure = true;
         c.wires.push(Wire::new(0, 1)); // inverting → modulating (control)
         c.wires.push(Wire::new(1, 2)); // modulating → sink
         let model: WorldModel =
-            serde_json::from_str(&serde_json::to_string(&to_world_model(&c, "SP")).unwrap()).unwrap();
+            serde_json::from_str(&serde_json::to_string(&to_world_model(&c, "SP")).unwrap())
+                .unwrap();
         let r = from_world_model(&model).expect("loads");
         let inv = r
             .nodes
@@ -444,7 +510,10 @@ mod tests {
             .iter()
             .find(|n| n.kind == NodeKind::Process(ProcessPrimitive::Modulating))
             .expect("modulating survives");
-        assert!(valve.back_pressure, "back-pressure survives via cognitive_params");
+        assert!(
+            valve.back_pressure,
+            "back-pressure survives via cognitive_params"
+        );
     }
 
     /// Save → Load round-trip: every knob the canvas can set survives —
@@ -453,7 +522,8 @@ mod tests {
     #[test]
     fn save_load_round_trip_is_lossless() {
         let mut c = Circuit::default();
-        c.nodes.push(Node::new(NodeKind::Source, 1, pos2(-200.0, 0.0)));
+        c.nodes
+            .push(Node::new(NodeKind::Source, 1, pos2(-200.0, 0.0)));
         c.nodes.push(Node::new(
             NodeKind::Process(ProcessPrimitive::Buffering),
             2,
@@ -466,11 +536,8 @@ mod tests {
         ));
         c.nodes.push(Node::new(NodeKind::Sink, 4, pos2(200.0, 0.0)));
         c.nodes[0].param = 2.5;
-        c.nodes[0].out_substance = DeclaredSubstance::named(
-            "water",
-            bert_core::SubstanceType::Material,
-            "L",
-        );
+        c.nodes[0].out_substance =
+            DeclaredSubstance::named("water", bert_core::SubstanceType::Material, "L");
         c.nodes[1].name = "Tank".to_string();
         c.nodes[1].initial_storage = 12.0;
         c.nodes[1].storage = 12.0;
@@ -478,11 +545,8 @@ mod tests {
         c.nodes[1].capacity = 20.0;
         c.nodes[1].time_constant = 4.0;
         c.nodes[1].maintenance = 0.3;
-        c.nodes[1].out_substance = DeclaredSubstance::named(
-            "water",
-            bert_core::SubstanceType::Material,
-            "L",
-        );
+        c.nodes[1].out_substance =
+            DeclaredSubstance::named("water", bert_core::SubstanceType::Material, "L");
         c.nodes[2].release_rate = 0.0;
         c.wires.push(Wire::new(0, 1));
         c.wires.push(Wire::gradient(1, 2, 0.42));
@@ -495,16 +559,39 @@ mod tests {
 
         assert_eq!(r.nodes.len(), 4);
         assert_eq!(r.wires.len(), 3);
-        let tank = r.nodes.iter().find(|n| n.name == "Tank").expect("name survives");
+        let tank = r
+            .nodes
+            .iter()
+            .find(|n| n.name == "Tank")
+            .expect("name survives");
         assert_eq!(tank.initial_storage, 12.0);
-        assert_eq!(tank.release_rate, 1.4, "release rate survives via cognitive_params");
-        assert_eq!(tank.capacity, 20.0, "capacity survives via cognitive_params");
-        assert_eq!(tank.time_constant, 4.0, "time constant survives via cognitive_params");
-        assert_eq!(tank.maintenance, 0.3, "maintenance survives via cognitive_params");
+        assert_eq!(
+            tank.release_rate, 1.4,
+            "release rate survives via cognitive_params"
+        );
+        assert_eq!(
+            tank.capacity, 20.0,
+            "capacity survives via cognitive_params"
+        );
+        assert_eq!(
+            tank.time_constant, 4.0,
+            "time constant survives via cognitive_params"
+        );
+        assert_eq!(
+            tank.maintenance, 0.3,
+            "maintenance survives via cognitive_params"
+        );
         assert_eq!(tank.out_substance.name, "water");
         assert_eq!(tank.out_substance.unit, "L");
-        let grad = r.wires.iter().find(|w| w.mode == FlowMode::Gradient).expect("mode survives");
-        assert_eq!(grad.conductance, 0.42, "conductance survives via flow parameter");
+        let grad = r
+            .wires
+            .iter()
+            .find(|w| w.mode == FlowMode::Gradient)
+            .expect("mode survives");
+        assert_eq!(
+            grad.conductance, 0.42,
+            "conductance survives via flow parameter"
+        );
         let src = r.nodes.iter().find(|n| n.kind == NodeKind::Source).unwrap();
         assert_eq!(src.param, 2.5, "emission rate survives");
 
@@ -515,7 +602,11 @@ mod tests {
             r.step();
         }
         for a in &c.nodes {
-            let b = r.nodes.iter().find(|n| n.name == a.name).expect("node survives");
+            let b = r
+                .nodes
+                .iter()
+                .find(|n| n.name == a.name)
+                .expect("node survives");
             assert!(
                 (a.storage - b.storage).abs() < 1e-4 && (a.total - b.total).abs() < 1e-4,
                 "loaded circuit diverges at {}: {} vs {}",

@@ -54,7 +54,13 @@ fn turning_points(series: &[f32]) -> usize {
     let mut last_sign = 0i8;
     for w in tail.windows(2) {
         let d = w[1] - w[0];
-        let sign = if d > 1e-4 { 1 } else if d < -1e-4 { -1 } else { 0 };
+        let sign = if d > 1e-4 {
+            1
+        } else if d < -1e-4 {
+            -1
+        } else {
+            0
+        };
         if sign != 0 && sign != last_sign && last_sign != 0 {
             turns += 1;
         }
@@ -99,7 +105,10 @@ mod tests {
         let mut c = potential_fields();
         let s = run_storage(&mut c, 200);
         let (a, b) = (*s[0].last().unwrap(), *s[1].last().unwrap());
-        assert!((a - b).abs() < 0.1, "field equalizes the two stocks: {a} vs {b}");
+        assert!(
+            (a - b).abs() < 0.1,
+            "field equalizes the two stocks: {a} vs {b}"
+        );
         assert!(c.balance().abs() < 1e-3, "and conserves");
     }
 
@@ -122,9 +131,18 @@ mod tests {
         let s = run_storage(&mut c, 300);
         let stock = &s[2];
         assert!(stock.iter().all(|&v| v < 100.0), "bounded, not runaway");
-        assert!(turning_points(stock) >= 6, "the active loop hunts — a limit cycle");
-        let tail_min = stock[stock.len() / 2..].iter().cloned().fold(f32::MAX, f32::min);
-        assert!(tail_min > 0.3, "low gain: a smooth cycle that never empties (min {tail_min:.2})");
+        assert!(
+            turning_points(stock) >= 6,
+            "the active loop hunts — a limit cycle"
+        );
+        let tail_min = stock[stock.len() / 2..]
+            .iter()
+            .cloned()
+            .fold(f32::MAX, f32::min);
+        assert!(
+            tail_min > 0.3,
+            "low gain: a smooth cycle that never empties (min {tail_min:.2})"
+        );
         assert!(!settles(stock), "it does NOT settle to a fixed point");
     }
 
@@ -137,8 +155,14 @@ mod tests {
         let s = run_storage(&mut c, 300);
         let stock = &s[2];
         assert!(turning_points(stock) >= 6, "sustained oscillation");
-        let tail_min = stock[stock.len() / 2..].iter().cloned().fold(f32::MAX, f32::min);
-        assert!(tail_min < 0.1, "relaxation: it overshoots all the way to empty (min {tail_min:.2})");
+        let tail_min = stock[stock.len() / 2..]
+            .iter()
+            .cloned()
+            .fold(f32::MAX, f32::min);
+        assert!(
+            tail_min < 0.1,
+            "relaxation: it overshoots all the way to empty (min {tail_min:.2})"
+        );
     }
 
     /// RESEARCH 1 / BOUNDARY — the naive predator-prey runs away because
@@ -153,7 +177,11 @@ mod tests {
         let s = run_storage(&mut c, 300);
         let prey = &s[1];
         let predator = &s[3];
-        assert!(amplitude(prey) < 0.5, "prey pins (constant source refills it): amp {:.2}", amplitude(prey));
+        assert!(
+            amplitude(prey) < 0.5,
+            "prey pins (constant source refills it): amp {:.2}",
+            amplitude(prey)
+        );
         assert!(
             *predator.last().unwrap() > 50.0,
             "predator runs away under zeroth-order death: ends at {:.0}",
@@ -176,9 +204,17 @@ mod tests {
         use crate::circuit::NodeKind;
         let mut c = networks();
         run_storage(&mut c, 40);
-        let sunk: f32 = c.nodes.iter().filter(|n| n.kind == NodeKind::Sink).map(|n| n.total).sum();
+        let sunk: f32 = c
+            .nodes
+            .iter()
+            .filter(|n| n.kind == NodeKind::Sink)
+            .map(|n| n.total)
+            .sum();
         assert!(sunk > 0.0 && c.balance().abs() < 1e-3, "fan conserves");
-        assert!(c.diversity() >= 3, "source, splitter, sinks are distinct kinds");
+        assert!(
+            c.diversity() >= 3,
+            "source, splitter, sinks are distinct kinds"
+        );
     }
 
     /// RESEARCH 2 — Emergence as part-vs-whole. The isolated Buffer is inert
@@ -198,10 +234,16 @@ mod tests {
 
         let mut whole = feedback_regulation();
         let ws = run_storage(&mut whole, 300);
-        assert!(amplitude(&ws[2]) > 1.0, "the homeostat cycles — dynamics no part has");
-        assert!(whole.diversity() > 1, "wiring raises kind-diversity: {}", whole.diversity());
+        assert!(
+            amplitude(&ws[2]) > 1.0,
+            "the homeostat cycles — dynamics no part has"
+        );
+        assert!(
+            whole.diversity() > 1,
+            "wiring raises kind-diversity: {}",
+            whole.diversity()
+        );
     }
-
 
     /// Boundary buckets, recorded as tests so the claim's edge is explicit:
     /// (b) Storage IS Buffering; (c) Hierarchy is structural (one-level only
@@ -212,7 +254,10 @@ mod tests {
         // `emergence_part` is a lone unwired Buffer with stock 8, release 0.
         let mut c = emergence_part();
         run_storage(&mut c, 5);
-        assert_eq!(c.nodes[0].storage, 8.0, "Storage = Buffering holds, bucket (b)");
+        assert_eq!(
+            c.nodes[0].storage, 8.0,
+            "Storage = Buffering holds, bucket (b)"
+        );
         // (c)/(d) are assertions about scope, documented in the artifact table.
     }
 }
@@ -255,21 +300,34 @@ fn emit_sweep_artifacts() {
         let stock = series.iter().max_by_key(|s| (amplitude(s) * 1e3) as i64);
         let sig = match rung.slug {
             s if s.contains("predator-prey") => {
-                let pred = series.iter().max_by_key(|s| (*s.last().unwrap() * 1e2) as i64).unwrap();
+                let pred = series
+                    .iter()
+                    .max_by_key(|s| (*s.last().unwrap() * 1e2) as i64)
+                    .unwrap();
                 format!("predator runs away → {:.0}", pred.last().unwrap())
             }
             s if s.contains("cycling") => {
                 let st = stock.unwrap();
-                format!("relaxation osc: {} turns, amp {:.1}, floors at 0", turning_points(st), amplitude(st))
+                format!(
+                    "relaxation osc: {} turns, amp {:.1}, floors at 0",
+                    turning_points(st),
+                    amplitude(st)
+                )
             }
             s if s.contains("feedback") => {
                 let st = stock.unwrap();
-                format!("limit cycle: {} turns, amp {:.1} (no fixed point)", turning_points(st), amplitude(st))
+                format!(
+                    "limit cycle: {} turns, amp {:.1} (no fixed point)",
+                    turning_points(st),
+                    amplitude(st)
+                )
             }
             s if s.contains("decay") => "monotone (zeroth-order) drain to ~0".to_string(),
             s if s.contains("potential") => "two stocks equalize → fixed point".to_string(),
             s if s.contains("networks") => format!("fan conserves, diversity {}", c.diversity()),
-            s if s.contains("flows") => format!("throughput {:.1} to sink", c.nodes.last().unwrap().total),
+            s if s.contains("flows") => {
+                format!("throughput {:.1} to sink", c.nodes.last().unwrap().total)
+            }
             s if s.contains("emergence-part") => "inert (flat) — the isolated part".to_string(),
             _ => "see CSV".to_string(),
         };

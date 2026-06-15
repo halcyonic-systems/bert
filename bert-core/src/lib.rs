@@ -17,15 +17,12 @@ use uuid::Uuid;
 
 /// Corresponds to the System Language Interaction types.
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
-#[derive(
-    Copy, Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize, Sequence,
-)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize, Sequence)]
 pub enum InteractionType {
     #[default]
     Flow,
     Force,
 }
-
 
 impl core::fmt::Display for InteractionType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -35,7 +32,6 @@ impl core::fmt::Display for InteractionType {
         }
     }
 }
-
 
 /// Categorizes flow interactions based on their utility and directional nature in System Language.
 ///
@@ -105,7 +101,6 @@ pub enum InteractionUsability {
     Waste,
 }
 
-
 impl InteractionUsability {
     /// Determines if this interaction type provides value to the system.
     ///
@@ -174,7 +169,6 @@ impl InteractionUsability {
     }
 }
 
-
 /// Defines the fundamental types of substances that can flow between system elements.
 ///
 /// The System Language recognizes three primary categories of substances that can
@@ -215,9 +209,7 @@ impl InteractionUsability {
 /// - [`Flow`]: Uses substance types to categorize interactions
 /// - [`InteractionUsability`]: Defines the directional and utility aspects of flows
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
-#[derive(
-    Copy, Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash,
-)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash)]
 pub enum SubstanceType {
     /// Energy flows representing power, work capacity, or transformative potential.
     ///
@@ -239,7 +231,6 @@ pub enum SubstanceType {
     Message,
 }
 
-
 /// HCGS (Hierarchical Cybernetic Governance System) archetype classification.
 ///
 /// Classifies subsystems according to their functional role in a complex adaptive system,
@@ -260,9 +251,7 @@ pub enum SubstanceType {
 /// - Agent: Orange (#F97316)
 /// - Unspecified: Black (default)
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
-#[derive(
-    Copy, Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash,
-)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize, Sequence, Hash)]
 pub enum HcgsArchetype {
     /// Default classification for subsystems not yet categorized.
     #[default]
@@ -287,7 +276,6 @@ pub enum HcgsArchetype {
     Agent,
 }
 
-
 impl std::fmt::Display for HcgsArchetype {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -298,7 +286,6 @@ impl std::fmt::Display for HcgsArchetype {
         }
     }
 }
-
 
 /// Enhanced parameter value supporting multiple data types (Cliff's framework)
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
@@ -318,7 +305,6 @@ pub enum ParameterValue {
     },
 }
 
-
 /// Smart parameter with enhanced type system
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -333,7 +319,6 @@ pub struct SmartParameter {
     pub value: ParameterValue,
 }
 
-
 /// Parameter suggestion for autocomplete and intelligent input
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParameterSuggestion {
@@ -346,7 +331,6 @@ pub struct ParameterSuggestion {
     /// Default parameter value template
     pub default_value: ParameterValue,
 }
-
 
 /// Parameter type classification
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
@@ -464,10 +448,6 @@ impl SmartParameter {
     }
 }
 
-
-
-
-
 // # Data Model Module
 //
 // This module implements the persistence layer for BERT system models, providing
@@ -526,7 +506,6 @@ impl SmartParameter {
 // - [`load`]: Module for deserializing world models from JSON
 // - [`save`]: Module for serializing world models to JSON
 // - [`crate::bevy_app::components`]: Live ECS components that this module serializes
-
 
 pub use glam::Vec2;
 pub use rust_decimal;
@@ -1147,7 +1126,6 @@ pub enum InterfaceType {
     Hybrid,
 }
 
-
 /// Environment of the root system
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Environment {
@@ -1532,8 +1510,6 @@ pub struct Transform2d {
     /// Rotation in radians.
     pub rotation: f32,
 }
-
-
 
 /// Trait for entities that contain standard identification and metadata information.
 ///

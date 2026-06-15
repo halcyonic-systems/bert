@@ -12,7 +12,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     egui::TopBottomPanel::bottom("charts")
         .resizable(true)
         .default_height(210.0)
-        .frame(egui::Frame::new().fill(PAPER).inner_margin(egui::Margin::same(10)))
+        .frame(
+            egui::Frame::new()
+                .fill(PAPER)
+                .inner_margin(egui::Margin::same(10)),
+        )
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
                 section_header(ui, "METRICS");
@@ -81,7 +85,10 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                                 .map(|(i, l)| [(i + 1) as f64, l[j] as f64])
                                 .collect();
                             plot_ui.line(
-                                egui_plot::Line::new(pts).name(*name).color(*color).width(2.2),
+                                egui_plot::Line::new(pts)
+                                    .name(*name)
+                                    .color(*color)
+                                    .width(2.2),
                             );
                         }
                     });

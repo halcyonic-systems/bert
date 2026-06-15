@@ -90,7 +90,9 @@ impl App {
             let d = &node.out_substance;
             if !d.name.is_empty()
                 && !self.declared.contains(d)
-                && !SUBSTANCES.iter().any(|(n, b, u)| *n == d.name && *b == d.base && *u == d.unit)
+                && !SUBSTANCES
+                    .iter()
+                    .any(|(n, b, u)| *n == d.name && *b == d.base && *u == d.unit)
             {
                 self.declared.push(d.clone());
             }
@@ -149,7 +151,10 @@ impl App {
                 self.adopt_circuit(
                     circuit,
                     name,
-                    format!("loaded {} — {n} components, {b} bonds · press Run", path.display()),
+                    format!(
+                        "loaded {} — {n} components, {b} bonds · press Run",
+                        path.display()
+                    ),
                 );
             }
             Err(e) => self.status = format!("load failed: {e}"),
@@ -217,7 +222,9 @@ impl App {
     pub fn add_node(&mut self, kind: NodeKind, canvas_center: Pos2) {
         let i = self.circuit.nodes.len();
         let jitter = vec2(((i % 5) as f32 - 2.0) * 70.0, ((i / 5) as f32 - 1.0) * 80.0);
-        self.circuit.nodes.push(Node::new(kind, self.next_n, canvas_center + jitter));
+        self.circuit
+            .nodes
+            .push(Node::new(kind, self.next_n, canvas_center + jitter));
         self.next_n += 1;
         self.selected = Some(i);
     }
@@ -326,15 +333,21 @@ impl App {
             // Capacity legibility: report the ceiling and whether it ever bit
             // (a regulated stock often never reaches its capacity — see the
             // history max vs the ceiling).
-            if matches!(node.kind, NodeKind::Process(bert_core::ProcessPrimitive::Buffering))
-                && node.capacity > 0.0
+            if matches!(
+                node.kind,
+                NodeKind::Process(bert_core::ProcessPrimitive::Buffering)
+            ) && node.capacity > 0.0
             {
                 let max_seen = c
                     .history
                     .iter()
                     .filter_map(|r| r.get(i * 3 + 2).copied())
                     .fold(0.0f32, f32::max);
-                let bind = if max_seen >= node.capacity - 0.01 { "binding" } else { "dormant" };
+                let bind = if max_seen >= node.capacity - 0.01 {
+                    "binding"
+                } else {
+                    "dormant"
+                };
                 detail.push_str(&format!(", capacity {:.0} ({bind})", node.capacity));
             }
             s.push_str(&format!(
@@ -379,8 +392,11 @@ impl App {
     pub fn save(&mut self) {
         let model = export::to_world_model(&self.circuit, &self.name);
         let home = std::env::var("HOME").unwrap_or_default();
-        let path =
-            Self::unique_path(&format!("{home}/Desktop"), &self.name.replace(' ', "-"), "json");
+        let path = Self::unique_path(
+            &format!("{home}/Desktop"),
+            &self.name.replace(' ', "-"),
+            "json",
+        );
         match serde_json::to_string_pretty(&model)
             .map_err(|e| e.to_string())
             .and_then(|s| std::fs::write(&path, s).map_err(|e| e.to_string()))
@@ -408,9 +424,8 @@ impl eframe::App for App {
         // Delete / Backspace removes the selected node — unless a text field
         // (a name editor) has focus, where those keys edit text.
         if let Some(i) = self.selected {
-            let del = ctx.input(|i| {
-                i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace)
-            });
+            let del = ctx
+                .input(|i| i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace));
             if del && !ctx.wants_keyboard_input() {
                 self.delete_node(i);
             }

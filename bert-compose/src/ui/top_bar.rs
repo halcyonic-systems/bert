@@ -8,14 +8,20 @@ use egui::RichText;
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
     egui::TopBottomPanel::top("top")
-        .frame(
-            egui::Frame::new()
-                .fill(PAPER)
-                .inner_margin(egui::Margin { left: 14, right: 14, top: 10, bottom: 10 }),
-        )
+        .frame(egui::Frame::new().fill(PAPER).inner_margin(egui::Margin {
+            left: 14,
+            right: 14,
+            top: 10,
+            bottom: 10,
+        }))
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("BERT").color(PRIMARY).family(semibold()).size(15.0));
+                ui.label(
+                    RichText::new("BERT")
+                        .color(PRIMARY)
+                        .family(semibold())
+                        .size(15.0),
+                );
                 ui.add_space(-4.0);
                 ui.label(RichText::new("COMPOSE").color(SECONDARY).size(15.0));
                 ui.add_space(10.0);
@@ -108,7 +114,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             if ex.category != *cat {
                                 continue;
                             }
-                            if ui.add(egui::Button::new(ex.name)).on_hover_text(ex.blurb).clicked() {
+                            if ui
+                                .add(egui::Button::new(ex.name))
+                                .on_hover_text(ex.blurb)
+                                .clicked()
+                            {
                                 load = Some(i);
                                 ui.close_menu();
                             }
@@ -140,7 +150,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     ui.menu_button("File ▾", |ui| {
                         if ui
                             .button("New — clear canvas")
-                            .on_hover_text("wipe the canvas and start fresh (Reset only rewinds the run)")
+                            .on_hover_text(
+                                "wipe the canvas and start fresh (Reset only rewinds the run)",
+                            )
                             .clicked()
                         {
                             app.new_canvas();
@@ -153,7 +165,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         }
                         if ui
                             .button("Load…")
-                            .on_hover_text("open a saved BERT model — or drag a .json onto the window")
+                            .on_hover_text(
+                                "open a saved BERT model — or drag a .json onto the window",
+                            )
                             .clicked()
                         {
                             app.load_dialog();
@@ -175,10 +189,16 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     // Ask hal — sovereign in-app analysis. Model picker lives in
                     // the hal window now, not the bar.
                     let can_ask = !app.circuit.history.is_empty() && !app.hal_busy;
-                    let label = if app.hal_busy { "hal thinking…" } else { "✦ Ask hal" };
+                    let label = if app.hal_busy {
+                        "hal thinking…"
+                    } else {
+                        "✦ Ask hal"
+                    };
                     if ui
                         .add_enabled(can_ask, primary_button(label))
-                        .on_hover_text("analyze this run with a local model — nothing leaves your machine")
+                        .on_hover_text(
+                            "analyze this run with a local model — nothing leaves your machine",
+                        )
                         .clicked()
                     {
                         app.ask_hal();

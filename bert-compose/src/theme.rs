@@ -43,10 +43,22 @@ pub fn semibold() -> FontFamily {
 fn install_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
     for (name, bytes) in [
-        ("inter", &include_bytes!("../assets/fonts/Inter-Regular.ttf")[..]),
-        ("inter-medium", &include_bytes!("../assets/fonts/Inter-Medium.ttf")[..]),
-        ("inter-semibold", &include_bytes!("../assets/fonts/Inter-SemiBold.ttf")[..]),
-        ("jbmono", &include_bytes!("../assets/fonts/JetBrainsMono-Regular.ttf")[..]),
+        (
+            "inter",
+            &include_bytes!("../assets/fonts/Inter-Regular.ttf")[..],
+        ),
+        (
+            "inter-medium",
+            &include_bytes!("../assets/fonts/Inter-Medium.ttf")[..],
+        ),
+        (
+            "inter-semibold",
+            &include_bytes!("../assets/fonts/Inter-SemiBold.ttf")[..],
+        ),
+        (
+            "jbmono",
+            &include_bytes!("../assets/fonts/JetBrainsMono-Regular.ttf")[..],
+        ),
     ] {
         fonts
             .font_data
@@ -77,8 +89,14 @@ pub fn apply(ctx: &egui::Context) {
         (TextStyle::Heading, FontId::new(16.5, semibold())),
         (TextStyle::Body, FontId::new(13.0, FontFamily::Proportional)),
         (TextStyle::Button, FontId::new(12.5, medium())),
-        (TextStyle::Small, FontId::new(10.5, FontFamily::Proportional)),
-        (TextStyle::Monospace, FontId::new(11.5, FontFamily::Monospace)),
+        (
+            TextStyle::Small,
+            FontId::new(10.5, FontFamily::Proportional),
+        ),
+        (
+            TextStyle::Monospace,
+            FontId::new(11.5, FontFamily::Monospace),
+        ),
     ]
     .into();
 
@@ -212,7 +230,9 @@ pub fn hover_row(
 ) -> egui::Response {
     let response = ui
         .scope_builder(
-            egui::UiBuilder::new().id_salt(id).sense(egui::Sense::click()),
+            egui::UiBuilder::new()
+                .id_salt(id)
+                .sense(egui::Sense::click()),
             |ui| {
                 let hovered = ui.response().hovered();
                 let fill = if selected {
@@ -256,11 +276,23 @@ pub fn empty_state_inline(ui: &mut egui::Ui) -> bool {
         );
         ui.add_space(8.0);
         // Three concrete on-ramps, easiest first.
-        ui.label(RichText::new("①  Load an example  (Examples ▾, top bar)").color(SECONDARY).size(12.0));
+        ui.label(
+            RichText::new("①  Load an example  (Examples ▾, top bar)")
+                .color(SECONDARY)
+                .size(12.0),
+        );
         ui.add_space(2.0);
-        ui.label(RichText::new("②  Stamp a process  (Systems Processes, left palette)").color(SECONDARY).size(12.0));
+        ui.label(
+            RichText::new("②  Stamp a process  (Systems Processes, left palette)")
+                .color(SECONDARY)
+                .size(12.0),
+        );
         ui.add_space(2.0);
-        ui.label(RichText::new("③  Or add a primitive, wire ◦ → component, press Run").color(SECONDARY).size(12.0));
+        ui.label(
+            RichText::new("③  Or add a primitive, wire ◦ → component, press Run")
+                .color(SECONDARY)
+                .size(12.0),
+        );
         ui.add_space(10.0);
         if ui
             .add(

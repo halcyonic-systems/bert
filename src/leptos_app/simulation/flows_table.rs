@@ -109,10 +109,13 @@ fn extract_flows(json_str: &str) -> Vec<FlowRow> {
         }
     }
     let resolve = |id: &str| -> String {
-        names
-            .get(id)
-            .cloned()
-            .unwrap_or_else(|| if id.is_empty() { "\u{2014}".to_string() } else { id.to_string() })
+        names.get(id).cloned().unwrap_or_else(|| {
+            if id.is_empty() {
+                "\u{2014}".to_string()
+            } else {
+                id.to_string()
+            }
+        })
     };
 
     let mut rows: Vec<FlowRow> = model
@@ -136,7 +139,11 @@ fn extract_flows(json_str: &str) -> Vec<FlowRow> {
         "Message" => 2,
         _ => 3,
     };
-    rows.sort_by(|a, b| rank(&a.substance).cmp(&rank(&b.substance)).then(a.name.cmp(&b.name)));
+    rows.sort_by(|a, b| {
+        rank(&a.substance)
+            .cmp(&rank(&b.substance))
+            .then(a.name.cmp(&b.name))
+    });
     rows
 }
 

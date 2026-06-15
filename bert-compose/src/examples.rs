@@ -171,7 +171,8 @@ fn n(kind: NodeKind, num: usize, x: f32, y: f32) -> Node {
 fn leaky_bucket() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 380.0, 380.0));
-    c.nodes.push(n(NodeKind::Process(Buffering), 2, 560.0, 380.0));
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 2, 560.0, 380.0));
     c.nodes.push(n(NodeKind::Sink, 3, 740.0, 380.0));
     c.nodes[0].param = 0.5; // slow inflow
     c.nodes[1].initial_storage = 20.0; // starts full
@@ -189,11 +190,14 @@ fn leaky_bucket() -> Circuit {
 fn homeostat() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 360.0, 320.0)); // 0 supply
-    c.nodes.push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1 valve
-    c.nodes.push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2 tank
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1 valve
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2 tank
     c.nodes.push(n(NodeKind::Sink, 4, 840.0, 320.0)); // 3 outflow
     c.nodes.push(n(NodeKind::Process(Sensing), 5, 680.0, 480.0)); // 4 gauge
-    c.nodes.push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5 controller
+    c.nodes
+        .push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5 controller
     c.nodes[0].param = 3.0;
     c.nodes[2].release_rate = 1.0;
     c.nodes[4].param = 0.2; // gauge gain
@@ -213,7 +217,8 @@ fn homeostat() -> Circuit {
 fn budget_split() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 380.0, 380.0));
-    c.nodes.push(n(NodeKind::Process(Splitting), 2, 560.0, 380.0));
+    c.nodes
+        .push(n(NodeKind::Process(Splitting), 2, 560.0, 380.0));
     c.nodes.push(n(NodeKind::Sink, 3, 740.0, 300.0));
     c.nodes.push(n(NodeKind::Sink, 4, 740.0, 460.0));
     c.nodes[0].param = 4.0;
@@ -231,7 +236,8 @@ fn megaphone() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 360.0, 300.0)); // 0 signal
     c.nodes.push(n(NodeKind::Source, 2, 360.0, 460.0)); // 1 power
-    c.nodes.push(n(NodeKind::Process(Amplifying), 3, 560.0, 380.0)); // 2 amp
+    c.nodes
+        .push(n(NodeKind::Process(Amplifying), 3, 560.0, 380.0)); // 2 amp
     c.nodes.push(n(NodeKind::Sink, 4, 740.0, 380.0)); // 3
     c.nodes[0].param = 1.0;
     c.nodes[0].out_substance = SubstanceType::Message.into();
@@ -268,8 +274,10 @@ fn broadcast() -> Circuit {
 /// visibly thins as the gradient closes.
 fn battery() -> Circuit {
     let mut c = Circuit::default();
-    c.nodes.push(n(NodeKind::Process(Buffering), 1, 420.0, 360.0)); // charged
-    c.nodes.push(n(NodeKind::Process(Buffering), 2, 660.0, 360.0)); // empty
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 1, 420.0, 360.0)); // charged
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 2, 660.0, 360.0)); // empty
     c.nodes[0].initial_storage = 20.0;
     c.nodes[0].storage = 20.0;
     c.nodes[0].release_rate = 0.0;
@@ -287,8 +295,10 @@ fn battery() -> Circuit {
 fn passive_vs_active() -> Circuit {
     let mut c = Circuit::default();
     // Passive: full buffer --gradient--> empty buffer.
-    c.nodes.push(n(NodeKind::Process(Buffering), 1, 320.0, 250.0)); // 0
-    c.nodes.push(n(NodeKind::Process(Buffering), 2, 520.0, 250.0)); // 1
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 1, 320.0, 250.0)); // 0
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 2, 520.0, 250.0)); // 1
     c.nodes[0].initial_storage = 16.0;
     c.nodes[0].storage = 16.0;
     c.nodes[0].release_rate = 0.0;
@@ -296,11 +306,14 @@ fn passive_vs_active() -> Circuit {
     c.wires.push(Wire::gradient(0, 1, 0.25));
     // Active: supply -> valve -> tank -> sink, with sensing->inverting feedback.
     c.nodes.push(n(NodeKind::Source, 3, 320.0, 470.0)); // 2
-    c.nodes.push(n(NodeKind::Process(Modulating), 4, 480.0, 470.0)); // 3
-    c.nodes.push(n(NodeKind::Process(Buffering), 5, 640.0, 470.0)); // 4
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 4, 480.0, 470.0)); // 3
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 5, 640.0, 470.0)); // 4
     c.nodes.push(n(NodeKind::Sink, 6, 800.0, 470.0)); // 5
     c.nodes.push(n(NodeKind::Process(Sensing), 7, 640.0, 600.0)); // 6
-    c.nodes.push(n(NodeKind::Process(Inverting), 8, 480.0, 600.0)); // 7
+    c.nodes
+        .push(n(NodeKind::Process(Inverting), 8, 480.0, 600.0)); // 7
     c.nodes[2].param = 3.0;
     c.nodes[4].release_rate = 1.0;
     c.nodes[6].param = 0.2;
@@ -323,11 +336,14 @@ fn passive_vs_active() -> Circuit {
 fn universal_homeostat() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 360.0, 320.0)); // 0
-    c.nodes.push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1
-    c.nodes.push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2
     c.nodes.push(n(NodeKind::Sink, 4, 840.0, 320.0)); // 3
     c.nodes.push(n(NodeKind::Process(Sensing), 5, 680.0, 480.0)); // 4
-    c.nodes.push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5
+    c.nodes
+        .push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5
     c.nodes[0].param = 3.0;
     c.nodes[2].release_rate = 1.0;
     c.nodes[4].param = 0.2;
@@ -352,11 +368,14 @@ fn universal_homeostat() -> Circuit {
 fn regulator(sub: DeclaredSubstance, rate: f32, release: f32, gain: f32) -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 360.0, 320.0)); // 0 inflow
-    c.nodes.push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1 gate
-    c.nodes.push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2 stock
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 2, 520.0, 320.0)); // 1 gate
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 3, 680.0, 320.0)); // 2 stock
     c.nodes.push(n(NodeKind::Sink, 4, 840.0, 320.0)); // 3 outflow
     c.nodes.push(n(NodeKind::Process(Sensing), 5, 680.0, 480.0)); // 4 sensor
-    c.nodes.push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5 controller
+    c.nodes
+        .push(n(NodeKind::Process(Inverting), 6, 520.0, 480.0)); // 5 controller
     c.nodes[0].param = rate;
     c.nodes[2].release_rate = release;
     c.nodes[4].param = gain;
@@ -385,13 +404,17 @@ fn public_budget() -> Circuit {
     let money = substance("money");
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 320.0, 300.0)); // 0 revenue
-    c.nodes.push(n(NodeKind::Process(Modulating), 2, 470.0, 300.0)); // 1 quorum
-    c.nodes.push(n(NodeKind::Process(Buffering), 3, 620.0, 300.0)); // 2 treasury
-    c.nodes.push(n(NodeKind::Process(Splitting), 4, 770.0, 300.0)); // 3 allocation
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 2, 470.0, 300.0)); // 1 quorum
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 3, 620.0, 300.0)); // 2 treasury
+    c.nodes
+        .push(n(NodeKind::Process(Splitting), 4, 770.0, 300.0)); // 3 allocation
     c.nodes.push(n(NodeKind::Sink, 5, 900.0, 230.0)); // 4 program A
     c.nodes.push(n(NodeKind::Sink, 6, 900.0, 370.0)); // 5 program B
     c.nodes.push(n(NodeKind::Process(Sensing), 7, 620.0, 470.0)); // 6 monitor
-    c.nodes.push(n(NodeKind::Process(Inverting), 8, 470.0, 470.0)); // 7 opposition
+    c.nodes
+        .push(n(NodeKind::Process(Inverting), 8, 470.0, 470.0)); // 7 opposition
     c.nodes[0].param = 1.7; // proposed revenue
     c.nodes[2].release_rate = 1.5; // spending to programs
     c.nodes[6].param = 0.015; // gentle monitor gain → treasury settles ~8
@@ -417,7 +440,12 @@ fn public_budget() -> Circuit {
 /// physics — synaptic transmission drops most input and the membrane leaks;
 /// neurons are famously energy-hungry. Unlike value, energy genuinely is lost.
 fn integrate_and_fire() -> Circuit {
-    regulator(DeclaredSubstance::named("charge", SubstanceType::Energy, "mV"), 3.0, 1.0, 0.25)
+    regulator(
+        DeclaredSubstance::named("charge", SubstanceType::Energy, "mV"),
+        3.0,
+        1.0,
+        0.25,
+    )
 }
 
 /// PROTOCOL SCIENCE — issuance gated by difficulty into circulating supply,
@@ -430,7 +458,12 @@ fn integrate_and_fire() -> Circuit {
 /// declines only the surplus (modest dissipation = un-minted issuance, not
 /// value lost). Supply settles to a stable circulating ~8.
 fn difficulty_issuance() -> Circuit {
-    regulator(DeclaredSubstance::named("tokens", SubstanceType::Material, "coins"), 1.7, 1.5, 0.015)
+    regulator(
+        DeclaredSubstance::named("tokens", SubstanceType::Material, "coins"),
+        1.7,
+        1.5,
+        0.015,
+    )
 }
 
 /// ECOLOGY / ENERGY — sunlight gated by a limiting factor into biomass,
@@ -471,12 +504,15 @@ mod tests {
             for _ in 0..30 {
                 c.step();
             }
-            let moved: f32 = c.nodes.iter().map(|n| n.total + n.activity + n.storage).sum();
+            let moved: f32 = c
+                .nodes
+                .iter()
+                .map(|n| n.total + n.activity + n.storage)
+                .sum();
             assert!(moved > 0.0, "{} never moved anything", ex.name);
             // Every example's mass must be fully accounted by the ledger.
-            let scale = (c.emitted
-                + c.nodes.iter().map(|n| n.initial_storage).sum::<f32>())
-            .max(1.0);
+            let scale =
+                (c.emitted + c.nodes.iter().map(|n| n.initial_storage).sum::<f32>()).max(1.0);
             assert!(
                 c.balance().abs() <= 1e-3 * scale,
                 "{} leaks: residual {} (dissipated {})",

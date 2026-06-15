@@ -39,11 +39,17 @@ fn process(painter: &Painter, p: ProcessPrimitive, c: Pos2, fill: Color32, s: St
             // open top
             painter.line_segment([r.left_top(), r.right_top()], Stroke::new(s.width, fill));
             painter.line_segment(
-                [r.left_top() + vec2(0.0, -1.0), r.left_top() + vec2(4.0, -1.0)],
+                [
+                    r.left_top() + vec2(0.0, -1.0),
+                    r.left_top() + vec2(4.0, -1.0),
+                ],
                 s,
             );
             painter.line_segment(
-                [r.right_top() + vec2(0.0, -1.0), r.right_top() + vec2(-4.0, -1.0)],
+                [
+                    r.right_top() + vec2(0.0, -1.0),
+                    r.right_top() + vec2(-4.0, -1.0),
+                ],
                 s,
             );
         }

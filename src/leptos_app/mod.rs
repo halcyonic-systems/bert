@@ -6,7 +6,9 @@ mod tree;
 mod use_file_dialog;
 
 use crate::bevy_app::data_model::complexity_calculator::calculate_simonian_complexity;
-use crate::bevy_app::data_model::validate::{classify_openness, validate, Severity, ValidationIssue};
+use crate::bevy_app::data_model::validate::{
+    classify_openness, validate, Severity, ValidationIssue,
+};
 use crate::bevy_app::{
     init_bevy_app, DetachMarkerLabelEvent, ExternalEntityFilter, ExternalEntityQuery,
     InteractionQuery, InterfaceQuery, IsSameAsIdQuery, SelectedHighlightHelperAdded,

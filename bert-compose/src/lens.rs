@@ -91,18 +91,18 @@ pub const LENSES: &[Lens] = &[
         name: "Neuromorphics",
         tagline: "A membrane gated by a synapse, held at threshold — homeostatic firing.",
         vocab: Some([
-            "Stimulus",          // Source
-            "Effector",          // Sink
-            "Membrane",          // Buffering
-            "Summation",         // Combining
-            "Branching",         // Splitting
-            "Potentiation",      // Amplifying
-            "Synapse",           // Modulating
-            "Receptor",          // Sensing
-            "Inhibition",        // Inverting
-            "Axon",              // Copying
-            "Conduction",        // Propelling
-            "Refractory",        // Impeding
+            "Stimulus",     // Source
+            "Effector",     // Sink
+            "Membrane",     // Buffering
+            "Summation",    // Combining
+            "Branching",    // Splitting
+            "Potentiation", // Amplifying
+            "Synapse",      // Modulating
+            "Receptor",     // Sensing
+            "Inhibition",   // Inverting
+            "Axon",         // Copying
+            "Conduction",   // Propelling
+            "Refractory",   // Impeding
         ]),
         glosses: Some([
             "input arriving at the cell",
@@ -121,20 +121,21 @@ pub const LENSES: &[Lens] = &[
     },
     Lens {
         name: "Protocol Science",
-        tagline: "Issuance retargeted to a setpoint — a protocol regulating its commitment substrate.",
+        tagline:
+            "Issuance retargeted to a setpoint — a protocol regulating its commitment substrate.",
         vocab: Some([
-            "Issuance",            // Source
-            "Burn",                // Sink
-            "Supply",              // Buffering
-            "Pooling",             // Combining
-            "Distribution",        // Splitting
-            "Leverage",            // Amplifying
-            "Difficulty",          // Modulating
-            "Oracle",              // Sensing
-            "Retarget",            // Inverting
-            "Gossip",              // Copying
-            "Settlement",          // Propelling
-            "Congestion",          // Impeding
+            "Issuance",     // Source
+            "Burn",         // Sink
+            "Supply",       // Buffering
+            "Pooling",      // Combining
+            "Distribution", // Splitting
+            "Leverage",     // Amplifying
+            "Difficulty",   // Modulating
+            "Oracle",       // Sensing
+            "Retarget",     // Inverting
+            "Gossip",       // Copying
+            "Settlement",   // Propelling
+            "Congestion",   // Impeding
         ]),
         glosses: Some([
             "new coins entering (the block reward)",
@@ -198,7 +199,10 @@ pub fn label(lens: usize, kind: NodeKind) -> String {
 /// The one-line domain reading of a primitive under a lens (None for Systems
 /// or an out-of-range index). Shown in the inspector.
 pub fn gloss(lens: usize, kind: NodeKind) -> Option<&'static str> {
-    LENSES.get(lens).and_then(|l| l.glosses).map(|g| g[slot(kind)])
+    LENSES
+        .get(lens)
+        .and_then(|l| l.glosses)
+        .map(|g| g[slot(kind)])
 }
 
 /// What to paint under a node: re-skin only the *auto* names ("Sensing 5" →

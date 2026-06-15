@@ -40,5 +40,9 @@ fn main() -> eframe::Result<()> {
             .with_title("BERT Compose"),
         ..Default::default()
     };
-    eframe::run_native("BERT Compose", options, Box::new(|cc| Ok(Box::new(App::new(cc)))))
+    eframe::run_native(
+        "BERT Compose",
+        options,
+        Box::new(|cc| Ok(Box::new(App::new(cc)))),
+    )
 }

@@ -443,16 +443,13 @@ pub struct Flow {
     pub smart_parameters: Vec<crate::bevy_app::smart_parameters::SmartParameter>,
 }
 
-
-
-
-
-
 // ── Kernel contract types, extracted to bert-core ────────────────────────────
 // The data enums below are part of the serialized model contract and now live
 // in the bert-core kernel crate. Re-exported here so existing paths
 // (`components::SubstanceType`, glob imports) keep working unchanged.
-pub use bert_core::{HcgsArchetype, InteractionType, InteractionUsability, Parameter, SubstanceType};
+pub use bert_core::{
+    HcgsArchetype, InteractionType, InteractionUsability, Parameter, SubstanceType,
+};
 
 /// Bevy-coupled view helpers for the kernel's [`SubstanceType`] — inherent
 /// methods can't live outside the defining crate, so they're an extension
@@ -700,15 +697,6 @@ impl InterfaceSubsystem {
         }
     }
 }
-
-
-
-
-
-
-
-
-
 
 /// Attached to all entities with a SystemElement component. Stores user input.
 #[derive(Clone, Debug, Component, Reflect, PartialEq, Default)]
