@@ -598,6 +598,15 @@ pub struct WorldModel {
     /// Older versions trigger migration logic during deserialization.
     pub version: u32,
 
+    /// Authoring mode along the kernel ladder (Core/Structural/Operational/Full).
+    ///
+    /// Absent ≡ [`Mode::Full`], so files written before SL v2.0 deserialize and
+    /// re-serialize byte-for-byte unchanged. Read it through [`WorldModel::mode`],
+    /// never directly. A mode is the lens an author committed to, not a constraint
+    /// on the data: every model is a valid Core model regardless of this field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mode: Option<Mode>,
+
     /// Environmental context containing external entities and root system information.
     ///
     /// The environment represents the broader context in which the system
@@ -623,6 +632,86 @@ pub struct WorldModel {
     /// allowing users to maintain their preferred level of detail.
     #[serde(default)]
     pub hidden_entities: Vec<Id>,
+}
+
+/// A rung on the kernel ladder: how much structure an author has committed to.
+///
+/// Each mode is a faithful view the K ≅ 2 kernel generates (proven in
+/// `systems-science-foundations/Systems/Klir/ViewGeneration.lean`). The rungs are
+/// *parallel lenses* over one kernel, not a cumulative tower: `Structural` (Bunge)
+/// and `Operational` (Mobus) each impose their own precondition independently —
+/// neither inherits the other's. They share only `Core`'s on-ness. `Full` extends
+/// `Operational` with the dynamical face. See [`validate::validate_mode`].
+/// `Cybernetic` is deliberately absent: feedback-as-first-class is still an open
+/// question (no faithful finite acyclic comparison yet), so it is not a buildable
+/// mode here. `Full` is the default and richest view.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Mode {
+    /// Klir's (things, dependency) — the kernel itself. Precondition: on-ness only.
+    Core,
+    /// Bunge CES: a bond between two distinct components. Precondition: `HasBond`.
+    Structural,
+    /// Mobus's structural face: typed flow networks, no self-dependency. Precondition: irreflexivity.
+    Operational,
+    /// The dynamical face populated (transformation, history, time constant). Extends `Operational`.
+    Full,
+}
+
+/// The K ≅ 2 kernel projected out of a [`WorldModel`]: a system *is* a morphism,
+/// so the kernel is its relata (`things`) and its dependency graph (`dep`).
+///
+/// This is the Rust twin of the Lean `Kernel` (ViewGeneration.lean). It is a
+/// derived projection, never stored: [`WorldModel::kernel`] computes it on demand,
+/// and the round trip through any mode view returns the same `(things, dep)`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Kernel {
+    /// T: the relata — every system plus every external source and sink.
+    pub things: Vec<Id>,
+    /// R: the dependency relation — each interaction as a `(source, sink)` arrow, on `things`.
+    pub dep: Vec<(Id, Id)>,
+}
+
+impl WorldModel {
+    /// The committed authoring mode, resolving an absent field to [`Mode::Full`].
+    pub fn mode(&self) -> Mode {
+        self.mode.unwrap_or(Mode::Full)
+    }
+
+    /// Project the kernel: forget every elaboration, keep `(things, dep)`.
+    ///
+    /// Mirrors Lean `Kernel.toKlir`. `things` enumerates systems then external
+    /// entities (environment first, then each system's local sources and sinks);
+    /// `dep` is each interaction's `(source, sink)`. Pure and total — the relata
+    /// of a dangling interaction simply may not appear in `things` (that is the
+    /// on-ness rule [`validate::validate_mode`] checks at `Core`).
+    pub fn kernel(&self) -> Kernel {
+        let mut things = Vec::new();
+        for system in &self.systems {
+            things.push(system.info.id.clone());
+        }
+        for source in &self.environment.sources {
+            things.push(source.info.id.clone());
+        }
+        for sink in &self.environment.sinks {
+            things.push(sink.info.id.clone());
+        }
+        for system in &self.systems {
+            for source in &system.sources {
+                things.push(source.info.id.clone());
+            }
+            for sink in &system.sinks {
+                things.push(sink.info.id.clone());
+            }
+        }
+
+        let dep = self
+            .interactions
+            .iter()
+            .map(|ix| (ix.source.clone(), ix.sink.clone()))
+            .collect();
+
+        Kernel { things, dep }
+    }
 }
 
 /// Hierarchical identifier system for all entities in the BERT data model.
