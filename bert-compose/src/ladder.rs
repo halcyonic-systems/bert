@@ -131,6 +131,17 @@ pub const LADDER: &[Rung] = &[
         build: coupled_predator_prey,
     },
     Rung {
+        slug: "05b-predator-prey-first-order",
+        name: "Predator-prey (first-order)",
+        blurb: "The boundary lifts: first-order death + a back-pressured predation valve give a damped Lotka-Volterra spiral, conserved.",
+        composition: "the same two Buffers, now with a predator time_constant (death ∝ stock) and a back-pressure valve realizing βxy as Sensing×release",
+        provenance: "predator-prey, resolved — first-order drain (τ) lifted bert#85",
+        bucket: "a",
+        ticks: 240,
+        in_palette: false,
+        build: predator_prey_first_order,
+    },
+    Rung {
         slug: "08-emergence-part",
         name: "Emergence (the part)",
         blurb: "An isolated Buffer is inert — the contrast that makes the wired whole's dynamics emergent.",
@@ -252,6 +263,51 @@ pub fn coupled_predator_prey() -> Circuit {
     c.wires.push(Wire::new(2, 3));
     c.wires.push(Wire::new(3, 4));
     c.wires.push(Wire::new(3, 5));
+    c
+}
+
+/// PREDATOR-PREY (first-order) — the boundary lifted. The runaway above ran
+/// away because death was zeroth-order; give the predator a `time_constant`
+/// and death becomes first-order (γy ∝ stock), so it can balance a growing
+/// inflow. The predation term βxy is realized as a PRODUCT: the prey buffer's
+/// first-order release (∝ prey x) gated by a Sensing read of the predator
+/// level (∝ predator y) — `(x/τ)·clamp(k·y)`, verified in
+/// `sweep_sensing_modulating_is_a_product_not_a_sum`. Trophic inefficiency
+/// (η<1, a Propelling stage) is conserved as dissipation, so the orbit DAMPS
+/// toward a fixed point rather than closing — the honest, mass-faithful answer
+/// (real food webs dissipate; Lotka-Volterra's closed orbits are the
+/// idealization). The first ecological test of the conservation engine.
+pub fn predator_prey_first_order() -> Circuit {
+    let mut c = Circuit::default();
+    c.nodes.push(n(NodeKind::Source, 1, 200.0, 240.0)); // 0 grass (constant inflow)
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 2, 380.0, 240.0)); // 1 prey
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 3, 560.0, 240.0)); // 2 predation valve
+    c.nodes
+        .push(n(NodeKind::Process(Propelling), 4, 560.0, 360.0)); // 3 trophic transfer (η<1)
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 5, 560.0, 500.0)); // 4 predator
+    c.nodes.push(n(NodeKind::Sink, 6, 380.0, 500.0)); // 5 predator death
+    c.nodes
+        .push(n(NodeKind::Process(Sensing), 7, 380.0, 360.0)); // 6 senses predator level
+    c.nodes[0].param = 2.0; // S — grass rate (prey carrying supply)
+    c.nodes[1].initial_storage = 8.0;
+    c.nodes[1].storage = 8.0;
+    c.nodes[1].time_constant = 3.0; // τ_prey — proportional predation outflow
+    c.nodes[2].back_pressure = true; // uneaten prey backs up (stays prey), never sheds
+    c.nodes[3].param = 0.5; // η — trophic efficiency (the rest dissipates)
+    c.nodes[4].initial_storage = 4.0;
+    c.nodes[4].storage = 4.0;
+    c.nodes[4].time_constant = 8.0; // τ_pred — first-order death γy (the lift)
+    c.nodes[6].param = 0.04; // k — predation sensitivity (keeps the gate unsaturated)
+    c.wires.push(Wire::new(0, 1)); // grass → prey
+    c.wires.push(Wire::new(1, 2)); // prey → predation valve
+    c.wires.push(Wire::new(6, 2)); // predator level gates the valve (βxy)
+    c.wires.push(Wire::new(2, 3)); // eaten prey → trophic transfer
+    c.wires.push(Wire::new(3, 4)); // η share → predator (1−η dissipates)
+    c.wires.push(Wire::new(4, 5)); // predator → death (first-order)
+    c.wires.push(Wire::new(4, 6)); // predator level sensed (observation tap)
     c
 }
 

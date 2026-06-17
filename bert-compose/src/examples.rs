@@ -153,6 +153,13 @@ pub const EXAMPLES: &[Example] = &[
         lens: ECOLOGY,
         build: meadow,
     },
+    Example {
+        name: "Predator and prey",
+        blurb: "A damped Lotka-Volterra cycle — prey peaks, predators peak a quarter-cycle later — winding toward balance as each trophic transfer dissipates. Conserved every tick.",
+        category: Category::Ecology,
+        lens: ECOLOGY,
+        build: food_chain,
+    },
     // ── Cross-domain showcase ────────────────────────────────────────────
     Example {
         name: "Universal homeostat",
@@ -478,6 +485,27 @@ fn difficulty_issuance() -> Circuit {
 /// carrying capacity) while ~75% of incident sunlight respires away.
 fn meadow() -> Circuit {
     regulator(substance("sunlight"), 4.0, 1.0, 0.05)
+}
+
+/// ECOLOGY — a predator-prey food chain, one trophic level up from the meadow.
+/// Grass energy feeds a prey stock; predation carries it up to predators; death
+/// returns it to the environment. The predation term βxy is a genuine product:
+/// the prey's first-order release (∝ prey) gated by a Sensing read of the
+/// predator level (∝ predator). The result is a DAMPED Lotka-Volterra spiral —
+/// prey peaks, predators peak a quarter-cycle later — winding toward a fixed
+/// point because each trophic transfer dissipates (Odum's ~10% rule). Closed
+/// orbits are LV's idealization; a mass-faithful food web damps. Same conserved
+/// energy substance as the meadow, one level up the chain.
+fn food_chain() -> Circuit {
+    let mut c = crate::ladder::predator_prey_first_order();
+    let biomass = DeclaredSubstance::named("biomass", SubstanceType::Energy, "kcal");
+    // Relabel the energy-carrying nodes (grass, prey, valve, transfer, predator);
+    // the Sensing tap stays a Message signal. Dynamics read `.base` only, so the
+    // label is presentation — the run is identical to the sweep rung.
+    for i in [0, 1, 2, 3, 4] {
+        c.nodes[i].out_substance = biomass.clone();
+    }
+    c
 }
 
 /// The universal homeostat, exposed for the lens-invariance test in lens.rs.

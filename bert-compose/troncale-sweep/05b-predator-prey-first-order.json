@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "environment": {
+    "info": {
+      "id": "E-1",
+      "level": -1,
+      "name": "Environment",
+      "description": ""
+    },
+    "sources": [
+      {
+        "info": {
+          "id": "Src-1.0",
+          "level": -1,
+          "name": "Source 1",
+          "description": "bert-compose source"
+        },
+        "type": "Source",
+        "transform": {
+          "translation": [
+            120.00001,
+            144.0
+          ],
+          "rotation": 0.0
+        },
+        "equivalence": "",
+        "model": "",
+        "is_same_as_id": null
+      }
+    ],
+    "sinks": [
+      {
+        "info": {
+          "id": "Snk-1.0",
+          "level": -1,
+          "name": "Sink 6",
+          "description": "bert-compose sink"
+        },
+        "type": "Sink",
+        "transform": {
+          "translation": [
+            228.00002,
+            300.0
+          ],
+          "rotation": 0.0
+        },
+        "equivalence": "",
+        "model": "",
+        "is_same_as_id": null
+      }
+    ]
+  },
+  "systems": [
+    {
+      "info": {
+        "id": "S0",
+        "level": 0,
+        "name": "05b-predator-prey-first-order",
+        "description": "Built in bert-compose: process primitives wired into a working circuit (composition is unconditional — Systems/Mobus/Composition.lean)."
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "E-1",
+      "complexity": {
+        "Complex": {
+          "adaptable": false,
+          "evolveable": false
+        }
+      },
+      "boundary": {
+        "info": {
+          "id": "B0",
+          "level": 0,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 400.0,
+      "transform": {
+        "translation": [
+          0.0,
+          0.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": ""
+    },
+    {
+      "info": {
+        "id": "C0.0",
+        "level": 1,
+        "name": "Buffering 2",
+        "description": "Buffering work process (Mobus atomic primitive)"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.0",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          228.00002,
+          144.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ],
+        "cognitive_params": {
+          "time_constant": 3.0,
+          "release_rate": 1.0
+        },
+        "initial_state": {
+          "storage": 8.0
+        }
+      }
+    },
+    {
+      "info": {
+        "id": "C0.1",
+        "level": 1,
+        "name": "Modulating 3",
+        "description": "Modulating work process (Mobus atomic primitive)"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.1",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          336.0,
+          144.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Modulating"
+        ],
+        "cognitive_params": {
+          "back_pressure": 1.0
+        }
+      }
+    },
+    {
+      "info": {
+        "id": "C0.2",
+        "level": 1,
+        "name": "Propelling 4",
+        "description": "Propelling work process (Mobus atomic primitive)"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.2",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          336.0,
+          216.00002
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Propelling"
+        ]
+      }
+    },
+    {
+      "info": {
+        "id": "C0.3",
+        "level": 1,
+        "name": "Buffering 5",
+        "description": "Buffering work process (Mobus atomic primitive)"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.3",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          336.0,
+          300.0
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.5,
+        "primitives": [
+          "Buffering"
+        ],
+        "cognitive_params": {
+          "release_rate": 1.0,
+          "time_constant": 8.0
+        },
+        "initial_state": {
+          "storage": 4.0
+        }
+      }
+    },
+    {
+      "info": {
+        "id": "C0.4",
+        "level": 1,
+        "name": "Sensing 7",
+        "description": "Sensing work process (Mobus atomic primitive)"
+      },
+      "sources": [],
+      "sinks": [],
+      "parent": "S0",
+      "complexity": "Atomic",
+      "boundary": {
+        "info": {
+          "id": "B0.4",
+          "level": 1,
+          "name": "",
+          "description": ""
+        },
+        "porosity": 0.0,
+        "perceptive_fuzziness": 0.0,
+        "interfaces": [],
+        "parent_interface": null
+      },
+      "radius": 50.0,
+      "transform": {
+        "translation": [
+          228.00002,
+          216.00002
+        ],
+        "rotation": 0.0
+      },
+      "equivalence": "",
+      "history": "",
+      "transformation": "",
+      "member_autonomy": 1.0,
+      "time_constant": "",
+      "agent": {
+        "kind": "Reactive",
+        "agency_capacity": 0.04,
+        "primitives": [
+          "Sensing"
+        ]
+      }
+    }
+  ],
+  "interactions": [
+    {
+      "info": {
+        "id": "F-1.0",
+        "level": -1,
+        "name": "Source 1 → Buffering 2",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Material"
+      },
+      "type": "Flow",
+      "usability": "Resource",
+      "source": "Src-1.0",
+      "source_interface": null,
+      "sink": "C0.0",
+      "sink_interface": null,
+      "amount": "2",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.1",
+        "level": 1,
+        "name": "Buffering 2 → Modulating 3",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Material"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.0",
+      "source_interface": null,
+      "sink": "C0.1",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.2",
+        "level": 1,
+        "name": "Sensing 7 → Modulating 3",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Message"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.4",
+      "source_interface": null,
+      "sink": "C0.1",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.3",
+        "level": 1,
+        "name": "Modulating 3 → Propelling 4",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Material"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.1",
+      "source_interface": null,
+      "sink": "C0.2",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.4",
+        "level": 1,
+        "name": "Propelling 4 → Buffering 5",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Material"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.2",
+      "source_interface": null,
+      "sink": "C0.3",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F-1.5",
+        "level": -1,
+        "name": "Buffering 5 → Sink 6",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Material"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.3",
+      "source_interface": null,
+      "sink": "Snk-1.0",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "",
+      "parameters": []
+    },
+    {
+      "info": {
+        "id": "F0.6",
+        "level": 1,
+        "name": "Buffering 5 → Sensing 7",
+        "description": ""
+      },
+      "substance": {
+        "sub_type": "",
+        "type": "Material"
+      },
+      "type": "Flow",
+      "usability": "Product",
+      "source": "C0.3",
+      "source_interface": null,
+      "sink": "C0.4",
+      "sink_interface": null,
+      "amount": "1",
+      "unit": "",
+      "parameters": []
+    }
+  ],
+  "hidden_entities": []
+}
