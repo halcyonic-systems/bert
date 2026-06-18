@@ -27,7 +27,9 @@ cargo run --release            # dev
 
 It's a **conservation-faithful systems simulator** on verified primitives, an **on-ramp to BERT** (it emits real BERT JSON), a **teaching instrument** (plain-English cards, relatable substances, lenses), and a **research instrument** — see the [Troncale sweep](troncale-sweep/README.md), which demonstrated his systems processes as machine-checked Linkage Propositions and mapped where primitive composition reaches its edge.
 
-It is **not** an agent simulator (individuated tokens — *this* validator defecting — live one layer up in Mesa / TypeDB), not yet a hierarchy composer (nesting is [#75](https://github.com/halcyonic-systems/bert/issues/75)), and not yet first-order kinetics (proportional decay is [#85](https://github.com/halcyonic-systems/bert/issues/85)).
+The teaching showcase is the Ecology example **Predator and prey** — a mass-accounted Lotka-Volterra. You build it from parts (a Source, two stocks, a sensor, a valve), the oscillation *emerges from the wiring* rather than from an equation you type, and the conservation badge stays green every tick. It spirals to a fixed point because trophic transfer dissipates — the honest answer the textbook's closed orbits idealize away — and the autocatalytic-growth variant recovers a sustained, still-conserving limit cycle. Teaching dynamics and conservation in the same breath, where no other stock-and-flow tool can stop a model from silently leaking mass.
+
+It is **not** an agent simulator (individuated tokens — *this* validator defecting — live one layer up in Mesa / TypeDB) and not yet a hierarchy composer (nesting is [#75](https://github.com/halcyonic-systems/bert/issues/75)). First-order kinetics — proportional decay via the `time_constant` mode, which unlocks Lotka-Volterra — now ships ([#85](https://github.com/halcyonic-systems/bert/issues/85), closed).
 
 ## Layout
 

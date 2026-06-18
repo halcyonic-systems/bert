@@ -24,6 +24,8 @@ No single competitor is **all** of these at once; that combination is the positi
 
 **How bert-compose differs:** SD tools are **equation-first** (differential equations under the hood), not **ontology-first** — a flow is a rate equation, not a conserved transfer between bounded entities. **Conservation is on the modeler, not the tool** — nothing stops an SD model from leaking mass; the ledger makes it hold by construction. And SD has no cross-domain lens layer and no typed-graph export: SD models are simulation artifacts, not knowledge artifacts.
 
+The sharpest demonstration is the canonical SD demo itself — predator-prey. SD's Lotka-Volterra is a pair of rate equations that conserve nothing; bert-compose's predator-prey is the *same dynamics with the books kept* — every prey that leaves is eaten-or-stored-or-dissipated, the ledger balancing each tick — so it spirals to a fixed point (trophic loss dissipates) where SD's idealized closed orbits silently violate conservation. Same curve a student already knows, now mass-accounted: the pedagogical wedge in one example.
+
 ### B. Compositional / categorical — the closest *foundational* kin
 
 **AlgebraicJulia / AlgebraicDynamics.jl** (built on Catlab.jl): builds dynamical systems *compositionally* from primitive systems via **operads and wiring diagrams** — "systems are morphisms, composition is the operation, the wiring diagram is the syntax." That is the K ≅ **2** thesis in someone else's hands. Closest on the deep idea.
