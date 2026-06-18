@@ -311,6 +311,60 @@ pub fn predator_prey_first_order() -> Circuit {
     c
 }
 
+/// PREDATOR-PREY with autocatalytic prey growth (true αx). The first-order
+/// model above uses a CONSTANT grass inflow — a stabilizing immigration term
+/// that damps the orbit to a fixed point. Classic Lotka-Volterra's sustained
+/// orbits need exponential prey growth αx, so here the grass feed is GATED by a
+/// Sensing read of the prey's own level: inflow = S·clamp(k_grow·x), prey
+/// drawing resource in proportion to their number — autocatalysis that stays
+/// mass-faithful (the grass Source is the reservoir; nothing is created from
+/// nothing). It reads as αx while sparse and saturates to a grass-limited
+/// ceiling when dense (logistic / Rosenzweig-MacArthur), so the loop can hold a
+/// near-closed orbit — a stable limit cycle — instead of damping out, while the
+/// ledger still balances. The prey equation is now dx ≈ αx − βxy in full.
+pub fn predator_prey_alpha_growth() -> Circuit {
+    let mut c = Circuit::default();
+    c.nodes.push(n(NodeKind::Source, 1, 200.0, 160.0)); // 0 grass (resource pool)
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 2, 380.0, 160.0)); // 1 growth valve (gated ∝ prey)
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 3, 380.0, 280.0)); // 2 prey
+    c.nodes
+        .push(n(NodeKind::Process(Sensing), 4, 200.0, 280.0)); // 3 senses prey (drives growth)
+    c.nodes
+        .push(n(NodeKind::Process(Modulating), 5, 560.0, 280.0)); // 4 predation valve
+    c.nodes
+        .push(n(NodeKind::Process(Propelling), 6, 560.0, 400.0)); // 5 trophic transfer (η<1)
+    c.nodes
+        .push(n(NodeKind::Process(Buffering), 7, 560.0, 520.0)); // 6 predator
+    c.nodes.push(n(NodeKind::Sink, 8, 380.0, 520.0)); // 7 predator death
+    c.nodes
+        .push(n(NodeKind::Process(Sensing), 9, 380.0, 400.0)); // 8 senses predator (drives predation)
+    c.nodes[0].param = 2.0; // S — grass supply (the growth ceiling)
+    c.nodes[1].back_pressure = true; // grass drawn only as fast as prey reproduce
+    c.nodes[2].initial_storage = 8.0;
+    c.nodes[2].storage = 8.0;
+    c.nodes[2].time_constant = 3.0; // τ_prey — proportional predation outflow
+    c.nodes[3].param = 0.05; // k_grow — prey self-stimulation (α = S·k_grow while sparse)
+    c.nodes[4].back_pressure = true; // uneaten prey backs up (stays prey), never sheds
+    c.nodes[5].param = 0.5; // η — trophic efficiency
+    c.nodes[6].initial_storage = 4.0;
+    c.nodes[6].storage = 4.0;
+    c.nodes[6].time_constant = 8.0; // τ_pred — first-order death γy
+    c.nodes[8].param = 0.04; // k_pred — predation sensitivity
+    c.wires.push(Wire::new(0, 1)); // grass → growth valve
+    c.wires.push(Wire::new(1, 2)); // growth → prey
+    c.wires.push(Wire::new(2, 3)); // prey level sensed (observation tap)
+    c.wires.push(Wire::new(3, 1)); // prey gates its own growth (αx autocatalysis)
+    c.wires.push(Wire::new(2, 4)); // prey → predation valve
+    c.wires.push(Wire::new(8, 4)); // predator level gates predation (βxy)
+    c.wires.push(Wire::new(4, 5)); // eaten prey → trophic transfer
+    c.wires.push(Wire::new(5, 6)); // η share → predator (1−η dissipates)
+    c.wires.push(Wire::new(6, 7)); // predator → death (first-order)
+    c.wires.push(Wire::new(6, 8)); // predator level sensed (observation tap)
+    c
+}
+
 /// DECAY — release > inflow drains the stock monotonically (linear).
 pub fn decay() -> Circuit {
     let mut c = Circuit::default();

@@ -350,6 +350,126 @@ mod tests {
         );
     }
 
+    /// Sweep `k` (Sensing predation gain) × `η` (Propelling efficiency) through
+    /// a predator-prey builder, classifying each cell's orbit and confirming
+    /// conservation. `eta_node`/`k_node` are the node indices of the two knobs;
+    /// `prey`/`pred` the stock indices to read. Returns the worst relative
+    /// ledger residual over the grid (the engine must balance for every cell).
+    fn basin_grid(
+        label: &str,
+        build: fn() -> Circuit,
+        eta_node: usize,
+        k_node: usize,
+        prey_i: usize,
+        pred_i: usize,
+        ticks: usize,
+    ) -> f32 {
+        const KS: &[f32] = &[0.02, 0.04, 0.06, 0.08, 0.10];
+        const ETAS: &[f32] = &[0.3, 0.5, 0.7, 0.9];
+        let peaks = |s: &[f32]| -> Vec<usize> {
+            (1..s.len() - 1)
+                .filter(|&i| s[i] > s[i - 1] && s[i] >= s[i + 1])
+                .collect()
+        };
+
+        println!("\n  {label}  ({ticks} ticks)");
+        println!("  cell = <class> p<period> [×<damping/cycle> if damping]");
+        print!("   k ╲ η │");
+        for &eta in ETAS {
+            print!("   η={eta:<3.1}        ");
+        }
+        println!();
+        println!("  ───────┼{}", "─".repeat(15 * ETAS.len()));
+
+        let mut worst_residual = 0.0f32;
+        for &k in KS {
+            print!("  k={k:<4.2} │");
+            for &eta in ETAS {
+                let mut c = build();
+                c.nodes[eta_node].param = eta;
+                c.nodes[k_node].param = k;
+                let s = run_storage(&mut c, ticks);
+                let prey = &s[prey_i];
+                let pred = &s[pred_i];
+
+                let scale =
+                    (c.emitted + c.nodes.iter().map(|n| n.initial_storage).sum::<f32>()).max(1.0);
+                worst_residual = worst_residual.max(c.balance().abs() / scale);
+
+                let pred_max = pred.iter().cloned().fold(f32::MIN, f32::max);
+                let cell = if *pred.last().unwrap() < 0.1 {
+                    "extinct".to_string()
+                } else if pred_max > 100.0 {
+                    "RUNAWAY".to_string()
+                } else {
+                    let pk = peaks(prey);
+                    let period = if pk.len() >= 2 {
+                        (pk[pk.len() - 1] - pk[0]) as f32 / (pk.len() - 1) as f32
+                    } else {
+                        0.0
+                    };
+                    // Late-quarter swing: large & steady ⇒ limit cycle (RINGS);
+                    // small ⇒ settled to a fixed point.
+                    let late = stock_span(&prey[3 * ticks / 4..]);
+                    if late < 0.5 {
+                        format!("settles p{period:.0}")
+                    } else if late >= 3.0 {
+                        format!("RINGS p{period:.0} a{late:.0}")
+                    } else {
+                        // genuinely damping — report the per-cycle ratio
+                        let final_prey: f32 = prey[ticks - 30..].iter().sum::<f32>() / 30.0;
+                        let over: Vec<f32> = pk
+                            .iter()
+                            .map(|&i| prey[i] - final_prey)
+                            .filter(|&o| o > 0.05)
+                            .collect();
+                        if over.len() >= 2 && over[1] > 0.05 {
+                            format!("damps p{period:.0} ×{:.0}", over[0] / over[1])
+                        } else {
+                            format!("damps p{period:.0}")
+                        }
+                    }
+                };
+                print!(" {cell:<14}");
+            }
+            println!();
+        }
+        worst_residual
+    }
+
+    /// RESEARCH — predator-prey parameter BASIN, both prey-growth models side by
+    /// side. Constant-immigration prey (`predator_prey_first_order`) vs.
+    /// autocatalytic αx prey (`predator_prey_alpha_growth`). Each cell runs the
+    /// REAL engine; conservation is asserted across BOTH grids. Opt-in:
+    ///   cargo test sweep_predator_prey_basin -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn sweep_predator_prey_basin() {
+        // Constant immigration: η = node 3, k = node 6, prey = 1, predator = 4.
+        let r1 = basin_grid(
+            "CONSTANT-IMMIGRATION prey (dx = S − βxy) — stabilizing",
+            predator_prey_first_order,
+            3,
+            6,
+            1,
+            4,
+            800,
+        );
+        // Autocatalytic αx: η = node 5, k = node 8, prey = 2, predator = 6.
+        let r2 = basin_grid(
+            "AUTOCATALYTIC αx prey (dx = αx − βxy) — Rosenzweig-MacArthur",
+            predator_prey_alpha_growth,
+            5,
+            8,
+            2,
+            6,
+            1500,
+        );
+        let worst = r1.max(r2);
+        println!("\n  conservation: worst ledger residual across both grids = {worst:.2e} (relative)");
+        assert!(worst < 1e-3, "conservation must hold across the whole basin");
+    }
+
     /// LP: Decay. Release > inflow drains the stock monotonically to ~0. (a)
     #[test]
     fn sweep_decay_drains() {
