@@ -63,15 +63,12 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 let dir = (b - a).normalized();
                 let (a_edge, b_edge) = (a + dir * NODE_R, b - dir * (NODE_R + 4.0));
                 let gradient = wire.mode == circuit::FlowMode::Gradient;
-                // Gradient flows: thickness scales with the LIVE potential
-                // difference — the wire visibly thins as the two stocks
-                // equalize. You watch the field relax.
-                let delta = (app.circuit.level(wire.from) - app.circuit.level(wire.to)).max(0.0);
-                let width: f32 = if gradient {
-                    (0.8 + 0.5 * delta).min(5.0)
-                } else {
-                    1.6
-                };
+                // Thickness = magnitude (log-scaled): the delivered amount on
+                // THIS wire, so a conserved split reads as one fat wire
+                // becoming two half-width wires, and a gradient wire visibly
+                // thins as the two stocks equalize. You watch the field relax.
+                let amount = app.circuit.wire_amount(k);
+                let width: f32 = (1.0 + 1.5 * (1.0 + amount).ln()).min(6.0);
                 if gradient {
                     // dashed to read as a field, not a pushed pipe
                     let seg = b_edge - a_edge;
@@ -96,12 +93,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     [b_edge, b_edge - dir * 7.0 - n * 4.0],
                     Stroke::new(1.6, color),
                 );
-                // live amount + moving pulse
-                let amount = if gradient {
-                    wire.conductance * delta
-                } else {
-                    app.circuit.nodes[wire.from].activity
-                };
+                // live amount + moving pulses
                 let mid = a_edge + (b_edge - a_edge) * 0.5;
                 let unit = &app.circuit.nodes[wire.from].out_substance.unit;
                 painter.text(
@@ -119,10 +111,17 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     egui::FontId::monospace(9.5),
                     if amount > 0.005 { color } else { HAIRLINE },
                 );
+                // Pulse density = rate: more flow, more dots (log-scaled,
+                // capped) — the circuit's tempo is visible, not just its
+                // topology.
                 if app.running && amount > 0.005 {
-                    let t = (time * 0.7 + k as f32 * 0.37).fract();
-                    let p = a_edge + (b_edge - a_edge) * t;
-                    painter.circle_filled(p, 3.0, color);
+                    let dots = (1.0 + (1.0 + amount).ln()).clamp(1.0, 4.0) as usize;
+                    for j in 0..dots {
+                        let t =
+                            (time * 0.7 + k as f32 * 0.37 + j as f32 / dots as f32).fract();
+                        let p = a_edge + (b_edge - a_edge) * t;
+                        painter.circle_filled(p, 3.0, color);
+                    }
                 }
             }
 
@@ -193,6 +192,27 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         vec2(glyph::R * 1.3, h * frac),
                     );
                     painter.rect_filled(inner, 2.0, GOLD.gamma_multiply(0.55));
+                    // Rim pulse: a bounded stock near overflow, or one that
+                    // held real stock and is running dry, breathes at its rim
+                    // — trouble legible from across the room.
+                    if node.capacity > 0.0 {
+                        let ran_high = node.spark.iter().fold(0.0f32, |m, &v| m.max(v));
+                        let trouble = frac >= 0.9
+                            || (frac <= 0.1 && ran_high > node.capacity * 0.2);
+                        if trouble {
+                            let pulse = 0.5 + 0.35 * (time * 4.0).sin();
+                            let rim = egui::Rect::from_center_size(
+                                pos + vec2(0.0, 2.0),
+                                vec2(glyph::R * 1.5, glyph::R * 1.7),
+                            );
+                            painter.rect_stroke(
+                                rim,
+                                3.0,
+                                Stroke::new(2.2, theme::AMBER.gamma_multiply(pulse)),
+                                egui::StrokeKind::Outside,
+                            );
+                        }
+                    }
                 }
                 painter.text(
                     pos + vec2(0.0, 8.0),

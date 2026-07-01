@@ -447,6 +447,62 @@ impl Circuit {
         self.nodes[w.from].out_substance.base
     }
 
+    /// A PUSHED wire Buffer → Sensing is an observation tap: the sensor reads
+    /// the stock's LEVEL without draining it ("sensing is very low power").
+    /// A gradient wire into a sensor is a real drain, not a tap.
+    pub fn is_observation(&self, w: &Wire) -> bool {
+        w.mode == FlowMode::Pushed
+            && matches!(
+                self.nodes[w.from].kind,
+                NodeKind::Process(ProcessPrimitive::Buffering)
+            )
+            && matches!(
+                self.nodes[w.to].kind,
+                NodeKind::Process(ProcessPrimitive::Sensing)
+            )
+    }
+
+    /// Amount delivered over wire `k` this tick — the per-wire truth the view
+    /// draws (thickness, label, pulses): a gradient wire carries its rate law
+    /// k·Δlevel, an observation tap reads the stock, a pushed physical flow
+    /// splits across the fanout (a conserved split LOOKS conserved), Message
+    /// replicates. `step()` delegates its pushed-wire arithmetic here; the
+    /// gradient case omits only the buffer over-drain cap (step applies that
+    /// to its own capped rates).
+    pub fn wire_amount(&self, k: usize) -> f32 {
+        let w = &self.wires[k];
+        if w.mode == FlowMode::Gradient {
+            return if self.has_potential(w.from) {
+                (w.conductance * (self.level(w.from) - self.level(w.to))).max(0.0)
+            } else {
+                0.0
+            };
+        }
+        if self.is_observation(w) {
+            return self.nodes[w.from].storage; // non-draining level read
+        }
+        let sender = &self.nodes[w.from];
+        if matches!(sender.kind, NodeKind::Sink) {
+            return 0.0; // a sink is terminal — absorbed mass never re-emits
+        }
+        // Pushed fanout splits the sender's activity across pushed,
+        // non-observation outwires only (gradient/observation excluded).
+        // Message replicates to every receiver (information copies);
+        // Energy/Material split across the fanout (matter doesn't) —
+        // which is also why Copying relabeled to a physical substance
+        // splits rather than duplicating.
+        if sender.out_substance.base == SubstanceType::Message {
+            return sender.activity;
+        }
+        let outs = self
+            .wires
+            .iter()
+            .filter(|x| x.from == w.from && x.mode == FlowMode::Pushed && !self.is_observation(x))
+            .count()
+            .max(1) as f32;
+        sender.activity / outs
+    }
+
     /// Flow the Source-chosen substance forward: a pass-through node
     /// (`inherits_substance`) takes the substance of its physical inflow, so
     /// you declare "water" once at the Source and the tank/valve/splitter
@@ -568,54 +624,14 @@ impl Circuit {
             })
             .collect();
 
-        // Previous-tick amount arriving over each PUSHED wire, split when the
-        // sender fans out a conservative substance (Splitting/Copying handle
-        // their own fanout semantics; everything else divides physical flow).
-        // A PUSHED wire Buffer → Sensing is an observation tap: the sensor
-        // reads the stock's LEVEL without draining it ("sensing is very low
-        // power"). A gradient wire into a sensor is a real drain, not a tap.
-        let is_observation = |w: &Wire| -> bool {
-            w.mode == FlowMode::Pushed
-                && matches!(
-                    self.nodes[w.from].kind,
-                    NodeKind::Process(ProcessPrimitive::Buffering)
-                )
-                && matches!(
-                    self.nodes[w.to].kind,
-                    NodeKind::Process(ProcessPrimitive::Sensing)
-                )
-        };
-        // amount delivered over wire index k (gradient or pushed).
+        // Amount delivered over wire index k: pushed wires use the shared
+        // per-wire delivery rule (`wire_amount` — fanout split, observation
+        // taps, terminal sinks); gradient wires use this tick's CAPPED rates.
         let amount_on = |k: usize| -> f32 {
-            let w = &self.wires[k];
-            if w.mode == FlowMode::Gradient {
-                return grad[k];
-            }
-            if is_observation(w) {
-                return self.nodes[w.from].storage; // non-draining level read
-            }
-            let sender = &self.nodes[w.from];
-            if matches!(sender.kind, NodeKind::Sink) {
-                return 0.0; // a sink is terminal — absorbed mass never re-emits
-            }
-            // Pushed fanout splits the sender's activity across pushed,
-            // non-observation outwires only (gradient/observation excluded).
-            let outs = (0..nw)
-                .filter(|&x| {
-                    self.wires[x].from == w.from
-                        && self.wires[x].mode == FlowMode::Pushed
-                        && !is_observation(&self.wires[x])
-                })
-                .count()
-                .max(1) as f32;
-            // Message replicates to every receiver (information copies);
-            // Energy/Material split across the fanout (matter doesn't) —
-            // which is also why Copying relabeled to a physical substance
-            // splits rather than duplicating.
-            if sender.out_substance.base == SubstanceType::Message {
-                sender.activity
+            if self.wires[k].mode == FlowMode::Gradient {
+                grad[k]
             } else {
-                sender.activity / outs
+                self.wire_amount(k)
             }
         };
 
@@ -681,7 +697,7 @@ impl Circuit {
                     (
                         self.wire_substance(&self.wires[k]),
                         amount_on(k),
-                        is_observation(&self.wires[k]),
+                        self.is_observation(&self.wires[k]),
                     )
                 })
                 .collect();
@@ -737,7 +753,7 @@ impl Circuit {
                         let has_pushed_outlet = (0..nw).any(|k| {
                             self.wires[k].from == i
                                 && self.wires[k].mode == FlowMode::Pushed
-                                && !is_observation(&self.wires[k])
+                                && !self.is_observation(&self.wires[k])
                         });
                         let released = if has_pushed_outlet {
                             // First-order drain (τ > 0): release ≈ stock/τ, an
@@ -1160,6 +1176,67 @@ mod tests {
         // Setting the source to emit Message clears it.
         c.nodes[0].out_substance = SubstanceType::Message.into();
         assert!(c.substance_mismatches().is_empty());
+    }
+
+    /// wire_amount — the view's per-wire delivery: a physical split halves
+    /// per wire (a conserved split LOOKS conserved), Message replicates to
+    /// every receiver, an observation tap reads the stock.
+    #[test]
+    fn wire_amount_reports_per_wire_delivery() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Splitting)));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 2.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(1, 2));
+        c.wires.push(Wire::new(1, 3));
+        for _ in 0..5 {
+            c.step();
+        }
+        assert!((c.wire_amount(0) - 2.0).abs() < 1e-6, "source emits its rate");
+        assert!(
+            (c.wire_amount(1) - 1.0).abs() < 1e-6 && (c.wire_amount(2) - 1.0).abs() < 1e-6,
+            "physical split halves per wire: {} / {}",
+            c.wire_amount(1),
+            c.wire_amount(2)
+        );
+
+        let mut m = Circuit::default();
+        m.nodes.push(node(NodeKind::Source));
+        m.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Copying)));
+        m.nodes.push(node(NodeKind::Sink));
+        m.nodes.push(node(NodeKind::Sink));
+        m.nodes[0].out_substance = SubstanceType::Message.into();
+        m.wires.push(Wire::new(0, 1));
+        m.wires.push(Wire::new(1, 2));
+        m.wires.push(Wire::new(1, 3));
+        for _ in 0..5 {
+            m.step();
+        }
+        assert!(
+            (m.wire_amount(1) - m.nodes[1].activity).abs() < 1e-6
+                && (m.wire_amount(2) - m.nodes[1].activity).abs() < 1e-6,
+            "Message replicates, never splits"
+        );
+
+        let mut o = Circuit::default();
+        o.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        o.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Sensing)));
+        o.nodes[0].initial_storage = 7.0;
+        o.nodes[0].storage = 7.0;
+        o.wires.push(Wire::new(0, 1));
+        o.step();
+        assert!(
+            (o.wire_amount(0) - 7.0).abs() < 1e-3,
+            "observation tap reads the level: {}",
+            o.wire_amount(0)
+        );
     }
 
     /// The sparkline ring: caps at SPARK_CAP, tracks the live signal (a
