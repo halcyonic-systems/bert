@@ -56,6 +56,10 @@
 //! conserved, never in the ledger.
 
 use bert_core::{ProcessPrimitive, SubstanceType};
+use std::collections::VecDeque;
+
+/// Ticks of per-node history kept for the inline sparkline.
+pub const SPARK_CAP: usize = 40;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum NodeKind {
@@ -302,6 +306,10 @@ pub struct Node {
     pub storage: f32,
     pub activity: f32,
     pub total: f32,
+    /// The node's last `SPARK_CAP` ticks — storage for a buffer (the thing it
+    /// holds), activity for everything else. Engine state, not view state:
+    /// the inline sparkline just draws this buffer, so it ports to any shell.
+    pub spark: VecDeque<f32>,
 }
 
 impl Node {
@@ -323,6 +331,7 @@ impl Node {
             storage: 0.0,
             activity: 0.0,
             total: 0.0,
+            spark: VecDeque::with_capacity(SPARK_CAP),
         }
     }
 }
@@ -394,6 +403,7 @@ impl Circuit {
             n.storage = n.initial_storage;
             n.activity = 0.0;
             n.total = 0.0;
+            n.spark.clear();
         }
         self.tick = 0;
         self.history.clear();
@@ -837,6 +847,15 @@ impl Circuit {
             node.activity = next_activity[i];
             node.storage = next_storage[i];
             node.total += sink_add[i];
+            let signal = if matches!(node.kind, NodeKind::Process(ProcessPrimitive::Buffering)) {
+                node.storage
+            } else {
+                node.activity
+            };
+            node.spark.push_back(signal);
+            if node.spark.len() > SPARK_CAP {
+                node.spark.pop_front();
+            }
         }
         self.emitted += emitted_now;
         self.sunk += sunk_now;
@@ -1141,6 +1160,39 @@ mod tests {
         // Setting the source to emit Message clears it.
         c.nodes[0].out_substance = SubstanceType::Message.into();
         assert!(c.substance_mismatches().is_empty());
+    }
+
+    /// The sparkline ring: caps at SPARK_CAP, tracks the live signal (a
+    /// buffer's storage, everything else's activity), clears on reset.
+    #[test]
+    fn spark_ring_caps_and_tracks_live_signal() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes
+            .push(node(NodeKind::Process(ProcessPrimitive::Buffering)));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 2.0;
+        c.nodes[1].release_rate = 1.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(1, 2));
+        for _ in 0..100 {
+            c.step();
+        }
+        for n in &c.nodes {
+            assert_eq!(n.spark.len(), SPARK_CAP, "{}: ring caps", n.name);
+        }
+        assert_eq!(
+            *c.nodes[1].spark.back().unwrap(),
+            c.nodes[1].storage,
+            "buffer's spark is its stock"
+        );
+        assert_eq!(
+            *c.nodes[0].spark.back().unwrap(),
+            c.nodes[0].activity,
+            "source's spark is its activity"
+        );
+        c.reset();
+        assert!(c.nodes[1].spark.is_empty(), "reset clears the ring");
     }
 
     #[test]

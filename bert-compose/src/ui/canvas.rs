@@ -208,6 +208,37 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     egui::FontId::proportional(10.0),
                     SECONDARY,
                 );
+                // Inline sparkline: the node's last ~40 ticks (a buffer's
+                // stock, everything else's activity) under the label — the
+                // dynamics live on the diagram, not in a side panel.
+                if node.spark.len() >= 2 {
+                    let w = NODE_R * 2.0;
+                    let h = 11.0;
+                    let left = pos.x - w * 0.5;
+                    let top = pos.y + glyph::R + 19.0;
+                    let (mut lo, mut hi) = (f32::INFINITY, f32::NEG_INFINITY);
+                    for &v in &node.spark {
+                        lo = lo.min(v);
+                        hi = hi.max(v);
+                    }
+                    let dx = w / (node.spark.len() - 1) as f32;
+                    let points: Vec<egui::Pos2> = node
+                        .spark
+                        .iter()
+                        .enumerate()
+                        .map(|(k, &v)| {
+                            // A flat signal reads as a midline, not a ceiling.
+                            let norm = if hi - lo > 1e-6 {
+                                (v - lo) / (hi - lo)
+                            } else {
+                                0.5
+                            };
+                            egui::pos2(left + dx * k as f32, top + h * (1.0 - norm))
+                        })
+                        .collect();
+                    let color = substance_color(node.out_substance.base);
+                    painter.add(egui::Shape::line(points, Stroke::new(1.1, color)));
+                }
                 if mismatched.contains(&i) {
                     painter.text(
                         pos + vec2(0.0, -NODE_R - 8.0),
