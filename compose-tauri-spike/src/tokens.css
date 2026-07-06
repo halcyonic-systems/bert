@@ -1,0 +1,79 @@
+/*
+ * Halcyonic Frost — framework-agnostic design tokens, dual-theme.
+ *
+ * Deliberately plain CSS custom properties (no Tailwind/React coupling) so the
+ * same SSOT can later be consumed by BERT's Leptos shell. The React app reads
+ * these via Tailwind arbitrary values, e.g. bg-[var(--frost-surface)].
+ *
+ * Light is the default (most readable); [data-theme="dark"] swaps the values.
+ * Variable NAMES are stable across themes — only the values change — so no
+ * component markup needs to know which theme is active.
+ */
+
+/* ---- Frost Light (default) ---- */
+:root,
+:root[data-theme="light"] {
+  --frost-bg: #eef2f8;
+  --frost-bg-2: #e6edf6;
+  --frost-surface: #ffffff;
+  --frost-surface-2: #f4f7fc;
+  --frost-border: #d3deee;
+  --frost-border-soft: #e3eaf4;
+
+  --frost-text: #15223b;
+  --frost-text-muted: #45587a;
+  --frost-text-faint: #7d90b1;
+
+  --frost-teal: #0d9488;
+  --frost-teal-soft: #14b8a6;
+  --frost-indigo: #4f46e5;
+  --frost-indigo-soft: #6366f1;
+
+  --engine-knowledge: #0d9488; /* teal    */
+  --engine-symbolic: #4f46e5;  /* indigo  */
+  --engine-logic: #0284c7;     /* sky     */
+  --engine-formal: #059669;    /* emerald */
+  --engine-conjecture: #b45309;/* amber   */
+  --engine-none: #64748b;      /* slate   */
+
+  --frost-glow-a: rgba(99, 102, 241, 0.1);
+  --frost-glow-b: rgba(13, 148, 136, 0.08);
+  --frost-on-accent: #ffffff;
+
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+}
+
+/* ---- Frost Dark ---- */
+:root[data-theme="dark"] {
+  --frost-bg: #0a0f1c;
+  --frost-bg-2: #0d1426;
+  --frost-surface: #111a30;
+  --frost-surface-2: #16213c;
+  --frost-border: #21304f;
+  --frost-border-soft: #1a2740;
+
+  --frost-text: #eef4ff;
+  --frost-text-muted: #aebfdc; /* brightened for readability */
+  --frost-text-faint: #748bb3;
+
+  --frost-teal: #2dd4bf;
+  --frost-teal-soft: #5eead4;
+  --frost-indigo: #818cf8;
+  --frost-indigo-soft: #a5b4fc;
+
+  --engine-knowledge: #2dd4bf;
+  --engine-symbolic: #818cf8;
+  --engine-logic: #38bdf8;
+  --engine-formal: #34d399;
+  --engine-conjecture: #fbbf24;
+  --engine-none: #64748b;
+
+  --frost-glow-a: rgba(129, 140, 248, 0.1);
+  --frost-glow-b: rgba(45, 212, 191, 0.08);
+  --frost-on-accent: #04140f;
+}

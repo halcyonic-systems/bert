@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+@import "./tokens.css";
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 70% -10%, var(--frost-glow-a), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, var(--frost-glow-b), transparent 55%),
+      var(--frost-bg);
+    color: var(--frost-text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  ::selection {
+    background: rgba(94, 234, 212, 0.25);
+  }
+
+  /* Slim, frost-tinted scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--frost-border);
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2c3e63;
+    background-clip: content-box;
+  }
+}
+
+/* Soft entrance for response sections */
+@keyframes frost-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.frost-rise {
+  animation: frost-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
