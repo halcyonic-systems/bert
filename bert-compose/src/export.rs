@@ -477,6 +477,65 @@ mod tests {
         assert_eq!(src_flow.unit, "L", "declared unit on the interaction");
     }
 
+    /// The seam as a contract: every model compose exports satisfies
+    /// bert-core's `validate_operational`, the two gates agree on refusals,
+    /// and the projected spec drives a circuit whose ledger balances.
+    #[test]
+    fn export_satisfies_the_seam_contract() {
+        use bert_core::operational::validate_operational;
+
+        let mut c = Circuit::default();
+        c.nodes
+            .push(Node::new(NodeKind::Source, 1, pos2(-200.0, 0.0)));
+        c.nodes.push(Node::new(
+            NodeKind::Process(ProcessPrimitive::Buffering),
+            2,
+            pos2(0.0, 0.0),
+        ));
+        c.nodes.push(Node::new(NodeKind::Sink, 3, pos2(200.0, 0.0)));
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::gradient(1, 2, 0.42));
+        c.nodes[0].param = 2.5;
+        c.nodes[1].initial_storage = 12.0;
+
+        let mut model = to_world_model(&c, "Seam");
+        let spec = validate_operational(&model).expect("compose exports satisfy the contract");
+        assert_eq!(spec.processes.len(), 1);
+        assert_eq!(spec.sources.len(), 1);
+        assert_eq!(spec.sinks.len(), 1);
+        assert_eq!(spec.flows.len(), 2);
+        assert_eq!(
+            spec.flows[1].conductance,
+            Some(0.42),
+            "gradient conductance crosses the seam typed"
+        );
+
+        // The projected model executes and conserves.
+        let mut r = from_world_model(&model).expect("loads");
+        for _ in 0..30 {
+            r.step();
+        }
+        assert!(r.balance().abs() < 1e-3, "projected circuit conserves");
+
+        // Representational rungs refuse: the hard gate, loud by design.
+        model.mode = Some(bert_core::Mode::Core);
+        assert!(
+            validate_operational(&model).is_err(),
+            "Klir rung must refuse execution"
+        );
+        model.mode = Some(bert_core::Mode::Structural);
+        assert!(
+            validate_operational(&model).is_err(),
+            "Bunge rung must refuse execution"
+        );
+        model.mode = None;
+
+        // Proto-gate agreement: what the contract refuses, the loader refuses.
+        model.systems[1].agent = None;
+        assert!(validate_operational(&model).is_err());
+        assert!(from_world_model(&model).is_err());
+    }
+
     /// An Inverting node's setpoint and a Modulating node's back-pressure flag
     /// survive the JSON round-trip (cognitive_params, same path as capacity).
     #[test]

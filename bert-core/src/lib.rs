@@ -9,6 +9,7 @@
 //! The `reflect` feature gates `bevy_reflect::Reflect` derives for the app,
 //! whose ECS components embed kernel types ([`Complexity`], [`AgentModel`]).
 
+pub mod operational;
 pub mod validate;
 
 use enum_iterator::Sequence;
