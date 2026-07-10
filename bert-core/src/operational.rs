@@ -21,11 +21,12 @@ use crate::validate::{validate_mode, Severity};
 use crate::{
     Id, IdType, InteractionType, Mode, ProcessPrimitive, SubstanceType, WorldModel,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 /// Why a model may not be executed, with the seam's location grammar
 /// (`systems[i]`, `interactions[k]`, `mode`).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalError {
     pub location: String,
     pub reason: String,
@@ -48,7 +49,7 @@ impl OperationalError {
 
 /// A work process the executor must instantiate: one Mobus primitive with its
 /// asserted parameters. Mirrors what compose reads out of `AgentModel`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalProcess {
     pub id: Id,
     pub name: String,
@@ -59,7 +60,7 @@ pub struct OperationalProcess {
 }
 
 /// A boundary terminal: an environment source or sink a flow may cross.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalTerminal {
     pub id: Id,
     pub name: String,
@@ -67,7 +68,7 @@ pub struct OperationalTerminal {
 
 /// A directed, substance-typed flow between projected endpoints.
 /// `conductance` is `Some` exactly for gradient (Force) flows.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalFlow {
     pub name: String,
     pub source: Id,
@@ -80,7 +81,7 @@ pub struct OperationalFlow {
 }
 
 /// The executable projection of a [`WorldModel`]: the seam payload.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct OperationalSpec {
     pub processes: Vec<OperationalProcess>,
     pub sources: Vec<OperationalTerminal>,
@@ -199,6 +200,19 @@ pub fn validate_operational(
     for (k, ix) in model.interactions.iter().enumerate() {
         let loc = format!("interactions[{k}]");
         let mut flow_ok = true;
+        if ix.source_interface.is_some() || ix.sink_interface.is_some() {
+            errors.push(OperationalError::new(
+                &loc,
+                format!(
+                    "flow \"{}\" routes through a boundary interface — interface \
+                     routing has no executable reading yet (bert#108: the \
+                     component → work-process mapping is an open design problem)",
+                    ix.info.name
+                ),
+                Some("Attach the flow directly to the process endpoints, or wait for 4.2"),
+            ));
+            flow_ok = false;
+        }
         if ix.source.ty == IdType::Sink {
             errors.push(OperationalError::new(
                 &loc,
@@ -537,6 +551,24 @@ mod tests {
         assert!(errs
             .iter()
             .any(|e| e.location.contains("Stray") && e.reason.contains("no flow touches")));
+    }
+
+    #[test]
+    fn interface_routing_refused_citing_108() {
+        let mut m = mobus_model();
+        m.interactions[0].sink_interface = Some(id(IdType::Interface, &[0, 0, 0]));
+        let errs = validate_operational(&m).unwrap_err();
+        assert!(errs
+            .iter()
+            .any(|e| e.reason.contains("bert#108") && e.reason.contains("interface")));
+    }
+
+    #[test]
+    fn spec_round_trips_as_json() {
+        let spec = validate_operational(&mobus_model()).expect("projects");
+        let json = serde_json::to_string(&spec).expect("serializes");
+        let back: OperationalSpec = serde_json::from_str(&json).expect("deserializes");
+        assert_eq!(spec, back, "the seam payload survives JSON unchanged");
     }
 
     #[test]

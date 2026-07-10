@@ -262,8 +262,9 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
 
     WorldModel {
         version: 1,
-        // Absent ≡ Full; compose exports carry the dynamical face.
-        mode: None,
+        // Compose's dynamics live in the engine, not the dynamical-face string
+        // slots, so exports declare the Operational rung they actually occupy.
+        mode: Some(bert_core::Mode::Operational),
         environment,
         systems,
         interactions,
@@ -282,125 +283,127 @@ pub fn model_name(model: &WorldModel) -> String {
         .unwrap_or_else(|| "Loaded model".to_string())
 }
 
-/// BERT JSON → Circuit: the inverse of [`to_world_model`]. Loads any
-/// compose-shaped model — environment sources/sinks, atomic subsystems
-/// carrying a Mobus primitive, flows between them. Hierarchy below level 1,
-/// interfaces, and primitive-less subsystems are out of the canvas's
-/// vocabulary and reported as an error rather than silently dropped.
-pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
+/// Build a circuit from the seam payload alone. Every executor-relevant datum
+/// comes from the [`OperationalSpec`], so the loader cannot disagree with the
+/// contract that produced it — agreement by construction, not by test.
+/// Canvas-only concerns (node positions) are the caller's overlay.
+pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
     let mut c = Circuit::default();
     let mut ids: Vec<(Id, usize)> = Vec::new();
-    let pos_of = |t: &Option<Transform2d>, i: usize| {
-        t.as_ref()
-            .map(|t| pos2(t.translation.x / SCALE, t.translation.y / SCALE))
-            .unwrap_or_else(|| {
-                pos2(
-                    380.0 + (i % 4) as f32 * 160.0,
-                    300.0 + (i / 4) as f32 * 140.0,
-                )
-            })
+    let grid = |i: usize| {
+        pos2(
+            380.0 + (i % 4) as f32 * 160.0,
+            300.0 + (i / 4) as f32 * 140.0,
+        )
     };
 
-    for ext in model
-        .environment
-        .sources
-        .iter()
-        .chain(model.environment.sinks.iter())
-    {
-        let kind = if matches!(ext.ty, ExternalEntityType::Source) {
-            NodeKind::Source
-        } else {
-            NodeKind::Sink
-        };
-        let mut node = Node::new(kind, ids.len() + 1, pos_of(&ext.transform, ids.len()));
-        node.name = ext.info.name.clone();
-        ids.push((ext.info.id.clone(), c.nodes.len()));
+    for t in &spec.sources {
+        let mut node = Node::new(NodeKind::Source, ids.len() + 1, grid(ids.len()));
+        node.name = t.name.clone();
+        ids.push((t.id.clone(), c.nodes.len()));
         c.nodes.push(node);
     }
-
-    for sys in model.systems.iter().filter(|s| s.info.level > 0) {
-        let agent = sys.agent.as_ref().ok_or_else(|| {
-            format!(
-                "\"{}\" has no agent model — not a compose-shaped subsystem",
-                sys.info.name
-            )
-        })?;
-        let &primitive = agent.primitives.first().ok_or_else(|| {
-            format!(
-                "\"{}\" carries no Mobus primitive — nothing to place",
-                sys.info.name
-            )
-        })?;
-        let mut node = Node::new(
-            NodeKind::Process(primitive),
-            ids.len() + 1,
-            pos_of(&sys.transform, ids.len()),
-        );
-        node.name = sys.info.name.clone();
-        node.param = agent.agency_capacity;
-        if let Some(s) = agent.initial_state.get("storage").and_then(|v| v.as_f64()) {
+    for t in &spec.sinks {
+        let mut node = Node::new(NodeKind::Sink, ids.len() + 1, grid(ids.len()));
+        node.name = t.name.clone();
+        ids.push((t.id.clone(), c.nodes.len()));
+        c.nodes.push(node);
+    }
+    for p in &spec.processes {
+        let mut node = Node::new(NodeKind::Process(p.primitive), ids.len() + 1, grid(ids.len()));
+        node.name = p.name.clone();
+        node.param = p.agency_capacity;
+        if let Some(s) = p.initial_storage {
             node.initial_storage = s as f32;
             node.storage = s as f32;
         }
-        if let Some(&r) = agent.cognitive_params.get("release_rate") {
+        if let Some(&r) = p.cognitive_params.get("release_rate") {
             node.release_rate = r as f32;
         }
-        if let Some(&cap) = agent.cognitive_params.get("capacity") {
+        if let Some(&cap) = p.cognitive_params.get("capacity") {
             node.capacity = cap as f32;
         }
-        if let Some(&sp) = agent.cognitive_params.get("setpoint") {
+        if let Some(&sp) = p.cognitive_params.get("setpoint") {
             node.setpoint = sp as f32;
         }
-        if let Some(&tc) = agent.cognitive_params.get("time_constant") {
+        if let Some(&tc) = p.cognitive_params.get("time_constant") {
             node.time_constant = tc as f32;
         }
-        if let Some(&m) = agent.cognitive_params.get("maintenance") {
+        if let Some(&m) = p.cognitive_params.get("maintenance") {
             node.maintenance = m as f32;
         }
-        if agent.cognitive_params.contains_key("back_pressure") {
+        if p.cognitive_params.contains_key("back_pressure") {
             node.back_pressure = true;
         }
-        ids.push((sys.info.id.clone(), c.nodes.len()));
+        ids.push((p.id.clone(), c.nodes.len()));
         c.nodes.push(node);
     }
 
-    if c.nodes.is_empty() {
-        return Err("model has no sources, sinks, or primitive subsystems".to_string());
-    }
-
     let idx_of = |id: &Id| ids.iter().find(|(i, _)| i == id).map(|(_, n)| *n);
-    for inter in &model.interactions {
-        let (Some(from), Some(to)) = (idx_of(&inter.source), idx_of(&inter.sink)) else {
-            return Err(format!(
-                "flow \"{}\" touches an entity outside the canvas vocabulary",
-                inter.info.name
-            ));
+    for f in &spec.flows {
+        // The contract guarantees endpoint resolution; a miss here would mean
+        // a spec not produced by validate_operational.
+        let (Some(from), Some(to)) = (idx_of(&f.source), idx_of(&f.sink)) else {
+            continue;
         };
-        let wire = if inter.ty == InteractionType::Force {
-            let k = inter
-                .parameters
-                .iter()
-                .find(|p| p.name == "conductance")
-                .and_then(|p| p.value.parse::<f32>().ok())
-                .unwrap_or(0.3);
-            Wire::gradient(from, to, k)
-        } else {
-            Wire::new(from, to)
+        let wire = match f.conductance {
+            Some(k) => Wire::gradient(from, to, k as f32),
+            None => Wire::new(from, to),
         };
         // The wire's substance is the sender's declared output.
         c.nodes[from].out_substance = DeclaredSubstance {
-            name: inter.substance.sub_type.clone(),
-            base: inter.substance.ty,
-            unit: inter.unit.clone(),
+            name: f.substance_name.clone(),
+            base: f.substance,
+            unit: f.unit.clone(),
         };
         // Source-fed flows carry the asserted emission rate (= the source's
         // fixed potential, for gradient flows).
         if matches!(c.nodes[from].kind, NodeKind::Source) {
-            if let Ok(rate) = inter.amount.to_string().parse::<f32>() {
-                c.nodes[from].param = rate;
-            }
+            c.nodes[from].param = f.amount as f32;
         }
         c.wires.push(wire);
+    }
+    c
+}
+
+/// BERT JSON → Circuit: the inverse of [`to_world_model`], routed through the
+/// seam contract. `validate_operational` either yields the spec — from which
+/// [`from_spec`] builds the circuit — or the load fails with every refusal
+/// reason. The loader has no projection logic of its own left to drift:
+/// positions are the only thing read off the model here, because the canvas
+/// cares where nodes sit and the contract deliberately does not.
+pub fn from_world_model(model: &WorldModel) -> Result<Circuit, String> {
+    let spec = bert_core::operational::validate_operational(model).map_err(|errs| {
+        errs.iter()
+            .map(|e| format!("{}: {}", e.location, e.reason))
+            .collect::<Vec<_>>()
+            .join("\n")
+    })?;
+    let mut c = from_spec(&spec);
+    if c.nodes.is_empty() {
+        return Err("model has no sources, sinks, or primitive subsystems".to_string());
+    }
+
+    // Canvas overlay: node order in from_spec mirrors the model's declaration
+    // order (env sources, env sinks, level-1 systems), so positions zip.
+    let transforms: Vec<&Option<Transform2d>> = model
+        .environment
+        .sources
+        .iter()
+        .map(|e| &e.transform)
+        .chain(model.environment.sinks.iter().map(|e| &e.transform))
+        .chain(
+            model
+                .systems
+                .iter()
+                .filter(|s| s.info.level > 0)
+                .map(|s| &s.transform),
+        )
+        .collect();
+    for (node, t) in c.nodes.iter_mut().zip(transforms) {
+        if let Some(t) = t {
+            node.pos = pos2(t.translation.x / SCALE, t.translation.y / SCALE);
+        }
     }
     Ok(c)
 }
