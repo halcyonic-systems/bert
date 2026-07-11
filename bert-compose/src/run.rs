@@ -1,29 +1,38 @@
-//! H — the recorded trajectory a circuit traces under `(T, Δt)` — kept OUTSIDE
-//! the `WorldModel` (memo A2, `bert-core/src/transition.rs`) and keyed to a
-//! content hash of the [`OperationalSpec`] it ran on. A structural edit moves
-//! the spec's hash, so a recording no longer matches the model and surfaces as
-//! stale: the old trajectory never poses as current.
+//! The **recorded trace** — the trajectory a circuit traces under `(T, Δt)` —
+//! kept OUTSIDE the `WorldModel` (memo A2, `bert-core/src/transition.rs`) and
+//! keyed to a content hash of the [`OperationalSpec`] it ran on. A structural
+//! edit moves the spec's hash, so a recording no longer matches the model and
+//! surfaces as stale: the old trajectory never poses as current.
+//!
+//! This is an *observer's* record of a simulation, distinct in kind from the
+//! 8-tuple's H slot (the authored `System.history`, η): that lives in the
+//! model, is serialized, and can condition the system's own transfer; this is
+//! pure downstream output that never feeds back and is never serialized. The
+//! two must not be conflated — this trace is not the system's "memory" (grounding
+//! F1). It is a session artifact, discarded when the app closes.
 //!
 //! The engine is a discrete synchronous map — one `Circuit::step` advances one
 //! Δt. The transfer functions are defined per-Δt, so unit Δt reproduces the
 //! engine's native behavior exactly; Δt is the physical duration a tick
 //! represents, which is what turns a horizon `T` into a tick count (`T / Δt`).
-//! A run is therefore `(T, Δt) → H`, and H carries the Δt it ran under.
+//! A run is therefore `(T, Δt) →` a recorded trace, which carries the Δt it ran
+//! under.
 
 use crate::circuit::Circuit;
 use bert_core::operational::OperationalSpec;
 
-/// One recorded run: the H a circuit traced, the Δt it advanced under, and the
-/// spec-hash key that says which model H belongs to.
+/// One recorded run: the trace a circuit traced, the Δt it advanced under, and
+/// the spec-hash key that says which model the trace belongs to.
 pub struct RecordedRun {
     /// [`OperationalSpec::content_hash`] at the moment of the run — the identity
-    /// of the model H belongs to. Not the model itself: A2 keeps H out of the
-    /// `WorldModel`, so the tie is a hash held here, never a field over there.
+    /// of the model this trace belongs to. Not the model itself: A2 keeps the
+    /// trace out of the `WorldModel`, so the tie is a hash held here, never a
+    /// field over there.
     key: u64,
-    /// The step size each tick advanced under (the Δt of `T, Δt → H`).
+    /// The step size each tick advanced under (the Δt the trace ran at).
     pub dt: f64,
     /// Per-tick rows `[tick, n0.activity, n0.storage, n0.total, n1…]` — the
-    /// circuit's own recording, snapshotted so H is self-contained.
+    /// circuit's own recording, snapshotted so the trace is self-contained.
     pub history: Vec<Vec<f32>>,
     /// Per-tick conservation ledger `[emitted, sunk, stored, dissipated]`.
     pub ledger_history: Vec<[f32; 4]>,
@@ -32,8 +41,8 @@ pub struct RecordedRun {
 }
 
 impl RecordedRun {
-    /// Run `circuit` for `ticks` steps of size `dt`, recording H keyed to
-    /// `spec` — the projection the circuit was built from. Resets first so the
+    /// Run `circuit` for `ticks` steps of size `dt`, recording the trace keyed
+    /// to `spec` — the projection the circuit was built from. Resets first so the
     /// run starts from the asserted initial stocks.
     pub fn record(circuit: &mut Circuit, spec: &OperationalSpec, dt: f64, ticks: usize) -> Self {
         circuit.reset();
@@ -62,15 +71,15 @@ impl RecordedRun {
         Self::record(circuit, spec, dt, ticks)
     }
 
-    /// Does H still belong to `spec`? True iff the spec hashes to the key the
-    /// run recorded — a structural edit breaks it.
+    /// Does this trace still belong to `spec`? True iff the spec hashes to the
+    /// key the run recorded — a structural edit breaks it.
     pub fn is_valid_for(&self, spec: &OperationalSpec) -> bool {
         self.key == spec.content_hash()
     }
 
     /// The trajectory, but only for the spec it actually ran on. `None` once the
-    /// model has structurally changed — a stale H is refused, not returned as if
-    /// current.
+    /// model has structurally changed — a stale trace is refused, not returned
+    /// as if current.
     pub fn history_for(&self, spec: &OperationalSpec) -> Option<&[Vec<f32>]> {
         self.is_valid_for(spec).then_some(self.history.as_slice())
     }

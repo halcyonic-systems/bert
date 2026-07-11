@@ -322,6 +322,7 @@ pub fn predator_prey_first_order() -> Circuit {
 /// ceiling when dense (logistic / Rosenzweig-MacArthur), so the loop can hold a
 /// near-closed orbit — a stable limit cycle — instead of damping out, while the
 /// ledger still balances. The prey equation is now dx ≈ αx − βxy in full.
+#[cfg(test)]
 pub fn predator_prey_alpha_growth() -> Circuit {
     let mut c = Circuit::default();
     c.nodes.push(n(NodeKind::Source, 1, 200.0, 160.0)); // 0 grass (resource pool)
