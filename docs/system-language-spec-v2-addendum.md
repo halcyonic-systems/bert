@@ -42,7 +42,7 @@ The v2.0 mode selector, re-derived from the proven views. A **lens** is a proven
 | `Core` | Yes (= Klir) | Nothing: things + dependencies | on-ness only | `Kernel`, `Kernel.toKlir` |
 | `Structural` | Yes (= Bunge CES) | Environment, inside/outside | At least one bond between two distinct components | `Kernel.toBunge`, hypothesis `HasBond` |
 | `Operational` | Yes (= Mobus, structural face) | Typed flow networks (N, G), boundary, interfaces | No self-dependencies, plus the four v0.1 section 2.6 coherence constraints | `Kernel.toMobus`, hypothesis `Irreflexive` |
-| `Full` | Mode | The dynamical face: T, H, Δt populated | `Operational` plus dynamical slots non-empty | Two-faces split; realized by bert-compose |
+| `Full` | Mode | The dynamical face: T, H, Δt populated | `Operational` plus dynamical slots non-empty | Two-faces split. The face has two realizations, one rung: authored (the τ/η/δ prose slots, in-model) and executable (bert-compose's runtime T over the `OperationalSpec`). Running is a query at `Operational` and never populates the authored slots; entering `Full` is an authoring act (§A5 upgrade). The engine's recorded trace is an observer artifact, distinct from the tuple's H (`System.history`) — see the 2026-07-11 run-surface grounding. |
 | `Cybernetic` | Mode (future) | Feedback as first-class cycle | Open: the cyclic shape has no faithful finite acyclic comparison yet | SSF open question (Joslyn); homeostat/lens results (`Systems/Core/Lens.lean`) are the partial grounding |
 
 Notes:
