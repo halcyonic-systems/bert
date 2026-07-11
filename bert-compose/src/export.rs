@@ -3,7 +3,7 @@
 //! (`from_world_model`), completing the round-trip.
 //!
 //! Encoding follows the canonical pattern: each primitive node becomes an
-//! Atomic subsystem carrying `AgentModel.primitives = [primitive]` (the same
+//! Atomic subsystem carrying `AgentModel.primitive` (the same
 //! encoding python/agents.py reads to pick its transfer function); wires
 //! become internal flows; Source/Sink nodes become environment externals
 //! whose flows connect to the wired subsystem directly. Compose-only knobs
@@ -154,7 +154,7 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                     agent: Some(AgentModel {
                         kind: AgentKind::Reactive,
                         agency_capacity: node.param,
-                        primitives: vec![primitive],
+                        primitive: Some(primitive),
                         // Compose knobs with no canonical home ride in the
                         // extensible params so the round-trip is lossless.
                         cognitive_params: {
@@ -456,7 +456,7 @@ mod tests {
             .agent
             .as_ref()
             .expect("primitive encoding");
-        assert_eq!(agent.primitives, vec![ProcessPrimitive::Buffering]);
+        assert_eq!(agent.primitive, Some(ProcessPrimitive::Buffering));
         assert_eq!(
             agent.initial_state.get("storage").and_then(|v| v.as_f64()),
             Some(12.0),

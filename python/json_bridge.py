@@ -12,6 +12,14 @@ def _complexity_kind(complexity):
     return "Unspecified"
 
 
+def _primitive_list(agent):
+    if not agent:
+        return []
+    if agent.get("primitive"):
+        return [agent["primitive"]]
+    return agent.get("primitives", []) or []
+
+
 def _build_port_map(model):
     port_map = {}
     for s in model.get("systems", []):
@@ -38,7 +46,10 @@ def read_model(json_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             "complexity_kind": _complexity_kind(s.get("complexity", "Unspecified")),
             "agent_kind": agent["kind"] if agent else None,
             "agency_capacity": agent["agency_capacity"] if agent else None,
-            "primitives": agent["primitives"] if agent and "primitives" in agent else [],
+            # bert-core writes the scalar `primitive` since the #5 collapse
+            # (one component, one fundamental process); older files carry a
+            # `primitives` array. The bridge keeps a list internally.
+            "primitives": _primitive_list(agent),
             # Schema-supported initial conditions (AgentModel.initial_state), e.g.
             # {"storage": 100.0} to seed a stock. Applied after _init_state in agents.py.
             "initial_state": agent.get("initial_state", {}) if agent else {},

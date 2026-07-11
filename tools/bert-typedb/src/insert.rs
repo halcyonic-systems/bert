@@ -369,16 +369,12 @@ fn emit_agent_bundle(agent: &AgentModel, system: &System, model_name: &str) -> S
     ));
     inserts.push("(system: $s, config: $a) isa has_agent_config".to_string());
 
-    for (i, prim) in agent.primitives.iter().enumerate() {
+    if let Some(prim) = agent.primitive {
         inserts.push(format!(
-            r#"$p{idx} isa primitive_assignment, has process_primitive "{val}""#,
-            idx = i,
-            val = process_primitive_str(*prim),
+            r#"$p0 isa primitive_assignment, has process_primitive "{val}""#,
+            val = process_primitive_str(prim),
         ));
-        inserts.push(format!(
-            "(agent: $a, primitive: $p{idx}) isa has_primitive",
-            idx = i
-        ));
+        inserts.push("(agent: $a, primitive: $p0) isa has_primitive".to_string());
     }
 
     for (i, (k, v)) in agent.cognitive_params.iter().enumerate() {
@@ -947,12 +943,15 @@ mod tests {
     // -------------------------------------------------------------------
 
     fn load_test_buffering() -> WorldModel {
+        // -v2 is the TRACKED fixture; the un-suffixed file is gitignored per the
+        // model-storage doctrine and only happens to exist in long-lived checkouts
+        // (fresh clones/worktrees don't have it — discovered 2026-07-11).
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../assets/models/local/test-primitives/test-buffering.json"
+            "/../../assets/models/local/test-primitives/test-buffering-v2.json"
         );
-        let bytes = std::fs::read(path).expect("test-buffering.json should exist");
-        serde_json::from_slice(&bytes).expect("test-buffering.json should deserialize")
+        let bytes = std::fs::read(path).expect("test-buffering-v2.json should exist");
+        serde_json::from_slice(&bytes).expect("test-buffering-v2.json should deserialize")
     }
 
     #[test]

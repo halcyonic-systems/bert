@@ -234,14 +234,14 @@ pub fn validate_operational(model: &WorldModel) -> Result<OperationalSpec, Vec<O
             ));
             continue;
         };
-        let Some(&primitive) = agent.primitives.first() else {
+        let Some(primitive) = agent.primitive else {
             errors.push(OperationalError::new(
                 format!("systems[{i}]"),
                 format!(
                     "\"{}\" carries no Mobus primitive — nothing to instantiate",
                     sys.info.name
                 ),
-                Some("Set AgentModel.primitives to the process kind"),
+                Some("Set AgentModel.primitive to the process kind"),
             ));
             continue;
         };
@@ -423,7 +423,7 @@ mod tests {
         AgentModel {
             kind: AgentKind::Reactive,
             agency_capacity: 1.0,
-            primitives: vec![primitive],
+            primitive: Some(primitive),
             cognitive_params: HashMap::new(),
             process_configs: vec![],
             initial_state: HashMap::new(),
@@ -552,7 +552,7 @@ mod tests {
     #[test]
     fn missing_primitive_is_named() {
         let mut m = mobus_model();
-        m.systems[1].agent.as_mut().unwrap().primitives.clear();
+        m.systems[1].agent.as_mut().unwrap().primitive = None;
         let errs = validate_operational(&m).unwrap_err();
         assert!(errs
             .iter()
@@ -699,7 +699,7 @@ mod tests {
         let b = validate_operational(&mobus_model()).expect("projects");
         assert_eq!(a.content_hash(), b.content_hash(), "same spec, same hash");
         let mut m = mobus_model();
-        m.systems[1].agent.as_mut().unwrap().primitives = vec![ProcessPrimitive::Propelling];
+        m.systems[1].agent.as_mut().unwrap().primitive = Some(ProcessPrimitive::Propelling);
         let c = validate_operational(&m).expect("projects");
         assert_ne!(
             a.content_hash(),
