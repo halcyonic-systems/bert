@@ -10,6 +10,7 @@
 //! whose ECS components embed kernel types ([`Complexity`], [`AgentModel`]).
 
 pub mod operational;
+pub mod transition;
 pub mod validate;
 
 use enum_iterator::Sequence;
