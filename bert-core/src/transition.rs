@@ -905,11 +905,12 @@ mod tests {
     }
 
     #[test]
-    fn l6_transition_to_operational_accepts_interface_routed_flow_operational_refuses() {
+    fn l6_transition_to_operational_accepts_interface_routed_flow_lowers() {
         // A bonded model whose bond routes through an interface: valid Operational
         // structure the transition layer must accept (its only precondition is
-        // Irreflexive), but bert#108 has validate_operational refuse it until 4.2
-        // lowering ships.
+        // Irreflexive). bert#108 4.2 has now shipped, so validate_operational no
+        // longer refuses interface routing — it LOWERS it (identity default),
+        // recording the Impeding provenance on the flow.
         let mut m = scaffold(Mode::Core);
         let ifb = id(IdType::Interface, &[0, 1, 0]);
         m.systems[2].boundary.interfaces = vec![iface(ifb.clone(), InterfaceType::Import)];
@@ -925,11 +926,14 @@ mod tests {
 
         let mut op = m.clone();
         op.mode = Some(Mode::Operational);
+        // This bare structural scaffold still cannot execute (its systems carry
+        // no agent primitives), but bert#108 4.2 has shipped: interface routing
+        // is no longer among the reasons. The refusal that used to cite #108 is
+        // gone — the routing lowers instead.
         let errs = crate::operational::validate_operational(&op).unwrap_err();
         assert!(
-            errs.iter()
-                .any(|e| e.reason.contains("bert#108") && e.reason.contains("interface")),
-            "validate_operational refuses interface routing: {errs:#?}"
+            !errs.iter().any(|e| e.reason.contains("bert#108")),
+            "interface routing no longer refuses citing #108: {errs:#?}"
         );
     }
 
