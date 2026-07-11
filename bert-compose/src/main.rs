@@ -25,6 +25,8 @@ mod glyph;
 mod ladder;
 mod lens;
 #[cfg(test)]
+mod run;
+#[cfg(test)]
 mod sweep;
 mod theme;
 mod ui;
