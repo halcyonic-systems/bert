@@ -1093,9 +1093,22 @@ pub struct AgentModel {
     #[serde(default = "default_agency_capacity")]
     pub agency_capacity: f32,
 
-    /// Atomic work processes this agent can perform (Mobus primitives)
-    #[serde(default)]
-    pub primitives: Vec<ProcessPrimitive>,
+    /// The atomic work process this agent performs (Mobus primitive).
+    ///
+    /// One component, one fundamental process: a component that seems to need
+    /// two primitives is a signal to decompose further — the plurality belongs
+    /// one level down, expressed as structure, never as a list on one node
+    /// (bert-lenses#5 collapse, 2026-07-11). Reads the legacy `primitives`
+    /// array form (empty → None, one entry → Some); a multi-entry array is
+    /// refused at deserialization with a decompose message rather than
+    /// silently dropping entries. Writes the scalar `primitive` form.
+    #[serde(
+        default,
+        alias = "primitives",
+        deserialize_with = "primitive_compat",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub primitive: Option<ProcessPrimitive>,
 
     /// Domain-agnostic cognitive parameters (e.g., "fee_threshold": 50.0)
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
@@ -1119,12 +1132,44 @@ fn default_agency_capacity() -> f32 {
     0.5
 }
 
+/// Read `primitive` as either the scalar form this crate writes or the legacy
+/// `primitives` array (via the field alias). Empty array → `None`; one entry →
+/// `Some`; more than one is refused outright — the decomposition discipline
+/// expresses plurality as structure one level down, and no artifact has ever
+/// carried a multi-entry array, so refusing beats silently dropping data.
+fn primitive_compat<'de, D>(deserializer: D) -> Result<Option<ProcessPrimitive>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Compat {
+        Scalar(Option<ProcessPrimitive>),
+        Legacy(Vec<ProcessPrimitive>),
+    }
+
+    match Compat::deserialize(deserializer)? {
+        Compat::Scalar(p) => Ok(p),
+        Compat::Legacy(mut v) => match v.len() {
+            0 => Ok(None),
+            1 => Ok(v.pop()),
+            n => Err(D::Error::custom(format!(
+                "legacy `primitives` array carries {n} entries; a component performs \
+                 exactly one fundamental process — decompose it into subsystems (one \
+                 primitive each) and re-save"
+            ))),
+        },
+    }
+}
+
 impl Default for AgentModel {
     fn default() -> Self {
         Self {
             kind: AgentKind::default(),
             agency_capacity: default_agency_capacity(),
-            primitives: Vec::new(),
+            primitive: None,
             cognitive_params: HashMap::new(),
             process_configs: Vec::new(),
             initial_state: HashMap::new(),
@@ -1876,6 +1921,77 @@ mod tests {
     fn agent_default_agency_capacity() {
         let agent = AgentModel::default();
         assert_eq!(agent.agency_capacity, 0.5);
+    }
+
+    // ── the #5 collapse: primitive is scalar, legacy array form still reads ──
+
+    #[test]
+    fn primitive_reads_the_scalar_form() {
+        let json = r#"{"kind": "Reactive", "primitive": "Buffering"}"#;
+        let agent: AgentModel = serde_json::from_str(json).unwrap();
+        assert_eq!(agent.primitive, Some(ProcessPrimitive::Buffering));
+    }
+
+    #[test]
+    fn primitive_reads_the_legacy_single_entry_array() {
+        let json = r#"{"kind": "Reactive", "primitives": ["Propelling"]}"#;
+        let agent: AgentModel = serde_json::from_str(json).unwrap();
+        assert_eq!(agent.primitive, Some(ProcessPrimitive::Propelling));
+    }
+
+    #[test]
+    fn primitive_reads_the_legacy_empty_array_as_none() {
+        let json = r#"{"kind": "Reactive", "primitives": []}"#;
+        let agent: AgentModel = serde_json::from_str(json).unwrap();
+        assert_eq!(agent.primitive, None);
+    }
+
+    #[test]
+    fn primitive_missing_is_none() {
+        let json = r#"{"kind": "Reactive"}"#;
+        let agent: AgentModel = serde_json::from_str(json).unwrap();
+        assert_eq!(agent.primitive, None);
+    }
+
+    #[test]
+    fn legacy_multi_primitive_array_is_refused_with_a_decompose_message() {
+        // Refused, not first-entry-dropped: no artifact ever carried a
+        // multi-entry array (verified across the model library, 2026-07-11),
+        // so the only way to hit this is authoring outside the tools — and
+        // silently discarding an author's primitive would be data loss.
+        let json = r#"{"kind": "Reactive", "primitives": ["Buffering", "Propelling"]}"#;
+        let err = serde_json::from_str::<AgentModel>(json).unwrap_err();
+        assert!(
+            err.to_string().contains("decompose"),
+            "refusal must say what to do instead: {err}"
+        );
+    }
+
+    #[test]
+    fn primitive_writes_the_scalar_form_and_omits_none() {
+        let agent = AgentModel {
+            primitive: Some(ProcessPrimitive::Sensing),
+            ..AgentModel::default()
+        };
+        let json = serde_json::to_string(&agent).unwrap();
+        assert!(json.contains(r#""primitive":"Sensing""#), "scalar form written: {json}");
+        assert!(!json.contains("primitives"), "legacy key never written: {json}");
+
+        let none = serde_json::to_string(&AgentModel::default()).unwrap();
+        assert!(!none.contains("primitive"), "None omitted entirely: {none}");
+    }
+
+    #[test]
+    fn legacy_model_self_migrates_on_resave() {
+        // A legacy-form agent, once loaded and written back, carries the
+        // scalar form — the no-flag-day migration path.
+        let legacy = r#"{"kind": "Reactive", "primitives": ["Copying"]}"#;
+        let agent: AgentModel = serde_json::from_str(legacy).unwrap();
+        let rewritten = serde_json::to_string(&agent).unwrap();
+        assert!(rewritten.contains(r#""primitive":"Copying""#));
+        assert!(!rewritten.contains(r#""primitives""#));
+        let reread: AgentModel = serde_json::from_str(&rewritten).unwrap();
+        assert_eq!(reread.primitive, Some(ProcessPrimitive::Copying));
     }
 
     #[test]

@@ -856,12 +856,12 @@ mod tests {
         root.info.level = 0;
         let mut comp_a = blank_system(a.clone(), "A", s0.clone());
         comp_a.agent = Some(crate::AgentModel {
-            primitives: vec![crate::ProcessPrimitive::Buffering],
+            primitive: Some(crate::ProcessPrimitive::Buffering),
             ..Default::default()
         });
         let mut comp_b = blank_system(b.clone(), "B", s0);
         comp_b.agent = Some(crate::AgentModel {
-            primitives: vec![crate::ProcessPrimitive::Propelling],
+            primitive: Some(crate::ProcessPrimitive::Propelling),
             ..Default::default()
         });
 

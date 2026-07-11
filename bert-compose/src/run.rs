@@ -197,7 +197,7 @@ mod tests {
 
         // A structural edit: change the buffer's work-process primitive.
         let mut edited = model.clone();
-        edited.systems[1].agent.as_mut().unwrap().primitives = vec![ProcessPrimitive::Propelling];
+        edited.systems[1].agent.as_mut().unwrap().primitive = Some(ProcessPrimitive::Propelling);
         let spec2 = validate_operational(&edited).expect("still projects");
 
         assert!(
