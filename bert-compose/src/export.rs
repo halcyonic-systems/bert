@@ -310,7 +310,11 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
         c.nodes.push(node);
     }
     for p in &spec.processes {
-        let mut node = Node::new(NodeKind::Process(p.primitive), ids.len() + 1, grid(ids.len()));
+        let mut node = Node::new(
+            NodeKind::Process(p.primitive),
+            ids.len() + 1,
+            grid(ids.len()),
+        );
         node.name = p.name.clone();
         node.param = p.agency_capacity;
         if let Some(s) = p.initial_storage {
@@ -340,26 +344,66 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
     }
 
     let idx_of = |id: &Id| ids.iter().find(|(i, _)| i == id).map(|(_, n)| *n);
+    // How many pushed flows leave each resolved sender, and whether any
+    // gradient flow does: a lone pushed outflow is the degenerate case where
+    // node rate = wire rate, so `param` stays the carrier (and the inspector's
+    // rate knob stays live); per-wire rates engage exactly when a source has
+    // SEVERAL pushed outflows — where a single node rate cannot represent
+    // them (bert#111).
+    let mut pushed_out: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+    let mut gradient_out: std::collections::HashSet<usize> = std::collections::HashSet::new();
+    for f in &spec.flows {
+        if let Some(from) = idx_of(&f.source) {
+            if f.conductance.is_some() {
+                gradient_out.insert(from);
+            } else {
+                *pushed_out.entry(from).or_insert(0) += 1;
+            }
+        }
+    }
+
+    let mut substance_named: std::collections::HashSet<usize> = std::collections::HashSet::new();
     for f in &spec.flows {
         // The contract guarantees endpoint resolution; a miss here would mean
         // a spec not produced by validate_operational.
         let (Some(from), Some(to)) = (idx_of(&f.source), idx_of(&f.sink)) else {
             continue;
         };
-        let wire = match f.conductance {
+        let mut wire = match f.conductance {
             Some(k) => Wire::gradient(from, to, k as f32),
             None => Wire::new(from, to),
         };
-        // The wire's substance is the sender's declared output.
-        c.nodes[from].out_substance = DeclaredSubstance {
-            name: f.substance_name.clone(),
-            base: f.substance,
-            unit: f.unit.clone(),
-        };
-        // Source-fed flows carry the asserted emission rate (= the source's
-        // fixed potential, for gradient flows).
+        // Substance rides the wire — spec flows are quantified per-edge and a
+        // multi-outflow sender's flows may differ (bert#111 sibling). The
+        // FIRST flow also names the sender's display substance; later flows
+        // must not overwrite it (the old last-wire-wins).
+        wire.substance_override = Some(f.substance);
+        if substance_named.insert(from) {
+            c.nodes[from].out_substance = DeclaredSubstance {
+                name: f.substance_name.clone(),
+                base: f.substance,
+                unit: f.unit.clone(),
+            };
+        }
+        // Source-fed flows carry the asserted emission rate. Rate is an edge
+        // attribute (Mobus Eq. 4.5) — with several pushed outflows each
+        // amount rides ITS wire, so no rate collapses onto the node
+        // (bert#111). A single pushed outflow keeps the old node-param
+        // carrier (same behavior, live inspector knob), and a gradient
+        // flow's amount is the source's fixed potential, genuinely per-node.
         if matches!(c.nodes[from].kind, NodeKind::Source) {
-            c.nodes[from].param = f.amount as f32;
+            match wire.mode {
+                FlowMode::Pushed => {
+                    let lone_pushed = pushed_out.get(&from).copied().unwrap_or(0) == 1
+                        && !gradient_out.contains(&from);
+                    if lone_pushed {
+                        c.nodes[from].param = f.amount as f32;
+                    } else {
+                        wire.rate = Some(f.amount as f32);
+                    }
+                }
+                FlowMode::Gradient => c.nodes[from].param = f.amount as f32,
+            }
         }
         c.wires.push(wire);
     }
@@ -415,6 +459,73 @@ mod tests {
     use bert_core::validate::{validate, Severity};
     use bert_core::ProcessPrimitive;
     use egui::pos2;
+
+    /// bert#111: per-flow amounts survive the seam INTO EXECUTION. A source
+    /// with two pushed, differently-quantified outflows keeps both rates on
+    /// their wires (no last-wire-wins), the FIRST flow names the display
+    /// substance, and the built circuit delivers each wire at its own rate.
+    /// (The prior coverage stopped at the spec — "the imported amount reaches
+    /// the spec" — which is exactly how the collapse went unseen.)
+    #[test]
+    fn from_spec_keeps_per_flow_source_rates_through_execution() {
+        use bert_core::operational::{OperationalFlow, OperationalSpec, OperationalTerminal};
+        use bert_core::{Id, IdType, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id {
+            ty,
+            indices: vec![n],
+        };
+        let flow = |name: &str, snk: i64, amount: f64| OperationalFlow {
+            name: name.into(),
+            source: id(IdType::Source, 0),
+            sink: id(IdType::Sink, snk),
+            substance_name: name.into(),
+            substance: SubstanceType::Material,
+            unit: "tok/mo".into(),
+            amount,
+            conductance: None,
+            interface_routing: None,
+        };
+        let spec = OperationalSpec {
+            processes: vec![],
+            sources: vec![OperationalTerminal {
+                id: id(IdType::Source, 0),
+                name: "Provider".into(),
+            }],
+            sinks: vec![
+                OperationalTerminal {
+                    id: id(IdType::Sink, 0),
+                    name: "Dev channel".into(),
+                },
+                OperationalTerminal {
+                    id: id(IdType::Sink, 1),
+                    name: "Enterprise channel".into(),
+                },
+            ],
+            flows: vec![flow("dev tokens", 0, 12.0), flow("ent tokens", 1, 1.0)],
+        };
+
+        let mut c = from_spec(&spec);
+        assert_eq!(c.wires[0].rate, Some(12.0), "first flow's rate on its wire");
+        assert_eq!(c.wires[1].rate, Some(1.0), "second flow's rate survives");
+        assert_eq!(
+            c.nodes[0].out_substance.name, "dev tokens",
+            "display substance named by the FIRST flow, not the last"
+        );
+        for _ in 0..3 {
+            c.step();
+        }
+        assert!(
+            (c.wire_amount(0) - 12.0).abs() < 1e-3,
+            "declared rate EXECUTES: {}",
+            c.wire_amount(0)
+        );
+        assert!(
+            (c.wire_amount(1) - 1.0).abs() < 1e-3,
+            "sibling keeps its own rate: {}",
+            c.wire_amount(1)
+        );
+    }
 
     #[test]
     fn emitted_model_validates_and_round_trips() {

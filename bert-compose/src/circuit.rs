@@ -355,6 +355,17 @@ pub struct Wire {
     pub mode: FlowMode,
     /// Gradient-mode conductance (k in rate = k·Δlevel). Ignored when pushed.
     pub conductance: f32,
+    /// Declared per-wire emission for a pushed Source outwire. Rate is an
+    /// edge attribute in Mobus's formalism (Eq. 4.5's `(f, cap)` pairs) — a
+    /// source with several outflows carries one rate PER FLOW, and collapsing
+    /// them onto the node loses all but one (bert#111). `None` falls back to
+    /// the source's `param` shared uniformly across the undeclared outwires,
+    /// which is exactly the pre-#111 behavior when nothing is declared.
+    pub rate: Option<f32>,
+    /// Per-wire substance when a sender's flows differ (bert#111 sibling: a
+    /// multi-outflow source declares substance per flow, not per node).
+    /// `None` reads the sender's `out_substance` as before.
+    pub substance_override: Option<SubstanceType>,
 }
 
 impl Wire {
@@ -364,6 +375,8 @@ impl Wire {
             to,
             mode: FlowMode::Pushed,
             conductance: 0.3,
+            rate: None,
+            substance_override: None,
         }
     }
     pub fn gradient(from: usize, to: usize, conductance: f32) -> Self {
@@ -372,6 +385,8 @@ impl Wire {
             to,
             mode: FlowMode::Gradient,
             conductance,
+            rate: None,
+            substance_override: None,
         }
     }
 }
@@ -441,10 +456,12 @@ impl Circuit {
         self.emitted + baseline - (self.stored() + self.sunk + self.in_flight() + self.dissipated)
     }
 
-    /// Conserved kind carried by a wire = the base of the sender's declared
-    /// output substance (what the dynamics run on).
+    /// Conserved kind carried by a wire: the wire's own declared substance
+    /// when it has one (a multi-outflow sender's flows may differ, bert#111),
+    /// else the base of the sender's declared output substance.
     pub fn wire_substance(&self, w: &Wire) -> SubstanceType {
-        self.nodes[w.from].out_substance.base
+        w.substance_override
+            .unwrap_or(self.nodes[w.from].out_substance.base)
     }
 
     /// A PUSHED wire Buffer → Sensing is an observation tap: the sensor reads
@@ -491,8 +508,21 @@ impl Circuit {
         // Energy/Material split across the fanout (matter doesn't) —
         // which is also why Copying relabeled to a physical substance
         // splits rather than duplicating.
-        if sender.out_substance.base == SubstanceType::Message {
+        if self.wire_substance(w) == SubstanceType::Message {
             return sender.activity;
+        }
+        if matches!(sender.kind, NodeKind::Source) {
+            // Weighted fanout (bert#111): a source wire with a declared rate
+            // delivers that rate; activity stays the TOTAL emission, so the
+            // proportional form below scales every wire alike under
+            // back-pressure and reduces to the uniform split when no rate
+            // is declared anywhere.
+            let emission = self.source_emission(w.from);
+            return if emission > 0.0 {
+                sender.activity * self.source_wire_rate(k) / emission
+            } else {
+                0.0
+            };
         }
         let outs = self
             .wires
@@ -501,6 +531,60 @@ impl Circuit {
             .count()
             .max(1) as f32;
         sender.activity / outs
+    }
+
+    /// The outwires bert#111 quantifies: pushed, non-observation, physical
+    /// (mass-carrying) wires out of node `i` — the set a source's emission
+    /// distributes over.
+    fn source_outwires(&self, i: usize) -> impl Iterator<Item = usize> + '_ {
+        (0..self.wires.len()).filter(move |&k| {
+            let w = &self.wires[k];
+            w.from == i
+                && w.mode == FlowMode::Pushed
+                && !self.is_observation(w)
+                && self.wire_substance(w) != SubstanceType::Message
+        })
+    }
+
+    /// Declared emission for source outwire `k`: the wire's own rate (Mobus
+    /// Eq. 4.5 — rate is an edge attribute), else an equal share of the
+    /// node's `param` among the undeclared outwires — exactly the pre-#111
+    /// uniform split when nothing is declared.
+    fn source_wire_rate(&self, k: usize) -> f32 {
+        if let Some(r) = self.wires[k].rate {
+            return r;
+        }
+        let from = self.wires[k].from;
+        let undeclared = self
+            .source_outwires(from)
+            .filter(|&j| self.wires[j].rate.is_none())
+            .count()
+            .max(1) as f32;
+        self.nodes[from].param / undeclared
+    }
+
+    /// A source's total emission per tick: the sum of its per-wire declared
+    /// rates, with the undeclared outwires collectively carrying `param`.
+    /// With no declared rates (every hand-authored circuit) this is exactly
+    /// `param`, byte-for-byte the old behavior — including for an
+    /// outwire-less source, whose activity stays its param.
+    pub fn source_emission(&self, i: usize) -> f32 {
+        if self.source_outwires(i).next().is_none() {
+            return self.nodes[i].param;
+        }
+        let declared: f32 = self
+            .source_outwires(i)
+            .filter_map(|k| self.wires[k].rate)
+            .sum();
+        let any_undeclared = self
+            .source_outwires(i)
+            .any(|k| self.wires[k].rate.is_none());
+        declared
+            + if any_undeclared {
+                self.nodes[i].param
+            } else {
+                0.0
+            }
     }
 
     /// Flow the Source-chosen substance forward: a pass-through node
@@ -723,9 +807,11 @@ impl Circuit {
             let a = node.param; // agency capacity 0..1
 
             next_activity[i] = match node.kind {
-                // Emits its rate — throttled to what a downstream back-pressured
-                // valve will accept (the rest is simply not produced).
-                NodeKind::Source => node.param * bp_factor[i],
+                // Emits its total rate — the sum of per-wire declared rates
+                // (bert#111), param when none are declared — throttled to what
+                // a downstream back-pressured valve will accept (the rest is
+                // simply not produced).
+                NodeKind::Source => self.source_emission(i) * bp_factor[i],
                 NodeKind::Sink => {
                     sink_add[i] = physical + message;
                     physical + message
@@ -1074,6 +1160,73 @@ mod tests {
         );
     }
 
+    /// bert#111 fixture: a source with two outflows, one carrying a declared
+    /// per-wire rate, emits each wire at its own rate — the undeclared
+    /// sibling must not alter the declared one, and mass stays conserved.
+    #[test]
+    fn source_with_two_outflows_emits_per_wire_rates() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 1.0; // the undeclared wire's fallback rate
+        let mut declared = Wire::new(0, 1);
+        declared.rate = Some(12.0);
+        c.wires.push(declared);
+        c.wires.push(Wire::new(0, 2)); // undeclared sibling
+        c.step();
+        assert!(
+            (c.nodes[0].activity - 13.0).abs() < f32::EPSILON,
+            "activity is TOTAL emission: {}",
+            c.nodes[0].activity
+        );
+        assert!(
+            (c.wire_amount(0) - 12.0).abs() < 1e-4,
+            "declared wire delivers its own rate: {}",
+            c.wire_amount(0)
+        );
+        assert!(
+            (c.wire_amount(1) - 1.0).abs() < 1e-4,
+            "undeclared wire falls back to param: {}",
+            c.wire_amount(1)
+        );
+        for _ in 0..9 {
+            c.step();
+        }
+        assert!(c.balance().abs() < 1e-3, "conserved: {}", c.balance());
+        assert!(
+            c.nodes[1].total > 10.0 * c.nodes[2].total,
+            "deliveries reflect the 12:1 rates: {} vs {}",
+            c.nodes[1].total,
+            c.nodes[2].total
+        );
+    }
+
+    /// bert#111 back-compat: with no declared rates anywhere, a two-outflow
+    /// source splits `param` uniformly — the pre-#111 behavior, unchanged.
+    #[test]
+    fn undeclared_fanout_still_splits_param_uniformly() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 2.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(0, 2));
+        c.step();
+        assert!(
+            (c.nodes[0].activity - 2.0).abs() < f32::EPSILON,
+            "activity stays param: {}",
+            c.nodes[0].activity
+        );
+        assert!(
+            (c.wire_amount(0) - 1.0).abs() < 1e-4 && (c.wire_amount(1) - 1.0).abs() < 1e-4,
+            "uniform split preserved: {} / {}",
+            c.wire_amount(0),
+            c.wire_amount(1)
+        );
+    }
+
     /// Sensing + Inverting + Modulating around a Buffer = a homeostat: the
     /// control loop throttles inflow as the sensed level rises. The loop must
     /// regulate (bounded storage), not run away.
@@ -1196,7 +1349,10 @@ mod tests {
         for _ in 0..5 {
             c.step();
         }
-        assert!((c.wire_amount(0) - 2.0).abs() < 1e-6, "source emits its rate");
+        assert!(
+            (c.wire_amount(0) - 2.0).abs() < 1e-6,
+            "source emits its rate"
+        );
         assert!(
             (c.wire_amount(1) - 1.0).abs() < 1e-6 && (c.wire_amount(2) - 1.0).abs() < 1e-6,
             "physical split halves per wire: {} / {}",
