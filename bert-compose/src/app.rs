@@ -202,6 +202,8 @@ impl App {
                 to: w.to + base,
                 mode: w.mode,
                 conductance: w.conductance,
+                rate: w.rate,
+                substance_override: w.substance_override,
             });
         }
         self.harvest_declared();
