@@ -117,6 +117,15 @@ pub struct OperationalFlow {
     /// direct wire — the marker carries the #108 lineage and nothing dynamical.
     #[serde(default)]
     pub interface_routing: Option<InterfacePrimitive>,
+    /// Series forcing (bert-lenses#16): `Some` iff this flow carries an
+    /// OBSERVED emission series (a `series` parameter on the interaction),
+    /// making the source emit `o_Src(t) = f(q,t)` tick by tick instead of the
+    /// scalar `amount` mean — Mobus's naked-interface output function. Rides
+    /// `Interaction.parameters` exactly as `conductance` does. `skip` when
+    /// `None` so an unforced spec serializes and hashes byte-for-byte as
+    /// before (the model-1 receipt stays reproducible).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rate_series: Option<Vec<f64>>,
 }
 
 /// The executable projection of a [`WorldModel`]: the seam payload.
@@ -333,6 +342,21 @@ pub fn validate_operational(model: &WorldModel) -> Result<OperationalSpec, Vec<O
         if !flow_ok {
             continue;
         }
+        // Series forcing (#16): an observed emission series rides a `series`
+        // parameter (comma-separated), read exactly as `conductance` is. An
+        // empty/unparsable list is treated as absent, so a forced flow always
+        // carries at least one tick — the mean `amount` remains the fallback.
+        let rate_series = ix
+            .parameters
+            .iter()
+            .find(|p| p.name == "series")
+            .map(|p| {
+                p.value
+                    .split(',')
+                    .filter_map(|s| s.trim().parse::<f64>().ok())
+                    .collect::<Vec<f64>>()
+            })
+            .filter(|s| !s.is_empty());
         touched.insert(ix.source.clone());
         touched.insert(ix.sink.clone());
         spec.flows.push(OperationalFlow {
@@ -345,6 +369,7 @@ pub fn validate_operational(model: &WorldModel) -> Result<OperationalSpec, Vec<O
             amount: ix.amount.to_string().parse::<f64>().unwrap_or(1.0),
             conductance,
             interface_routing,
+            rate_series,
         });
     }
 

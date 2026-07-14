@@ -348,7 +348,10 @@ pub enum FlowMode {
     Gradient,
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+// Not `Copy`: a forced wire carries a `rate_series` Vec (#16). Every wire
+// access reads individual fields by reference, so no whole-value copy is
+// needed — `Clone` covers the one merge site (app.rs) that rebuilds wires.
+#[derive(Clone, PartialEq, Debug)]
 pub struct Wire {
     pub from: usize,
     pub to: usize,
@@ -362,6 +365,15 @@ pub struct Wire {
     /// the source's `param` shared uniformly across the undeclared outwires,
     /// which is exactly the pre-#111 behavior when nothing is declared.
     pub rate: Option<f32>,
+    /// Series forcing (bert-lenses#16): a forced source outwire emits an
+    /// OBSERVED series tick by tick instead of a constant `rate` — Mobus's
+    /// `o_Src(t) = f(q,t)` (ch6 §6.6.2.3), the 7-tuple's H entering the run
+    /// instead of being averaged to a mean. At tick `t` the wire delivers
+    /// `series[min(t, len-1)]`; past the series' end the last value is HELD
+    /// (data-horizon: projection, not error — #34). `None` = unforced, the
+    /// constant-`rate` path is byte-for-byte unchanged. Takes precedence over
+    /// `rate` when present.
+    pub rate_series: Option<Vec<f32>>,
     /// Per-wire substance when a sender's flows differ (bert#111 sibling: a
     /// multi-outflow source declares substance per flow, not per node).
     /// `None` reads the sender's `out_substance` as before.
@@ -376,6 +388,7 @@ impl Wire {
             mode: FlowMode::Pushed,
             conductance: 0.3,
             rate: None,
+            rate_series: None,
             substance_override: None,
         }
     }
@@ -386,6 +399,7 @@ impl Wire {
             mode: FlowMode::Gradient,
             conductance,
             rate: None,
+            rate_series: None,
             substance_override: None,
         }
     }
@@ -546,18 +560,35 @@ impl Circuit {
         })
     }
 
-    /// Declared emission for source outwire `k`: the wire's own rate (Mobus
-    /// Eq. 4.5 — rate is an edge attribute), else an equal share of the
-    /// node's `param` among the undeclared outwires — exactly the pre-#111
-    /// uniform split when nothing is declared.
+    /// A wire's declared emission for the CURRENT tick. A forced wire (#16)
+    /// reads its observed series at `self.tick`, holding the last value once
+    /// the tick passes the series' end (data horizon — projection, not error,
+    /// #34); an empty series is treated as no series. Otherwise the constant
+    /// `rate`. `None` = undeclared (the caller falls back to the param split).
+    fn wire_declared_rate(&self, k: usize) -> Option<f32> {
+        let w = &self.wires[k];
+        if let Some(series) = &w.rate_series {
+            if !series.is_empty() {
+                let idx = (self.tick as usize).min(series.len() - 1);
+                return Some(series[idx]);
+            }
+        }
+        w.rate
+    }
+
+    /// Declared emission for source outwire `k`: the wire's own rate for this
+    /// tick (Mobus Eq. 4.5 — rate is an edge attribute; forced wires vary it
+    /// per tick, #16), else an equal share of the node's `param` among the
+    /// undeclared outwires — exactly the pre-#111 uniform split when nothing
+    /// is declared.
     fn source_wire_rate(&self, k: usize) -> f32 {
-        if let Some(r) = self.wires[k].rate {
+        if let Some(r) = self.wire_declared_rate(k) {
             return r;
         }
         let from = self.wires[k].from;
         let undeclared = self
             .source_outwires(from)
-            .filter(|&j| self.wires[j].rate.is_none())
+            .filter(|&j| self.wire_declared_rate(j).is_none())
             .count()
             .max(1) as f32;
         self.nodes[from].param / undeclared
@@ -574,11 +605,11 @@ impl Circuit {
         }
         let declared: f32 = self
             .source_outwires(i)
-            .filter_map(|k| self.wires[k].rate)
+            .filter_map(|k| self.wire_declared_rate(k))
             .sum();
         let any_undeclared = self
             .source_outwires(i)
-            .any(|k| self.wires[k].rate.is_none());
+            .any(|k| self.wire_declared_rate(k).is_none());
         declared
             + if any_undeclared {
                 self.nodes[i].param
@@ -1200,6 +1231,40 @@ mod tests {
             c.nodes[1].total,
             c.nodes[2].total
         );
+    }
+
+    /// bert-lenses#16: a forced source wire emits an OBSERVED series tick by
+    /// tick — the green line must BEND through the series, not sit at a mean.
+    /// Fixture is deliberately non-monotonic (spike then crash, the xAI shape)
+    /// so a bug that froze on `series[0]` or collapsed to a mean would fail:
+    /// a flat delivery cannot match [4, 8, 0.5]. Past the series' end the last
+    /// value is held (data horizon, #34), and mass stays conserved throughout.
+    #[test]
+    fn forced_wire_delivers_series_tick_by_tick() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 99.0; // must be IGNORED — the series governs, not param
+        let mut forced = Wire::new(0, 1);
+        forced.rate_series = Some(vec![4.0, 8.0, 0.5]); // spike then crash
+        c.wires.push(forced);
+
+        let expected = [4.0f32, 8.0, 0.5, 0.5]; // tick 3 holds the last value
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-4,
+                "tick {t}: forced wire delivers series value {want}, got {}",
+                c.wire_amount(0)
+            );
+            assert!(
+                (c.nodes[0].activity - want).abs() < 1e-4,
+                "tick {t}: source total emission tracks the series ({want}), got {}",
+                c.nodes[0].activity
+            );
+        }
+        // The delivery genuinely bent: three distinct levels, not one mean.
+        assert!(c.balance().abs() < 1e-3, "conserved: {}", c.balance());
     }
 
     /// bert#111 back-compat: with no declared rates anywhere, a two-outflow

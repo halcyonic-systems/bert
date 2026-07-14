@@ -394,6 +394,14 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
         if matches!(c.nodes[from].kind, NodeKind::Source) {
             match wire.mode {
                 FlowMode::Pushed => {
+                    // Series forcing (#16): an observed series governs emission
+                    // per tick. It rides the WIRE (not the node param) so it
+                    // survives even a lone outflow, and takes precedence over
+                    // the scalar in the kernel (`wire_declared_rate`). The mean
+                    // `amount` is still assigned below as the unforced fallback.
+                    if let Some(series) = &f.rate_series {
+                        wire.rate_series = Some(series.iter().map(|&v| v as f32).collect());
+                    }
                     let lone_pushed = pushed_out.get(&from).copied().unwrap_or(0) == 1
                         && !gradient_out.contains(&from);
                     if lone_pushed {
@@ -485,6 +493,7 @@ mod tests {
             amount,
             conductance: None,
             interface_routing: None,
+            rate_series: None,
         };
         let spec = OperationalSpec {
             processes: vec![],
@@ -525,6 +534,57 @@ mod tests {
             "sibling keeps its own rate: {}",
             c.wire_amount(1)
         );
+    }
+
+    /// bert-lenses#16, the seam hop: a forced flow's observed series survives
+    /// spec → circuit AND executes tick by tick. Complements the pure-circuit
+    /// `forced_wire_delivers_series_tick_by_tick` — the #111 lesson is that a
+    /// series can reach the wire yet fail to run, so both levels are tested.
+    #[test]
+    fn from_spec_carries_and_executes_a_forced_series() {
+        use bert_core::operational::{OperationalFlow, OperationalSpec, OperationalTerminal};
+        use bert_core::{Id, IdType, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id { ty, indices: vec![n] };
+        let spec = OperationalSpec {
+            processes: vec![],
+            sources: vec![OperationalTerminal {
+                id: id(IdType::Source, 0),
+                name: "Provider".into(),
+            }],
+            sinks: vec![OperationalTerminal {
+                id: id(IdType::Sink, 0),
+                name: "Dev channel".into(),
+            }],
+            flows: vec![OperationalFlow {
+                name: "forced tokens".into(),
+                source: id(IdType::Source, 0),
+                sink: id(IdType::Sink, 0),
+                substance_name: "tokens".into(),
+                substance: SubstanceType::Material,
+                unit: "tok/mo".into(),
+                amount: 999.0, // the mean must NOT govern — the series does
+                conductance: None,
+                interface_routing: None,
+                rate_series: Some(vec![4.0, 8.0, 0.5]),
+            }],
+        };
+
+        let mut c = from_spec(&spec);
+        assert_eq!(
+            c.wires[0].rate_series,
+            Some(vec![4.0, 8.0, 0.5]),
+            "the series survives spec → circuit"
+        );
+        let expected = [4.0f32, 8.0, 0.5, 0.5]; // last value held past the horizon
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-3,
+                "tick {t}: forced flow delivers {want}, got {}",
+                c.wire_amount(0)
+            );
+        }
     }
 
     #[test]
