@@ -538,13 +538,28 @@ impl Circuit {
                 0.0
             };
         }
-        let outs = self
-            .wires
+        // Weighted split (bert-lenses#16 → rung 2): a process divides its
+        // activity across its pushed outwires in proportion to per-wire WEIGHTS
+        // when any is declared — the computed-interior capability. A splitter
+        // reads the same per-wire quantity a Source reads as a rate, but as a
+        // RELATIVE weight (Mobus Eq. 4.5 edge attribute), and it may be a series
+        // (rung-1 infra) so the allocation can vary per tick. Shares sum to the
+        // activity, so mass is conserved. With NO weight declared this reduces
+        // to the uniform split — byte-for-byte the old behavior.
+        let outwires: Vec<usize> = (0..self.wires.len())
+            .filter(|&j| {
+                let x = &self.wires[j];
+                x.from == w.from && x.mode == FlowMode::Pushed && !self.is_observation(x)
+            })
+            .collect();
+        let total_weight: f32 = outwires
             .iter()
-            .filter(|x| x.from == w.from && x.mode == FlowMode::Pushed && !self.is_observation(x))
-            .count()
-            .max(1) as f32;
-        sender.activity / outs
+            .filter_map(|&j| self.wire_declared_rate(j))
+            .sum();
+        if total_weight > 0.0 {
+            return sender.activity * self.wire_declared_rate(k).unwrap_or(0.0) / total_weight;
+        }
+        sender.activity / (outwires.len().max(1) as f32)
     }
 
     /// The outwires bert#111 quantifies: pushed, non-observation, physical
@@ -1265,6 +1280,74 @@ mod tests {
         }
         // The delivery genuinely bent: three distinct levels, not one mean.
         assert!(c.balance().abs() < 1e-3, "conserved: {}", c.balance());
+    }
+
+    /// Rung 2 (computed interior): a Splitting process divides its inflow
+    /// across outwires in proportion to per-wire WEIGHTS — the legible
+    /// allocation capability. Weights [3,1] → a 75/25 split; mass conserved.
+    #[test]
+    fn splitter_divides_by_static_weights() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source)); // 0
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting))); // 1
+        c.nodes.push(node(NodeKind::Sink)); // 2
+        c.nodes.push(node(NodeKind::Sink)); // 3
+        c.nodes[0].param = 4.0; // 4 units/tick into the splitter
+        c.wires.push(Wire::new(0, 1)); // wire 0
+        let mut w_big = Wire::new(1, 2);
+        w_big.rate = Some(3.0); // weight 3
+        c.wires.push(w_big); // wire 1
+        let mut w_small = Wire::new(1, 3);
+        w_small.rate = Some(1.0); // weight 1
+        c.wires.push(w_small); // wire 2
+        for _ in 0..6 {
+            c.step();
+        }
+        assert!(
+            (c.wire_amount(1) - 3.0).abs() < 1e-3,
+            "weight 3 of 4 → 3.0 delivered, got {}",
+            c.wire_amount(1)
+        );
+        assert!(
+            (c.wire_amount(2) - 1.0).abs() < 1e-3,
+            "weight 1 of 4 → 1.0 delivered, got {}",
+            c.wire_amount(2)
+        );
+        assert!(c.balance().abs() < 1e-3, "split conserves: {}", c.balance());
+    }
+
+    /// Rung 2: the allocation can VARY per tick — a weight series shifts the
+    /// split legibly over time (the computed interior answers to a signal),
+    /// reusing rung-1's per-wire series. Wire a's weight falls from 9 to 1
+    /// while wire b holds at 1, so a's delivered share must shrink toward b's.
+    #[test]
+    fn splitter_weights_can_vary_per_tick() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source)); // 0
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting))); // 1
+        c.nodes.push(node(NodeKind::Sink)); // 2
+        c.nodes.push(node(NodeKind::Sink)); // 3
+        c.nodes[0].param = 4.0;
+        c.wires.push(Wire::new(0, 1)); // wire 0
+        let mut a = Wire::new(1, 2);
+        a.rate_series = Some(vec![9.0, 9.0, 9.0, 1.0, 1.0, 1.0]); // weight falls 9 → 1
+        c.wires.push(a); // wire 1
+        let mut b = Wire::new(1, 3);
+        b.rate = Some(1.0); // steady weight 1
+        c.wires.push(b); // wire 2
+
+        c.step();
+        c.step(); // splitter warm; a's weight still high
+        let early = c.wire_amount(1);
+        for _ in 0..4 {
+            c.step(); // advance past the weight drop
+        }
+        let late = c.wire_amount(1);
+        assert!(
+            early > late + 0.5,
+            "the split follows the weight series: a's share falls {early} → {late} as its weight drops"
+        );
+        assert!(c.balance().abs() < 1e-3, "shifting split conserves: {}", c.balance());
     }
 
     /// bert#111 back-compat: with no declared rates anywhere, a two-outflow
