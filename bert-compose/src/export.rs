@@ -385,6 +385,17 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
                 unit: f.unit.clone(),
             };
         }
+        // A per-tick series rides the WIRE (Mobus Eq. 4.5 edge attribute),
+        // whatever the sender: a Source reads it as a forced emission rate
+        // (#16), a Splitting/process reads it as an allocation WEIGHT (rung 2).
+        // The kernel (`wire_declared_rate`) resolves it per tick; it takes
+        // precedence over the scalar. Independent of node kind so a computed
+        // interior can carry a weight series just as a boundary carries a rate.
+        if wire.mode == FlowMode::Pushed {
+            if let Some(series) = &f.rate_series {
+                wire.rate_series = Some(series.iter().map(|&v| v as f32).collect());
+            }
+        }
         // Source-fed flows carry the asserted emission rate. Rate is an edge
         // attribute (Mobus Eq. 4.5) — with several pushed outflows each
         // amount rides ITS wire, so no rate collapses onto the node
@@ -394,14 +405,6 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
         if matches!(c.nodes[from].kind, NodeKind::Source) {
             match wire.mode {
                 FlowMode::Pushed => {
-                    // Series forcing (#16): an observed series governs emission
-                    // per tick. It rides the WIRE (not the node param) so it
-                    // survives even a lone outflow, and takes precedence over
-                    // the scalar in the kernel (`wire_declared_rate`). The mean
-                    // `amount` is still assigned below as the unforced fallback.
-                    if let Some(series) = &f.rate_series {
-                        wire.rate_series = Some(series.iter().map(|&v| v as f32).collect());
-                    }
                     let lone_pushed = pushed_out.get(&from).copied().unwrap_or(0) == 1
                         && !gradient_out.contains(&from);
                     if lone_pushed {
@@ -585,6 +588,73 @@ mod tests {
                 c.wire_amount(0)
             );
         }
+    }
+
+    /// Rung 2, the seam hop: a per-wire series reaches a SPLITTER's outflows
+    /// (not just a source's) and governs the allocation. This is the export
+    /// generalization — the series rides the wire regardless of sender kind —
+    /// proven end to end: spec (weights 3 and 1 on the splitter's two outflows)
+    /// → circuit → a 75/25 split that conserves.
+    #[test]
+    fn from_spec_carries_a_splitter_weight_series() {
+        use bert_core::operational::{
+            OperationalFlow, OperationalProcess, OperationalSpec, OperationalTerminal,
+        };
+        use bert_core::{Id, IdType, ProcessPrimitive, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id { ty, indices: vec![n] };
+        let flow = |name: &str, s: Id, k: Id, weight: Option<Vec<f64>>| OperationalFlow {
+            name: name.into(),
+            source: s,
+            sink: k,
+            substance_name: "tokens".into(),
+            substance: SubstanceType::Material,
+            unit: "tok/mo".into(),
+            amount: 4.0,
+            conductance: None,
+            interface_routing: None,
+            rate_series: weight,
+        };
+        let spec = OperationalSpec {
+            processes: vec![OperationalProcess {
+                id: id(IdType::Subsystem, 1),
+                name: "Router".into(),
+                primitive: ProcessPrimitive::Splitting,
+                agency_capacity: 0.0,
+                cognitive_params: Default::default(),
+                initial_storage: None,
+            }],
+            sources: vec![OperationalTerminal {
+                id: id(IdType::Source, 0),
+                name: "Demand".into(),
+            }],
+            sinks: vec![
+                OperationalTerminal { id: id(IdType::Sink, 0), name: "Big".into() },
+                OperationalTerminal { id: id(IdType::Sink, 1), name: "Small".into() },
+            ],
+            flows: vec![
+                flow("demand", id(IdType::Source, 0), id(IdType::Subsystem, 1), None),
+                flow("to big", id(IdType::Subsystem, 1), id(IdType::Sink, 0), Some(vec![3.0])),
+                flow("to small", id(IdType::Subsystem, 1), id(IdType::Sink, 1), Some(vec![1.0])),
+            ],
+        };
+
+        let mut c = from_spec(&spec);
+        assert_eq!(
+            c.wires[1].rate_series,
+            Some(vec![3.0]),
+            "the splitter's weight reached its outflow wire (not gated to sources)"
+        );
+        for _ in 0..6 {
+            c.step();
+        }
+        assert!(
+            (c.wire_amount(1) - 3.0).abs() < 1e-2 && (c.wire_amount(2) - 1.0).abs() < 1e-2,
+            "weights 3 and 1 split the demand 3.0/1.0, got {}/{}",
+            c.wire_amount(1),
+            c.wire_amount(2)
+        );
+        assert!(c.balance().abs() < 1e-2, "the computed split conserves: {}", c.balance());
     }
 
     #[test]
