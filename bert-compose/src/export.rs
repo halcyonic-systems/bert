@@ -395,6 +395,9 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
             if let Some(series) = &f.rate_series {
                 wire.rate_series = Some(series.iter().map(|&v| v as f32).collect());
             }
+            // Multi-timescale (rung 3): the channel's Δt stride rides with its
+            // series, so a slow channel zero-order-holds between samples.
+            wire.dt_stride = f.dt_stride;
         }
         // Source-fed flows carry the asserted emission rate. Rate is an edge
         // attribute (Mobus Eq. 4.5) — with several pushed outflows each
@@ -497,6 +500,7 @@ mod tests {
             conductance: None,
             interface_routing: None,
             rate_series: None,
+            dt_stride: None,
         };
         let spec = OperationalSpec {
             processes: vec![],
@@ -570,6 +574,7 @@ mod tests {
                 conductance: None,
                 interface_routing: None,
                 rate_series: Some(vec![4.0, 8.0, 0.5]),
+                dt_stride: None,
             }],
         };
 
@@ -614,6 +619,7 @@ mod tests {
             conductance: None,
             interface_routing: None,
             rate_series: weight,
+            dt_stride: None,
         };
         let spec = OperationalSpec {
             processes: vec![OperationalProcess {
@@ -655,6 +661,46 @@ mod tests {
             c.wire_amount(2)
         );
         assert!(c.balance().abs() < 1e-2, "the computed split conserves: {}", c.balance());
+    }
+
+    /// Rung 3, the seam hop: a flow's `dt_stride` survives spec → circuit and
+    /// makes the wire zero-order-hold its series on the slower clock.
+    #[test]
+    fn from_spec_carries_a_slow_channel_stride() {
+        use bert_core::operational::{OperationalFlow, OperationalSpec, OperationalTerminal};
+        use bert_core::{Id, IdType, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id { ty, indices: vec![n] };
+        let spec = OperationalSpec {
+            processes: vec![],
+            sources: vec![OperationalTerminal { id: id(IdType::Source, 0), name: "Demand".into() }],
+            sinks: vec![OperationalTerminal { id: id(IdType::Sink, 0), name: "Channel".into() }],
+            flows: vec![OperationalFlow {
+                name: "annual demand".into(),
+                source: id(IdType::Source, 0),
+                sink: id(IdType::Sink, 0),
+                substance_name: "tokens".into(),
+                substance: SubstanceType::Material,
+                unit: "tok/yr".into(),
+                amount: 1.0,
+                conductance: None,
+                interface_routing: None,
+                rate_series: Some(vec![10.0, 20.0]),
+                dt_stride: Some(3), // one value every 3 fast ticks
+            }],
+        };
+        let mut c = from_spec(&spec);
+        assert_eq!(c.wires[0].dt_stride, Some(3), "stride survives spec → circuit");
+        // ticks 0,1,2 hold 10; 3,4,5 hold 20 (then held-last)
+        let expected = [10.0f32, 10.0, 10.0, 20.0, 20.0];
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-3,
+                "tick {t}: slow channel holds {want}, got {}",
+                c.wire_amount(0)
+            );
+        }
     }
 
     #[test]

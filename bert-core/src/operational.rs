@@ -126,6 +126,13 @@ pub struct OperationalFlow {
     /// before (the model-1 receipt stays reproducible).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rate_series: Option<Vec<f64>>,
+    /// Multi-timescale (rung 3): `Some(n)` iff this flow's series is sampled on
+    /// a SLOWER clock — one value every `n` fast ticks, zero-order-held between
+    /// (the channel's Δt = n × base Δt, Mobus's per-node `Δt_{i,l}`, ch4
+    /// §4.3.3.6). Rides a `dt_stride` parameter on the interaction, as
+    /// `rate_series` rides `series`. `None` = every tick. `skip` when `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dt_stride: Option<u32>,
 }
 
 /// The executable projection of a [`WorldModel`]: the seam payload.
@@ -357,6 +364,14 @@ pub fn validate_operational(model: &WorldModel) -> Result<OperationalSpec, Vec<O
                     .collect::<Vec<f64>>()
             })
             .filter(|s| !s.is_empty());
+        // Multi-timescale (#rung 3): the channel's Δt as an integer multiple of
+        // the base tick — read exactly as `series` is; >1 means slower.
+        let dt_stride = ix
+            .parameters
+            .iter()
+            .find(|p| p.name == "dt_stride")
+            .and_then(|p| p.value.trim().parse::<u32>().ok())
+            .filter(|n| *n > 1);
         touched.insert(ix.source.clone());
         touched.insert(ix.sink.clone());
         spec.flows.push(OperationalFlow {
@@ -370,6 +385,7 @@ pub fn validate_operational(model: &WorldModel) -> Result<OperationalSpec, Vec<O
             conductance,
             interface_routing,
             rate_series,
+            dt_stride,
         });
     }
 
