@@ -204,6 +204,7 @@ impl App {
                 conductance: w.conductance,
                 rate: w.rate,
                 rate_series: w.rate_series.clone(),
+                dt_stride: w.dt_stride,
                 substance_override: w.substance_override,
             });
         }

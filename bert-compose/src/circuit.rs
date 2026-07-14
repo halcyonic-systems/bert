@@ -374,6 +374,13 @@ pub struct Wire {
     /// constant-`rate` path is byte-for-byte unchanged. Takes precedence over
     /// `rate` when present.
     pub rate_series: Option<Vec<f32>>,
+    /// Multi-timescale (rung 3): this wire's `rate_series` is sampled once every
+    /// `dt_stride` fast ticks and ZERO-ORDER-HELD between — the channel's own
+    /// Δt = `dt_stride × base Δt`, Mobus's per-node `Δt_{i,l}` as an integer
+    /// multiple (ch4 §4.3.3.6). A slow (e.g. annual) channel carries its real
+    /// data stream at index `tick / dt_stride`. `None`/`1` = every tick, the
+    /// single-clock case — byte-for-byte the pre-rung-3 behavior.
+    pub dt_stride: Option<u32>,
     /// Per-wire substance when a sender's flows differ (bert#111 sibling: a
     /// multi-outflow source declares substance per flow, not per node).
     /// `None` reads the sender's `out_substance` as before.
@@ -389,6 +396,7 @@ impl Wire {
             conductance: 0.3,
             rate: None,
             rate_series: None,
+            dt_stride: None,
             substance_override: None,
         }
     }
@@ -400,6 +408,7 @@ impl Wire {
             conductance,
             rate: None,
             rate_series: None,
+            dt_stride: None,
             substance_override: None,
         }
     }
@@ -584,7 +593,12 @@ impl Circuit {
         let w = &self.wires[k];
         if let Some(series) = &w.rate_series {
             if !series.is_empty() {
-                let idx = (self.tick as usize).min(series.len() - 1);
+                // Zero-order hold at the channel's own Δt (rung 3): one sample
+                // advances every `dt_stride` fast ticks, so a slow channel holds
+                // each real value between its (e.g. annual) updates. stride 1 is
+                // the single-clock case — index == tick, unchanged.
+                let stride = w.dt_stride.unwrap_or(1).max(1) as usize;
+                let idx = (self.tick as usize / stride).min(series.len() - 1);
                 return Some(series[idx]);
             }
         }
@@ -1280,6 +1294,51 @@ mod tests {
         }
         // The delivery genuinely bent: three distinct levels, not one mean.
         assert!(c.balance().abs() < 1e-3, "conserved: {}", c.balance());
+    }
+
+    /// Rung 3 (multi-timescale): a forced wire with `dt_stride = s` samples its
+    /// series once every `s` ticks and holds the value between — the channel's
+    /// own Δt = s × base Δt (Mobus's per-node Δt_{i,l}, an integer multiple).
+    /// A slow (stride-3) series [10,20,30] holds each value for 3 ticks, then
+    /// held-last past the end; conservation holds throughout.
+    #[test]
+    fn forced_wire_holds_series_at_its_own_dt() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source)); // 0
+        c.nodes.push(node(NodeKind::Sink)); // 1
+        let mut slow = Wire::new(0, 1);
+        slow.rate_series = Some(vec![10.0, 20.0, 30.0]);
+        slow.dt_stride = Some(3); // one sample every 3 fast ticks
+        c.wires.push(slow);
+
+        // tick → expected held value: 0,1,2→10 ; 3,4,5→20 ; 6,7,8→30 ; 9→30 (held)
+        let expected = [10.0f32, 10.0, 10.0, 20.0, 20.0, 20.0, 30.0, 30.0, 30.0, 30.0];
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-4,
+                "tick {t}: slow channel holds {want}, got {}",
+                c.wire_amount(0)
+            );
+        }
+        assert!(c.balance().abs() < 1e-3, "slow channel conserves: {}", c.balance());
+    }
+
+    /// Rung 3 back-compat: `dt_stride` unset (or 1) is the single-clock case —
+    /// the series advances every tick, identical to rung-1 forcing.
+    #[test]
+    fn unset_stride_advances_every_tick() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        let mut w = Wire::new(0, 1);
+        w.rate_series = Some(vec![4.0, 8.0, 0.5]); // no dt_stride
+        c.wires.push(w);
+        let expected = [4.0f32, 8.0, 0.5, 0.5];
+        for want in expected {
+            c.step();
+            assert!((c.wire_amount(0) - want).abs() < 1e-4, "every-tick: {want}, got {}", c.wire_amount(0));
+        }
     }
 
     /// Rung 2 (computed interior): a Splitting process divides its inflow
