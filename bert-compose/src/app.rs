@@ -202,6 +202,10 @@ impl App {
                 to: w.to + base,
                 mode: w.mode,
                 conductance: w.conductance,
+                rate: w.rate,
+                rate_series: w.rate_series.clone(),
+                dt_stride: w.dt_stride,
+                substance_override: w.substance_override,
             });
         }
         self.harvest_declared();

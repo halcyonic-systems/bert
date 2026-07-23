@@ -11,25 +11,12 @@
 //!
 //! Layout: `circuit` is the engine (all physics, no UI), `export` the only
 //! JSON path (both directions), `app` the state + persistence, `ui/*` one
-//! module per panel.
+//! module per panel. The modules themselves live in `lib.rs` (this package is
+//! a lib + bin); this file is only the native entry point.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod app;
-mod askhal;
-mod circuit;
-mod docs;
-mod examples;
-mod export;
-mod glyph;
-mod ladder;
-mod lens;
-#[cfg(test)]
-mod sweep;
-mod theme;
-mod ui;
-
-use app::App;
+use bert_compose::App;
 use eframe::egui;
 
 fn main() -> eframe::Result<()> {

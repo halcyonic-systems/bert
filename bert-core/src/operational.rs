@@ -16,11 +16,32 @@
 //! (`dead_ends()` surfaces, the ledger stays exact), so they are a modeling
 //! choice, not an execution hazard. Isolated components are different — a
 //! component no flow touches would ride along silently, so it is an error.
+//!
+//! # Interface routing lowers, it does not refuse (bert#108)
+//!
+//! A flow routed through a boundary interface used to refuse: the component →
+//! work-process mapping was an open question. bert#108 settled it (Option 3,
+//! identity default): an interface is a component sited in the boundary B, and
+//! by Mobus every component recapitulates the fundamental work processes, so
+//! the routing *lowers* to a work process already in compose's palette — an
+//! [`InterfacePrimitive::Impeding`] filter (with back-pressure) by default.
+//!
+//! Unparameterized — always, at this rung — the transfer characteristic is the
+//! identity: the degenerate zero-width conduit. So the flow still attaches
+//! directly to its declared endpoints and runs exactly as if the interface
+//! were absent; the lowering is recorded on [`OperationalFlow::interface_routing`]
+//! as provenance, nothing more. **This is an EDGE annotation, not a node
+//! insertion** (the 4.2 implementation call): the flow keeps its two declared
+//! endpoints and gains a marker, rather than splicing an intermediary node
+//! between them. The edge form makes the identity default *exactly* the flow
+//! attaching directly (same endpoints, same one-tick latency, same ledger) —
+//! a spliced node would shift the trajectory by a tick and so would not be
+//! observationally equivalent, which the contract requires. The marker is the
+//! seam where a future parameterized characteristic would attach (promoting to
+//! a real Impeding node); 4.2 ships only the identity default.
 
 use crate::validate::{validate_mode, Severity};
-use crate::{
-    Id, IdType, InteractionType, Mode, ProcessPrimitive, SubstanceType, WorldModel,
-};
+use crate::{Id, IdType, InteractionType, Mode, ProcessPrimitive, SubstanceType, WorldModel};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
@@ -34,11 +55,7 @@ pub struct OperationalError {
 }
 
 impl OperationalError {
-    fn new(
-        location: impl Into<String>,
-        reason: impl Into<String>,
-        hint: Option<&str>,
-    ) -> Self {
+    fn new(location: impl Into<String>, reason: impl Into<String>, hint: Option<&str>) -> Self {
         Self {
             location: location.into(),
             reason: reason.into(),
@@ -66,6 +83,21 @@ pub struct OperationalTerminal {
     pub name: String,
 }
 
+/// The work process a boundary interface recapitulates when an interface-routed
+/// flow is lowered for execution (bert#108). Mobus: every component, interfaces
+/// included, recapitulates the fundamental work processes; an interface sited in
+/// the boundary B is an Impeding process — a filter with back-pressure — by
+/// default. Unparameterized the characteristic is the identity (the degenerate
+/// zero-width conduit), so at this rung the choice of primitive is provenance
+/// only; it names where a future transfer characteristic would attach.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum InterfacePrimitive {
+    /// A filter with back-pressure (Mobus). The bert#108 default.
+    Impeding,
+    /// A control-gated conduit.
+    Modulating,
+}
+
 /// A directed, substance-typed flow between projected endpoints.
 /// `conductance` is `Some` exactly for gradient (Force) flows.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -78,6 +110,29 @@ pub struct OperationalFlow {
     pub unit: String,
     pub amount: f64,
     pub conductance: Option<f64>,
+    /// `Some` iff this flow lowered from boundary-interface routing (bert#108),
+    /// naming the work process the interface recapitulates. Unparameterized (the
+    /// only form 4.2 ships) it is the identity/zero-width conduit, so the flow
+    /// still attaches directly to `source`/`sink` and executors build a single
+    /// direct wire — the marker carries the #108 lineage and nothing dynamical.
+    #[serde(default)]
+    pub interface_routing: Option<InterfacePrimitive>,
+    /// Series forcing (bert-lenses#16): `Some` iff this flow carries an
+    /// OBSERVED emission series (a `series` parameter on the interaction),
+    /// making the source emit `o_Src(t) = f(q,t)` tick by tick instead of the
+    /// scalar `amount` mean — Mobus's naked-interface output function. Rides
+    /// `Interaction.parameters` exactly as `conductance` does. `skip` when
+    /// `None` so an unforced spec serializes and hashes byte-for-byte as
+    /// before (the model-1 receipt stays reproducible).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rate_series: Option<Vec<f64>>,
+    /// Multi-timescale (rung 3): `Some(n)` iff this flow's series is sampled on
+    /// a SLOWER clock — one value every `n` fast ticks, zero-order-held between
+    /// (the channel's Δt = n × base Δt, Mobus's per-node `Δt_{i,l}`, ch4
+    /// §4.3.3.6). Rides a `dt_stride` parameter on the interaction, as
+    /// `rate_series` rides `series`. `None` = every tick. `skip` when `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dt_stride: Option<u32>,
 }
 
 /// The executable projection of a [`WorldModel`]: the seam payload.
@@ -87,6 +142,29 @@ pub struct OperationalSpec {
     pub sources: Vec<OperationalTerminal>,
     pub sinks: Vec<OperationalTerminal>,
     pub flows: Vec<OperationalFlow>,
+}
+
+impl OperationalSpec {
+    /// A content hash over everything that determines a run — the whole spec.
+    /// A structural edit (a new process, a rewired flow, a changed primitive)
+    /// moves the hash; a cosmetic edit that never reaches the projection (a
+    /// canvas position) leaves it fixed. This is the key a recorded run `H`
+    /// hangs on: `H` is valid for exactly the spec that hashes to this value,
+    /// so a later structural edit surfaces the recording as stale rather than
+    /// letting the old trajectory pose as current.
+    ///
+    /// Canonical by construction: serializing through `serde_json::Value`
+    /// (whose object maps are sorted) makes the digest independent of the
+    /// `HashMap` iteration order in `cognitive_params`.
+    pub fn content_hash(&self) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let canonical = serde_json::to_value(self)
+            .map(|v| v.to_string())
+            .unwrap_or_default();
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        canonical.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
 /// Project `model` into an [`OperationalSpec`], or refuse with every reason.
@@ -100,9 +178,7 @@ pub struct OperationalSpec {
 ///    hierarchy below level 1, every flow endpoint lands on a projected node,
 ///    boundary crossings run in the declared direction, gradient flows carry
 ///    a conductance, and no component is isolated from the flow graph.
-pub fn validate_operational(
-    model: &WorldModel,
-) -> Result<OperationalSpec, Vec<OperationalError>> {
+pub fn validate_operational(model: &WorldModel) -> Result<OperationalSpec, Vec<OperationalError>> {
     let mut errors: Vec<OperationalError> = Vec::new();
 
     match model.mode() {
@@ -174,14 +250,14 @@ pub fn validate_operational(
             ));
             continue;
         };
-        let Some(&primitive) = agent.primitives.first() else {
+        let Some(primitive) = agent.primitive else {
             errors.push(OperationalError::new(
                 format!("systems[{i}]"),
                 format!(
                     "\"{}\" carries no Mobus primitive — nothing to instantiate",
                     sys.info.name
                 ),
-                Some("Set AgentModel.primitives to the process kind"),
+                Some("Set AgentModel.primitive to the process kind"),
             ));
             continue;
         };
@@ -200,19 +276,16 @@ pub fn validate_operational(
     for (k, ix) in model.interactions.iter().enumerate() {
         let loc = format!("interactions[{k}]");
         let mut flow_ok = true;
-        if ix.source_interface.is_some() || ix.sink_interface.is_some() {
-            errors.push(OperationalError::new(
-                &loc,
-                format!(
-                    "flow \"{}\" routes through a boundary interface — interface \
-                     routing has no executable reading yet (bert#108: the \
-                     component → work-process mapping is an open design problem)",
-                    ix.info.name
-                ),
-                Some("Attach the flow directly to the process endpoints, or wait for 4.2"),
-            ));
-            flow_ok = false;
-        }
+        // bert#108: interface routing lowers, it does not refuse. An interface
+        // is a component sited in the boundary B; by Mobus it recapitulates a
+        // work process, so the routing lowers to an Impeding filter. Identity
+        // default at this rung — the flow still attaches directly to its
+        // declared endpoints (the endpoint/direction checks below run on
+        // `ix.source`/`ix.sink` regardless), and this only records the lineage.
+        // (Interface-reference integrity is enforced upstream by `validate`;
+        // a dangling interface id still errors there.)
+        let interface_routing = (ix.source_interface.is_some() || ix.sink_interface.is_some())
+            .then_some(InterfacePrimitive::Impeding);
         if ix.source.ty == IdType::Sink {
             errors.push(OperationalError::new(
                 &loc,
@@ -276,6 +349,29 @@ pub fn validate_operational(
         if !flow_ok {
             continue;
         }
+        // Series forcing (#16): an observed emission series rides a `series`
+        // parameter (comma-separated), read exactly as `conductance` is. An
+        // empty/unparsable list is treated as absent, so a forced flow always
+        // carries at least one tick — the mean `amount` remains the fallback.
+        let rate_series = ix
+            .parameters
+            .iter()
+            .find(|p| p.name == "series")
+            .map(|p| {
+                p.value
+                    .split(',')
+                    .filter_map(|s| s.trim().parse::<f64>().ok())
+                    .collect::<Vec<f64>>()
+            })
+            .filter(|s| !s.is_empty());
+        // Multi-timescale (#rung 3): the channel's Δt as an integer multiple of
+        // the base tick — read exactly as `series` is; >1 means slower.
+        let dt_stride = ix
+            .parameters
+            .iter()
+            .find(|p| p.name == "dt_stride")
+            .and_then(|p| p.value.trim().parse::<u32>().ok())
+            .filter(|n| *n > 1);
         touched.insert(ix.source.clone());
         touched.insert(ix.sink.clone());
         spec.flows.push(OperationalFlow {
@@ -287,6 +383,9 @@ pub fn validate_operational(
             unit: ix.unit.clone(),
             amount: ix.amount.to_string().parse::<f64>().unwrap_or(1.0),
             conductance,
+            interface_routing,
+            rate_series,
+            dt_stride,
         });
     }
 
@@ -314,8 +413,8 @@ mod tests {
     use super::*;
     use crate::{
         AgentKind, AgentModel, Boundary, Complexity, Environment, ExternalEntity,
-        ExternalEntityType, Info, Interaction, InteractionUsability, Parameter, Substance,
-        System, CURRENT_FILE_VERSION,
+        ExternalEntityType, Info, Interaction, InteractionUsability, Interface, InterfaceType,
+        Parameter, Substance, System, CURRENT_FILE_VERSION,
     };
 
     fn id(ty: IdType, indices: &[i64]) -> Id {
@@ -365,11 +464,22 @@ mod tests {
         AgentModel {
             kind: AgentKind::Reactive,
             agency_capacity: 1.0,
-            primitives: vec![primitive],
+            primitive: Some(primitive),
             cognitive_params: HashMap::new(),
             process_configs: vec![],
             initial_state: HashMap::new(),
             network_config: None,
+        }
+    }
+
+    fn iface(iid: Id, ty: InterfaceType) -> Interface {
+        Interface {
+            info: info(iid, 1, "i"),
+            protocol: String::new(),
+            ty,
+            exports_to: vec![],
+            receives_from: vec![],
+            angle: Some(0.0),
         }
     }
 
@@ -429,7 +539,12 @@ mod tests {
             },
             systems: vec![
                 root_sys,
-                system(&[0, 0], "Tank", root, Some(agent(ProcessPrimitive::Buffering))),
+                system(
+                    &[0, 0],
+                    "Tank",
+                    root,
+                    Some(agent(ProcessPrimitive::Buffering)),
+                ),
             ],
             interactions: vec![
                 flow(0, "well → tank", src, buf.clone()),
@@ -478,10 +593,11 @@ mod tests {
     #[test]
     fn missing_primitive_is_named() {
         let mut m = mobus_model();
-        m.systems[1].agent.as_mut().unwrap().primitives.clear();
+        m.systems[1].agent.as_mut().unwrap().primitive = None;
         let errs = validate_operational(&m).unwrap_err();
-        assert!(errs.iter().any(|e| e.reason.contains("Tank")
-            && e.reason.contains("no Mobus primitive")));
+        assert!(errs
+            .iter()
+            .any(|e| e.reason.contains("Tank") && e.reason.contains("no Mobus primitive")));
     }
 
     #[test]
@@ -553,14 +669,84 @@ mod tests {
             .any(|e| e.location.contains("Stray") && e.reason.contains("no flow touches")));
     }
 
-    #[test]
-    fn interface_routing_refused_citing_108() {
+    /// bert#108: interface routing LOWERS, it does not refuse. A flow routed
+    /// through a real (resolvable) boundary interface now projects, carrying
+    /// its Impeding lowering as provenance. The lineage survives here (the
+    /// `108` in the name and the `InterfacePrimitive` doc); the interim refusal
+    /// is gone. (Renamed from `interface_routing_refused_citing_108`.)
+    fn routed_mobus_model() -> WorldModel {
         let mut m = mobus_model();
-        m.interactions[0].sink_interface = Some(id(IdType::Interface, &[0, 0, 0]));
-        let errs = validate_operational(&m).unwrap_err();
-        assert!(errs
+        // Attach an Import interface to the Tank's boundary so the routing
+        // resolves (a dangling id would still fail `validate`), then route the
+        // well → tank flow through it.
+        let iface_id = id(IdType::Interface, &[0, 0, 0]);
+        m.systems[1]
+            .boundary
+            .interfaces
+            .push(iface(iface_id.clone(), InterfaceType::Import));
+        m.interactions[0].sink_interface = Some(iface_id);
+        m
+    }
+
+    #[test]
+    fn interface_routing_lowers_citing_108() {
+        let spec = validate_operational(&routed_mobus_model())
+            .expect("bert#108: interface routing lowers, it no longer refuses");
+        let routed = spec
+            .flows
             .iter()
-            .any(|e| e.reason.contains("bert#108") && e.reason.contains("interface")));
+            .find(|f| f.name == "well → tank")
+            .expect("the routed flow projects");
+        assert_eq!(
+            routed.interface_routing,
+            Some(InterfacePrimitive::Impeding),
+            "the flow records its bert#108 Impeding lowering"
+        );
+        let plain = spec
+            .flows
+            .iter()
+            .find(|f| f.name == "tank → drain")
+            .unwrap();
+        assert_eq!(
+            plain.interface_routing, None,
+            "an un-routed flow carries no lowering"
+        );
+    }
+
+    #[test]
+    fn interface_lowering_is_identity_default() {
+        // Unparameterized, the lowering is observationally the flow attaching
+        // directly: identical spec but for the provenance marker. This is what
+        // "ZERO re-authoring" means — strip the marker and the two projections
+        // are the same run.
+        let plain = validate_operational(&mobus_model()).expect("projects");
+        let routed = validate_operational(&routed_mobus_model()).expect("projects");
+        let strip = |mut s: OperationalSpec| {
+            for f in &mut s.flows {
+                f.interface_routing = None;
+            }
+            s
+        };
+        assert_eq!(
+            strip(plain),
+            strip(routed),
+            "identity lowering changes nothing but the provenance marker"
+        );
+    }
+
+    #[test]
+    fn content_hash_tracks_structural_change() {
+        let a = validate_operational(&mobus_model()).expect("projects");
+        let b = validate_operational(&mobus_model()).expect("projects");
+        assert_eq!(a.content_hash(), b.content_hash(), "same spec, same hash");
+        let mut m = mobus_model();
+        m.systems[1].agent.as_mut().unwrap().primitive = Some(ProcessPrimitive::Propelling);
+        let c = validate_operational(&m).expect("projects");
+        assert_ne!(
+            a.content_hash(),
+            c.content_hash(),
+            "a structural edit (changed primitive) moves the hash"
+        );
     }
 
     #[test]

@@ -348,13 +348,43 @@ pub enum FlowMode {
     Gradient,
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+// Not `Copy`: a forced wire carries a `rate_series` Vec (#16). Every wire
+// access reads individual fields by reference, so no whole-value copy is
+// needed — `Clone` covers the one merge site (app.rs) that rebuilds wires.
+#[derive(Clone, PartialEq, Debug)]
 pub struct Wire {
     pub from: usize,
     pub to: usize,
     pub mode: FlowMode,
     /// Gradient-mode conductance (k in rate = k·Δlevel). Ignored when pushed.
     pub conductance: f32,
+    /// Declared per-wire emission for a pushed Source outwire. Rate is an
+    /// edge attribute in Mobus's formalism (Eq. 4.5's `(f, cap)` pairs) — a
+    /// source with several outflows carries one rate PER FLOW, and collapsing
+    /// them onto the node loses all but one (bert#111). `None` falls back to
+    /// the source's `param` shared uniformly across the undeclared outwires,
+    /// which is exactly the pre-#111 behavior when nothing is declared.
+    pub rate: Option<f32>,
+    /// Series forcing (bert-lenses#16): a forced source outwire emits an
+    /// OBSERVED series tick by tick instead of a constant `rate` — Mobus's
+    /// `o_Src(t) = f(q,t)` (ch6 §6.6.2.3), the 7-tuple's H entering the run
+    /// instead of being averaged to a mean. At tick `t` the wire delivers
+    /// `series[min(t, len-1)]`; past the series' end the last value is HELD
+    /// (data-horizon: projection, not error — #34). `None` = unforced, the
+    /// constant-`rate` path is byte-for-byte unchanged. Takes precedence over
+    /// `rate` when present.
+    pub rate_series: Option<Vec<f32>>,
+    /// Multi-timescale (rung 3): this wire's `rate_series` is sampled once every
+    /// `dt_stride` fast ticks and ZERO-ORDER-HELD between — the channel's own
+    /// Δt = `dt_stride × base Δt`, Mobus's per-node `Δt_{i,l}` as an integer
+    /// multiple (ch4 §4.3.3.6). A slow (e.g. annual) channel carries its real
+    /// data stream at index `tick / dt_stride`. `None`/`1` = every tick, the
+    /// single-clock case — byte-for-byte the pre-rung-3 behavior.
+    pub dt_stride: Option<u32>,
+    /// Per-wire substance when a sender's flows differ (bert#111 sibling: a
+    /// multi-outflow source declares substance per flow, not per node).
+    /// `None` reads the sender's `out_substance` as before.
+    pub substance_override: Option<SubstanceType>,
 }
 
 impl Wire {
@@ -364,6 +394,10 @@ impl Wire {
             to,
             mode: FlowMode::Pushed,
             conductance: 0.3,
+            rate: None,
+            rate_series: None,
+            dt_stride: None,
+            substance_override: None,
         }
     }
     pub fn gradient(from: usize, to: usize, conductance: f32) -> Self {
@@ -372,6 +406,10 @@ impl Wire {
             to,
             mode: FlowMode::Gradient,
             conductance,
+            rate: None,
+            rate_series: None,
+            dt_stride: None,
+            substance_override: None,
         }
     }
 }
@@ -441,10 +479,12 @@ impl Circuit {
         self.emitted + baseline - (self.stored() + self.sunk + self.in_flight() + self.dissipated)
     }
 
-    /// Conserved kind carried by a wire = the base of the sender's declared
-    /// output substance (what the dynamics run on).
+    /// Conserved kind carried by a wire: the wire's own declared substance
+    /// when it has one (a multi-outflow sender's flows may differ, bert#111),
+    /// else the base of the sender's declared output substance.
     pub fn wire_substance(&self, w: &Wire) -> SubstanceType {
-        self.nodes[w.from].out_substance.base
+        w.substance_override
+            .unwrap_or(self.nodes[w.from].out_substance.base)
     }
 
     /// A PUSHED wire Buffer → Sensing is an observation tap: the sensor reads
@@ -491,16 +531,120 @@ impl Circuit {
         // Energy/Material split across the fanout (matter doesn't) —
         // which is also why Copying relabeled to a physical substance
         // splits rather than duplicating.
-        if sender.out_substance.base == SubstanceType::Message {
+        if self.wire_substance(w) == SubstanceType::Message {
             return sender.activity;
         }
-        let outs = self
-            .wires
+        if matches!(sender.kind, NodeKind::Source) {
+            // Weighted fanout (bert#111): a source wire with a declared rate
+            // delivers that rate; activity stays the TOTAL emission, so the
+            // proportional form below scales every wire alike under
+            // back-pressure and reduces to the uniform split when no rate
+            // is declared anywhere.
+            let emission = self.source_emission(w.from);
+            return if emission > 0.0 {
+                sender.activity * self.source_wire_rate(k) / emission
+            } else {
+                0.0
+            };
+        }
+        // Weighted split (bert-lenses#16 → rung 2): a process divides its
+        // activity across its pushed outwires in proportion to per-wire WEIGHTS
+        // when any is declared — the computed-interior capability. A splitter
+        // reads the same per-wire quantity a Source reads as a rate, but as a
+        // RELATIVE weight (Mobus Eq. 4.5 edge attribute), and it may be a series
+        // (rung-1 infra) so the allocation can vary per tick. Shares sum to the
+        // activity, so mass is conserved. With NO weight declared this reduces
+        // to the uniform split — byte-for-byte the old behavior.
+        let outwires: Vec<usize> = (0..self.wires.len())
+            .filter(|&j| {
+                let x = &self.wires[j];
+                x.from == w.from && x.mode == FlowMode::Pushed && !self.is_observation(x)
+            })
+            .collect();
+        let total_weight: f32 = outwires
             .iter()
-            .filter(|x| x.from == w.from && x.mode == FlowMode::Pushed && !self.is_observation(x))
+            .filter_map(|&j| self.wire_declared_rate(j))
+            .sum();
+        if total_weight > 0.0 {
+            return sender.activity * self.wire_declared_rate(k).unwrap_or(0.0) / total_weight;
+        }
+        sender.activity / (outwires.len().max(1) as f32)
+    }
+
+    /// The outwires bert#111 quantifies: pushed, non-observation, physical
+    /// (mass-carrying) wires out of node `i` — the set a source's emission
+    /// distributes over.
+    fn source_outwires(&self, i: usize) -> impl Iterator<Item = usize> + '_ {
+        (0..self.wires.len()).filter(move |&k| {
+            let w = &self.wires[k];
+            w.from == i
+                && w.mode == FlowMode::Pushed
+                && !self.is_observation(w)
+                && self.wire_substance(w) != SubstanceType::Message
+        })
+    }
+
+    /// A wire's declared emission for the CURRENT tick. A forced wire (#16)
+    /// reads its observed series at `self.tick`, holding the last value once
+    /// the tick passes the series' end (data horizon — projection, not error,
+    /// #34); an empty series is treated as no series. Otherwise the constant
+    /// `rate`. `None` = undeclared (the caller falls back to the param split).
+    fn wire_declared_rate(&self, k: usize) -> Option<f32> {
+        let w = &self.wires[k];
+        if let Some(series) = &w.rate_series {
+            if !series.is_empty() {
+                // Zero-order hold at the channel's own Δt (rung 3): one sample
+                // advances every `dt_stride` fast ticks, so a slow channel holds
+                // each real value between its (e.g. annual) updates. stride 1 is
+                // the single-clock case — index == tick, unchanged.
+                let stride = w.dt_stride.unwrap_or(1).max(1) as usize;
+                let idx = (self.tick as usize / stride).min(series.len() - 1);
+                return Some(series[idx]);
+            }
+        }
+        w.rate
+    }
+
+    /// Declared emission for source outwire `k`: the wire's own rate for this
+    /// tick (Mobus Eq. 4.5 — rate is an edge attribute; forced wires vary it
+    /// per tick, #16), else an equal share of the node's `param` among the
+    /// undeclared outwires — exactly the pre-#111 uniform split when nothing
+    /// is declared.
+    fn source_wire_rate(&self, k: usize) -> f32 {
+        if let Some(r) = self.wire_declared_rate(k) {
+            return r;
+        }
+        let from = self.wires[k].from;
+        let undeclared = self
+            .source_outwires(from)
+            .filter(|&j| self.wire_declared_rate(j).is_none())
             .count()
             .max(1) as f32;
-        sender.activity / outs
+        self.nodes[from].param / undeclared
+    }
+
+    /// A source's total emission per tick: the sum of its per-wire declared
+    /// rates, with the undeclared outwires collectively carrying `param`.
+    /// With no declared rates (every hand-authored circuit) this is exactly
+    /// `param`, byte-for-byte the old behavior — including for an
+    /// outwire-less source, whose activity stays its param.
+    pub fn source_emission(&self, i: usize) -> f32 {
+        if self.source_outwires(i).next().is_none() {
+            return self.nodes[i].param;
+        }
+        let declared: f32 = self
+            .source_outwires(i)
+            .filter_map(|k| self.wire_declared_rate(k))
+            .sum();
+        let any_undeclared = self
+            .source_outwires(i)
+            .any(|k| self.wire_declared_rate(k).is_none());
+        declared
+            + if any_undeclared {
+                self.nodes[i].param
+            } else {
+                0.0
+            }
     }
 
     /// Flow the Source-chosen substance forward: a pass-through node
@@ -723,9 +867,11 @@ impl Circuit {
             let a = node.param; // agency capacity 0..1
 
             next_activity[i] = match node.kind {
-                // Emits its rate — throttled to what a downstream back-pressured
-                // valve will accept (the rest is simply not produced).
-                NodeKind::Source => node.param * bp_factor[i],
+                // Emits its total rate — the sum of per-wire declared rates
+                // (bert#111), param when none are declared — throttled to what
+                // a downstream back-pressured valve will accept (the rest is
+                // simply not produced).
+                NodeKind::Source => self.source_emission(i) * bp_factor[i],
                 NodeKind::Sink => {
                     sink_add[i] = physical + message;
                     physical + message
@@ -1074,6 +1220,220 @@ mod tests {
         );
     }
 
+    /// bert#111 fixture: a source with two outflows, one carrying a declared
+    /// per-wire rate, emits each wire at its own rate — the undeclared
+    /// sibling must not alter the declared one, and mass stays conserved.
+    #[test]
+    fn source_with_two_outflows_emits_per_wire_rates() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 1.0; // the undeclared wire's fallback rate
+        let mut declared = Wire::new(0, 1);
+        declared.rate = Some(12.0);
+        c.wires.push(declared);
+        c.wires.push(Wire::new(0, 2)); // undeclared sibling
+        c.step();
+        assert!(
+            (c.nodes[0].activity - 13.0).abs() < f32::EPSILON,
+            "activity is TOTAL emission: {}",
+            c.nodes[0].activity
+        );
+        assert!(
+            (c.wire_amount(0) - 12.0).abs() < 1e-4,
+            "declared wire delivers its own rate: {}",
+            c.wire_amount(0)
+        );
+        assert!(
+            (c.wire_amount(1) - 1.0).abs() < 1e-4,
+            "undeclared wire falls back to param: {}",
+            c.wire_amount(1)
+        );
+        for _ in 0..9 {
+            c.step();
+        }
+        assert!(c.balance().abs() < 1e-3, "conserved: {}", c.balance());
+        assert!(
+            c.nodes[1].total > 10.0 * c.nodes[2].total,
+            "deliveries reflect the 12:1 rates: {} vs {}",
+            c.nodes[1].total,
+            c.nodes[2].total
+        );
+    }
+
+    /// bert-lenses#16: a forced source wire emits an OBSERVED series tick by
+    /// tick — the green line must BEND through the series, not sit at a mean.
+    /// Fixture is deliberately non-monotonic (spike then crash, the xAI shape)
+    /// so a bug that froze on `series[0]` or collapsed to a mean would fail:
+    /// a flat delivery cannot match [4, 8, 0.5]. Past the series' end the last
+    /// value is held (data horizon, #34), and mass stays conserved throughout.
+    #[test]
+    fn forced_wire_delivers_series_tick_by_tick() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 99.0; // must be IGNORED — the series governs, not param
+        let mut forced = Wire::new(0, 1);
+        forced.rate_series = Some(vec![4.0, 8.0, 0.5]); // spike then crash
+        c.wires.push(forced);
+
+        let expected = [4.0f32, 8.0, 0.5, 0.5]; // tick 3 holds the last value
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-4,
+                "tick {t}: forced wire delivers series value {want}, got {}",
+                c.wire_amount(0)
+            );
+            assert!(
+                (c.nodes[0].activity - want).abs() < 1e-4,
+                "tick {t}: source total emission tracks the series ({want}), got {}",
+                c.nodes[0].activity
+            );
+        }
+        // The delivery genuinely bent: three distinct levels, not one mean.
+        assert!(c.balance().abs() < 1e-3, "conserved: {}", c.balance());
+    }
+
+    /// Rung 3 (multi-timescale): a forced wire with `dt_stride = s` samples its
+    /// series once every `s` ticks and holds the value between — the channel's
+    /// own Δt = s × base Δt (Mobus's per-node Δt_{i,l}, an integer multiple).
+    /// A slow (stride-3) series [10,20,30] holds each value for 3 ticks, then
+    /// held-last past the end; conservation holds throughout.
+    #[test]
+    fn forced_wire_holds_series_at_its_own_dt() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source)); // 0
+        c.nodes.push(node(NodeKind::Sink)); // 1
+        let mut slow = Wire::new(0, 1);
+        slow.rate_series = Some(vec![10.0, 20.0, 30.0]);
+        slow.dt_stride = Some(3); // one sample every 3 fast ticks
+        c.wires.push(slow);
+
+        // tick → expected held value: 0,1,2→10 ; 3,4,5→20 ; 6,7,8→30 ; 9→30 (held)
+        let expected = [10.0f32, 10.0, 10.0, 20.0, 20.0, 20.0, 30.0, 30.0, 30.0, 30.0];
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-4,
+                "tick {t}: slow channel holds {want}, got {}",
+                c.wire_amount(0)
+            );
+        }
+        assert!(c.balance().abs() < 1e-3, "slow channel conserves: {}", c.balance());
+    }
+
+    /// Rung 3 back-compat: `dt_stride` unset (or 1) is the single-clock case —
+    /// the series advances every tick, identical to rung-1 forcing.
+    #[test]
+    fn unset_stride_advances_every_tick() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        let mut w = Wire::new(0, 1);
+        w.rate_series = Some(vec![4.0, 8.0, 0.5]); // no dt_stride
+        c.wires.push(w);
+        let expected = [4.0f32, 8.0, 0.5, 0.5];
+        for want in expected {
+            c.step();
+            assert!((c.wire_amount(0) - want).abs() < 1e-4, "every-tick: {want}, got {}", c.wire_amount(0));
+        }
+    }
+
+    /// Rung 2 (computed interior): a Splitting process divides its inflow
+    /// across outwires in proportion to per-wire WEIGHTS — the legible
+    /// allocation capability. Weights [3,1] → a 75/25 split; mass conserved.
+    #[test]
+    fn splitter_divides_by_static_weights() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source)); // 0
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting))); // 1
+        c.nodes.push(node(NodeKind::Sink)); // 2
+        c.nodes.push(node(NodeKind::Sink)); // 3
+        c.nodes[0].param = 4.0; // 4 units/tick into the splitter
+        c.wires.push(Wire::new(0, 1)); // wire 0
+        let mut w_big = Wire::new(1, 2);
+        w_big.rate = Some(3.0); // weight 3
+        c.wires.push(w_big); // wire 1
+        let mut w_small = Wire::new(1, 3);
+        w_small.rate = Some(1.0); // weight 1
+        c.wires.push(w_small); // wire 2
+        for _ in 0..6 {
+            c.step();
+        }
+        assert!(
+            (c.wire_amount(1) - 3.0).abs() < 1e-3,
+            "weight 3 of 4 → 3.0 delivered, got {}",
+            c.wire_amount(1)
+        );
+        assert!(
+            (c.wire_amount(2) - 1.0).abs() < 1e-3,
+            "weight 1 of 4 → 1.0 delivered, got {}",
+            c.wire_amount(2)
+        );
+        assert!(c.balance().abs() < 1e-3, "split conserves: {}", c.balance());
+    }
+
+    /// Rung 2: the allocation can VARY per tick — a weight series shifts the
+    /// split legibly over time (the computed interior answers to a signal),
+    /// reusing rung-1's per-wire series. Wire a's weight falls from 9 to 1
+    /// while wire b holds at 1, so a's delivered share must shrink toward b's.
+    #[test]
+    fn splitter_weights_can_vary_per_tick() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source)); // 0
+        c.nodes.push(node(NodeKind::Process(ProcessPrimitive::Splitting))); // 1
+        c.nodes.push(node(NodeKind::Sink)); // 2
+        c.nodes.push(node(NodeKind::Sink)); // 3
+        c.nodes[0].param = 4.0;
+        c.wires.push(Wire::new(0, 1)); // wire 0
+        let mut a = Wire::new(1, 2);
+        a.rate_series = Some(vec![9.0, 9.0, 9.0, 1.0, 1.0, 1.0]); // weight falls 9 → 1
+        c.wires.push(a); // wire 1
+        let mut b = Wire::new(1, 3);
+        b.rate = Some(1.0); // steady weight 1
+        c.wires.push(b); // wire 2
+
+        c.step();
+        c.step(); // splitter warm; a's weight still high
+        let early = c.wire_amount(1);
+        for _ in 0..4 {
+            c.step(); // advance past the weight drop
+        }
+        let late = c.wire_amount(1);
+        assert!(
+            early > late + 0.5,
+            "the split follows the weight series: a's share falls {early} → {late} as its weight drops"
+        );
+        assert!(c.balance().abs() < 1e-3, "shifting split conserves: {}", c.balance());
+    }
+
+    /// bert#111 back-compat: with no declared rates anywhere, a two-outflow
+    /// source splits `param` uniformly — the pre-#111 behavior, unchanged.
+    #[test]
+    fn undeclared_fanout_still_splits_param_uniformly() {
+        let mut c = Circuit::default();
+        c.nodes.push(node(NodeKind::Source));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes.push(node(NodeKind::Sink));
+        c.nodes[0].param = 2.0;
+        c.wires.push(Wire::new(0, 1));
+        c.wires.push(Wire::new(0, 2));
+        c.step();
+        assert!(
+            (c.nodes[0].activity - 2.0).abs() < f32::EPSILON,
+            "activity stays param: {}",
+            c.nodes[0].activity
+        );
+        assert!(
+            (c.wire_amount(0) - 1.0).abs() < 1e-4 && (c.wire_amount(1) - 1.0).abs() < 1e-4,
+            "uniform split preserved: {} / {}",
+            c.wire_amount(0),
+            c.wire_amount(1)
+        );
+    }
+
     /// Sensing + Inverting + Modulating around a Buffer = a homeostat: the
     /// control loop throttles inflow as the sensed level rises. The loop must
     /// regulate (bounded storage), not run away.
@@ -1196,7 +1556,10 @@ mod tests {
         for _ in 0..5 {
             c.step();
         }
-        assert!((c.wire_amount(0) - 2.0).abs() < 1e-6, "source emits its rate");
+        assert!(
+            (c.wire_amount(0) - 2.0).abs() < 1e-6,
+            "source emits its rate"
+        );
         assert!(
             (c.wire_amount(1) - 1.0).abs() < 1e-6 && (c.wire_amount(2) - 1.0).abs() < 1e-6,
             "physical split halves per wire: {} / {}",

@@ -3,7 +3,7 @@
 //! (`from_world_model`), completing the round-trip.
 //!
 //! Encoding follows the canonical pattern: each primitive node becomes an
-//! Atomic subsystem carrying `AgentModel.primitives = [primitive]` (the same
+//! Atomic subsystem carrying `AgentModel.primitive` (the same
 //! encoding python/agents.py reads to pick its transfer function); wires
 //! become internal flows; Source/Sink nodes become environment externals
 //! whose flows connect to the wired subsystem directly. Compose-only knobs
@@ -154,7 +154,7 @@ pub fn to_world_model(circuit: &Circuit, name: &str) -> WorldModel {
                     agent: Some(AgentModel {
                         kind: AgentKind::Reactive,
                         agency_capacity: node.param,
-                        primitives: vec![primitive],
+                        primitive: Some(primitive),
                         // Compose knobs with no canonical home ride in the
                         // extensible params so the round-trip is lossless.
                         cognitive_params: {
@@ -310,7 +310,11 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
         c.nodes.push(node);
     }
     for p in &spec.processes {
-        let mut node = Node::new(NodeKind::Process(p.primitive), ids.len() + 1, grid(ids.len()));
+        let mut node = Node::new(
+            NodeKind::Process(p.primitive),
+            ids.len() + 1,
+            grid(ids.len()),
+        );
         node.name = p.name.clone();
         node.param = p.agency_capacity;
         if let Some(s) = p.initial_storage {
@@ -340,26 +344,80 @@ pub fn from_spec(spec: &bert_core::operational::OperationalSpec) -> Circuit {
     }
 
     let idx_of = |id: &Id| ids.iter().find(|(i, _)| i == id).map(|(_, n)| *n);
+    // How many pushed flows leave each resolved sender, and whether any
+    // gradient flow does: a lone pushed outflow is the degenerate case where
+    // node rate = wire rate, so `param` stays the carrier (and the inspector's
+    // rate knob stays live); per-wire rates engage exactly when a source has
+    // SEVERAL pushed outflows — where a single node rate cannot represent
+    // them (bert#111).
+    let mut pushed_out: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+    let mut gradient_out: std::collections::HashSet<usize> = std::collections::HashSet::new();
+    for f in &spec.flows {
+        if let Some(from) = idx_of(&f.source) {
+            if f.conductance.is_some() {
+                gradient_out.insert(from);
+            } else {
+                *pushed_out.entry(from).or_insert(0) += 1;
+            }
+        }
+    }
+
+    let mut substance_named: std::collections::HashSet<usize> = std::collections::HashSet::new();
     for f in &spec.flows {
         // The contract guarantees endpoint resolution; a miss here would mean
         // a spec not produced by validate_operational.
         let (Some(from), Some(to)) = (idx_of(&f.source), idx_of(&f.sink)) else {
             continue;
         };
-        let wire = match f.conductance {
+        let mut wire = match f.conductance {
             Some(k) => Wire::gradient(from, to, k as f32),
             None => Wire::new(from, to),
         };
-        // The wire's substance is the sender's declared output.
-        c.nodes[from].out_substance = DeclaredSubstance {
-            name: f.substance_name.clone(),
-            base: f.substance,
-            unit: f.unit.clone(),
-        };
-        // Source-fed flows carry the asserted emission rate (= the source's
-        // fixed potential, for gradient flows).
+        // Substance rides the wire — spec flows are quantified per-edge and a
+        // multi-outflow sender's flows may differ (bert#111 sibling). The
+        // FIRST flow also names the sender's display substance; later flows
+        // must not overwrite it (the old last-wire-wins).
+        wire.substance_override = Some(f.substance);
+        if substance_named.insert(from) {
+            c.nodes[from].out_substance = DeclaredSubstance {
+                name: f.substance_name.clone(),
+                base: f.substance,
+                unit: f.unit.clone(),
+            };
+        }
+        // A per-tick series rides the WIRE (Mobus Eq. 4.5 edge attribute),
+        // whatever the sender: a Source reads it as a forced emission rate
+        // (#16), a Splitting/process reads it as an allocation WEIGHT (rung 2).
+        // The kernel (`wire_declared_rate`) resolves it per tick; it takes
+        // precedence over the scalar. Independent of node kind so a computed
+        // interior can carry a weight series just as a boundary carries a rate.
+        if wire.mode == FlowMode::Pushed {
+            if let Some(series) = &f.rate_series {
+                wire.rate_series = Some(series.iter().map(|&v| v as f32).collect());
+            }
+            // Multi-timescale (rung 3): the channel's Δt stride rides with its
+            // series, so a slow channel zero-order-holds between samples.
+            wire.dt_stride = f.dt_stride;
+        }
+        // Source-fed flows carry the asserted emission rate. Rate is an edge
+        // attribute (Mobus Eq. 4.5) — with several pushed outflows each
+        // amount rides ITS wire, so no rate collapses onto the node
+        // (bert#111). A single pushed outflow keeps the old node-param
+        // carrier (same behavior, live inspector knob), and a gradient
+        // flow's amount is the source's fixed potential, genuinely per-node.
         if matches!(c.nodes[from].kind, NodeKind::Source) {
-            c.nodes[from].param = f.amount as f32;
+            match wire.mode {
+                FlowMode::Pushed => {
+                    let lone_pushed = pushed_out.get(&from).copied().unwrap_or(0) == 1
+                        && !gradient_out.contains(&from);
+                    if lone_pushed {
+                        c.nodes[from].param = f.amount as f32;
+                    } else {
+                        wire.rate = Some(f.amount as f32);
+                    }
+                }
+                FlowMode::Gradient => c.nodes[from].param = f.amount as f32,
+            }
         }
         c.wires.push(wire);
     }
@@ -416,6 +474,235 @@ mod tests {
     use bert_core::ProcessPrimitive;
     use egui::pos2;
 
+    /// bert#111: per-flow amounts survive the seam INTO EXECUTION. A source
+    /// with two pushed, differently-quantified outflows keeps both rates on
+    /// their wires (no last-wire-wins), the FIRST flow names the display
+    /// substance, and the built circuit delivers each wire at its own rate.
+    /// (The prior coverage stopped at the spec — "the imported amount reaches
+    /// the spec" — which is exactly how the collapse went unseen.)
+    #[test]
+    fn from_spec_keeps_per_flow_source_rates_through_execution() {
+        use bert_core::operational::{OperationalFlow, OperationalSpec, OperationalTerminal};
+        use bert_core::{Id, IdType, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id {
+            ty,
+            indices: vec![n],
+        };
+        let flow = |name: &str, snk: i64, amount: f64| OperationalFlow {
+            name: name.into(),
+            source: id(IdType::Source, 0),
+            sink: id(IdType::Sink, snk),
+            substance_name: name.into(),
+            substance: SubstanceType::Material,
+            unit: "tok/mo".into(),
+            amount,
+            conductance: None,
+            interface_routing: None,
+            rate_series: None,
+            dt_stride: None,
+        };
+        let spec = OperationalSpec {
+            processes: vec![],
+            sources: vec![OperationalTerminal {
+                id: id(IdType::Source, 0),
+                name: "Provider".into(),
+            }],
+            sinks: vec![
+                OperationalTerminal {
+                    id: id(IdType::Sink, 0),
+                    name: "Dev channel".into(),
+                },
+                OperationalTerminal {
+                    id: id(IdType::Sink, 1),
+                    name: "Enterprise channel".into(),
+                },
+            ],
+            flows: vec![flow("dev tokens", 0, 12.0), flow("ent tokens", 1, 1.0)],
+        };
+
+        let mut c = from_spec(&spec);
+        assert_eq!(c.wires[0].rate, Some(12.0), "first flow's rate on its wire");
+        assert_eq!(c.wires[1].rate, Some(1.0), "second flow's rate survives");
+        assert_eq!(
+            c.nodes[0].out_substance.name, "dev tokens",
+            "display substance named by the FIRST flow, not the last"
+        );
+        for _ in 0..3 {
+            c.step();
+        }
+        assert!(
+            (c.wire_amount(0) - 12.0).abs() < 1e-3,
+            "declared rate EXECUTES: {}",
+            c.wire_amount(0)
+        );
+        assert!(
+            (c.wire_amount(1) - 1.0).abs() < 1e-3,
+            "sibling keeps its own rate: {}",
+            c.wire_amount(1)
+        );
+    }
+
+    /// bert-lenses#16, the seam hop: a forced flow's observed series survives
+    /// spec → circuit AND executes tick by tick. Complements the pure-circuit
+    /// `forced_wire_delivers_series_tick_by_tick` — the #111 lesson is that a
+    /// series can reach the wire yet fail to run, so both levels are tested.
+    #[test]
+    fn from_spec_carries_and_executes_a_forced_series() {
+        use bert_core::operational::{OperationalFlow, OperationalSpec, OperationalTerminal};
+        use bert_core::{Id, IdType, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id { ty, indices: vec![n] };
+        let spec = OperationalSpec {
+            processes: vec![],
+            sources: vec![OperationalTerminal {
+                id: id(IdType::Source, 0),
+                name: "Provider".into(),
+            }],
+            sinks: vec![OperationalTerminal {
+                id: id(IdType::Sink, 0),
+                name: "Dev channel".into(),
+            }],
+            flows: vec![OperationalFlow {
+                name: "forced tokens".into(),
+                source: id(IdType::Source, 0),
+                sink: id(IdType::Sink, 0),
+                substance_name: "tokens".into(),
+                substance: SubstanceType::Material,
+                unit: "tok/mo".into(),
+                amount: 999.0, // the mean must NOT govern — the series does
+                conductance: None,
+                interface_routing: None,
+                rate_series: Some(vec![4.0, 8.0, 0.5]),
+                dt_stride: None,
+            }],
+        };
+
+        let mut c = from_spec(&spec);
+        assert_eq!(
+            c.wires[0].rate_series,
+            Some(vec![4.0, 8.0, 0.5]),
+            "the series survives spec → circuit"
+        );
+        let expected = [4.0f32, 8.0, 0.5, 0.5]; // last value held past the horizon
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-3,
+                "tick {t}: forced flow delivers {want}, got {}",
+                c.wire_amount(0)
+            );
+        }
+    }
+
+    /// Rung 2, the seam hop: a per-wire series reaches a SPLITTER's outflows
+    /// (not just a source's) and governs the allocation. This is the export
+    /// generalization — the series rides the wire regardless of sender kind —
+    /// proven end to end: spec (weights 3 and 1 on the splitter's two outflows)
+    /// → circuit → a 75/25 split that conserves.
+    #[test]
+    fn from_spec_carries_a_splitter_weight_series() {
+        use bert_core::operational::{
+            OperationalFlow, OperationalProcess, OperationalSpec, OperationalTerminal,
+        };
+        use bert_core::{Id, IdType, ProcessPrimitive, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id { ty, indices: vec![n] };
+        let flow = |name: &str, s: Id, k: Id, weight: Option<Vec<f64>>| OperationalFlow {
+            name: name.into(),
+            source: s,
+            sink: k,
+            substance_name: "tokens".into(),
+            substance: SubstanceType::Material,
+            unit: "tok/mo".into(),
+            amount: 4.0,
+            conductance: None,
+            interface_routing: None,
+            rate_series: weight,
+            dt_stride: None,
+        };
+        let spec = OperationalSpec {
+            processes: vec![OperationalProcess {
+                id: id(IdType::Subsystem, 1),
+                name: "Router".into(),
+                primitive: ProcessPrimitive::Splitting,
+                agency_capacity: 0.0,
+                cognitive_params: Default::default(),
+                initial_storage: None,
+            }],
+            sources: vec![OperationalTerminal {
+                id: id(IdType::Source, 0),
+                name: "Demand".into(),
+            }],
+            sinks: vec![
+                OperationalTerminal { id: id(IdType::Sink, 0), name: "Big".into() },
+                OperationalTerminal { id: id(IdType::Sink, 1), name: "Small".into() },
+            ],
+            flows: vec![
+                flow("demand", id(IdType::Source, 0), id(IdType::Subsystem, 1), None),
+                flow("to big", id(IdType::Subsystem, 1), id(IdType::Sink, 0), Some(vec![3.0])),
+                flow("to small", id(IdType::Subsystem, 1), id(IdType::Sink, 1), Some(vec![1.0])),
+            ],
+        };
+
+        let mut c = from_spec(&spec);
+        assert_eq!(
+            c.wires[1].rate_series,
+            Some(vec![3.0]),
+            "the splitter's weight reached its outflow wire (not gated to sources)"
+        );
+        for _ in 0..6 {
+            c.step();
+        }
+        assert!(
+            (c.wire_amount(1) - 3.0).abs() < 1e-2 && (c.wire_amount(2) - 1.0).abs() < 1e-2,
+            "weights 3 and 1 split the demand 3.0/1.0, got {}/{}",
+            c.wire_amount(1),
+            c.wire_amount(2)
+        );
+        assert!(c.balance().abs() < 1e-2, "the computed split conserves: {}", c.balance());
+    }
+
+    /// Rung 3, the seam hop: a flow's `dt_stride` survives spec → circuit and
+    /// makes the wire zero-order-hold its series on the slower clock.
+    #[test]
+    fn from_spec_carries_a_slow_channel_stride() {
+        use bert_core::operational::{OperationalFlow, OperationalSpec, OperationalTerminal};
+        use bert_core::{Id, IdType, SubstanceType};
+
+        let id = |ty: IdType, n: i64| Id { ty, indices: vec![n] };
+        let spec = OperationalSpec {
+            processes: vec![],
+            sources: vec![OperationalTerminal { id: id(IdType::Source, 0), name: "Demand".into() }],
+            sinks: vec![OperationalTerminal { id: id(IdType::Sink, 0), name: "Channel".into() }],
+            flows: vec![OperationalFlow {
+                name: "annual demand".into(),
+                source: id(IdType::Source, 0),
+                sink: id(IdType::Sink, 0),
+                substance_name: "tokens".into(),
+                substance: SubstanceType::Material,
+                unit: "tok/yr".into(),
+                amount: 1.0,
+                conductance: None,
+                interface_routing: None,
+                rate_series: Some(vec![10.0, 20.0]),
+                dt_stride: Some(3), // one value every 3 fast ticks
+            }],
+        };
+        let mut c = from_spec(&spec);
+        assert_eq!(c.wires[0].dt_stride, Some(3), "stride survives spec → circuit");
+        // ticks 0,1,2 hold 10; 3,4,5 hold 20 (then held-last)
+        let expected = [10.0f32, 10.0, 10.0, 20.0, 20.0];
+        for (t, want) in expected.iter().enumerate() {
+            c.step();
+            assert!(
+                (c.wire_amount(0) - want).abs() < 1e-3,
+                "tick {t}: slow channel holds {want}, got {}",
+                c.wire_amount(0)
+            );
+        }
+    }
+
     #[test]
     fn emitted_model_validates_and_round_trips() {
         let mut c = Circuit::default();
@@ -456,7 +743,7 @@ mod tests {
             .agent
             .as_ref()
             .expect("primitive encoding");
-        assert_eq!(agent.primitives, vec![ProcessPrimitive::Buffering]);
+        assert_eq!(agent.primitive, Some(ProcessPrimitive::Buffering));
         assert_eq!(
             agent.initial_state.get("storage").and_then(|v| v.as_f64()),
             Some(12.0),

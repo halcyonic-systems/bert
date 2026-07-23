@@ -5,6 +5,11 @@ All notable changes to BERT will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **AgentModel primitive collapsed to scalar** — `primitives: Vec<ProcessPrimitive>` is now `primitive: Option<ProcessPrimitive>` (bert-lenses#5, 2026-07-11). One component, one fundamental process: apparent plurality is a signal to decompose further, expressed as structure one level down, never as a list on one node. Wire compat: the legacy `primitives` array form still reads (empty → none, one entry → the primitive); a multi-entry array is refused at load with a decompose message instead of silently dropping entries (no artifact ever carried one — verified across all model libraries at collapse time). Files self-migrate to the scalar `primitive` key on next save. Consumers updated: operational projection (drops its `.first()`), compose export/round-trip, TypeDB transpiler (emits 0 or 1 `primitive_assignment`; schema unchanged), Mesa `json_bridge` (reads both forms, keeps a list internally).
+
 ## [0.4.0] - 2026-05-07 — Create & Simulate
 
 ### Added
