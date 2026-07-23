@@ -2,11 +2,13 @@
 
 *How H (history) in the 8-tuple connects to knowledge accumulation and conditions T (transformation) during simulation.*
 
-**Status**: Theoretical foundation. Not yet implemented — H is currently a string field, never read during `_act()`. This document specifies what H should become.
+**Status**: Partly implemented. `BertAgent._condition_T()` (`python/agents.py:333`, called at `:304`) reads `self.history` and writes conditioning parameters into `self.state`. The earlier "not yet implemented — H is a string field never read during `_act()`" status was true when written and is no longer.
 **Ties to**: GitHub issue for "H as computational state in simulation", Wednesday 2026-05-07 session Q2, `process-primitives.md` (which primitives need H?)
-**Originally written**: 2025. Updated 2026-05-03 to 8-tuple notation.
+**Originally written**: 2025. Updated 2026-05-03 to 8-tuple notation. Status and §3.5 reconciled 2026-07-23.
 
 **The key formula**: `T(t+1) = f(T(t), H(t), Input(t))` — transformations evolve based on accumulated history.
+
+> ⚠️ **Superseded in part — read §3.5 before relying on this formula.** `bert-lenses`'s adopted dynamics position (its issue #86, 2026-07-18) rules that H is a record and never an input to T: if T reads H, the Mesarovic–Takahara semigroup axiom fails. That position postdates this document and has not been reconciled with it. The formula above is retained because it states this document's original thesis, but it is **not** the current account. See §3.5.
 
 ## 1. Background and Context
 
@@ -155,6 +157,16 @@ T(t+1) = f(T(t), H(t), Input(t))
 ```
 
 This shows how transformations evolve based on accumulated history.
+
+> ⚠️ **Reconciliation with the adopted dynamics position (2026-07-23).**
+>
+> `bert-lenses`'s `docs/design/dynamics-principled-position.md` (its issue #86, ADOPTED 2026-07-18) states the opposite rule: **H is a record, never an input to T — if T reads H, the semigroup axiom fails** — and requires that any history-dependence be *folded into the carrier* instead. That document is later and is normative for the kernel and for SL; this one predates it.
+>
+> **Where the implementation stands relative to that rule.** Option C picked Buffering precisely because *the stock is the history*, and storage genuinely is a carrier variable — that much already satisfies the rule's own escape clause. The part that does not is narrower: `_condition_T()` computes `_release_factor` from an exponentially-smoothed **10-snapshot window** including a second derivative (`agents.py:346`), and neither the smoothed trend nor the acceleration is in the carrier. The same applies to the agent-level `_prediction_factor` / `_effort_factor`.
+>
+> **The fix is cheap, and it is "fold into the carrier", not "abandon adaptation".** Promote smoothed trend and acceleration to carrier variables, so a node's state becomes `(storage, trend, accel)`. The adaptive behaviour is unchanged; the transition becomes Markovian again and the semigroup axiom holds.
+>
+> Not yet done — recorded here so the inconsistency is visible rather than latent. Anyone designing stage-transition predicates should note the same trap one order up: "read H, detect decline" is the identical violation.
 
 ## 4. Practical Implementation Strategy
 
